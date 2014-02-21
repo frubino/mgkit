@@ -126,6 +126,8 @@ The tricky package to install in MacOSX is actually `matplotlib <http://matplotl
 
 	$ brew install libpng freetype2
 
+There seems to be a problem with `pandas` version 0.13.1 on MacOSX, with a segmentation fault happening when using DataFrames
+
 .. note::
 
 	If you get a compilation error which refers to freetype2 in the `/opt/X11/` I found it easy to delete XQuartz installing matplotlib and then reinstall XQuartz.

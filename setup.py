@@ -17,6 +17,9 @@ install_requires = [
     # 'networkx>=1.8.1',
 ]
 
+with open('README.rst') as file:
+    long_description = file.read()
+
 if sys.version_info < (2, 7):
     install_requires.append('argparse>=1.1')
 
@@ -27,6 +30,8 @@ setup(
     packages=find_packages(
         exclude=['tests']
     ),
+    #content of readme file to be used on PyPI as home page
+    long_description=long_description,
     # package_dir={'mgkit': 'mgkit'},
     install_requires=install_requires,
     scripts=[
