@@ -5,3 +5,4 @@ mgkit.egg-info
 *.pickle
 docs/source/_themes
 docs/build
+dist
