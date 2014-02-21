@@ -32,7 +32,7 @@ setup(
     scripts=[
         'bin/snp_analysis.py',
     ],
-    tests_require=['nose>=1.3'],
+    tests_require=['nose>=1.3', 'yanc'],
     extras_require={
         'R': 'rpy2>=2.3.8',
         'SMP': 'joblib'
@@ -53,7 +53,20 @@ setup(
     author="Francesco Rubino",
     author_email="rubino.francesco@gmail.com",
     description="Metagenomics Framework",
-    license="GPL2",
+    license="GPL2+",
     keywords="metagenomics library biology bioinformatics snps gff fasta",
-    url="https://bitbucket.org/setsuna80/hmmer/overview"
+    url="https://bitbucket.org/setsuna80/mgkit/",
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
+        'Natural Language :: English',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
+    ]
 )
