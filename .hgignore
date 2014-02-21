@@ -3,3 +3,4 @@ mgkit.egg-info
 *.pyc
 *.orig
 *.pickle
+docs/source/_themes
