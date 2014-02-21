@@ -1,0 +1,5 @@
+syntax: glob
+mgkit.egg-info
+*.pyc
+*.orig
+*.pickle
