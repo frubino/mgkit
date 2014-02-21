@@ -1,69 +1,5 @@
-mgkit Package
+mgkit package
 =============
-
-:mod:`mgkit` Package
---------------------
-
-.. automodule:: mgkit.__init__
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`align` Module
--------------------
-
-.. automodule:: mgkit.align
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`kegg` Module
-------------------
-
-.. automodule:: mgkit.kegg
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`logger` Module
---------------------
-
-.. automodule:: mgkit.logger
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`plots` Module
--------------------
-
-.. automodule:: mgkit.plots
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`simple_cache` Module
---------------------------
-
-.. automodule:: mgkit.simple_cache
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`snps` Module
-------------------
-
-.. automodule:: mgkit.snps
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`taxon` Module
--------------------
-
-.. automodule:: mgkit.taxon
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 Subpackages
 -----------
@@ -74,7 +10,65 @@ Subpackages
     mgkit.io
     mgkit.mappings
     mgkit.net
-    mgkit.unused
     mgkit.utils
     mgkit.workflow
 
+Submodules
+----------
+
+mgkit.align module
+------------------
+
+.. automodule:: mgkit.align
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+mgkit.kegg module
+-----------------
+
+.. automodule:: mgkit.kegg
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+mgkit.logger module
+-------------------
+
+.. automodule:: mgkit.logger
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+mgkit.plots module
+------------------
+
+.. automodule:: mgkit.plots
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+mgkit.snps module
+-----------------
+
+.. automodule:: mgkit.snps
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+mgkit.taxon module
+------------------
+
+.. automodule:: mgkit.taxon
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: mgkit
+    :members:
+    :undoc-members:
+    :show-inheritance:

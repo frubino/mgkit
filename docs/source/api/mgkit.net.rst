@@ -1,35 +1,38 @@
-net Package
-===========
+mgkit.net package
+=================
 
-:mod:`net` Package
-------------------
+Submodules
+----------
 
-.. automodule:: mgkit.net
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`embl` Module
-------------------
+mgkit.net.embl module
+---------------------
 
 .. automodule:: mgkit.net.embl
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`uniprot` Module
----------------------
+mgkit.net.uniprot module
+------------------------
 
 .. automodule:: mgkit.net.uniprot
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`utils` Module
--------------------
+mgkit.net.utils module
+----------------------
 
 .. automodule:: mgkit.net.utils
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: mgkit.net
+    :members:
+    :undoc-members:
+    :show-inheritance:

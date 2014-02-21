@@ -20,8 +20,9 @@ The library requires these Python packages:
 * HTSeq >= 0.5.4p5
 * matplotlib >= 1.3.1
 * pysam >= 0.7.7 (required by :mod:`mgkit.align`)
-* goatools (required by :mod:`mgkit.mappings.go`)
+* `goatools <https://github.com/tanghaibao/goatools>`_ (required by :mod:`mgkit.mappings.go`), has package `fisher` as a dependency
 * rpy2 >= 2.3.8 (required by :mod:`mgkit.utils.r_func`)
+* joblib (for script `translate_seq` and documentation)
 * argparse (if Python 2.6 is installed, part of the standard library from 2.7)
  
 Using pip
@@ -79,7 +80,18 @@ Some test won't be run if the required library/data is not found. Consult the ou
 Building Documentation
 ----------------------
 
-Needs sphinx >=1.2, sphinxcontrib.napoleon (if sphinx <1.3), rst2pdf, sphinxcontrib.blockdiag, sphinxcontrib.actdiag, sphinx.ext.graphviz, plus latex installed (needs changing the conf.py file)
+Needs sphinx >=1.2
+
+* sphinx_rtd_theme
+* sphinxcontrib-actdiag
+* sphinxcontrib-blockdiag
+* rst2pdf
+* sphinxcontrib-napoleon (we'll be part of sphinx 1.3, needed until then)
+
+Other libraries:
+
+* graphviz
+* latex (for pdf output - latex pdf)
 
 Troubleshooting
 ---------------

@@ -1,59 +1,70 @@
-filter Package
-==============
+mgkit.filter package
+====================
 
-:mod:`common` Module
---------------------
+Submodules
+----------
+
+mgkit.filter.common module
+--------------------------
 
 .. automodule:: mgkit.filter.common
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`consts` Module
---------------------
+mgkit.filter.consts module
+--------------------------
 
 .. automodule:: mgkit.filter.consts
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`gff` Module
------------------
+mgkit.filter.gff module
+-----------------------
 
 .. automodule:: mgkit.filter.gff
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`lists` Module
--------------------
+mgkit.filter.lists module
+-------------------------
 
 .. automodule:: mgkit.filter.lists
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`reads` Module
--------------------
+mgkit.filter.reads module
+-------------------------
 
 .. automodule:: mgkit.filter.reads
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`snps` Module
-------------------
+mgkit.filter.snps module
+------------------------
 
 .. automodule:: mgkit.filter.snps
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`taxon` Module
--------------------
+mgkit.filter.taxon module
+-------------------------
 
 .. automodule:: mgkit.filter.taxon
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: mgkit.filter
+    :members:
+    :undoc-members:
+    :show-inheritance:

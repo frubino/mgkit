@@ -1,43 +1,54 @@
-io Package
-==========
+mgkit.io package
+================
 
-:mod:`blast` Module
--------------------
+Submodules
+----------
+
+mgkit.io.blast module
+---------------------
 
 .. automodule:: mgkit.io.blast
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`fasta` Module
--------------------
+mgkit.io.fasta module
+---------------------
 
 .. automodule:: mgkit.io.fasta
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`fastq` Module
--------------------
+mgkit.io.fastq module
+---------------------
 
 .. automodule:: mgkit.io.fastq
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`gff` Module
------------------
+mgkit.io.gff module
+-------------------
 
 .. automodule:: mgkit.io.gff
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`snpdat` Module
---------------------
+mgkit.io.snpdat module
+----------------------
 
 .. automodule:: mgkit.io.snpdat
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: mgkit.io
+    :members:
+    :undoc-members:
+    :show-inheritance:

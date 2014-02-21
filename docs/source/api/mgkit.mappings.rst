@@ -1,59 +1,62 @@
-mappings Package
-================
+mgkit.mappings package
+======================
 
-:mod:`mappings` Package
------------------------
+Submodules
+----------
 
-.. automodule:: mgkit.mappings
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`cazy` Module
-------------------
+mgkit.mappings.cazy module
+--------------------------
 
 .. automodule:: mgkit.mappings.cazy
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`eggnog` Module
---------------------
+mgkit.mappings.eggnog module
+----------------------------
 
 .. automodule:: mgkit.mappings.eggnog
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`go` Module
-----------------
+mgkit.mappings.go module
+------------------------
 
 .. automodule:: mgkit.mappings.go
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`pandas_map` Module
-------------------------
+mgkit.mappings.pandas_map module
+--------------------------------
 
 .. automodule:: mgkit.mappings.pandas_map
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`taxon` Module
--------------------
+mgkit.mappings.taxon module
+---------------------------
 
 .. automodule:: mgkit.mappings.taxon
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`utils` Module
--------------------
+mgkit.mappings.utils module
+---------------------------
 
 .. automodule:: mgkit.mappings.utils
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: mgkit.mappings
+    :members:
+    :undoc-members:
+    :show-inheritance:
