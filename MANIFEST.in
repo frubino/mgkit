@@ -1,0 +1,7 @@
+recursive-include docs *
+recursive-exclude docs/build *
+recursive-include tests *.fa
+recursive-include tests *.py
+recursive-include tests *.gff
+recursive-exclude tests/mg_data *
+recursive-exclude docs .DS_Store
