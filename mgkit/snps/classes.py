@@ -3,13 +3,12 @@
 Manage SNP data.
 
 """
+from __future__ import division
 import logging
 import numpy
+from ..consts import MIN_COV
 
 LOG = logging.getLogger(__name__)
-
-MIN_COV = 4
-"Minumum coverage required in some functions."
 
 
 class GeneSyn(object):
@@ -137,8 +136,8 @@ class GeneSyn(object):
 
         #Both values are non-zero
         if (self.nonsyn != 0) and (self.syn != 0):
-            pN = self.nonsyn / float(self.exp_nonsyn)
-            pS = self.syn / float(self.exp_syn)
+            pN = self.nonsyn / self.exp_nonsyn
+            pS = self.syn / self.exp_syn
             return pN / pS
         #case in which a the SNPs come from haplotypes, in this case we don't
         #need to check for coverage to return a 0 for this special case
