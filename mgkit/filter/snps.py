@@ -49,7 +49,8 @@ def filter_genesyn_by_taxon_id(gene_syn, taxonomy=None, filter_list=None,
     )
 
 
-def filter_genesyn_by_gene_id(gene_syn, gene_ids=None, exclude=False):
+def filter_genesyn_by_gene_id(gene_syn, gene_ids=None, exclude=False,
+                              id_func=None):
     """
     Checks if the gene_id is listed in the filter_list.
 
@@ -68,7 +69,7 @@ def filter_genesyn_by_gene_id(gene_syn, gene_ids=None, exclude=False):
     """
     if gene_ids is None:
         raise FilterFails('No gene_ids supplied')
-    return (gene_syn.gene_id in gene_ids) ^ exclude
+    return (id_func(gene_syn) in gene_ids) ^ exclude
 
 
 def filter_genesyn_by_coverage(gene_syn, min_cov=None):
