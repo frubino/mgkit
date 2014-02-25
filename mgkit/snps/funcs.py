@@ -4,20 +4,20 @@ Functions used in SNPs manipulation
 import logging
 import numpy
 import itertools
+import functools
 import pandas
 import scipy.stats
 import csv
-from ..taxon import BLACK_LIST
-from .classes import GeneSyn, MIN_COV
+from ..consts import BLACK_LIST
+from .classes import GeneSyn
+from .. import consts
+from .filter import pipe_filters
 
 LOG = logging.getLogger(__name__)
 
-MIN_NUM = 10
-"Used to set the minimum number of replicates for some functions"
 
-
-def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=MIN_COV,
-                              black_list=None, min_num=MIN_NUM, rank=None,
+def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
+                              black_list=None, min_num=consts.MIN_NUM, rank=None,
                               anc_map=None, rooted=True, var_map=None,
                               feature='gene-taxon', only_rank=False,
                               gene_map=None, taxa_filter=None):
@@ -224,8 +224,8 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=MIN_COV,
     return dataframe[dataframe.count(axis=1) >= min_num]
 
 
-def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=MIN_COV,
-                              black_list=None, min_num=MIN_NUM, rank=None,
+def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=consts.MIN_COV,
+                              black_list=None, min_num=consts.MIN_NUM, rank=None,
                               anc_map=None, rooted=True, var_map=None,
                               feature='gene-taxon', only_rank=False):
     """
@@ -698,11 +698,9 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
 
 import copy
 
-from .filter.snps import pipe_filters
 
-
-def combine_sample_snps(snps_data, min_num, key_attrs, filters, gene_map=None,
-                        taxon_map=None):
+def combine_sample_snps(snps_data, min_num, filters, index_type=None,
+                        gene_func=None, taxon_func=None):
     """
     filtri da concaternare:
         * filters:
@@ -720,33 +718,44 @@ def combine_sample_snps(snps_data, min_num, key_attrs, filters, gene_map=None,
     sample_dict = dict((sample, {}) for sample in snps_data)
     multi_index = set()
 
+    if gene_func is None:
+        gene_func = functools.partial(itertools.repeat, times=1)
+    if taxon_func is None:
+        taxon_func = functools.partial(itertools.repeat, times=1)
+
     for sample, genes_dict in snps_data.iteritems():
         print sample
         for gene_syn in pipe_filters(genes_dict.itervalues(), *filters):
 
             gene_syn.gene_id = gene_syn.gene_id.split('.')[0]
 
-            key = tuple(
-                getattr(gene_syn, attr)
-                for attr in key_attrs
+            iter_func = itertools.product(
+                gene_func(gene_syn.gene_id),
+                taxon_func(gene_syn.taxon_id)
             )
-            #no use in keeping a tuple if only one-element key
-            if len(key) == 1:
-                key = key[0]
 
-            #we don't care about info about ids and so on, only syn/nonsyn
-            #and coverage, to use the calc_ratio method
-            try:
-                sample_dict[sample][key].add(gene_syn)
-            except KeyError:
-                sample_dict[sample][key] = copy.copy(gene_syn)
+            for gene_id, taxon_id in iter_func:
 
-            multi_index.add(key)
+                if index_type == 'gene':
+                    key = gene_id
+                elif index_type == 'taxon':
+                    key = taxon_id
+                else:
+                    key = (gene_id, taxon_id)
 
-    if len(key_attrs) > 1:
+                #we don't care about info about ids and so on, only syn/nonsyn
+                #and coverage, to use the calc_ratio method
+                try:
+                    sample_dict[sample][key].add(gene_syn)
+                except KeyError:
+                    sample_dict[sample][key] = copy.copy(gene_syn)
+
+                multi_index.add(key)
+
+    if isinstance(key, tuple):
         multi_index = pandas.MultiIndex.from_tuples(
             sorted(multi_index),
-            names=tuple(attr[:-3] for attr in key_attrs)
+            names=('gene', 'taxon')
         )
     else:
         multi_index = pandas.Index(multi_index)
