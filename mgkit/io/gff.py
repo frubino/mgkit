@@ -13,7 +13,7 @@ import logging
 import warnings
 from ..utils import sequence as seq_utils
 from ..filter.lists import aggr_filtered_list
-from ..snps import MIN_COV
+from ..consts import MIN_COV
 from .. import taxon
 from . import fasta
 import numpy

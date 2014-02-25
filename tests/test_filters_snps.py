@@ -1,7 +1,7 @@
 from nose.tools import *
 
-from mgkit.snps import GeneSyn
-from mgkit.filter.snps import *
+from mgkit.snps.classes import GeneSyn
+from mgkit.snps.filter import *
 
 import taxon_data
 
@@ -116,14 +116,14 @@ def test_snps_gene_id1():
     gene_syn = GeneSyn(gene_id='K01201')
     gene_list = ['K01201', 'K02201', 'K01251']
 
-    eq_(filter_genesyn_by_gene_id(gene_syn, gene_list), True)
+    eq_(filter_genesyn_by_gene_id(gene_syn, gene_list, id_func=lambda x: x.gene_id), True)
 
 
 def test_snps_gene_id2():
     gene_syn = GeneSyn(gene_id='K01201')
     gene_list = ['K01201', 'K02201', 'K01251']
 
-    eq_(filter_genesyn_by_gene_id(gene_syn, gene_list, exclude=True), False)
+    eq_(filter_genesyn_by_gene_id(gene_syn, gene_list, exclude=True, id_func=lambda x: x.gene_id), False)
 
 
 @raises(FilterFails)

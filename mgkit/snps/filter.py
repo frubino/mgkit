@@ -3,9 +3,9 @@ SNPs filtering functions
 """
 import functools
 import itertools
-from . import consts
-from .taxon import filter_taxon_by_id_list
-from .common import FilterFails
+from .. import consts
+from ..filter.taxon import filter_taxon_by_id_list
+from ..filter.common import FilterFails
 
 
 def filter_genesyn_by_taxon_id(gene_syn, taxonomy=None, filter_list=None,
