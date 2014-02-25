@@ -9,23 +9,22 @@ from scipy.stats import itemfreq
 # ne.set_num_threads(8)
 
 
-#direct use: fourth
+#direct use: fourth (1.6ms loop)
 #in trim_by_ee: fourth
 def expected_error_rate_1(qualities):
-    # qualities = 10 ** ((-qualities) / 10)
     qualities = pandas.DataFrame(itemfreq(qualities))
 
     return qualities.prod(axis=1).sum()
 
 
-#direct use: third
+#direct use: first (0.033ms loop)
 #in trim_by_ee: first (15.9s)
 def expected_error_rate_2(qualities):
     unique, inv = numpy.unique(qualities, return_inverse=True)
     return sum(unique * numpy.bincount(inv))
 
 
-#direct use: second
+#direct use: third (0.463ms loop)
 #in trim_by_ee: third (65.7s)
 def expected_error_rate_3(qualities):
     return sum(
@@ -34,7 +33,7 @@ def expected_error_rate_3(qualities):
     )
 
 
-#direct use: first
+#direct use: second (0.109ms loop)
 #in trim_by_ee: second (27.7s)
 def expected_error_rate_4(qualities):
     return sum(
