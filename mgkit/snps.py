@@ -204,10 +204,18 @@ class GeneSyn(object):
         "Alias for gid attribute at the moment"
         return self.gid
 
+    @gene_id.setter
+    def gene_id(self, gene_id):
+        self.gid = gene_id
+
     @property
     def taxon_id(self):
         "Alias for taxon attribute at the moment"
         return self.taxon
+
+    @taxon_id.setter
+    def taxon_id(self, taxon_id):
+        self.taxon = taxon_id
 
     def __str__(self):
         return self.to_string()
@@ -915,3 +923,74 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
     # for x, y in order: print y, x, ratios[y]
 
     return [x[1] for x in order]
+
+
+import copy
+
+from .filter.snps import pipe_filters
+
+
+def combine_sample_snps(snps_data, min_num, key_attrs, filters, gene_map=None,
+                        taxon_map=None):
+    """
+    filtri da concaternare:
+        * filters:
+            * default:
+                * coverage
+                * black list taxa
+            * taxa_filter
+        * mapper:
+            * gene_map
+            * rank
+            * anc_map
+
+
+    """
+    sample_dict = dict((sample, {}) for sample in snps_data)
+    multi_index = set()
+
+    for sample, genes_dict in snps_data.iteritems():
+        print sample
+        for gene_syn in pipe_filters(genes_dict.itervalues(), *filters):
+
+            gene_syn.gene_id = gene_syn.gene_id.split('.')[0]
+
+            key = tuple(
+                getattr(gene_syn, attr)
+                for attr in key_attrs
+            )
+            #no use in keeping a tuple if only one-element key
+            if len(key) == 1:
+                key = key[0]
+
+            #we don't care about info about ids and so on, only syn/nonsyn
+            #and coverage, to use the calc_ratio method
+            try:
+                sample_dict[sample][key].add(gene_syn)
+            except KeyError:
+                sample_dict[sample][key] = copy.copy(gene_syn)
+
+            multi_index.add(key)
+
+    if len(key_attrs) > 1:
+        multi_index = pandas.MultiIndex.from_tuples(
+            sorted(multi_index),
+            names=tuple(attr[:-3] for attr in key_attrs)
+        )
+    else:
+        multi_index = pandas.Index(multi_index)
+
+    sample_dict = dict(
+        (
+            sample,
+            dict(
+                (key, gene.calc_ratio())
+                for key, gene in row_dict.iteritems()
+            )
+        )
+        for sample, row_dict in sample_dict.iteritems()
+    )
+    dataframe = pandas.DataFrame(sample_dict, index=multi_index,
+                                 columns=sorted(sample_dict.keys()))
+
+    return dataframe[dataframe.count(axis=1) >= min_num]
