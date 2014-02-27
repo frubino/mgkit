@@ -12,14 +12,6 @@ mgkit.filter.common module
     :undoc-members:
     :show-inheritance:
 
-mgkit.filter.consts module
---------------------------
-
-.. automodule:: mgkit.filter.consts
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 mgkit.filter.gff module
 -----------------------
 
@@ -40,14 +32,6 @@ mgkit.filter.reads module
 -------------------------
 
 .. automodule:: mgkit.filter.reads
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-mgkit.filter.snps module
-------------------------
-
-.. automodule:: mgkit.filter.snps
     :members:
     :undoc-members:
     :show-inheritance:

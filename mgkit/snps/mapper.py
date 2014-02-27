@@ -15,7 +15,8 @@ def map_gene_id(gene_id, gene_map=None):
 
     Returns:
         generator: iterator (empty if gene_id is not in gene_map) with the
-            values
+        values
+
     """
     if gene_id not in gene_map:
         return

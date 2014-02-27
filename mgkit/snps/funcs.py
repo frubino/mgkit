@@ -717,7 +717,7 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
         min_num (int): the minimum number of not NaN values necessary in a row
             to be returned
         filters (iterable): iterable containing filter functions, a list can be
-            found in :mod:`.filter`
+            found in :mod:`mgkit.snps.filter`
         index_type (str, None): if `None`, each row index for the DataFrame will
             be a MultiIndex with `gene` and `taxon` as elements. If the equals
             'gene', the row index will be gene based and if 'taxon' will be

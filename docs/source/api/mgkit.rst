@@ -10,6 +10,8 @@ Subpackages
     mgkit.io
     mgkit.mappings
     mgkit.net
+    mgkit.report
+    mgkit.snps
     mgkit.utils
     mgkit.workflow
 
@@ -20,6 +22,14 @@ mgkit.align module
 ------------------
 
 .. automodule:: mgkit.align
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+mgkit.consts module
+-------------------
+
+.. automodule:: mgkit.consts
     :members:
     :undoc-members:
     :show-inheritance:
@@ -48,10 +58,10 @@ mgkit.plots module
     :undoc-members:
     :show-inheritance:
 
-mgkit.snps module
------------------
+mgkit.simple_cache module
+-------------------------
 
-.. automodule:: mgkit.snps
+.. automodule:: mgkit.simple_cache
     :members:
     :undoc-members:
     :show-inheritance:
