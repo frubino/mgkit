@@ -152,7 +152,7 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
                 multi_index.update(keys)
 
                 for key in keys:
-                    if not key in sample_dict:
+                    if not key in sample_dict[sample]:
                         sample_dict[sample][key] = GeneSyn(
                             gid=key,
                             taxon=gene_taxon,
@@ -185,7 +185,7 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
 
                     multi_index.add(key)
 
-                    if not key in sample_dict:
+                    if not key in sample_dict[sample]:
                         sample_dict[sample][key] = GeneSyn(
                             gid=key,
                             taxon=anc_taxon,
@@ -702,17 +702,35 @@ import copy
 def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                         gene_func=None, taxon_func=None):
     """
-    filtri da concaternare:
-        * filters:
-            * default:
-                * coverage
-                * black list taxa
-            * taxa_filter
-        * mapper:
-            * gene_map
-            * rank
-            * anc_map
+    Combine a dictionary sample->gene_index->GeneSyn into a
+    :class:`pandas.DataFrame`. The dictionary is first filtered with the
+    functions in `filters`, mapped to different taxa and genes using
+    `taxon_func` and `gene_func` respectively. The returned DataFrame is also
+    filtered for each row having at least a `min_num` of not NaN values.
 
+    .. todo::
+
+        detail usage and examples.
+
+    Arguments:
+        snps_data (dict): dictionary with the `GeneSyn` instances
+        min_num (int): the minimum number of not NaN values necessary in a row
+            to be returned
+        filters (iterable): iterable containing filter functions, a list can be
+            found in :mod:`.filter`
+        index_type (str, None): if `None`, each row index for the DataFrame will
+            be a MultiIndex with `gene` and `taxon` as elements. If the equals
+            'gene', the row index will be gene based and if 'taxon' will be
+            taxon based
+        gene_func (func): a function to map a gene_id to a gene_map. See
+            :func:`.mapper.map_gene_id` for an example
+        taxon_func (func): a function to map a taxon_id to a list of IDs. See
+            :mod:`.mapper.map_taxon_id_to_rank` or
+            :mod:`.mapper.map_taxon_id_to_ancestor` for examples
+
+    Results:
+        :class:`pandas.DataFrame`: DataFrame with the pN/pS values for the input
+            SNPs.
 
     """
     sample_dict = dict((sample, {}) for sample in snps_data)
