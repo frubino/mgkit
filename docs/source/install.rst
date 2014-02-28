@@ -41,7 +41,7 @@ while a user install is donw with::
 all requirements we'll be downloaded/installed.
 
 Using virtualenv
-----------------
+^^^^^^^^^^^^^^^^
 
 `virtualenv <http://www.virtualenv.org/>`_ is a system that is used to isolate a Python installation, to make sure no conflicts arise with multiple packages. It's handy if you're developing or testing an application/library, as it provides a clean environment. 
 

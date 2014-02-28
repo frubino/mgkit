@@ -95,7 +95,7 @@ def filter_genesyn_by_coverage(gene_syn, min_cov=None):
 def get_default_filters(taxonomy, **kwargs):
     """
     Retuns a list of filters that are used by default. it needs a valid taxonomy
-    and gets the default arguments from :data:`.consts.DEFAULT_SNP_FILTER`.
+    and gets the default arguments from :data:`mgkit.consts.DEFAULT_SNP_FILTER`.
     """
     filter_opts = consts.DEFAULT_SNP_FILTER.copy()
     filter_opts.update(kwargs)
