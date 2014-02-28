@@ -151,13 +151,7 @@ def test_taxon_id_list2():
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_taxon_id_list2_anc():
     #at least prevotella as genus should be among the others
-    taxon_id = random.choice(
-        [
-            taxon.taxon_id
-            for taxon in taxon_data.TAXONOMY
-            if taxon.s_name.startswith('prevotella ')
-        ]
-    )
+    taxon_id = 839
     filter_list = taxon_data.TAXONOMY.find_by_name('prevotella')
     eq_(
         filter_taxon_by_id_list(
