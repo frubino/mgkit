@@ -4,13 +4,13 @@ Translate nucleotidic sequence in amino acidic sequences
 
 import argparse
 import logging
-import mgkit
 import itertools
 from .. import logger
 from ..io.fasta import load_fasta, write_fasta_sequence
 from joblib import Parallel, delayed
 from ..utils import trans_tables
 from ..utils.sequence import translate_sequence
+from . import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -60,25 +60,18 @@ def set_parser():
         type=int,
         help='Number of sequences to read/write at a time'
     )
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_const',
-        const=logging.DEBUG,
-        default=logging.INFO,
-        help='more verbose'
-    )
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(mgkit.__VERSION__))
+    utils.add_basic_options(parser)
 
     return parser
 
 
 def load_trans_table(table_name):
+    "Loads translation table "
     return getattr(trans_tables, table_name.upper())
 
 
 def translate_seq(name, seq, trans_table):
+    "Tranlate sequence into the 6 frames"
     seqs = []
     header = "{0}-{1}{2}"
     for start in range(3):
@@ -94,6 +87,7 @@ def translate_seq(name, seq, trans_table):
 
 
 def translate_buff(jobs, buff_seqs, trans_table):
+    "Process a set amount of sequences - multiprocess"
 
     aa_seqs = jobs(
         delayed(translate_seq)(name, seq, trans_table)
@@ -106,6 +100,7 @@ def translate_buff(jobs, buff_seqs, trans_table):
 
 
 def main():
+    "Main function"
     options = set_parser().parse_args()
 
     #configs log and set log level

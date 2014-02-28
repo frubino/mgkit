@@ -49,6 +49,8 @@ from mgkit.net import uniprot
 from mgkit import taxon
 from ..filter.taxon import filter_taxonomy_by_lineage, filter_taxonomy_by_rank
 import mgkit.simple_cache
+from . import utils
+
 
 is_ancestor = mgkit.simple_cache.memoize(taxon.is_ancestor)
 
@@ -131,21 +133,13 @@ def set_parser():
         action='store_true',
         help='Download all KO from Kegg - exclude blacklist'
     )
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_const',
-        const=logging.DEBUG,
-        default=logging.INFO,
-        help='more verbose'
-    )
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(mgkit.__VERSION__))
+    utils.add_basic_options(parser)
 
     return parser
 
 
 def load_data(kegg_data_name, taxon_data, length_data_name):
+    "Loads data for script"
     kegg_data = kegg.KeggData(kegg_data_name)
     taxonomy = taxon.UniprotTaxonomy(taxon_data)
 
@@ -160,6 +154,7 @@ def load_data(kegg_data_name, taxon_data, length_data_name):
 
 
 def choose_taxa(taxonomy, options):
+    "Returns the list of ids to look for in Uniprot"
     if options.taxon_id:
         taxon_ids = set(options.taxon_id)
         LOG.debug(taxon_ids)
@@ -176,6 +171,7 @@ def choose_taxa(taxonomy, options):
 
 
 def choose_ko_ids(kegg_data, options):
+    "Returns the list of mapping ID->Name according to the options passed"
     if options.all_path:
         LOG.info("Dowloading all KOs, ignoring blacklist")
         ko_ids = kegg_data.get_ko_names()
@@ -196,6 +192,7 @@ def choose_ko_ids(kegg_data, options):
 
 
 def map_ko_to_uniprot(ko_id, taxon_ids, reviewed, contact):
+    "Returns the taxon IDs found in Uniprot for a specific id"
     query_base = "database:(type:ko {0}) AND ({1}){2}"
 
     query = query_base.format(
@@ -207,7 +204,11 @@ def map_ko_to_uniprot(ko_id, taxon_ids, reviewed, contact):
     )
 
     LOG.info("Downloading taxa list for KO: %s", ko_id)
-    taxon_ids = uniprot.ko_to_mapping(ko_id, query, 'organism-id', contact=contact)
+    taxon_ids = uniprot.ko_to_mapping(
+        ko_id, query,
+        'organism-id',
+        contact=contact
+    )
 
     LOG.info("Found %d taxa for KO: %s", len(taxon_ids), ko_id)
 
@@ -215,6 +216,10 @@ def map_ko_to_uniprot(ko_id, taxon_ids, reviewed, contact):
 
 
 def filter_found_taxa(taxon_ids_found, taxon_ids, taxonomy):
+    """
+    Filter the taxa found in Uniprot, making sure that they at a lower level
+    of those requested
+    """
     taxon_ids_found = set(int(taxon_id) for taxon_id in taxon_ids_found)
 
     taxon_ids_download = set()
@@ -237,6 +242,7 @@ def filter_found_taxa(taxon_ids_found, taxon_ids, taxonomy):
 
 
 def download_ko_sequences(ko_id, taxon_ids, reviewed, contact):
+    "Downloads the sequences associated to all taxon IDs provided"
     ko_seqs = {}
 
     for taxon_id in taxon_ids:
@@ -264,6 +270,7 @@ def download_ko_sequences(ko_id, taxon_ids, reviewed, contact):
 
 
 def write_ko_sequences(seqs, taxonomy, output_dir):
+    "Writes fasta sequences to disc"
     for ko_id, taxon_id, reviewed in seqs:
         file_name = '{0}_{1}_{2}{3}.fa'.format(
             ko_id,
@@ -277,6 +284,7 @@ def write_ko_sequences(seqs, taxonomy, output_dir):
 
 
 def add_profiles_to_length(seqs, length_data):
+    "Adds the average profile length to the dictionary"
     for key in seqs:
         avg_len = numpy.fromiter(
             (len(seq[1]) for seq in load_fasta(StringIO(seqs[key]))),
@@ -286,6 +294,7 @@ def add_profiles_to_length(seqs, length_data):
 
 
 def main():
+    "Main function"
     options = set_parser().parse_args()
 
     logger.config_log(options.verbose)

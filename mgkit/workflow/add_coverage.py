@@ -4,7 +4,7 @@ Adds coverage information to GFF
 import argparse
 import logging
 import pysam
-import mgkit
+from . import utils
 from .. io.gff import parse_gff, write_gff
 from .. align import add_coverage_info
 from .. import logger
@@ -13,6 +13,7 @@ LOG = logging.getLogger(__name__)
 
 
 def split_sample_alg(argument):
+    "Split sample/alignment option"
     try:
         sample, bam_file_name = argument.split(',', 1)
     except ValueError:
@@ -48,21 +49,13 @@ def set_parser():
         type=split_sample_alg,
         help='Number of processors to use'
     )
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_const',
-        const=logging.DEBUG,
-        default=logging.INFO,
-        help='more verbose'
-    )
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(mgkit.__VERSION__))
+    utils.add_basic_options(parser)
 
     return parser
 
 
 def main():
+    "Main function"
     options = set_parser().parse_args()
 
     #configs log and set log level

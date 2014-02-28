@@ -6,13 +6,12 @@ Script to convert HMMER results files (domain table) to a GFF file
 import sys
 import logging
 import argparse
-import mgkit
 from mgkit import logger
 from mgkit.io import gff
 from mgkit.io import fasta
 from mgkit import kegg
 from mgkit.taxon import MISPELLED_TAXA
-
+from . import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -25,8 +24,7 @@ def set_parser():
         description='Convert HMMER data to GFF file',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(mgkit.__VERSION__))
+    utils.add_basic_options(parser)
 
     group = parser.add_argument_group('File options')
     group.add_argument(
@@ -117,8 +115,12 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
         count_tot += 1
 
         try:
-            annotation = gff.GFFKegg.from_hmmer(line, aa_seqs, nuc_seqs=nuc_seqs,
-                                                ko_counts=ko_counts)
+            annotation = gff.GFFKegg.from_hmmer(
+                line,
+                aa_seqs,
+                nuc_seqs=nuc_seqs,
+                ko_counts=ko_counts
+            )
         except ZeroDivisionError:
             LOG.error(
                 "Skipping line %d because of an error in the calculations",

@@ -25,7 +25,7 @@ import logging
 import argparse
 import sys
 import cPickle
-import mgkit
+from . import utils
 from ..io import gff
 from .. import logger
 from ..snps import GeneSyn
@@ -139,24 +139,20 @@ def set_parser():
         default=None,
         help="File containing the full Uniprot taxonomy"
     )
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_const',
-        const=logging.DEBUG,
-        default=logging.INFO,
-        help='more verbose'
-    )
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s {0}'.format(mgkit.__VERSION__)
-    )
+    utils.add_basic_options(parser)
 
     return parser
 
 
 def reverse_taxon_names(ko2taxon, taxonomy):
+    """
+    Reverse taxa names
+
+    .. todo::
+
+        take it out and use the taxon_id method of GFF annotations
+
+    """
     LOG.debug("Reversing taxon names for taxa dictionary")
     taxonomy.gen_name_map()
     return dict(
@@ -220,7 +216,7 @@ def get_gff_info(gff_file, samples, cov_suff, taxonomy, blast_data):
             value_convert=int,
             aggr_func=lambda x: x[0]
         )
-        update_ko_taxa(ko2taxon, ko2taxon_blast, taxonomy)
+        update_ko_taxa(ko2taxon, ko2taxon_blast)
 
     koidx_syn = gff.get_attr2attr_map(annotations, keyattr='ko_idx',
                                       valattr='exp_syn', value_convert=int,
@@ -361,7 +357,8 @@ def init_count_set2(annotations, taxonomy, prefer_blast):
     return count_syn, count_set
 
 
-def update_ko_taxa(ko2taxon, ko2taxon_blast, taxonomy):
+def update_ko_taxa(ko2taxon, ko2taxon_blast):
+    "Update the taxa dictionary with the blast IDs"
     LOG.info("Updating taxa dictionary with blast id")
     name_dict = {}
 
@@ -508,7 +505,10 @@ def parse_vcf(vcf_file, count_set, count_syn, snp_dat_info, min_reads,
                 continue
 
             #the samples that contain the SNP is a string separated by '-'
-            var_set = [sample.lower() for sample in vcf_record.info['set'].split('-')]
+            var_set = [
+                sample.lower()
+                for sample in vcf_record.info['set'].split('-')
+            ]
             check_snp_in_set(
                 var_set,
                 snp_dat_info,
