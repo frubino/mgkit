@@ -1,14 +1,14 @@
 from nose.tools import *
 
-from mgkit.utils.common import avg_len, between
+from mgkit.utils.common import average_length, between
 
 
 def test_avg_len1():
-    eq_(avg_len(1, 200, 3, 132), 165.0)
+    eq_(average_length(1, 200, 3, 132), 165.0)
 
 
-def test_avg_len():
-    eq_(avg_len(4, 2245, 3, 13223), 7731.5)
+def test_avg_len2():
+    eq_(average_length(4, 2245, 3, 13223), 7731.5)
 
 
 def test_between1():
