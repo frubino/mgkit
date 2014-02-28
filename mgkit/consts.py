@@ -2,7 +2,7 @@
 Module containing constants for the filter package
 """
 
-import taxon
+import mgkit.taxon
 
 MIN_COV = 4
 "Minumum coverage required in some functions."
@@ -41,7 +41,7 @@ BLACK_LIST_IDS = [
 DEFAULT_SNP_FILTER = {
     'min_cov': MIN_COV,
     'black_list': BLACK_LIST_IDS,
-    'func': taxon.is_ancestor
+    'func': mgkit.taxon.is_ancestor
 }
 """
 Default filter options for filtering :class:`mgkit.snps.GeneSyn`

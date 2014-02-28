@@ -16,6 +16,7 @@ KEGG_REST_URL = 'http://rest.kegg.jp/'
 
 
 class KeggCompound(object):
+    "Kegg compound"
     # __slots__ = ('cp_id', 'description')
 
     def __init__(self, cp_id=None, description=''):
@@ -53,6 +54,7 @@ class KeggCompound(object):
 
 
 class KeggReaction(object):
+    "Kegg Reaction"
     # __slots__ = ('rn_id', 'description', 'cp_in', 'cp_out')
 
     def __init__(self, rn_id=None, description='', cp_in=None, cp_out=None):
@@ -94,6 +96,7 @@ class KeggReaction(object):
 
 
 class KeggOrtholog(object):
+    "Kegg Ortholog gene"
     #__slots__ = ('ko_id', 'description', 'reactions')
 
     def __init__(self, ko_id=None, description='', reactions=None):
@@ -145,6 +148,7 @@ class KeggOrtholog(object):
 
 
 class KeggPathway(object):
+    "Kegg Pathway"
     # __slots__ = ('path_id', 'description', 'genes')
 
     def __init__(self, path_id=None, description=None, genes=None):
@@ -212,11 +216,17 @@ class KeggClientRest(object):
     """
     contact = None
     api_url = KEGG_REST_URL
-    cpd_re = re.compile("ENTRY\s+(C\d{5})\s+Compound\nNAME\s+([,.\w+ ()-]+);?")
-    rn_name_re = re.compile("R\d{5}")
-    rn_eq_re = re.compile('C\d{5}')
-    ko_desc_re = re.compile("ko:(K\d{5})\t.+?;\s+([\w+, ()/:'\[\]-]+)( \[EC:)?\n?")
-    cpd_desc_re = re.compile("cpd:(C\d{5})\t([\w+, ()\[\]'*.-]+);?\n?")
+    cpd_re = re.compile(
+        r"ENTRY\s+(C\d{5})\s+Compound\nNAME\s+([,.\w+ ()-]+);?"
+    )
+    rn_name_re = re.compile(r"R\d{5}")
+    rn_eq_re = re.compile(r'C\d{5}')
+    ko_desc_re = re.compile(
+        r"ko:(K\d{5})\t.+?;\s+([\w+, ()/:'\[\]-]+)( \[EC:)?\n?"
+    )
+    cpd_desc_re = re.compile(
+        r"cpd:(C\d{5})\t([\w+, ()\[\]'*.-]+);?\n?"
+    )
     id_prefix = {'C': 'cpd', 'k': 'map', 'K': 'ko', 'R': 'rn', 'm': 'path'}
 
     def link_ids(self, target, ids, strip=True, max_len=50):
@@ -303,6 +313,7 @@ class KeggClientRest(object):
         return data
 
     def get_reaction_equations(self, ids, max_len=10):
+        "Get the equation for the reactions"
         if isinstance(ids, str):
             ids = [ids]
         data = {}
@@ -337,6 +348,7 @@ class KeggClientRest(object):
     #     return ['{0}:{1}'.format(self.id_prefix[x[0]], x) for x in ids]
 
     def get_compound_names(self, ids, max_len=10):
+        "Get the compound names"
         if isinstance(ids, str):
             ids = [ids]
         data = {}
@@ -357,6 +369,7 @@ class KeggClientRest(object):
         return data
 
     def get_kos_descriptions(self, rex=False):
+        "Get all KOs descriptions"
         data = self.list_ids('ko')
         ko_desc = {}
         if rex:
@@ -382,6 +395,7 @@ class KeggClientRest(object):
         return pathways
 
     def get_compounds_descriptions(self):
+        "Get compound descriptions"
         cpd_desc = {}
         data = self.list_ids('compound')
         for cpd_id, description in self.cpd_desc_re.findall(data):
@@ -389,6 +403,7 @@ class KeggClientRest(object):
         return cpd_desc
 
     def get_reactions_descriptions(self):
+        "Get reaction descriptions"
         rn_desc = {}
         data = self.list_ids('reaction')
         for line in data.split('\n'):
@@ -436,7 +451,10 @@ class KeggData(object):
     def get_cp_names(self):
         if self.maps is None:
             self.gen_maps()
-        return dict((cp_id, cp.description) for cp_id, cp in self.maps['cp'].iteritems())
+        return dict(
+            (cp_id, cp.description)
+            for cp_id, cp in self.maps['cp'].iteritems()
+        )
 
     def get_ko_rn_links(self, path_filter=None, description=False):
         rn_links = {}
@@ -467,7 +485,8 @@ class KeggData(object):
                     cp_set = set()
                     if description:
                         cp_set.update(
-                            "{0}: {1}".format(cp.cp_id, cp.description) for cp in itertools.chain(
+                            "{0}: {1}".format(cp.cp_id, cp.description)
+                            for cp in itertools.chain(
                                 rn.cp_in.values(), rn.cp_out.values()
                             )
                         )
@@ -638,41 +657,6 @@ def reverse_mapping(map_dict):
     warnings.warn("Function deprecated, use dict_utils.reverse_mapping",
                   DeprecationWarning)
     return dict_utils.reverse_mapping(map_dict)
-
-
-def find_id_in_dict(s_id, d):
-    """
-    .. deprecated:: 0.1
-
-        Function deprecated, use :func:`dict_utils.find_id_in_dict`
-
-    """
-    warnings.warn("Function deprecated, use dict_utils.find_id_in_dict",
-                  DeprecationWarning)
-    return dict_utils.find_id_in_dict(s_id, d)
-
-
-def print_ko_pathways(kegg_file='kegg.pickle', only_one=True, black_list=True):
-    blacklist = BLACK_LIST
-    a = KeggData()
-    a.load_data(kegg_file)
-    a.gen_ko_map()
-    for ko_id in a.get_ko_names():
-        pathways = [
-            x for x in a.get_ko_pathways(ko_id)
-            if not x in blacklist and black_list
-        ]
-        if only_one and (len(pathways) > 1):
-            continue
-        print "{0}\t{1}".format(ko_id, ', '.join(a[x].description for x in pathways))
-
-
-def print_ko_descriptions(kegg_file='kegg.pickle'):
-    a = KeggData()
-    a.load_data(kegg_file)
-    a.gen_ko_map()
-    for ko_id, name in a.get_ko_names().items():
-        print "{0}\t{1}".format(ko_id, name)
 
 
 class KeggMapperBase(object):
