@@ -41,11 +41,11 @@ def parse_blast_tab(f_handle, gid_col=1, score_col=11, num_lines=NUM_LINES):
         if ko_id in hits:
             continue
 
-        gi = cols[gid_col].split('|')[1]
+        gene_id = cols[gid_col].split('|')[1]
 
         score = cols[score_col]
 
-        hits[ko_id] = (int(gi), float(score))
+        hits[ko_id] = (int(gene_id), float(score))
 
     return hits
 
@@ -68,11 +68,11 @@ def parse_gi_taxa_table(f_handle, hits, num_lines=NUM_LINES):
     """
     gi_ko = {}
 
-    for ko_id, (gi, score) in hits.iteritems():
+    for ko_id, (gene_id, score) in hits.iteritems():
         try:
-            gi_ko[gi].append(ko_id)
+            gi_ko[gene_id].append(ko_id)
         except KeyError:
-            gi_ko[gi] = [ko_id]
+            gi_ko[gene_id] = [ko_id]
 
     # print sum(len(v) for v in gi_ko.itervalues())
 
@@ -86,14 +86,14 @@ def parse_gi_taxa_table(f_handle, hits, num_lines=NUM_LINES):
             LOG.info("Parsed %d lines, number of found KO: %d",
                      idx + 1, len(gi_taxa_dict))
 
-        gi, taxon_id = line.strip().split()
-        gi, taxon_id = int(gi), int(taxon_id)
+        gene_id, taxon_id = line.strip().split()
+        gene_id, taxon_id = int(gene_id), int(taxon_id)
 
-        if gi in gi_ko:
-            for ko_id in gi_ko[gi]:
+        if gene_id in gi_ko:
+            for ko_id in gi_ko[gene_id]:
                 hit = blast_hit(
                     ko_id=ko_id,
-                    gi=gi,
+                    gi=gene_id,
                     score=hits[ko_id][1],
                     taxon_id=taxon_id
                 )

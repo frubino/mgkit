@@ -1,6 +1,10 @@
+"""
+Module used to filter lists
+"""
+
 import numpy
 
-MIN_COV = 4
+from ..consts import MIN_COV
 
 
 def aggr_filtered_list(val_list, aggr_func=numpy.mean,
