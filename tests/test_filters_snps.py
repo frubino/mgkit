@@ -2,6 +2,9 @@ from nose.tools import *
 
 from mgkit.snps.classes import GeneSyn
 from mgkit.snps.filter import *
+import mgkit.snps.mapper
+import mgkit.taxon
+import functools
 
 import taxon_data
 
@@ -152,3 +155,140 @@ def test_snps_gene_coverage_exc():
     gene_syn = GeneSyn(gene_id='K01201')
     min_cov = None
     filter_genesyn_by_coverage(gene_syn, min_cov=min_cov)
+
+
+def test_map_gene_id1():
+    gene_map = {
+        'K1': ['K2', 'K3']
+    }
+    eq_(
+        list(mgkit.snps.mapper.map_gene_id('K1', gene_map)),
+        gene_map['K1']
+    )
+
+
+def test_map_gene_id2():
+    gene_map = {
+        'K1': ['K2', 'K3']
+    }
+    eq_(
+        list(mgkit.snps.mapper.map_gene_id('K2', gene_map)),
+        []
+    )
+
+
+@with_setup(setup=taxon_data.setup_taxon_data)
+def test_map_taxon_id_to_rank1():
+    eq_(
+        list(
+            mgkit.snps.mapper.map_taxon_id_to_rank(
+                839,
+                rank='genus',
+                taxonomy=taxon_data.TAXONOMY,
+                include_higher=False
+            )
+        ),
+        [838]
+    )
+
+
+@with_setup(setup=taxon_data.setup_taxon_data)
+def test_map_taxon_id_to_rank2():
+    eq_(
+        list(
+            mgkit.snps.mapper.map_taxon_id_to_rank(
+                2,
+                rank='genus',
+                taxonomy=taxon_data.TAXONOMY,
+                include_higher=False
+            )
+        ),
+        []
+    )
+
+
+@with_setup(setup=taxon_data.setup_taxon_data)
+def test_map_taxon_id_to_rank3():
+    eq_(
+        list(
+            mgkit.snps.mapper.map_taxon_id_to_rank(
+                2,
+                rank='genus',
+                taxonomy=taxon_data.TAXONOMY,
+                include_higher=True
+            )
+        ),
+        [2]
+    )
+
+
+@with_setup(setup=taxon_data.setup_taxon_data)
+def test_map_taxon_id_to_ancestor1():
+    func = functools.partial(
+        mgkit.taxon.is_ancestor,
+        taxon_data.TAXONOMY
+    )
+    eq_(
+        list(
+            mgkit.snps.mapper.map_taxon_id_to_ancestor(
+                839,
+                anc_ids=[838],
+                func=func
+            )
+        ),
+        [838]
+    )
+
+
+@with_setup(setup=taxon_data.setup_taxon_data)
+def test_map_taxon_id_to_ancestor2():
+    func = functools.partial(
+        mgkit.taxon.is_ancestor,
+        taxon_data.TAXONOMY
+    )
+    eq_(
+        list(
+            mgkit.snps.mapper.map_taxon_id_to_ancestor(
+                839,
+                anc_ids=[838, 2],
+                func=func
+            )
+        ),
+        [838, 2]
+    )
+
+
+@with_setup(setup=taxon_data.setup_taxon_data)
+def test_map_taxon_id_to_ancestor3():
+    func = functools.partial(
+        mgkit.taxon.is_ancestor,
+        taxon_data.TAXONOMY
+    )
+    eq_(
+        list(
+            mgkit.snps.mapper.map_taxon_id_to_ancestor(
+                839,
+                anc_ids=[838, 2, 1485],
+                func=func
+            )
+        ),
+        [838, 2]
+    )
+
+
+@with_setup(setup=taxon_data.setup_taxon_data)
+def test_map_taxon_id_to_ancestor4():
+    func = functools.partial(
+        mgkit.taxon.is_ancestor,
+        taxon_data.TAXONOMY
+    )
+    eq_(
+        list(
+            mgkit.snps.mapper.map_taxon_id_to_ancestor(
+                839,
+                anc_ids=[2172, 1485],
+                func=func
+            )
+        ),
+        []
+    )
