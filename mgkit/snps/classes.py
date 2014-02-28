@@ -1,4 +1,3 @@
-# encoding=utf8
 """
 Manage SNP data.
 
@@ -136,9 +135,9 @@ class GeneSyn(object):
 
         #Both values are non-zero
         if (self.nonsyn != 0) and (self.syn != 0):
-            pN = self.nonsyn / self.exp_nonsyn
-            pS = self.syn / self.exp_syn
-            return pN / pS
+            pn_value = self.nonsyn / self.exp_nonsyn
+            ps_value = self.syn / self.exp_syn
+            return pn_value / ps_value
         #case in which a the SNPs come from haplotypes, in this case we don't
         #need to check for coverage to return a 0 for this special case
         elif (self.nonsyn == 0) and (self.syn == 0) and haplotypes:
@@ -197,6 +196,7 @@ class GeneSyn(object):
 
     @gene_id.setter
     def gene_id(self, gene_id):
+        "Setter for gene_id"
         self.gid = gene_id
 
     @property
@@ -206,6 +206,7 @@ class GeneSyn(object):
 
     @taxon_id.setter
     def taxon_id(self, taxon_id):
+        "Setter for taxon_id"
         self.taxon = taxon_id
 
     def __str__(self):

@@ -17,10 +17,10 @@ LOG = logging.getLogger(__name__)
 
 
 def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
-                              black_list=None, min_num=consts.MIN_NUM, rank=None,
-                              anc_map=None, rooted=True, var_map=None,
-                              feature='gene-taxon', only_rank=False,
-                              gene_map=None, taxa_filter=None):
+                              black_list=None, min_num=consts.MIN_NUM,
+                              rank=None, anc_map=None, rooted=True,
+                              var_map=None, feature='gene-taxon',
+                              only_rank=False, gene_map=None, taxa_filter=None):
     """
     Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
     with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
@@ -225,9 +225,10 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
 
 
 def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=consts.MIN_COV,
-                              black_list=None, min_num=consts.MIN_NUM, rank=None,
-                              anc_map=None, rooted=True, var_map=None,
-                              feature='gene-taxon', only_rank=False):
+                              black_list=None, min_num=consts.MIN_NUM,
+                              rank=None, anc_map=None, rooted=True,
+                              var_map=None, feature='gene-taxon',
+                              only_rank=False):
     """
     Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
     with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
@@ -405,6 +406,7 @@ def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=consts.MIN_COV,
 
 
 def get_values_partition(observed, profile, neutral=1.0):
+    "Return the partition to which an observed value belongs"
 
     in_c_or_d = lambda obs, prof: (obs < neutral) and (prof < neutral)
 
@@ -494,7 +496,9 @@ def build_rank_matrix(dataframe, taxonomy=None, taxon_rank=None):
             set(
                 taxonomy.get_ranked_taxon(taxon_id, taxon_rank).taxon_id
                 for taxon_id in set(dataframe.index.get_level_values('taxon'))
-                if taxonomy.get_ranked_taxon(taxon_id, taxon_rank).rank == taxon_rank
+                if taxonomy.get_ranked_taxon(
+                    taxon_id, taxon_rank
+                ).rank == taxon_rank
             )
         )
 
@@ -506,9 +510,12 @@ def build_rank_matrix(dataframe, taxonomy=None, taxon_rank=None):
     for gene_id in rank_matrix.index:
         gene_array = dataframe.loc[gene_id]
         # print gene_id, type(gene_array)
-        for taxon_id, rank in zip(gene_array.index, scipy.stats.rankdata(gene_array)):
+        iterator = zip(gene_array.index, scipy.stats.rankdata(gene_array))
+        for taxon_id, rank in iterator:
             if taxon_rank is not None:
-                taxon_id = taxonomy.get_ranked_taxon(taxon_id, taxon_rank).taxon_id
+                taxon_id = taxonomy.get_ranked_taxon(
+                    taxon_id, taxon_rank
+                ).taxon_id
                 if taxonomy[taxon_id].rank != taxon_rank:
                     continue
 
@@ -528,7 +535,10 @@ def group_rank_matrix(dataframe, gene_map):
 
     :return: :class:`pandas.DataFrame` instance
     """
-    rank_matrix = pandas.DataFrame(index=gene_map.keys(), columns=dataframe.columns)
+    rank_matrix = pandas.DataFrame(
+        index=gene_map.keys(),
+        columns=dataframe.columns
+    )
 
     for mapping_id, gene_ids in gene_map.iteritems():
         mapped_matrix = dataframe.loc[gene_ids]
@@ -594,7 +604,9 @@ def wilcoxon_pairwise_test_dataframe(dataframe, test_func=scipy.stats.ranksums,
         if len(dataframe_gene) <= 1:
             continue
 
-        for taxon_id1, taxon_id2 in itertools.combinations(dataframe_gene.index, 2):
+        iterator = itertools.combinations(dataframe_gene.index, 2)
+
+        for taxon_id1, taxon_id2 in iterator:
             pvalue = test_func(dataframe_gene.loc[taxon_id1].dropna(),
                                dataframe_gene.loc[taxon_id2].dropna())[1]
 
@@ -606,7 +618,7 @@ def wilcoxon_pairwise_test_dataframe(dataframe, test_func=scipy.stats.ranksums,
 
 
 def write_sign_genes_table(out_file, dataframe, sign_genes, taxonomy,
-                           gene_names=None, sep=','):
+                           gene_names=None):
     """
     Write a table with the list of significant genes found in a dataframe, the
     significant gene list is the result of

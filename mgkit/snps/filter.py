@@ -121,5 +121,5 @@ def pipe_filters(iterable, *funcs):
     """
     for func in funcs:
         iterable = itertools.ifilter(func, iterable)
-    for x in iterable:
-        yield x
+    for value in iterable:
+        yield value
