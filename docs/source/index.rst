@@ -21,14 +21,6 @@ Contents:
 
    library
 
-   scripts/*
-
-
-
-TODO list
----------
-
-.. todolist::
 
 
 Indices and tables
