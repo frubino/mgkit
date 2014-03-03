@@ -11,6 +11,7 @@ import HTSeq
 from itertools import izip
 from mgkit.io.fastq import choose_header_type
 from mgkit.io.fastq import write_fastq_sequence
+from . import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -23,19 +24,7 @@ def set_parser():
         description='Interleave/Deinterleave fastq files',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_const',
-        const=logging.DEBUG,
-        default=logging.INFO,
-        help='more verbose'
-    )
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s {0}'.format(mgkit.__VERSION__)
-    )
+    utils.add_basic_options(parser)
     #Deinterleave
     subparsers = parser.add_subparsers()
     parser_d = subparsers.add_parser('di', help='Deinterleave sequences')
@@ -239,7 +228,7 @@ def sort(options):
         seq1 = (sequence1.name, sequence1.seq, sequence1.qualstr)
         seq2 = (sequence2.name, sequence2.seq, sequence2.qualstr)
 
-        if (key1 == key2):
+        if key1 == key2:
             #if the 2
             write_fastq_sequence(options.mate1_output, *seq1)
             write_fastq_sequence(options.mate2_output, *seq2)
@@ -381,7 +370,7 @@ def interleave(options):
         seq1 = (sequence1.name, sequence1.seq, sequence1.qualstr)
         seq2 = (sequence2.name, sequence2.seq, sequence2.qualstr)
 
-        if (key1 == key2):
+        if key1 == key2:
             #if the 2
             write_fastq_sequence(options.output_file, *seq1)
             write_fastq_sequence(options.output_file, *seq2)

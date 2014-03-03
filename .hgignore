@@ -6,3 +6,4 @@ mgkit.egg-info
 docs/source/_themes
 docs/build
 dist
+build

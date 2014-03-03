@@ -26,6 +26,7 @@ import mgkit.mappings.cazy
 import mgkit.mappings.eggnog
 import mgkit.taxon
 import mgkit.net
+from . import utils
 
 try:
     import mgkit.mappings.go
@@ -102,19 +103,8 @@ def set_parser():
         action='store',
         help='email address to use for Uniprot communications'
     )
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_const',
-        const=logging.DEBUG,
-        default=logging.INFO,
-        help='more verbose'
-    )
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s {0}'.format(mgkit.__VERSION__)
-    )
+    utils.add_basic_options(parser)
+
     return parser
 
 

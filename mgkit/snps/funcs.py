@@ -1,247 +1,26 @@
-# encoding=utf8
 """
-Manage SNP data.
-
+Functions used in SNPs manipulation
 """
 import logging
-import itertools
 import numpy
+import itertools
+import functools
 import pandas
 import scipy.stats
 import csv
-from .taxon import BLACK_LIST
+from ..consts import BLACK_LIST
+from .classes import GeneSyn
+from .. import consts
+from .filter import pipe_filters
 
 LOG = logging.getLogger(__name__)
 
-MIN_COV = 4
-"Minumum coverage required in some functions."
 
-MIN_NUM = 10
-"Used to set the minimum number of replicates for some functions"
-
-
-class GeneSyn(object):
-    """
-    Class defining gene and synonymous/non-synonymous SNPs.
-
-    It defines background synonymous/non-synonymous attributes and only has a
-    method right now, which calculate pN/pS ratio.
-
-    Attributes:
-        gene_id (str): gene id
-        taxon_id (int): gene taxon
-        exp_syn (int): expected synonymous changes
-        exp_nonsyn (int): expected non-synonymous changes
-        syn (int): synonymous changes
-        nonsyn (int): non-synonymous changes
-        coverage (int): gene coverage
-
-    .. warning::
-
-        the `gid` and `taxon` attributes will be renamed in `gene_id` and
-        `taxon_id` in later versions of the library, so they shouldn't be used.
-
-    """
-    __slots__ = (
-        'gid',
-        'taxon',
-        'exp_syn',
-        'exp_nonsyn',
-        'syn',
-        'nonsyn',
-        'coverage',
-        'taxon_root'
-    )
-
-    def __init__(self, gid='', taxon='', exp_syn=0, exp_nonsyn=0, syn=0,
-                 nonsyn=0, coverage=None, taxon_root='', gene_id='',
-                 taxon_id=0):
-
-        self.gid = gid
-        self.taxon = taxon
-        self.taxon_root = taxon_root
-        self.exp_syn = exp_syn
-        self.exp_nonsyn = exp_nonsyn
-        self.syn = syn
-        self.nonsyn = nonsyn
-        self.coverage = coverage
-        self.gid = gene_id
-        self.taxon = taxon_id
-
-    def calc_ratio(self, flag_value=False, min_cov=None, haplotypes=False):
-        """
-        Calculate :math:`\\frac {pN}{pS}` for the gene.
-
-        .. math::
-            :label: pn-ps
-
-            \\frac {pN}{pS} = \\frac{ ^{oN}/_{eN}}{ ^{oS}/_{eS}}
-
-        WHere:
-
-        * oN (number of non-synonymous - **nonsyn**)
-        * eN (expected number of non-synonymous - **exp_nonsyn**)
-        * oS (number of synonymous - **syn**)
-        * eS (expected number of synonymous - **exp_syn**)
-
-        Arguments:
-            flag_value (bool): when there's no way to calculate the ratio, the
-                possible cases will be flagged with a negative number. This
-                allows to make substitutions for these values
-            min_cov (int, None): minimum coverage require for some special
-            cases. if is None, it's set to the global variable :data:`MIN_COV`.
-            haplotypes (bool): if true, coverage information is not used,
-                because the SNPs are assumed to come from an alignment that has
-                sequences having haplotypes
-
-        Returns:
-            float: the :math:`\\frac {pN}{pS}` for the gene.
-
-            .. note::
-
-                Because pN or pS can be 0, and the return value would be NaN, we
-                take in account some special cases. The default return value in
-                this cases is :const:`numpy.nan`.
-
-            * Both synonymous and non-synonymous values are 0:
-
-                * if both the syn and nonsyn attributes are 0 but there's
-                  coverage for this gene, we return a 0, as there's no evolution
-                  in this gene. The attribute coverage must be equal or greater
-                  than the min_cov parameter, which is by default assigned from
-                  the :data:`MIN_COV` global variable (if left at *None*): this
-                  means that it can be configured at runtime, if we want a
-                  different default value without passing it to the method for
-                  each call
-                * In case the **coverage** attribute is **None** and the
-                  **flag_value** parameter is True, the return value is **-3**
-
-            * The number of non-synonymous is greater than 0 but the number of
-              synonymous is 0:
-
-                * if **flag_value** is **True**, the returned value is **-1**
-
-            * The number of synonymous is greater than 0 but the number of
-              non-synonymous is 0:
-
-                * if **flag_value** is **True**, the returned value is **-2**
-
-            +------------+------------+------------+----------+--------------+
-            | :math:`oS` | :math:`oN` | flag_value | coverage | return value |
-            +============+============+============+==========+==============+
-            | 0          | 0          | Not Used   | `int`    | **0**        |
-            +------------+------------+------------+----------+--------------+
-            | 0          | 0          | True       | Not Used | **-3**       |
-            +------------+------------+------------+----------+--------------+
-            | >0         | 0          | True       | Not Used | **-1**       |
-            +------------+------------+------------+----------+--------------+
-            | 0          | >0         | True       | Not Used | **-2**       |
-            +------------+------------+------------+----------+--------------+
-
-        """
-        #set the minimum coverage value if not specified
-        if min_cov is None:
-            min_cov = MIN_COV
-
-        #Both values are non-zero
-        if (self.nonsyn != 0) and (self.syn != 0):
-            pN = self.nonsyn / float(self.exp_nonsyn)
-            pS = self.syn / float(self.exp_syn)
-            return pN / pS
-        #case in which a the SNPs come from haplotypes, in this case we don't
-        #need to check for coverage to return a 0 for this special case
-        elif (self.nonsyn == 0) and (self.syn == 0) and haplotypes:
-            return 0
-
-        #case in which a coverage attribute is specified, in this case we don't
-        #need to flag the return value
-        #getattr is used in case the value was not initialized, in cases like
-        #a deserialized instance had no coverage value
-        if getattr(self, 'coverage', None) is not None:
-            if (self.nonsyn == 0) and (self.syn == 0):
-                if self.coverage >= min_cov:
-                    # LOG.debug("Coverage (%d) OK", min_cov)
-                    return 0
-                # LOG.debug("Coverage (%d) KO", min_cov)
-
-        if flag_value:
-            if self.nonsyn != 0:
-                #there's at least non-synonymous count but no synonymous one
-                #this will be converted in the max value for the matrix or
-                #to some other value (-1 flag this case)
-                if self.syn == 0:
-                    return -1
-            else:
-                #there's at least a synonymous count but no non-synonymous one
-                #this will be converted in the max value for the matrix or
-                #to some other value (-2 flag this case)
-                if self.syn != 0:
-                    return -2
-                else:
-                    #There's no changes in the gene at at all. It should be
-                    #checked if that gene has coverage.
-                    return -3
-
-        return numpy.nan
-
-    def __getstate__(self):
-        return dict((x, getattr(self, x)) for x in self.__slots__)
-
-    def __setstate__(self, state):
-        for name, value, in state.iteritems():
-            setattr(self, name, value)
-
-    def to_string(self):
-        """
-        Return a string with some info about the instance. Used by __str__
-        """
-        return '{0}-{1} pN/pS: {2:.2f}'.format(
-            self.gid, self.taxon if self.taxon else None, self.calc_ratio()
-        )
-
-    @property
-    def gene_id(self):
-        "Alias for gid attribute at the moment"
-        return self.gid
-
-    @property
-    def taxon_id(self):
-        "Alias for taxon attribute at the moment"
-        return self.taxon
-
-    def __str__(self):
-        return self.to_string()
-
-    def __repr__(self):
-        return self.to_string()
-
-    def add(self, other):
-        """
-        Inplace addition of another instance values. No check for them being the
-        same gene/taxon, it's up to the user to check that they can be added
-        together.
-
-        Arguments:
-            other: instance of :class:`GeneSyn` to add
-        """
-        self.exp_nonsyn += other.exp_nonsyn
-        self.exp_syn += other.exp_syn
-        self.syn += other.syn
-        self.nonsyn += other.nonsyn
-        #only adds up coverage if the attribute is at least present in the other
-        #object.
-        if other.coverage is not None:
-            if self.coverage is None:
-                self.coverage = other.coverage
-            else:
-                self.coverage += other.coverage
-
-
-def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=MIN_COV,
-                              black_list=None, min_num=MIN_NUM, rank=None,
-                              anc_map=None, rooted=True, var_map=None,
-                              feature='gene-taxon', only_rank=False,
-                              gene_map=None, taxa_filter=None):
+def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
+                              black_list=None, min_num=consts.MIN_NUM,
+                              rank=None, anc_map=None, rooted=True,
+                              var_map=None, feature='gene-taxon',
+                              only_rank=False, gene_map=None, taxa_filter=None):
     """
     Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
     with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
@@ -373,7 +152,7 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=MIN_COV,
                 multi_index.update(keys)
 
                 for key in keys:
-                    if not key in sample_dict:
+                    if not key in sample_dict[sample]:
                         sample_dict[sample][key] = GeneSyn(
                             gid=key,
                             taxon=gene_taxon,
@@ -406,7 +185,7 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=MIN_COV,
 
                     multi_index.add(key)
 
-                    if not key in sample_dict:
+                    if not key in sample_dict[sample]:
                         sample_dict[sample][key] = GeneSyn(
                             gid=key,
                             taxon=anc_taxon,
@@ -445,10 +224,11 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=MIN_COV,
     return dataframe[dataframe.count(axis=1) >= min_num]
 
 
-def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=MIN_COV,
-                              black_list=None, min_num=MIN_NUM, rank=None,
-                              anc_map=None, rooted=True, var_map=None,
-                              feature='gene-taxon', only_rank=False):
+def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=consts.MIN_COV,
+                              black_list=None, min_num=consts.MIN_NUM,
+                              rank=None, anc_map=None, rooted=True,
+                              var_map=None, feature='gene-taxon',
+                              only_rank=False):
     """
     Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
     with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
@@ -626,6 +406,7 @@ def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=MIN_COV,
 
 
 def get_values_partition(observed, profile, neutral=1.0):
+    "Return the partition to which an observed value belongs"
 
     in_c_or_d = lambda obs, prof: (obs < neutral) and (prof < neutral)
 
@@ -715,7 +496,9 @@ def build_rank_matrix(dataframe, taxonomy=None, taxon_rank=None):
             set(
                 taxonomy.get_ranked_taxon(taxon_id, taxon_rank).taxon_id
                 for taxon_id in set(dataframe.index.get_level_values('taxon'))
-                if taxonomy.get_ranked_taxon(taxon_id, taxon_rank).rank == taxon_rank
+                if taxonomy.get_ranked_taxon(
+                    taxon_id, taxon_rank
+                ).rank == taxon_rank
             )
         )
 
@@ -727,9 +510,12 @@ def build_rank_matrix(dataframe, taxonomy=None, taxon_rank=None):
     for gene_id in rank_matrix.index:
         gene_array = dataframe.loc[gene_id]
         # print gene_id, type(gene_array)
-        for taxon_id, rank in zip(gene_array.index, scipy.stats.rankdata(gene_array)):
+        iterator = zip(gene_array.index, scipy.stats.rankdata(gene_array))
+        for taxon_id, rank in iterator:
             if taxon_rank is not None:
-                taxon_id = taxonomy.get_ranked_taxon(taxon_id, taxon_rank).taxon_id
+                taxon_id = taxonomy.get_ranked_taxon(
+                    taxon_id, taxon_rank
+                ).taxon_id
                 if taxonomy[taxon_id].rank != taxon_rank:
                     continue
 
@@ -749,7 +535,10 @@ def group_rank_matrix(dataframe, gene_map):
 
     :return: :class:`pandas.DataFrame` instance
     """
-    rank_matrix = pandas.DataFrame(index=gene_map.keys(), columns=dataframe.columns)
+    rank_matrix = pandas.DataFrame(
+        index=gene_map.keys(),
+        columns=dataframe.columns
+    )
 
     for mapping_id, gene_ids in gene_map.iteritems():
         mapped_matrix = dataframe.loc[gene_ids]
@@ -815,7 +604,9 @@ def wilcoxon_pairwise_test_dataframe(dataframe, test_func=scipy.stats.ranksums,
         if len(dataframe_gene) <= 1:
             continue
 
-        for taxon_id1, taxon_id2 in itertools.combinations(dataframe_gene.index, 2):
+        iterator = itertools.combinations(dataframe_gene.index, 2)
+
+        for taxon_id1, taxon_id2 in iterator:
             pvalue = test_func(dataframe_gene.loc[taxon_id1].dropna(),
                                dataframe_gene.loc[taxon_id2].dropna())[1]
 
@@ -827,7 +618,7 @@ def wilcoxon_pairwise_test_dataframe(dataframe, test_func=scipy.stats.ranksums,
 
 
 def write_sign_genes_table(out_file, dataframe, sign_genes, taxonomy,
-                           gene_names=None, sep=','):
+                           gene_names=None):
     """
     Write a table with the list of significant genes found in a dataframe, the
     significant gene list is the result of
@@ -915,3 +706,101 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
     # for x, y in order: print y, x, ratios[y]
 
     return [x[1] for x in order]
+
+
+import copy
+
+
+def combine_sample_snps(snps_data, min_num, filters, index_type=None,
+                        gene_func=None, taxon_func=None):
+    """
+    Combine a dictionary sample->gene_index->GeneSyn into a
+    :class:`pandas.DataFrame`. The dictionary is first filtered with the
+    functions in `filters`, mapped to different taxa and genes using
+    `taxon_func` and `gene_func` respectively. The returned DataFrame is also
+    filtered for each row having at least a `min_num` of not NaN values.
+
+    .. todo::
+
+        detail usage and examples.
+
+    Arguments:
+        snps_data (dict): dictionary with the `GeneSyn` instances
+        min_num (int): the minimum number of not NaN values necessary in a row
+            to be returned
+        filters (iterable): iterable containing filter functions, a list can be
+            found in :mod:`mgkit.snps.filter`
+        index_type (str, None): if `None`, each row index for the DataFrame will
+            be a MultiIndex with `gene` and `taxon` as elements. If the equals
+            'gene', the row index will be gene based and if 'taxon' will be
+            taxon based
+        gene_func (func): a function to map a gene_id to a gene_map. See
+            :func:`.mapper.map_gene_id` for an example
+        taxon_func (func): a function to map a taxon_id to a list of IDs. See
+            :mod:`.mapper.map_taxon_id_to_rank` or
+            :mod:`.mapper.map_taxon_id_to_ancestor` for examples
+
+    Results:
+        :class:`pandas.DataFrame`: DataFrame with the pN/pS values for the input
+            SNPs.
+
+    """
+    sample_dict = dict((sample, {}) for sample in snps_data)
+    multi_index = set()
+
+    if gene_func is None:
+        gene_func = functools.partial(itertools.repeat, times=1)
+    if taxon_func is None:
+        taxon_func = functools.partial(itertools.repeat, times=1)
+
+    for sample, genes_dict in snps_data.iteritems():
+        print sample
+        for gene_syn in pipe_filters(genes_dict.itervalues(), *filters):
+
+            gene_syn.gene_id = gene_syn.gene_id.split('.')[0]
+
+            iter_func = itertools.product(
+                gene_func(gene_syn.gene_id),
+                taxon_func(gene_syn.taxon_id)
+            )
+
+            for gene_id, taxon_id in iter_func:
+
+                if index_type == 'gene':
+                    key = gene_id
+                elif index_type == 'taxon':
+                    key = taxon_id
+                else:
+                    key = (gene_id, taxon_id)
+
+                #we don't care about info about ids and so on, only syn/nonsyn
+                #and coverage, to use the calc_ratio method
+                try:
+                    sample_dict[sample][key].add(gene_syn)
+                except KeyError:
+                    sample_dict[sample][key] = copy.copy(gene_syn)
+
+                multi_index.add(key)
+
+    if isinstance(key, tuple):
+        multi_index = pandas.MultiIndex.from_tuples(
+            sorted(multi_index),
+            names=('gene', 'taxon')
+        )
+    else:
+        multi_index = pandas.Index(multi_index)
+
+    sample_dict = dict(
+        (
+            sample,
+            dict(
+                (key, gene.calc_ratio())
+                for key, gene in row_dict.iteritems()
+            )
+        )
+        for sample, row_dict in sample_dict.iteritems()
+    )
+    dataframe = pandas.DataFrame(sample_dict, index=multi_index,
+                                 columns=sorted(sample_dict.keys()))
+
+    return dataframe[dataframe.count(axis=1) >= min_num]

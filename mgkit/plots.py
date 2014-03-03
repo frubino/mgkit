@@ -691,12 +691,14 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
     for idx, tx in enumerate(plot_data['whiskers']):
         whisker = plot_data['whiskers'][idx]
         whisker.set_color(
-            data_colours[tx] if data_colours else colours['whiskers']
+            # data_colours[tx] if data_colours else colours['whiskers']
+            colours['whiskers']
         )
         plot_data['caps'][idx].set_color(colours['caps'])
         flier = plot_data['fliers'][idx]
         flier.set_color(
-            data_colours[tx] if data_colours else colours['fliers']
+            colours['whiskers']
+            # data_colours[tx] if data_colours else colours['fliers']
         )
     if fonts is not None:
         axes.set_xticklabels(
@@ -706,6 +708,8 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
             ],
             rotation=fonts['rotation'], fontsize=fonts['fontsize']
         )
+        for label in axes.get_yticklabels():
+            label.set_fontsize(fonts['fontsize'])
     else:
         axes.set_xticklabels([])
 

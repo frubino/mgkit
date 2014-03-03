@@ -3,9 +3,9 @@ SNPs filtering functions
 """
 import functools
 import itertools
-from . import consts
-from .taxon import filter_taxon_by_id_list
-from .common import FilterFails
+from .. import consts
+from ..filter.taxon import filter_taxon_by_id_list
+from ..filter.common import FilterFails
 
 
 def filter_genesyn_by_taxon_id(gene_syn, taxonomy=None, filter_list=None,
@@ -49,7 +49,8 @@ def filter_genesyn_by_taxon_id(gene_syn, taxonomy=None, filter_list=None,
     )
 
 
-def filter_genesyn_by_gene_id(gene_syn, gene_ids=None, exclude=False):
+def filter_genesyn_by_gene_id(gene_syn, gene_ids=None, exclude=False,
+                              id_func=None):
     """
     Checks if the gene_id is listed in the filter_list.
 
@@ -68,7 +69,7 @@ def filter_genesyn_by_gene_id(gene_syn, gene_ids=None, exclude=False):
     """
     if gene_ids is None:
         raise FilterFails('No gene_ids supplied')
-    return (gene_syn.gene_id in gene_ids) ^ exclude
+    return (id_func(gene_syn) in gene_ids) ^ exclude
 
 
 def filter_genesyn_by_coverage(gene_syn, min_cov=None):
@@ -94,7 +95,7 @@ def filter_genesyn_by_coverage(gene_syn, min_cov=None):
 def get_default_filters(taxonomy, **kwargs):
     """
     Retuns a list of filters that are used by default. it needs a valid taxonomy
-    and gets the default arguments from :data:`.consts.DEFAULT_SNP_FILTER`.
+    and gets the default arguments from :data:`mgkit.consts.DEFAULT_SNP_FILTER`.
     """
     filter_opts = consts.DEFAULT_SNP_FILTER.copy()
     filter_opts.update(kwargs)
@@ -120,5 +121,5 @@ def pipe_filters(iterable, *funcs):
     """
     for func in funcs:
         iterable = itertools.ifilter(func, iterable)
-    for x in iterable:
-        yield x
+    for value in iterable:
+        yield value

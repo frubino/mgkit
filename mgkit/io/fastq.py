@@ -8,7 +8,7 @@ CASAVA_HEADER_OLD = r"""(?P<machine>\w+-\w+):
         (?P<tile>\d+):
         (?P<xcoord>\d+):
         (?P<ycoord>\d+)\#
-        (?P<index>(\d|[ACTG]{6}))/
+        (?P<index>(\d|[ACTGN]{6}))/
         (?P<mate>(1|2))"""
 "Old casava header regex"
 
@@ -22,7 +22,7 @@ CASAVA_HEADER_NEW = r"""(?P<machine>[\w-]+):
         [_ ](?P<mate>\d): # underscore for data from from www.ebi.ac.uk/ena/
         (?P<filter>[YN]):
         (?P<bits>\d+):
-        (?P<index>[ACTG]+)"""
+        (?P<index>[ACTGN]+)"""
 "New casava header regex"
 
 

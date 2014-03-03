@@ -1,26 +1,25 @@
-#!/usr/bin/env python
+"""
+Filter a GFF file
+"""
 import sys
 import argparse
 import functools
 import logging
 import pickle
-import mgkit
 from mgkit.io import gff
 from mgkit import logger
 from mgkit.filter.gff import *
+from . import utils
 
 
 def set_parser():
+    "set options"
     parser = argparse.ArgumentParser(
         description='Filter GFF files',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s {0}'.format(mgkit.__VERSION__)
-    )
+    utils.add_basic_options(parser)
 
     parser.add_argument(
         '-q', '--seq-id', nargs='+', metavar='SEQID',
@@ -105,6 +104,7 @@ def set_parser():
 
 
 def set_filter_list(options):
+    "Prepare filter list"
     filter_list = []
 
     log = logging.getLogger(__name__)
@@ -119,7 +119,8 @@ def set_filter_list(options):
         )
     if options.bit_score:
         log.info(
-            "Only include annotations with bit-score greater than or equal to %f",
+            "Only include annotations with bit-score greater than or " +
+            "equal to %f",
             options.bit_score
         )
         filter_list.append(
@@ -192,8 +193,8 @@ def set_filter_list(options):
             ','.join(x.name for x in options.profile_len)
         )
         ko_len = {}
-        for d in options.profile_len:
-            ko_len.update(pickle.load(d))
+        for dictionary in options.profile_len:
+            ko_len.update(pickle.load(dictionary))
         filter_list.append(
             functools.partial(
                 filter_by_hit_length,
@@ -206,6 +207,7 @@ def set_filter_list(options):
 
 
 def main():
+    "Main function"
     options = set_parser().parse_args()
     logger.config_log()
     log = logging.getLogger(__name__)

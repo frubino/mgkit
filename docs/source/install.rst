@@ -41,7 +41,7 @@ while a user install is donw with::
 all requirements we'll be downloaded/installed.
 
 Using virtualenv
-----------------
+^^^^^^^^^^^^^^^^
 
 `virtualenv <http://www.virtualenv.org/>`_ is a system that is used to isolate a Python installation, to make sure no conflicts arise with multiple packages. It's handy if you're developing or testing an application/library, as it provides a clean environment. 
 
@@ -125,6 +125,8 @@ Either solution is fine, but if you wnat to use Xcode, you need to install the g
 The tricky package to install in MacOSX is actually `matplotlib <http://matplotlib.org>`_, with one of many solutions being posted on `a disccusion on stackoverflow <http://stackoverflow.com/questions/4092994/unable-to-install-matplotlib-on-mac-os-x>`_. In our case, installing `freetype2` and `libpng` through Homebrew it's the less painful::
 
 	$ brew install libpng freetype2
+
+There seems to be a problem with `pandas` version 0.13.1 on MacOSX, with a segmentation fault happening when using DataFrames
 
 .. note::
 

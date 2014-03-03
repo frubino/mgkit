@@ -11,33 +11,6 @@ import collections
 
 LOG = logging.getLogger(__name__)
 
-BLACK_LIST = [
-    'bos',
-    'pecora',
-    'lolium',
-    'streptophyta',
-    'oryza',
-    'fabales',
-    'poaceae',
-    'metazoa',
-    'chlorophyta'
-]
-"""
-Default taxa black list, includes all taxa names that are to be excluded from
-some analysis.
-"""
-
-BLACK_LIST_IDS = [
-    903,    # bos
-    35500,  # pecora
-    4520,   # lolium
-    35493,  # streptophyta
-    4527,   # oryza
-    72025,  # fabales
-    4479,   # poaceae
-    33208,  # metazoa
-    3041,   # chlorophyta
-]
 
 TAXON_ROOTS = (
     'ciliophora',

@@ -13,7 +13,7 @@ import logging
 import warnings
 from ..utils import sequence as seq_utils
 from ..filter.lists import aggr_filtered_list
-from ..snps import MIN_COV
+from ..consts import MIN_COV
 from .. import taxon
 from . import fasta
 import numpy
@@ -124,6 +124,9 @@ class GFFAttributesDict(dict):
 
 
 class BaseGFFDict(object):
+    """
+    Base GFF class
+    """
     _hash = None
     _var_names = (
         'seq_id', 'source', 'feat_type', 'feat_from', 'feat_to',
@@ -181,6 +184,9 @@ class BaseGFFDict(object):
         self.attributes = attributes
 
     def _parse_kwd(self, **kwd):
+        """
+        Parse keyword instead of a GFF line
+        """
         #first read the first 8 columns keys
         for var, vtype in zip(self._var_names, self._var_types):
             setattr(self, var, vtype(kwd[var]))
@@ -257,6 +263,9 @@ class BaseGFFDict(object):
 
 
 class GFFKegg(BaseGFFDict):
+    """
+    GFF with Kegg specific attributes/methods
+    """
     def __init__(self, line=None, **kwd):
         super(GFFKegg, self).__init__(line, **kwd)
         if line is None:
@@ -481,6 +490,7 @@ class GFFKegg(BaseGFFDict):
 
     @property
     def reviewed(self):
+        "Returns the the state of the profile"
         return True if self.attributes.reviewed else False
 
     @property
@@ -538,10 +548,12 @@ class GFFKegg(BaseGFFDict):
 
     @property
     def exp_syn(self):
+        "Returns the expected number of synonymous changes"
         return int(self.attributes.exp_syn)
 
     @property
     def exp_nonsyn(self):
+        "Returns the expected number of non-synonymous changes"
         return int(self.attributes.exp_nonsyn)
 
 

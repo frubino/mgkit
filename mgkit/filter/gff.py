@@ -1,9 +1,10 @@
 """
 GFF filtering
 """
+from __future__ import division
 import operator
 import itertools
-from ..utils.common import avg_len, between
+from ..utils.common import average_length, between
 
 
 def choose_by_score(ann1, ann2):
@@ -13,6 +14,7 @@ def choose_by_score(ann1, ann2):
 
 def choose_annotation(ann1, ann2, threshold, only_same_gene=False,
                       only_same_strand=True, score_func=choose_by_score):
+    "Choos one annotation, based on the score"
     #if we don't want to exclude overlaps from different strands
     if only_same_strand:
         if ann1.attributes.frame[0] != ann2.attributes.frame[0]:
@@ -30,17 +32,17 @@ def choose_annotation(ann1, ann2, threshold, only_same_gene=False,
     a1e_in_a2 = between(a1e, a2s, a2e)
     a2s_in_a1 = between(a2s, a1s, a1e)
     a2e_in_a1 = between(a2e, a1s, a1e)
-    a1_a2_avg = avg_len(a1s, a1e, a2s, a2e)
+    a1_a2_avg = average_length(a1s, a1e, a2s, a2e)
 
     #A1 included in A2 o A2 included in A1
     if (a1s_in_a2 & a1e_in_a2) | (a2s_in_a1 & a2e_in_a1):
         return score_func(ann1, ann2)
     #A1 and A2 overlap
-    elif (a1e_in_a2 & (a1s < a2s)):
+    elif a1e_in_a2 & (a1s < a2s):
         overlap = a1e - a2s + 1
         if overlap / a1_a2_avg > threshold:
             return score_func(ann1, ann2)
-    elif (a2e_in_a1 & (a2s < a1s)):
+    elif a2e_in_a1 & (a2s < a1s):
         overlap = a2e - a1s + 1
         if overlap / a1_a2_avg > threshold:
             return score_func(ann1, ann2)
@@ -71,18 +73,18 @@ def filter_overlapping(annotations, threshold, same_gene, both_strands,
 
     winners = set()
     losers = set()
-    for a, b in itertools.combinations(annotations, 2):
+    for annotation1, annotation2 in itertools.combinations(annotations, 2):
         winner, loser = choose_func(
-            a,
-            b,
+            annotation1,
+            annotation2,
             threshold,
             same_gene,
             both_strands,
             score_func=score_func
         )
         if winner is None:
-            winners.add(a)
-            winners.add(b)
+            winners.add(annotation1)
+            winners.add(annotation2)
         else:
             winners.add(winner)
             losers.add(loser)
@@ -92,42 +94,57 @@ def filter_overlapping(annotations, threshold, same_gene, both_strands,
 
 #Filters return True if annotation passes a filter and False otherwise
 def filter_by_score(threshold, annotation):
+    "Filter based on the score of the annotation"
     return True if annotation.score <= threshold else False
 
 
 def filter_by_bit_score(threshold, annotation):
-    return True if float(annotation.attributes.bit_score) >= threshold else False
+    "Filter based on the bit score of the annotation"
+    return True if float(
+        annotation.attributes.bit_score
+    ) >= threshold else False
 
 
 def filter_by_taxon(taxa, annotation):
+    "Filter based on the taxon name of the annotation"
     return True if annotation.attributes.taxon.lower() in taxa else False
 
 
 def filter_by_seq_id(seq_ids, annotation):
+    "Filter based on the sequence containing the annotation"
     return True if annotation.seq_id.lower() in seq_ids else False
 
 
 def filter_by_ko_id(ko_ids, annotation):
+    "Filter based on the KO id of the annotation"
     return True if annotation.attributes.ko.lower() in ko_ids else False
 
 
 def filter_by_ko_idx(ko_ids, annotation):
+    "Filter based on the KO id (indexed) of the annotation"
     return True if annotation.attributes.ko_idx.lower() in ko_ids else False
 
 
 def filter_by_reviewed(annotation):
+    "Filter based on the reviewed attribute of the annotation"
     return annotation.attributes.reviewed
 
 
 def filter_by_strand(strand, annotation):
+    "Filter based on the strand of the annotation"
     return True if annotation.strand == strand else False
 
 
 def filter_by_description(description, annotation):
-    return True if description in annotation.attributes.description.lower() else False
+    "Filter based on the description of the annotation"
+    if description in annotation.attributes.description.lower():
+        return True
+    else:
+        return False
 
 
 def filter_by_hit_length(ko_len, perc, annotation):
+    "Filter based on the its length and the profile length of the annotation"
     try:
         avg_len = ko_len[annotation.attributes.name]
     except KeyError:

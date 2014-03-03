@@ -5,7 +5,7 @@ Utility functions
 import warnings
 
 
-def avg_len(a1s, a1e, a2s, a2e):
+def average_length(a1s, a1e, a2s, a2e):
     """
     Given two sets of coordinates, a1 and a2, returns the average length.
 

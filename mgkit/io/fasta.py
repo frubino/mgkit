@@ -2,7 +2,6 @@
 """
 Simple fasta parser and a few utility functions
 """
-import collections
 # import gff
 import logging
 
@@ -80,30 +79,14 @@ def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
     for pos in xrange(0, len(seq), wrap):
         file_handle.write("{0}\n".format(seq[pos:pos+wrap]))
 
-
-def grep_fasta(f_in, f_out, grep_file):
-    f = open(f_in, 'r')
-    Sequence = collections.namedtuple('Sequence', "name seq")
-    LOG.info("Loading grep file %s", grep_file)
-    contigs = set([x.strip() for x in open(grep_file, 'r')])
-    LOG.info("Number of contigs in grep file %d", len(contigs))
-    seqs = [Sequence(name, seq) for name, seq in load_fasta(f)]
-    f = open(f_out, 'w')
-    count = 0
-    for name, seq in seqs:
-        if name in contigs:
-            count += 1
-            f.write(">{0}\n{1}\n".format(name, seq))
-    LOG.info("Number of grepped sequences %d", count)
-
-
 # def filter_fasta(f_in, f_out, gff_file):
 #     f = open(f_in, 'r')
 #     Sequence = collections.namedtuple('Sequence', "name seq")
 
 #     LOG.info("Loading GFF annotations %s", gff_file)
 #     contigs = set(x.seq_id for x in gff.load_gff(open(gff_file, 'r')))
-#     seqs = [Sequence(name, seq) for name, seq in load_fasta(f) if name in contigs]
+    # seqs = [Sequence(name, seq)
+    #         for name, seq in load_fasta(f) if name in contigs]
 #     f = open(f_out, 'w')
 
 #     print "Writing %d sequences to file %s" % (len(seqs), f_out)
@@ -119,11 +102,14 @@ def grep_fasta(f_in, f_out, grep_file):
 #     else:
 #         print "Loading GFF annotations", gff_file
 #         contigs = set(x.seq_id for x in gff.load_gff(open(gff_file, 'r')))
-#         seqs = [Sequence(name, seq) for name, seq in load_fasta(f) if name in contigs]
+#         seqs = [Sequence(name, seq)
+# for name, seq in load_fasta(f) if name in contigs]
 
 #     all_len = [len(x.seq) for x in seqs]
 #     avg_len = sum(all_len) / float(len(seqs))
-#     print "Number of sequences %d with an average length of %f, minimum %f, maximum %d" % (len(seqs), avg_len, min(all_len), max(all_len))
+#     print "Number of sequences %d with an average length of %f,
+    # print minimum %f, maximum %d" % (len(seqs), avg_len, min(all_len),
+    # print max(all_len))
 #     f = open(all_length, 'w')
 #     for x in all_len:
 #         f.write("{0}\n".format(x))
