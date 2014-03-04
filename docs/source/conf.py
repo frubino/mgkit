@@ -25,7 +25,20 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.viewcode', 'sphinx.ext.graphviz', 'sphinxcontrib.actdiag', 'sphinxcontrib.blockdiag', 'rst2pdf.pdfbuilder', 'sphinxcontrib.napoleon', 'sphinx.ext.mathjax']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'sphinx.ext.pngmath',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.graphviz',
+    'sphinxcontrib.actdiag',
+    'sphinxcontrib.blockdiag',
+    'sphinxcontrib.napoleon',
+    'sphinx.ext.mathjax',
+    #, 'rst2pdf.pdfbuilder'
+]
 
 # readthedocs theme
 import sphinx_rtd_theme
