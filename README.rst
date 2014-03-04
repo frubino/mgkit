@@ -5,6 +5,8 @@ The aim of this library [#]_ is to provide a series of useful modules and packag
 
 A pipeline is provided, for variation study of metagenomic samples.
 
+A discussion mailing list is available at `mgkit-users <https://groups.google.com/forum/#!forum/mgkit-users>`_.
+
 Links
 -----
 
