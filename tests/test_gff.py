@@ -1,37 +1,8 @@
 from nose.tools import *
-import os.path
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
+import misc_data
 
 from mgkit.io import gff
-from mgkit.io import fasta
-
-F_HANDLE = None
-HMMER_HANDLE = None
-AA_SEQS = None
-NUC_SEQS = None
-
-
-def setup_gff():
-    global F_HANDLE
-    F_HANDLE = open(os.path.join(base_dir, 'test.gff'), 'r')
-
-
-def setup_hmmer_parse():
-    global HMMER_HANDLE
-    global AA_SEQS
-    global NUC_SEQS
-    HMMER_HANDLE = open(os.path.join(base_dir, 'test-hmmer-dom.txt'), 'r')
-    AA_SEQS = dict(
-        fasta.load_fasta(
-            os.path.join(base_dir, 'test-seq-aa.fa')
-        )
-    )
-    NUC_SEQS = dict(
-        fasta.load_fasta(
-            os.path.join(base_dir, 'test-seq-nuc.fa')
-        )
-    )
 
 
 def test_gffattributesdict_init():
@@ -90,31 +61,33 @@ def test_gffattributesdict_to_string():
     eq_(ann1.to_string(), 'cov="3";ko_idx="test"')
 
 
-@with_setup(setup=setup_gff)
+@with_setup(setup=misc_data.setup_gff_data)
 def test_basegffdict_parse_line():
 
-    line = F_HANDLE.readline()
+    line = misc_data.GFF_FILE[0]
 
     ann = gff.BaseGFFDict(line)
 
-    eq_("KMSRIGKLPITVPAGVTVTVDENNLVTVKGPKGTLSQQVNPDITLKQEGNILTLERPTDSKPHKAMHGL",
-        ann.attributes.aa_seq)
+    eq_(
+        "KMSRIGKLPITVPAGVTVTVDENNLVTVKGPKGTLSQQVNPDITLKQEGNILTLERPTDSKPHKAMHGL",
+        ann.attributes.aa_seq
+    )
 
 
-@with_setup(setup=setup_gff)
+@with_setup(setup=misc_data.setup_gff_data)
 def test_basegffdict_parse_line2():
 
-    line = F_HANDLE.readline()
+    line = misc_data.GFF_FILE[0]
 
     ann = gff.BaseGFFDict(line)
 
     eq_(209, ann.feat_to)
 
 
-@with_setup(setup=setup_gff)
+@with_setup(setup=misc_data.setup_gff_data)
 def test_basegffdict_calc_hash():
 
-    line = F_HANDLE.readline()
+    line = misc_data.GFF_FILE[0]
 
     ann1 = gff.BaseGFFDict(line)
     ann2 = gff.BaseGFFDict(line)
@@ -122,11 +95,11 @@ def test_basegffdict_calc_hash():
     eq_(hash(ann1), hash(ann2))
 
 
-@with_setup(setup=setup_gff)
+@with_setup(setup=misc_data.setup_gff_data)
 def test_basegffdict_calc_hash2():
 
-    line1 = F_HANDLE.readline()
-    line2 = F_HANDLE.readline()
+    line1 = misc_data.GFF_FILE[0]
+    line2 = misc_data.GFF_FILE[1]
 
     ann1 = gff.BaseGFFDict(line1)
     ann2 = gff.BaseGFFDict(line2)
@@ -134,10 +107,10 @@ def test_basegffdict_calc_hash2():
     assert hash(ann1) != hash(ann2)
 
 
-@with_setup(setup=setup_gff)
+@with_setup(setup=misc_data.setup_gff_data)
 def test_basegffdict_to_string():
 
-    line = F_HANDLE.readline()
+    line = misc_data.GFF_FILE[0]
 
     ann1 = gff.BaseGFFDict(line)
     ann2 = gff.BaseGFFDict(ann1.to_string())
@@ -145,7 +118,9 @@ def test_basegffdict_to_string():
     eq_(hash(ann1), hash(ann2))
 
 
-@with_setup(setup=setup_hmmer_parse)
+@with_setup(setup=misc_data.setup_nucseq_data)
+@with_setup(setup=misc_data.setup_aaseq_data)
+@with_setup(setup=misc_data.setup_hmmer_data)
 def test_gffkegg_from_hmmer():
     checks = (
         'contig-1442648',
@@ -156,20 +131,31 @@ def test_gffkegg_from_hmmer():
         '4479',
         'poaceae'
     )
-    ann = gff.GFFKegg.from_hmmer(HMMER_HANDLE.readline(), AA_SEQS, NUC_SEQS)
+    ann = gff.GFFKegg.from_hmmer(
+        misc_data.HMMER_FILE[0], misc_data.AA_SEQS, misc_data.NUC_SEQS
+    )
 
     eq_(
-        (ann.seq_id, ann.attributes.name, ann.attributes.aa_from,
-         ann.attributes.aa_to, ann.attributes.ko, ann.attributes.taxon_id,
-         ann.attributes.taxon
-         ),
+        (
+            ann.seq_id,
+            ann.attributes.name,
+            ann.attributes.aa_from,
+            ann.attributes.aa_to,
+            ann.attributes.ko,
+            ann.attributes.taxon_id,
+            ann.attributes.taxon
+        ),
         checks
     )
 
 
-@with_setup(setup=setup_hmmer_parse)
+@with_setup(setup=misc_data.setup_nucseq_data)
+@with_setup(setup=misc_data.setup_aaseq_data)
+@with_setup(setup=misc_data.setup_hmmer_data)
 def test_gffkegg_to_gff():
-    ann = gff.GFFKegg.from_hmmer(HMMER_HANDLE.readline(), AA_SEQS, NUC_SEQS)
+    ann = gff.GFFKegg.from_hmmer(
+        misc_data.HMMER_FILE[0], misc_data.AA_SEQS, misc_data.NUC_SEQS
+    )
     ann.attributes.ko_idx = 'K00001.1'
     ann = ann.to_gtf()
 
@@ -179,15 +165,25 @@ def test_gffkegg_to_gff():
     )
 
 
+@with_setup(setup=misc_data.setup_nucseq_data)
+@with_setup(setup=misc_data.setup_aaseq_data)
+@with_setup(setup=misc_data.setup_hmmer_data)
 def test_gffkegg_get_taxon_id1():
-    ann = gff.GFFKegg.from_hmmer(HMMER_HANDLE.readline(), AA_SEQS, NUC_SEQS)
+    ann = gff.GFFKegg.from_hmmer(
+        misc_data.HMMER_FILE[0], misc_data.AA_SEQS, misc_data.NUC_SEQS
+    )
     ann.attributes.taxon_id = 12
     ann.attributes.blast_taxon_idx = 1
     eq_(ann.get_taxon_id(), 1)
 
 
+@with_setup(setup=misc_data.setup_nucseq_data)
+@with_setup(setup=misc_data.setup_aaseq_data)
+@with_setup(setup=misc_data.setup_hmmer_data)
 def test_gffkegg_get_taxon_id2():
-    ann = gff.GFFKegg.from_hmmer(HMMER_HANDLE.readline(), AA_SEQS, NUC_SEQS)
+    ann = gff.GFFKegg.from_hmmer(
+        misc_data.HMMER_FILE[0], misc_data.AA_SEQS, misc_data.NUC_SEQS
+    )
     ann.attributes.taxon_id = 12
     ann.attributes.blast_taxon_idx = 1
     eq_(ann.get_taxon_id(prefer_blast=False), 12)

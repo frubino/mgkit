@@ -2,10 +2,9 @@ from nose.tools import *
 
 from mgkit.snps.classes import GeneSyn
 
-import taxon_data
 import numpy
 
-#@with_setup(setup=taxon_data.setup_taxon_data)
+
 def test_genesyn_init1():
     gs = GeneSyn(
         gid='A',
