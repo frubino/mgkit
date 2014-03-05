@@ -40,7 +40,6 @@ setup(
     tests_require=['nose>=1.3', 'yanc'],
     extras_require={
         'R': 'rpy2>=2.3.8',
-        'SMP': 'joblib'
     },
     entry_points={
         'console_scripts': [
@@ -49,7 +48,7 @@ setup(
             'filter_gff = mgkit.workflow.filter_gff:main',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'snp_parser = mgkit.workflow.snp_parser:main',
-            'translate_seq = mgkit.workflow.nuc2aa:main [SMP]',
+            'translate_seq = mgkit.workflow.nuc2aa:main',
             'fastq_utils = mgkit.workflow.fastq_utils:main',
             'add_coverage_to_gff = mgkit.workflow.add_coverage:main',
         ],

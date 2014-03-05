@@ -7,12 +7,16 @@ import logging
 import itertools
 from .. import logger
 from ..io.fasta import load_fasta, write_fasta_sequence
-from joblib import Parallel, delayed
 from ..utils import trans_tables
 from ..utils.sequence import translate_sequence
 from . import utils
 
 LOG = logging.getLogger(__name__)
+
+try:
+    from joblib import Parallel, delayed
+except ImportError:
+    Parallel = None
 
 
 def set_parser():
@@ -110,8 +114,9 @@ def main():
 
     nuc_seqs = list(load_fasta(options.input_file))
 
-    LOG.info("Using %d processor(s)", options.processors)
-    jobs = Parallel(n_jobs=options.processors, verbose=0)
+    if Parallel is not None:
+        LOG.info("Using %d processor(s)", options.processors)
+        jobs = Parallel(n_jobs=options.processors, verbose=0)
 
     for index in xrange(0, len(nuc_seqs), options.buffer_size):
         LOG.info(
@@ -119,11 +124,17 @@ def main():
             index,
             index+options.buffer_size
         )
-        aa_seqs = translate_buff(
-            jobs,
-            nuc_seqs[index:index+options.buffer_size],
-            trans_table
-        )
+        if Parallel is None:
+            aa_seqs = [
+                translate_seq(name, seq, trans_table)
+                for name, seq in nuc_seqs[index:index+options.buffer_size]
+            ]
+        else:
+            aa_seqs = translate_buff(
+                jobs,
+                nuc_seqs[index:index+options.buffer_size],
+                trans_table
+            )
         for name, seq in itertools.chain(*aa_seqs):
             write_fasta_sequence(options.output_file, name, seq)
 
