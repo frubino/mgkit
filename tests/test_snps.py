@@ -1,8 +1,10 @@
 from nose.tools import *
 
 from mgkit.snps.classes import GeneSyn
+from mgkit.snps.funcs import combine_sample_snps
 
 import numpy
+import pandas
 
 
 def test_genesyn_init1():
@@ -291,4 +293,116 @@ def test_genesyn_pickle_load():
     eq_(
         gs.__getstate__(),
         state
+    )
+
+SNP_DATA = {
+    'sample1': {
+        'gene1': GeneSyn(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=6,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2
+        ),  # pN/pS = 1.0
+        'gene2': GeneSyn(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=3,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2
+        )  # pN/pS = 2.0
+    },
+    'sample2': {
+        'gene1': GeneSyn(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=3,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2
+        ),  # pN/pS = 1.0
+        'gene2': GeneSyn(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=6,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2
+        ),  # pN/pS = 2.0
+        'gene3': GeneSyn(
+            gene_id='gene3',
+            taxon_id=838,  # prevotella genus
+            exp_syn=3,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2
+        )  # pN/pS = 2.0
+    }
+
+}
+
+
+def test_combine_sample_min_num1():
+    #check if min_num is working
+    df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
+    eq_(
+        df.shape,
+        (3, 2)
+    )
+
+
+def test_combine_sample_snps_min_num2():
+    #check if min_num is working
+    df = combine_sample_snps(SNP_DATA, 2, [lambda x: x])
+    eq_(
+        df.shape,
+        (2, 2)
+    )
+
+
+def test_combine_sample_snps_values():
+    #check if values are correct is working
+    df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
+    eq_(
+        (df.min().min(), df.max().max()),
+        (0.5, 1.)
+    )
+
+
+def test_combine_sample_snps_index1():
+    #check index_type
+    df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
+    eq_(
+        df.index.tolist(),
+        [('gene1', 839), ('gene2', 838), ('gene3', 838)]
+    )
+
+
+def test_combine_sample_snps_index2():
+    #check index_type
+    df = combine_sample_snps(
+        SNP_DATA,
+        1,
+        [lambda x: x],
+        index_type='gene'
+    )
+    eq_(
+        df.index.tolist(),
+        ['gene1', 'gene2', 'gene3']
+    )
+
+
+def test_combine_sample_snps_index3():
+    #check index_type
+    df = combine_sample_snps(
+        SNP_DATA,
+        1,
+        [lambda x: x],
+        index_type='taxon'
+    )
+    eq_(
+        df.index.tolist(),
+        [838, 839]
     )
