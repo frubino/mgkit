@@ -23,6 +23,7 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
                               only_rank=False, gene_map=None, taxa_filter=None):
     """
     .. deprecated: 0.1.11
+        use :func:`combine_sample_snps` instead
 
     Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
     with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
