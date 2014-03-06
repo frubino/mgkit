@@ -109,18 +109,6 @@ filtering.
 Examples
 """"""""
 
-Python
-++++++
-
-An example of code (in Python) to generate batches for aligning all profiles is
-below, the only mandatory argument passed to the script is the directory where 
-all the files are stored, the second is the number of batch jobs you want to
-divide the whole process:
-
-.. literalinclude:: examples/generate_alg_batch.py
-
-The `PARAMS` variable contain the string used for the alignments.
-
 Bash
 ++++
 

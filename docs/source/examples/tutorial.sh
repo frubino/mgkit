@@ -115,6 +115,9 @@ unset SAMPLES
 #convert to gtf
 python -c "import mgkit;mgkit.logger.config_log(); import mgkit.io.gff; mgkit.io.gff.convert_gff_to_gtf('assembly.filt.gff', 'assembly.filt.gtf')"
 
+#Download SNPdat
+https://snpdat.googlecode.com/files/SNPdat_v1.0.5.pl
+
 #SNPdat
 for file in *SR*.vcf; do 
 	perl SNPdat_v1.0.5.pl -i $file -g assembly.filt.gtf \
