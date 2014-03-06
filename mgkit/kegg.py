@@ -2,7 +2,6 @@
 Module containing classes and functions to access Kegg data
 """
 
-import warnings
 import logging
 import pickle
 import re
@@ -606,18 +605,6 @@ class KeggData(object):
             yield x
 
 
-def link_ids(id_map, black_list=None):
-    """
-    .. deprecated:: 0.1
-
-        Function deprecated, use :func:`dict_utils.link_ids`
-
-    """
-    warnings.warn("Function deprecated, use dict_utils.link_ids",
-                  DeprecationWarning)
-    return dict_utils.link_ids(id_map, black_list=black_list)
-
-
 def link_ids_flat(id_map, black_list=None):
     """
     .. todo::
@@ -642,21 +629,6 @@ def link_ids_flat(id_map, black_list=None):
                     id_to_id.add((s_id, e_id, x))
                     break
     return id_to_id
-
-
-def reverse_mapping(map_dict):
-    """
-    Given a dictionary in the form: key->[v1, v2, .., vN], returns a dictionary
-    in the form: v->[key1, key2, .., keyN]
-
-    .. deprecated:: 0.1
-
-        Function deprecated, use :func:`dict_utils.reverse_mapping`
-
-    """
-    warnings.warn("Function deprecated, use dict_utils.reverse_mapping",
-                  DeprecationWarning)
-    return dict_utils.reverse_mapping(map_dict)
 
 
 class KeggMapperBase(object):
@@ -706,7 +678,7 @@ class KeggMapperBase(object):
         """
         Returns a mapping->KOs dictionary (a reverse mapping to get_ko_map)
         """
-        return reverse_mapping(self.get_ko_map())
+        return dict_utils.reverse_mapping(self.get_ko_map())
 
     def get_id_names(self):
         """
