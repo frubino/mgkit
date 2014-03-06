@@ -22,6 +22,8 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
                               var_map=None, feature='gene-taxon',
                               only_rank=False, gene_map=None, taxa_filter=None):
     """
+    .. deprecated: 0.1.11
+
     Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
     with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
     row index and an :class:`pandas.Index` with the sample names as column
@@ -186,187 +188,6 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
                     multi_index.add(key)
 
                     if not key in sample_dict[sample]:
-                        sample_dict[sample][key] = GeneSyn(
-                            gid=key,
-                            taxon=anc_taxon,
-                            taxon_root=root_taxon
-                        )
-
-                    sample_dict[sample][key].add(gene)
-
-    if feature == 'gene-taxon':
-        multi_index = pandas.MultiIndex.from_tuples(
-            sorted(multi_index),
-            names=('gene', 'root', 'taxon') if rooted else ('gene', 'taxon')
-        )
-    else:
-        multi_index = pandas.Index(multi_index)
-
-    LOG.debug("Calculating pN/pS for all matrix elements")
-
-    sample_dict = dict(
-        (
-            sample,
-            dict(
-                (idx, gene.calc_ratio())
-                for idx, gene in row_dict.iteritems()
-            )
-        )
-        for sample, row_dict in sample_dict.iteritems()
-    )
-
-    LOG.debug("Skipped genes for coverage (%d): %.2f%%", min_cov,
-              float(skipped) / (skipped + added) * 100)
-
-    dataframe = pandas.DataFrame(sample_dict, index=multi_index,
-                                 columns=sorted(sample_dict.keys()))
-
-    return dataframe[dataframe.count(axis=1) >= min_num]
-
-
-def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=consts.MIN_COV,
-                              black_list=None, min_num=consts.MIN_NUM,
-                              rank=None, anc_map=None, rooted=True,
-                              var_map=None, feature='gene-taxon',
-                              only_rank=False):
-    """
-    Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
-    with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
-    row index and an :class:`pandas.Index` with the sample names as column
-    index.
-
-    :param dict count_dict: dictionary containing :class:`GeneSyn` instances of
-        KO_IDX sample->ko_idx->:class:`GeneSyn`
-    :param dict tmap: taxon root map obtained from :func:`taxon.group_by_root`
-        with only_names=True. If None the root won't be added to the index
-    :param int min_cov: minimum coverage allowed for inclusion of a gene
-    :param list black_list: black list of taxa to exclude; defaults to
-        :data:`taxon.BLACK_LIST`
-    :param int min_num: minimum number of replicates allowed for inclusion in
-        the resulting matrix
-    :param str rank: taxon level that represent the maximum specifity of the
-        dataset
-    :param bool rooted: if True, the index will include the root taxon of the
-        gene-taxon tuple (as a string)
-    :param dict anc_map: dictionary with the ancestry map to match a profile
-        based taxonomy
-    :param dict var_map: dictionary instance, used only if anc_map is not None,
-        to store the ko_idx that belong to a profile
-    :param str feature: one of 'gene', 'taxon', 'gene-taxon', works in the same
-        way as combine_genes_by_feature
-    :param bool only_rank: only active if rank is specified. If True only the
-        defined rank is included in the results. Any rank above is taken out.
-
-    .. note::
-
-        if anc_map is defined, the number of rows in the resulting DataFrame
-        may not correspond to the actual number of profiles, because the
-        DataFrame building doesn't take in account the genes that are in the
-        profiles (the guide is just the taxa), anc_map is returned by
-        :func:`taxon.get_ancestor_map`
-
-    :return DataFrame: returns a :class:`pandas.DataFrame`
-    """
-    LOG.info("Combining gene variants into DataFrame")
-    LOG.info("Feature selected: %s", feature)
-    if black_list is None:
-        black_list = BLACK_LIST
-    LOG.info("Black listed taxa: %s", ','.join(black_list))
-
-    if anc_map is not None:
-        LOG.info("Using ancestry map")
-    if not rooted:
-        LOG.info("Using index with no root")
-
-    sample_dict = dict((sample, {}) for sample in count_dict)
-    multi_index = set()
-
-    skipped = 0
-    added = 0
-
-    for sample, genes_dict in count_dict.iteritems():
-        LOG.debug("Sample %s loop", sample)
-        for gene in genes_dict.itervalues():
-
-            gene_taxon = gene.taxon
-
-            #skips genes belonging to taxa black listed
-            if any(True for blisted in black_list
-                   if blisted in taxonomy[gene_taxon].lineage or
-                   taxonomy[gene_taxon].s_name == blisted):
-                # print "Skipped", taxonomy[gene_taxon].s_name
-                continue
-
-            if rooted:
-                root_taxon = taxonomy.get_taxon_root(gene.taxon).s_name
-            else:
-                root_taxon = None
-
-            #skips genes that have low coverage
-            if gene.coverage < min_cov:
-                skipped += 1
-                continue
-            added += 1
-
-            gene_id = gene.gid.split('.')[0]
-
-            if rank is not None:
-                gene_taxon = taxonomy.get_ranked_taxon(
-                    gene_taxon,
-                    rank
-                ).taxon_id
-                if only_rank:
-                    if taxonomy[gene_taxon].rank != rank:
-                        continue
-
-            if anc_map is None:
-
-                if feature == 'gene-taxon':
-                    if rooted:
-                        key = (gene_id, root_taxon, gene_taxon)
-                    else:
-                        key = (gene_id, gene_taxon)
-                elif feature == 'taxon':
-                    key = gene_taxon
-                elif feature == 'gene':
-                    key = gene_id
-
-                multi_index.add(key)
-
-                if not key in sample_dict:
-                    sample_dict[sample][key] = GeneSyn(
-                        gid=key,
-                        taxon=gene_taxon,
-                        taxon_root=root_taxon
-                    )
-
-                sample_dict[sample][key].add(gene)
-
-            else:
-                #when the rows that have at least min_num of values are dropped
-                #the index is unchanged. So some can be still in the anc_map,
-                #which is based off the index.
-                if gene_taxon not in anc_map:
-                    continue
-
-                for anc_taxon in anc_map[gene_taxon]:
-
-                    if var_map is not None:
-                        var_key = (gene_id, anc_taxon)
-                        try:
-                            var_map[var_key].add(gene.gid)
-                        except KeyError:
-                            var_map[var_key] = set()
-                            var_map[var_key].add(gene.gid)
-
-                    if rooted:
-                        key = (gene_id, root_taxon, anc_taxon)
-                    else:
-                        key = (gene_id, anc_taxon)
-
-                    multi_index.add(key)
-
-                    if not key in sample_dict:
                         sample_dict[sample][key] = GeneSyn(
                             gid=key,
                             taxon=anc_taxon,
@@ -790,11 +611,14 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
     else:
         multi_index = pandas.Index(multi_index)
 
+    #we already satisfied a minimum coverage filter or at least if doesn't
+    #matter in the calculation anymore, using haplotypes=True, the special
+    #case where syn=nonsyn=0 will result in a 0 as pN/pS for a GeneSyn instance
     sample_dict = dict(
         (
             sample,
             dict(
-                (key, gene.calc_ratio())
+                (key, gene.calc_ratio(haplotypes=True))
                 for key, gene in row_dict.iteritems()
             )
         )
