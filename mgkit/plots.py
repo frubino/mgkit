@@ -60,18 +60,6 @@ def lineplot_values_on_second_axis(gene_num, axis, colour='c', ylabel=''):
     return ax2
 
 
-@utils.common.deprecated
-def get_taxon_colors(taxa, tmap, func=lambda x: x):
-    LOG.info("Assigning taxa colors")
-    tx_colors = {}
-
-    for tx in taxa:
-        tx_colors[tx] = TAXON_COLORS[taxon.get_taxon_root(func(tx), tmap)]
-
-    return tx_colors
-
-
-@utils.common.deprecated
 def boxplot_snp(ratios, plot_order, taxon_colours=None, labelfont='small',
                 ylim=None, label_map=None, file_name=None, fig_size=None,
                 title=None, log_scale=False, fig_aspect=None,
@@ -534,7 +522,6 @@ def scatter_gene_values(gene_dict, xlabel="Profile pN/pS", ylabel="Rumen pN/pS",
     return ax
 
 
-@utils.common.deprecated
 def boxplot_snp_dataframe(ratios, plot_order, taxon_colours=None,
                           labelfont='small', ylim=None, label_map=None,
                           file_name=None, fig_size=None,
