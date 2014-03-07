@@ -8,6 +8,7 @@ import functools
 import pandas
 import scipy.stats
 import csv
+import copy
 from ..consts import BLACK_LIST
 from .classes import GeneSyn
 from .. import consts
@@ -17,10 +18,10 @@ LOG = logging.getLogger(__name__)
 
 
 def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
-                              black_list=None, min_num=consts.MIN_NUM,
-                              rank=None, anc_map=None, rooted=True,
-                              var_map=None, feature='gene-taxon',
-                              only_rank=False, gene_map=None, taxa_filter=None):
+                                   black_list=None, min_num=consts.MIN_NUM,
+                                   rank=None, anc_map=None, rooted=True,
+                                   var_map=None, feature='gene-taxon',
+                                   only_rank=False, gene_map=None, taxa_filter=None):
     """
     .. deprecated:: 0.1.11
         use :func:`combine_sample_snps` instead
@@ -392,52 +393,6 @@ def write_pnps_grouped_by_pathway(data, gene_list, taxa_list=None):
     return part_data
 
 
-def wilcoxon_pairwise_test_dataframe(dataframe, test_func=scipy.stats.ranksums,
-                                     threshold=0.01):
-    """
-    Make a wilcoxon pairwise test on a dataframe whose rows are a MultiIndex
-    object, in the order gene, taxon.
-
-    For each gene, each taxon variant is tested against each other, in a
-    pairwise manner. If at least one of the tests is significant, the gene is
-    reported as significantly different.
-
-    :dataframe: dataframe instance
-    :test_func: function used to test, defaults to :func:`scipy.stats.ranksums`
-    :threshold: threshold for null hypotesis discard.
-
-    .. note::
-
-        The function access the row using the
-        'loc' attribute on the object, so the order must be correct. No checks
-        are made at the moment on the object for the consistence of it.
-    """
-    LOG.info("Performing Wilcoxon ranksums test pairwise")
-
-    genes = set(dataframe.index.get_level_values('gene'))
-    LOG.info("Number of genes to be tested: %d", len(genes))
-
-    sign_genes = []
-
-    for gene in genes:
-        dataframe_gene = dataframe.loc[gene]
-
-        if len(dataframe_gene) <= 1:
-            continue
-
-        iterator = itertools.combinations(dataframe_gene.index, 2)
-
-        for taxon_id1, taxon_id2 in iterator:
-            pvalue = test_func(dataframe_gene.loc[taxon_id1].dropna(),
-                               dataframe_gene.loc[taxon_id2].dropna())[1]
-
-            if pvalue < threshold:
-                sign_genes.append(gene)
-                break
-
-    return sign_genes
-
-
 def write_sign_genes_table(out_file, dataframe, sign_genes, taxonomy,
                            gene_names=None):
     """
@@ -529,9 +484,6 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
     return [x[1] for x in order]
 
 
-import copy
-
-
 def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                         gene_func=None, taxon_func=None):
     """
@@ -561,9 +513,9 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
             :mod:`.mapper.map_taxon_id_to_rank` or
             :mod:`.mapper.map_taxon_id_to_ancestor` for examples
 
-    Results:
-        :class:`pandas.DataFrame`: DataFrame with the pN/pS values for the input
-            SNPs, with the columns being the samples.
+    Returns:
+        DataFrame: :class:`pandas.DataFrame` with the pN/pS values for the input
+        SNPs, with the columns being the samples.
 
     """
     sample_dict = dict((sample, {}) for sample in snps_data)
@@ -628,3 +580,46 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                                  columns=sorted(sample_dict.keys()))
 
     return dataframe[dataframe.count(axis=1) >= min_num]
+
+
+def significance_test(dataframe, taxon_id1, taxon_id2,
+                      test_func=scipy.stats.ks_2samp):
+    """
+    Perform a statistical test on each gene distribution in two different taxa.
+
+    For each gene common to the two taxa, the distribution of values in all
+    samples (columns) between the two specified taxa is tested.
+
+    Arguments:
+        dataframe: :class:`pandas.DataFrame` instance
+        taxon_id1: the first taxon ID
+        taxon_id2: the second taxon ID
+        test_func: function used to test,
+          defaults to :func:`scipy.stats.ks_2samp`
+
+    Returns:
+        pandas.Series: with all pvalues from the tests
+    """
+    LOG.info("Performing %s test", test_func.__name__)
+
+    gene_ids = set(
+        dataframe.select(
+            lambda x: x[1] == taxon_id1
+        ).index.get_level_values('gene') &
+        dataframe.select(
+            lambda x: x[1] == taxon_id2
+        ).index.get_level_values('gene')
+    )
+    LOG.info("Number of genes to be tested: %d", len(gene_ids))
+
+    sign_genes = {}
+
+    for gene_id in gene_ids:
+        tx1_vals = dataframe.loc[gene_id].loc[taxon_id1].dropna()
+        tx2_vals = dataframe.loc[gene_id].loc[taxon_id2].dropna()
+
+        pvalue = test_func(tx1_vals, tx2_vals)[1]
+
+        sign_genes[gene_id] = pvalue
+
+    return pandas.Series(sign_genes)

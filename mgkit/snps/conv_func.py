@@ -29,7 +29,7 @@ def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order'):
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
-            is 'taxon'
+        is 'taxon'
     """
     taxon_func = functools.partial(
         mgkit.snps.mapper.map_taxon_id_to_rank,
