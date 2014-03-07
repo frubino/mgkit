@@ -731,4 +731,4 @@ def map_taxon_to_colours(taxa, taxonomy, default_colour='#ffff33'):
     return tx_colours
 
 
-get_taxon_colors_new = utils.common.deprecated(map_taxon_to_colours)
+get_taxon_colors_new = map_taxon_to_colours

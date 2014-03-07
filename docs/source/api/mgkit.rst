@@ -10,7 +10,6 @@ Subpackages
     mgkit.io
     mgkit.mappings
     mgkit.net
-    mgkit.report
     mgkit.snps
     mgkit.utils
     mgkit.workflow

@@ -4,7 +4,6 @@ from mgkit.snps.classes import GeneSyn
 from mgkit.snps.funcs import combine_sample_snps
 
 import numpy
-import pandas
 
 
 def test_genesyn_init1():

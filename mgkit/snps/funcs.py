@@ -563,7 +563,7 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
 
     Results:
         :class:`pandas.DataFrame`: DataFrame with the pN/pS values for the input
-            SNPs.
+            SNPs, with the columns being the samples.
 
     """
     sample_dict = dict((sample, {}) for sample in snps_data)
