@@ -8,7 +8,8 @@ import mgkit.snps.filter
 import mgkit.snps.mapper
 
 
-def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order'):
+def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order',
+                       index_type='taxon'):
     """
     Returns a :class:`~pandas.DataFrame` with the pN/pS of the given
     SNPs data, mapping all taxa to the specified rank. Higher taxa won't
@@ -26,6 +27,7 @@ def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order'):
             is found
         rank (str): taxon rank to map. Valid ranks are found in
             :data:`mgkit.taxon.TAXON_RANKS`
+        index_type (str, None): type of index to return
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
@@ -45,13 +47,14 @@ def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order'):
         filters,
         taxon_func=taxon_func,
         gene_func=None,
-        index_type='taxon'
+        index_type=index_type
     )
 
     return dataframe
 
 
-def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3):
+def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3,
+                           index_type='gene'):
     """
     Returns a :class:`~pandas.DataFrame` with the pN/pS of the given
     SNPs data, mapping all taxa to the gene map.
@@ -67,6 +70,7 @@ def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3):
             is found
         gene_map (dict): dictionary of mapping for the gene_ids in in SNPs
             data
+        index_type (str, None): type of index to return
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
@@ -85,7 +89,7 @@ def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3):
         filters,
         taxon_func=None,
         gene_func=gene_func,
-        index_type='gene'
+        index_type=index_type
     )
 
     return dataframe
