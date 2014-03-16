@@ -25,6 +25,17 @@ CASAVA_HEADER_NEW = r"""(?P<machine>[\w-]+):
         (?P<index>[ACTGN]+)"""
 "New casava header regex"
 
+CASAVA_KHMER = r"""
+    (?P<machine>[\w-]+):
+    (?P<runid>\d+):
+    (?P<cellid>\w+):
+    (?P<lane>\d):
+    (?P<tile>\d+):
+    (?P<xcoord>\d+):
+    (?P<ycoord>\d+)
+    /(?P<mate>\d)
+"""
+
 
 def check_fastq_type(qualities):
     """
@@ -154,4 +165,6 @@ def choose_header_type(seq_id):
         return re.compile(CASAVA_HEADER_OLD, re.X)
     if re.search(CASAVA_HEADER_NEW, seq_id, re.X) is not None:
         return re.compile(CASAVA_HEADER_NEW, re.X)
+    if re.search(CASAVA_KHMER, seq_id, re.X) is not None:
+        return re.compile(CASAVA_KHMER, re.X)
     return None
