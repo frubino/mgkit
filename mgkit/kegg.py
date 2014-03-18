@@ -296,6 +296,25 @@ class KeggClientRest(object):
         #leave out the last \n
         return data[:-1]
 
+    def get_names(self, k_type, strip=True):
+        """
+        Returns a dictionary kegg_id->description for the specified kegg module.
+
+        If strip=True the id will stripped of the module abbreviation (e.g.
+        md:M00002->M00002)
+        """
+        data = self.list_ids(k_type)
+
+        names = {}
+
+        for line in data.splitlines():
+            kegg_id, name = line.split('\t')
+            if strip:
+                kegg_id = kegg_id.split(':')[1]
+            names[kegg_id] = name
+
+        return names
+
     def get_entry(self, k_id, option=None):
         """
         The method abstract the use of the 'get' operation in the Kegg API
@@ -411,6 +430,22 @@ class KeggClientRest(object):
             description = description.split(';')[0]
             rn_desc[rn_id] = description
         return rn_desc
+
+    def get_pathway_links(self, pathway):
+        """
+        Returns a dictionary with the mappings KO->compounds for a specific
+        Pathway or module
+        """
+        compounds = self.link_ids('cpd', pathway)
+        compounds = set(compounds[pathway])
+        kos = self.link_ids('ko', pathway)
+        kos = set(kos[pathway])
+        cp_rn = self.link_ids('ec', list(compounds))
+        ko_rn = self.link_ids('ec', list(kos))
+        cp_rn_rev = dict_utils.reverse_mapping(cp_rn)
+        ko_cp = dict_utils.combine_dict(ko_rn, cp_rn_rev)
+
+        return ko_cp
 
 
 class KeggData(object):
@@ -875,7 +910,7 @@ BLACK_LIST = [
     'ko04066',  # HIF-1 signaling pathway
     'ko04064',  # NF-kappa B signaling pathway
     'ko05323',  # Rheumatoid arthritis
-    'ko00140'  # Steroid hormone biosynthesis
+    'ko00140',  # Steroid hormone biosynthesis
 ]
 
 
@@ -979,3 +1014,49 @@ def download_data(fname='kegg.pickle', contact=None):
                 rn.cp_out[cp_id] = cp
 
     kdata.save_data(fname)
+
+
+class KeggModule(object):
+    entry = ''
+    name = ''
+    classes = None
+    compounds = None
+
+    # orthologs = None
+    # reacions = None
+
+    def __init__(self, entry=None):
+        if entry is None:
+            return
+        self.parse_entry(entry)
+
+    def parse_entry(self, entry):
+        entryd = {}
+        curr_field = ''
+        for line in entry.splitlines():
+            #print line
+            if line.startswith(' '):
+                entryd[curr_field].append(line.strip())
+            elif line.startswith('///'):
+                continue
+            else:
+                curr_field = line.split(' ')[0]
+                entryd[curr_field] = []
+                entryd[curr_field].append(line.replace(curr_field, '').strip())
+
+        self.entry = re.search(r"(M\d{5})\s+.+", entryd['ENTRY'][0]).group(1)
+        self.name = entryd['NAME'][0]
+
+        self.classes = entryd['CLASS'][0].split('; ')
+        self.compounds = [
+            re.search(r"(C\d{5})\s+.+", line).group(1)
+            for line in entryd['COMPOUND']
+        ]
+
+    @property
+    def first_cp(self):
+        return self.compounds[0]
+
+    @property
+    def last_cp(self):
+        return self.compounds[-1]
