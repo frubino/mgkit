@@ -1,7 +1,7 @@
 from nose.tools import *
 
 from mgkit.snps.classes import GeneSyn
-from mgkit.snps.funcs import combine_sample_snps
+from mgkit.snps.funcs import combine_sample_snps, flat_sample_snps
 
 import numpy
 
@@ -464,6 +464,73 @@ SNP_DATA = {
     }
 
 }
+
+
+SNP_DATA2 = {
+    'sample1': {
+        'gene1': GeneSyn(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=6,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2,
+            coverage=4
+        ),  # pN/pS = 1.0
+        'gene2': GeneSyn(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=3,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2,
+            coverage=4
+        )  # pN/pS = 2.0
+    },
+    'sample2': {
+        'gene1': GeneSyn(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=3,
+            exp_nonsyn=4,
+            syn=4,
+            nonsyn=2,
+            coverage=4
+        ),  # pN/pS = 1.0
+        'gene2': GeneSyn(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=6,
+            exp_nonsyn=4,
+            syn=5,
+            nonsyn=2,
+            coverage=3
+        )  # pN/pS = 2.0
+    }
+
+}
+
+
+def test_flat_sample_snps1():
+    data = flat_sample_snps(SNP_DATA2, 4)
+    eq_(
+        (
+            data['all_samples']['gene1'].syn,
+            data['all_samples']['gene2'].syn
+        ),
+        (7, 3)
+    )
+
+
+def test_flat_sample_snps2():
+    data = flat_sample_snps(SNP_DATA2, 3)
+    eq_(
+        (
+            data['all_samples']['gene1'].syn,
+            data['all_samples']['gene2'].syn
+        ),
+        (7, 8)
+    )
 
 
 def test_combine_sample_min_num1():

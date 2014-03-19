@@ -74,7 +74,7 @@ def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3,
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
-            is 'gene'
+        is 'gene'
     """
     gene_func = functools.partial(
         mgkit.snps.mapper.map_gene_id,
