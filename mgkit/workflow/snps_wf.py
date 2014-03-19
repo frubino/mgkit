@@ -7,7 +7,7 @@ import logging
 import numpy
 # from ..unused.snps_old import combine_genes_by_feature, order_ratios
 from ..mappings.utils import count_genes_in_mapping
-from ..plots import boxplot_snp, barchart_categories
+# from ..plots import boxplot_snp, barchart_categories
 from ..utils.dictionary import split_dictionary_by_value, reverse_mapping
 
 LOG = logging.getLogger(__name__)

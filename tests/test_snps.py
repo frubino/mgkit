@@ -1,7 +1,7 @@
 from nose.tools import *
 
 from mgkit.snps.classes import GeneSyn
-from mgkit.snps.funcs import combine_sample_snps
+from mgkit.snps.funcs import combine_sample_snps, flat_sample_snps
 
 import numpy
 
@@ -75,6 +75,129 @@ def test_genesyn_calc_ratio3a():
     eq_(
         gs.calc_ratio(min_cov=4),
         0.0
+    )
+
+
+def test_genesyn_add1():
+    #checks if the conserved gene_id and taxon_id is from the first instance
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=0,
+        exp_syn=4,
+        nonsyn=0,
+        exp_nonsyn=6
+    )
+    gs2 = GeneSyn(
+        syn=0,
+        exp_syn=4,
+        nonsyn=0,
+        exp_nonsyn=6,
+        coverage=4
+    )
+    gs1.add(gs2)
+    eq_(
+        (gs1.gene_id, gs1.taxon_id),
+        ('A', 1)
+    )
+
+
+def test_genesyn_add2():
+    #checks if the values (syn, nonsyn, exp_syn, exp_nonsyn) are added
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=3,
+        exp_syn=4,
+        nonsyn=1,
+        exp_nonsyn=6
+    )
+    gs2 = GeneSyn(
+        syn=1,
+        exp_syn=3,
+        nonsyn=2,
+        exp_nonsyn=5,
+        coverage=4
+    )
+    gs1.add(gs2)
+    eq_(
+        (gs1.exp_syn, gs1.exp_nonsyn, gs1.syn, gs1.nonsyn),
+        (7, 11, 4, 3)
+    )
+
+
+def test_genesyn_add3():
+    #checks if the values if coverage is correctly added
+    #coverage in gs2 is not None, in gs1 is None
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=3,
+        exp_syn=4,
+        nonsyn=1,
+        exp_nonsyn=6
+    )
+    gs2 = GeneSyn(
+        syn=1,
+        exp_syn=3,
+        nonsyn=2,
+        exp_nonsyn=5,
+        coverage=5
+    )
+    gs1.add(gs2)
+    eq_(
+        gs1.coverage,
+        5
+    )
+
+
+def test_genesyn_add4():
+    #checks if the values if coverage is correctly added
+    #coverage in gs2 is not None, in gs1 is not None
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=3,
+        exp_syn=4,
+        nonsyn=1,
+        exp_nonsyn=6,
+        coverage=2
+    )
+    gs2 = GeneSyn(
+        syn=1,
+        exp_syn=3,
+        nonsyn=2,
+        exp_nonsyn=5,
+        coverage=5
+    )
+    gs1.add(gs2)
+    eq_(
+        gs1.coverage,
+        7
+    )
+
+
+def test_genesyn_add5():
+    #checks if the values if coverage is correctly added
+    #coverage in gs2 is None, in gs1 is None
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=3,
+        exp_syn=4,
+        nonsyn=1,
+        exp_nonsyn=6,
+    )
+    gs2 = GeneSyn(
+        syn=1,
+        exp_syn=3,
+        nonsyn=2,
+        exp_nonsyn=5,
+    )
+    gs1.add(gs2)
+    eq_(
+        gs1.coverage,
+        None
     )
 
 
@@ -341,6 +464,73 @@ SNP_DATA = {
     }
 
 }
+
+
+SNP_DATA2 = {
+    'sample1': {
+        'gene1': GeneSyn(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=6,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2,
+            coverage=4
+        ),  # pN/pS = 1.0
+        'gene2': GeneSyn(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=3,
+            exp_nonsyn=4,
+            syn=3,
+            nonsyn=2,
+            coverage=4
+        )  # pN/pS = 2.0
+    },
+    'sample2': {
+        'gene1': GeneSyn(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=3,
+            exp_nonsyn=4,
+            syn=4,
+            nonsyn=2,
+            coverage=4
+        ),  # pN/pS = 1.0
+        'gene2': GeneSyn(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=6,
+            exp_nonsyn=4,
+            syn=5,
+            nonsyn=2,
+            coverage=3
+        )  # pN/pS = 2.0
+    }
+
+}
+
+
+def test_flat_sample_snps1():
+    data = flat_sample_snps(SNP_DATA2, 4)
+    eq_(
+        (
+            data['all_samples']['gene1'].syn,
+            data['all_samples']['gene2'].syn
+        ),
+        (7, 3)
+    )
+
+
+def test_flat_sample_snps2():
+    data = flat_sample_snps(SNP_DATA2, 3)
+    eq_(
+        (
+            data['all_samples']['gene1'].syn,
+            data['all_samples']['gene2'].syn
+        ),
+        (7, 8)
+    )
 
 
 def test_combine_sample_min_num1():
