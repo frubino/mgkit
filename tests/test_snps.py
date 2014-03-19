@@ -78,6 +78,129 @@ def test_genesyn_calc_ratio3a():
     )
 
 
+def test_genesyn_add1():
+    #checks if the conserved gene_id and taxon_id is from the first instance
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=0,
+        exp_syn=4,
+        nonsyn=0,
+        exp_nonsyn=6
+    )
+    gs2 = GeneSyn(
+        syn=0,
+        exp_syn=4,
+        nonsyn=0,
+        exp_nonsyn=6,
+        coverage=4
+    )
+    gs1.add(gs2)
+    eq_(
+        (gs1.gene_id, gs1.taxon_id),
+        ('A', 1)
+    )
+
+
+def test_genesyn_add2():
+    #checks if the values (syn, nonsyn, exp_syn, exp_nonsyn) are added
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=3,
+        exp_syn=4,
+        nonsyn=1,
+        exp_nonsyn=6
+    )
+    gs2 = GeneSyn(
+        syn=1,
+        exp_syn=3,
+        nonsyn=2,
+        exp_nonsyn=5,
+        coverage=4
+    )
+    gs1.add(gs2)
+    eq_(
+        (gs1.exp_syn, gs1.exp_nonsyn, gs1.syn, gs1.nonsyn),
+        (7, 11, 4, 3)
+    )
+
+
+def test_genesyn_add3():
+    #checks if the values if coverage is correctly added
+    #coverage in gs2 is not None, in gs1 is None
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=3,
+        exp_syn=4,
+        nonsyn=1,
+        exp_nonsyn=6
+    )
+    gs2 = GeneSyn(
+        syn=1,
+        exp_syn=3,
+        nonsyn=2,
+        exp_nonsyn=5,
+        coverage=5
+    )
+    gs1.add(gs2)
+    eq_(
+        gs1.coverage,
+        5
+    )
+
+
+def test_genesyn_add4():
+    #checks if the values if coverage is correctly added
+    #coverage in gs2 is not None, in gs1 is not None
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=3,
+        exp_syn=4,
+        nonsyn=1,
+        exp_nonsyn=6,
+        coverage=2
+    )
+    gs2 = GeneSyn(
+        syn=1,
+        exp_syn=3,
+        nonsyn=2,
+        exp_nonsyn=5,
+        coverage=5
+    )
+    gs1.add(gs2)
+    eq_(
+        gs1.coverage,
+        7
+    )
+
+
+def test_genesyn_add5():
+    #checks if the values if coverage is correctly added
+    #coverage in gs2 is None, in gs1 is None
+    gs1 = GeneSyn(
+        gene_id='A',
+        taxon_id=1,
+        syn=3,
+        exp_syn=4,
+        nonsyn=1,
+        exp_nonsyn=6,
+    )
+    gs2 = GeneSyn(
+        syn=1,
+        exp_syn=3,
+        nonsyn=2,
+        exp_nonsyn=5,
+    )
+    gs1.add(gs2)
+    eq_(
+        gs1.coverage,
+        None
+    )
+
+
 def test_genesyn_calc_ratio3b():
     #syn = nonsyn = 0
     #coverage is None
