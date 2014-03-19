@@ -623,3 +623,37 @@ def significance_test(dataframe, taxon_id1, taxon_id2,
         sign_genes[gene_id] = pvalue
 
     return pandas.Series(sign_genes)
+
+
+def flat_sample_snps(snps_data, min_cov):
+    """
+    Adds all the values of a gene across all samples into one instance of
+    :class:`classes.GeneSyn`, giving the average gene among all samples.
+
+    Arguments:
+        snps_data (dict): dictionary with the instances of
+            :class:`classes.GeneSyn`
+        min_cov (int): minimum coverage required for the each instance to be
+            added
+
+    Returns:
+        dict: the dictionary with only one key (`all_samples`), which can be
+        used with :func:`combine_sample_snps`
+    """
+    samples = snps_data.keys()
+    gene_ids = snps_data[samples[0]].keys()
+    new_data = {'all_samples': {}}
+
+    for gene_id in gene_ids:
+        for sample in samples:
+            gene_syn = snps_data[sample][gene_id]
+
+            if gene_syn.coverage < min_cov:
+                continue
+
+            try:
+                new_data['all_samples'][gene_id].add(gene_syn)
+            except KeyError:
+                new_data['all_samples'][gene_id] = copy.copy(gene_syn)
+
+    return new_data
