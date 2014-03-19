@@ -585,6 +585,8 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
 def significance_test(dataframe, taxon_id1, taxon_id2,
                       test_func=scipy.stats.ks_2samp):
     """
+    .. versionadded:: 0.1.11
+
     Perform a statistical test on each gene distribution in two different taxa.
 
     For each gene common to the two taxa, the distribution of values in all
@@ -627,6 +629,8 @@ def significance_test(dataframe, taxon_id1, taxon_id2,
 
 def flat_sample_snps(snps_data, min_cov):
     """
+    .. versionadded:: 0.1.11
+
     Adds all the values of a gene across all samples into one instance of
     :class:`classes.GeneSyn`, giving the average gene among all samples.
 

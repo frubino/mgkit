@@ -13,3 +13,5 @@ Changes
 * renamed :class:`~mgkit.snps.classes.GeneSyn` gid and taxon attributes to gene_id and taxon_id. The old names are still available for use (via properties), but the will be taken out in later versions. Old pickle data should be loaded and saved again before in this release
 * added a few convenience functions to ease the use of :func:`~mgkit.snps.funcs.combine_sample_snps`
 * added function :func:`mgkit.snps.funcs.significance_test` to test the distributions of genes share between two taxa.
+* fixed an issue with deinterleaving sequence data from khmer
+* added :func:`~mgkit.snps.funcs.flat_sample_snps`
