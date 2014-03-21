@@ -1,14 +1,17 @@
 """
+.. versionadded:: 0.1.12
+
 Graph module
 """
 
-import pandas
 import itertools
 import networkx as nx
 
 
 def build_graph(id_links, name, edge_type='', weight=0.5):
     """
+    .. versionadded:: 0.1.12
+
     Builds a networkx graph from a dictionary of nodes, as outputted by
     :meth:`mgkit.kegg.KeggClientRest.get_pathway_links`. The graph is
     undirected, and all edges weight are the same.
@@ -36,7 +39,11 @@ def build_graph(id_links, name, edge_type='', weight=0.5):
 
 
 def copy_nodes(g, graph1):
-    "Used by :func:`link_nodes` to copy nodes"
+    """
+    .. versionadded:: 0.1.12
+
+    Used by :func:`link_nodes` to copy nodes
+    """
     for node, data in graph1.nodes_iter(data=True):
         g.add_node(
             "{0}_{1}".format(graph1.name, data['id']),
@@ -47,7 +54,11 @@ def copy_nodes(g, graph1):
 
 
 def copy_edges(g, graph1):
-    "Used by :func:`link_nodes` to copy edges"
+    """
+    .. versionadded:: 0.1.12
+
+    Used by :func:`link_nodes` to copy edges
+    """
     for node1, node2, data in graph1.edges_iter(data=True):
         g.add_edge(
             "{0}_{1}".format(graph1.name, node1),
@@ -57,7 +68,11 @@ def copy_edges(g, graph1):
 
 
 def link_nodes(g, graph1, graph2, id_filter, link_type, weight):
-    "Used by :func:`link_graph` to link nodes with the same *id*"
+    """
+    .. versionadded:: 0.1.12
+
+    Used by :func:`link_graph` to link nodes with the same *id*
+    """
     nodes1 = set(
         data['id']
         for node, data in graph1.nodes_iter(data=True)
@@ -88,6 +103,8 @@ EDGE_LINKS = [
 
 def link_graph(graphs, edge_links):
     """
+    .. versionadded:: 0.1.12
+
     Link nodes of a set of graphs using the specifics in edge_links.
     The resulting graph nodes are renamed, and the nodes that are shared
     between the graphs linked.
@@ -115,6 +132,8 @@ def link_graph(graphs, edge_links):
 
 def filter_graph(graph, id_list, filter_func=lambda x: x.startswith('K')):
     """
+    .. versionadded:: 0.1.12
+
     Filter a graph based on the `id_list` provided and the filter function
     used to test the id attribute of each node.
 
@@ -147,6 +166,8 @@ def filter_graph(graph, id_list, filter_func=lambda x: x.startswith('K')):
 
 def annotate_graph_nodes(graph, attr, id_map, default=None):
     """
+    .. versionadded:: 0.1.12
+
     Add/Changes nodes attribute `attr` using a dictionary of ids->values.
 
     .. note::
