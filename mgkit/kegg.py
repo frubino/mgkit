@@ -640,32 +640,6 @@ class KeggData(object):
             yield x
 
 
-def link_ids_flat(id_map, black_list=None):
-    """
-    .. todo::
-
-        Refactor and put inside a module for dictionary operations
-
-    """
-    id_to_id = set()
-
-    for s_id, s_cps in id_map.iteritems():
-        for e_id, e_cps in id_map.iteritems():
-            if e_id == s_id:
-                continue
-            for x in s_cps:
-                if not black_list is None:
-                    if x in black_list:
-                        continue
-                if x in e_cps:
-                    #skips the same link in the opposite direction
-                    if (e_id, s_id, x) in id_to_id:
-                        continue
-                    id_to_id.add((s_id, e_id, x))
-                    break
-    return id_to_id
-
-
 class KeggMapperBase(object):
     """
     Base object for Kegg mapping classes
