@@ -33,6 +33,14 @@ mgkit.consts module
     :undoc-members:
     :show-inheritance:
 
+mgkit.graphs module
+-------------------
+
+.. automodule:: mgkit.graphs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 mgkit.kegg module
 -----------------
 
