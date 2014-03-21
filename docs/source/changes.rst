@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.1.12
+------
+
+* added :mod:`mgkit.graph` module
+
 0.1.11
 ------
 
@@ -17,4 +22,3 @@ Changes
 * added :func:`mgkit.snps.funcs.flat_sample_snps`
 * Added method to :class:`mgkit.kegg.KeggClientRest` to get names for all ids of a certain type (more generic than the various `get_*_names`)
 * added first implementation of :class:`mgkit.kegg.KeggModule` class to parse a Kegg module entry
-
