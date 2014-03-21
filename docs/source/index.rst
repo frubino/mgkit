@@ -10,8 +10,7 @@ Welcome to Metagenomic framework's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
-   :glob:
+   :maxdepth: 3
 
    install
 
@@ -21,14 +20,7 @@ Contents:
 
    library
 
-   scripts/*
-
-
-
-TODO list
----------
-
-.. todolist::
+   changes
 
 
 Indices and tables

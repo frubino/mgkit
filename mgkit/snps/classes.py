@@ -28,13 +28,14 @@ class GeneSyn(object):
 
     .. warning::
 
-        the `gid` and `taxon` attributes will be renamed in `gene_id` and
-        `taxon_id` in later versions of the library, so they shouldn't be used.
+        the `gid` and `taxon` attributes (methods now) will be renamed in
+        `gene_id` and `taxon_id` in later versions (0.3.x) of the library, so
+        they shouldn't be used.
 
     """
     __slots__ = (
-        'gid',
-        'taxon',
+        'gene_id',
+        'taxon_id',
         'exp_syn',
         'exp_nonsyn',
         'syn',
@@ -43,20 +44,19 @@ class GeneSyn(object):
         'taxon_root'
     )
 
-    def __init__(self, gid='', taxon='', exp_syn=0, exp_nonsyn=0, syn=0,
-                 nonsyn=0, coverage=None, taxon_root='', gene_id='',
-                 taxon_id=0):
+    def __init__(self, gene_id='', taxon_id=0, exp_syn=0, exp_nonsyn=0, syn=0,
+                 nonsyn=0, coverage=None, taxon_root='', gid='', taxon=''):
 
-        self.gid = gid
-        self.taxon = taxon
+        self.gene_id = gid
+        self.taxon_id = taxon
         self.taxon_root = taxon_root
         self.exp_syn = exp_syn
         self.exp_nonsyn = exp_nonsyn
         self.syn = syn
         self.nonsyn = nonsyn
         self.coverage = coverage
-        self.gid = gene_id
-        self.taxon = taxon_id
+        self.gene_id = gene_id
+        self.taxon_id = taxon_id
 
     def calc_ratio(self, flag_value=False, min_cov=None, haplotypes=False):
         """
@@ -190,24 +190,40 @@ class GeneSyn(object):
         )
 
     @property
-    def gene_id(self):
-        "Alias for gid attribute at the moment"
-        return self.gid
+    def gid(self):
+        """
+        .. deprecated:: 0.1.11
 
-    @gene_id.setter
-    def gene_id(self, gene_id):
-        "Setter for gene_id"
-        self.gid = gene_id
+        Alias for gid attribute at the moment
+        """
+        return self.gene_id
+
+    @gid.setter
+    def gid(self, gene_id):
+        """
+        .. deprecated:: 0.1.11
+
+        Setter for gene_id
+        """
+        self.gene_id = gene_id
 
     @property
-    def taxon_id(self):
-        "Alias for taxon attribute at the moment"
-        return self.taxon
+    def taxon(self):
+        """
+        .. deprecated:: 0.1.11
 
-    @taxon_id.setter
-    def taxon_id(self, taxon_id):
-        "Setter for taxon_id"
-        self.taxon = taxon_id
+        Alias for taxon attribute at the moment
+        """
+        return self.taxon_id
+
+    @taxon.setter
+    def taxon(self, taxon_id):
+        """
+        .. deprecated:: 0.1.11
+
+        Setter for taxon_id
+        """
+        self.taxon_id = taxon_id
 
     def __str__(self):
         return self.to_string()

@@ -26,9 +26,9 @@ def combine_dict(keydict, valuedict):
     Resulting dictionary will be
 
     .. digraph:: combined
-        :alt: key1->[u1, u2, .., uN]
+        :alt: key1->{u1, u2, .., uN}
 
-        "combined" -> "key1" -> "[u1, u2, .., uN, t1, t2, .., tN]";
+        "combined" -> "key1" -> "{u1, u2, .., uN, t1, t2, .., tN}";
 
     :param dict keydict: dictionary whose keys are the same as the returned
         dictionary

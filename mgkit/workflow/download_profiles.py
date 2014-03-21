@@ -25,11 +25,6 @@ order or genus for the genes and then specifying a lineage of interest.
 Because each profile is indipendent from each other, it's useful to start the
 download with a certain rank and then run the profiling. During the profiling
 a new download can be started and so on.
-
-.. todo::
-
-    Add option to download the nucleotide sequences along the aminoacid ones?
-
 """
 
 import os

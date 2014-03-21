@@ -46,6 +46,13 @@ def set_parser():
         action='store',
         help="File with mate 2 reads"
     )
+    parser_d.add_argument(
+        '-s',
+        '--strip',
+        action='store_true',
+        default=False,
+        help="Strip additional info"
+    )
     parser_d.set_defaults(func=deinterleave)
     #Interleave
     parser_i = subparsers.add_parser('il', help='Interleave sequences')
@@ -111,7 +118,7 @@ def set_parser():
         help="Output file"
     )
     parser_r.add_argument(
-        '-s',
+        '-b',
         '--buffer-size',
         type=int,
         action='store',
@@ -296,10 +303,15 @@ def deinterleave(options):
             )
             mate = int(match.group('mate'))
 
-        if mate == 1:
-            mate1[key] = (sequence.name, sequence.seq, sequence.qualstr)
+        if options.strip:
+            sequence_name = sequence.name.split('\t')[0]
         else:
-            mate2[key] = (sequence.name, sequence.seq, sequence.qualstr)
+            sequence_name = sequence.name
+
+        if mate == 1:
+            mate1[key] = (sequence_name, sequence.seq, sequence.qualstr)
+        else:
+            mate2[key] = (sequence_name, sequence.seq, sequence.qualstr)
 
         try:
             #if sequence header in both

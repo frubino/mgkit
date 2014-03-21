@@ -22,9 +22,12 @@ The library requires these Python packages:
 * pysam >= 0.7.7 (required by :mod:`mgkit.align`)
 * `goatools <https://github.com/tanghaibao/goatools>`_ (required by :mod:`mgkit.mappings.go`), has package `fisher` as a dependency
 * rpy2 >= 2.3.8 (required by :mod:`mgkit.utils.r_func`)
-* joblib (for script `translate_seq` and documentation)
 * argparse (if Python 2.6 is installed, part of the standard library from 2.7)
- 
+
+Optional:
+
+* joblib: for script `translate_seq`, to use multiple processors
+
 Using pip
 ---------
 

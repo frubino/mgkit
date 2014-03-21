@@ -84,6 +84,14 @@ mgkit.workflow.snps_wf module
     :undoc-members:
     :show-inheritance:
 
+mgkit.workflow.utils module
+---------------------------
+
+.. automodule:: mgkit.workflow.utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

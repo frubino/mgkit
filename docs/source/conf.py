@@ -25,7 +25,20 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.viewcode', 'sphinx.ext.graphviz', 'sphinxcontrib.actdiag', 'sphinxcontrib.blockdiag', 'rst2pdf.pdfbuilder', 'sphinxcontrib.napoleon', 'sphinx.ext.mathjax']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'sphinx.ext.pngmath',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.graphviz',
+    'sphinxcontrib.actdiag',
+    'sphinxcontrib.blockdiag',
+    'sphinxcontrib.napoleon',
+    'sphinx.ext.mathjax',
+    #, 'rst2pdf.pdfbuilder'
+]
 
 # readthedocs theme
 import sphinx_rtd_theme
@@ -68,7 +81,7 @@ copyright = u'2013, Francesco Rubino'
 #
 # The short X.Y version.
 
-__VERSION__ = '0.1.10'
+__VERSION__ = '0.1.11'
 
 version = __VERSION__
 # The full version, including alpha/beta/rc tags.
@@ -113,7 +126,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_rtd_theme' #'solar'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

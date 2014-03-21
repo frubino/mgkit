@@ -12,11 +12,13 @@ from __future__ import division
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from mpl_toolkits.mplot3d import Axes3D
-from scipy.spatial import ConvexHull
 import numpy
-from . import taxon
 import logging
-import utils.common
+
+try:
+    from scipy.spatial import ConvexHull
+except ImportError:
+    ConvexHull = None
 
 LOG = logging.getLogger(__name__)
 
@@ -58,83 +60,6 @@ def lineplot_values_on_second_axis(gene_num, axis, colour='c', ylabel=''):
     ax2.set_yscale('log')
 
     return ax2
-
-
-@utils.common.deprecated
-def get_taxon_colors(taxa, tmap, func=lambda x: x):
-    LOG.info("Assigning taxa colors")
-    tx_colors = {}
-
-    for tx in taxa:
-        tx_colors[tx] = TAXON_COLORS[taxon.get_taxon_root(func(tx), tmap)]
-
-    return tx_colors
-
-
-@utils.common.deprecated
-def boxplot_snp(ratios, plot_order, taxon_colours=None, labelfont='small',
-                ylim=None, label_map=None, file_name=None, fig_size=None,
-                title=None, log_scale=False, fig_aspect=None,
-                ylabel='', xlabel=''):
-
-    if fig_aspect is not None:
-        fig_size = plt.figaspect(fig_aspect)
-    fig = plt.figure(dpi=300, figsize=fig_size)
-
-    plot = plt.boxplot([ratios[x] for x in plot_order])
-    for box, tx in zip(plot['boxes'], plot_order):
-        box.set_color(taxon_colours[tx] if taxon_colours else 'b')
-    ax = plt.axes()
-    # if we want to plot the number of value.
-    # ax.set_xticklabels([
-    #                   "{0} ({1})".format(taxon_name, len(ratios[taxon_name]))
-    #                   for taxon_name in plot_order
-    #                   ],
-    #                   rotation='vertical', fontsize=labelfont)
-    if labelfont:
-        xlabels = ax.set_xticklabels(
-            [
-                label if label_map is None else label_map[label]
-                for label in plot_order
-            ],
-            rotation='vertical', fontsize=labelfont
-        )
-    else:
-        xlabels = ax.set_xticklabels([])
-    if not ylim is None:
-        ax.set_ylim(0, ylim)
-
-    if not title is None:
-        ax.set_title(title)
-
-    if log_scale:
-        ax.set_yscale('log')
-
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-
-    if file_name is not None:
-        LOG.info("Saving plot to file %s", file_name)
-        fig.savefig(file_name, bbox_inches='tight',
-                    bbox_extra_artist=(xlabels,))
-        fig.clf()
-
-    return ax
-
-
-def plot_coverage_pvalue3d(cov, pval, ratio,
-                           colour='g', pointsize=20, title='',
-                           xlabel='mean counts', ylabel='pvalue',
-                           zlabel='ratio'):
-    fig = plt.figure()
-    ax = plt.subplot(111, projection='3d')
-    ax.scatter(cov, pval, ratio, s=pointsize, c=colour)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_zlabel(zlabel)
-    fig.suptitle(title)
-
-    return ax
 
 
 def plot_scatter_3d(data, labels, colours=None, pointsize=10., title='',
@@ -222,13 +147,24 @@ def plot_scatter_2d(data, labels, colours=None, pointsize=10., title='',
             colour = colours[label]
         data_points = numpy.array(data_points)
         if (len(data_points) > 2) and hull_points:
-
-            hull = ConvexHull(data_points)
-            for simplex in hull.simplices:
-                ax.plot(data_points[simplex, 0], data_points[simplex, 1], '-',
-                        colour=colour)
-        ax.scatter(data_points[:, 0], data_points[:, 1], s=pointsize, c=colour,
-                   linewidth=linewidth)
+            if ConvexHull is None:
+                LOG.error("ConvexHull from scipy.spatial couldn't be imported")
+            else:
+                hull = ConvexHull(data_points)
+                for simplex in hull.simplices:
+                    ax.plot(
+                        data_points[simplex, 0],
+                        data_points[simplex, 1],
+                        '-',
+                        colour=colour
+                    )
+        ax.scatter(
+            data_points[:, 0],
+            data_points[:, 1],
+            s=pointsize,
+            c=colour,
+            linewidth=linewidth
+        )
 
     if centers is not None:
         for idx, (center_x, center_y) in enumerate(centers):
@@ -534,7 +470,6 @@ def scatter_gene_values(gene_dict, xlabel="Profile pN/pS", ylabel="Rumen pN/pS",
     return ax
 
 
-@utils.common.deprecated
 def boxplot_snp_dataframe(ratios, plot_order, taxon_colours=None,
                           labelfont='small', ylim=None, label_map=None,
                           file_name=None, fig_size=None,
@@ -744,4 +679,13 @@ def map_taxon_to_colours(taxa, taxonomy, default_colour='#ffff33'):
     return tx_colours
 
 
-get_taxon_colors_new = utils.common.deprecated(map_taxon_to_colours)
+get_taxon_colors_new = map_taxon_to_colours
+
+
+def get_single_figure(dpi=300, figsize=(10, 20)):
+    """
+    Simple wrapper to init a single figure
+    """
+    fig = plt.figure(dpi=dpi, figsize=figsize)
+    ax = fig.add_subplot(111)
+    return fig, ax

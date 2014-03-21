@@ -10,7 +10,6 @@ from __future__ import print_function
 from __future__ import division
 
 import logging
-import warnings
 from ..utils import sequence as seq_utils
 from ..filter.lists import aggr_filtered_list
 from ..consts import MIN_COV
@@ -700,46 +699,6 @@ def group_by_attribute(annotations, attr='taxon', tmap=None):
             groups[value] = [annotation]
 
     return groups
-
-
-def check_root(taxon_name, tmap):
-    """
-    .. deprecated:: 0.1
-
-        Function deprecated, use :func:`taxon.get_taxon_root`
-
-    """
-    warnings.warn("Function deprecated, use get_taxon_root in taxon",
-                  DeprecationWarning)
-    #mispelled, change gff file?
-    if taxon_name in ['bacterioidetes', 'bacteriodales']:
-        return 'bacteria'
-    if taxon_name in ['actinobacteridae', 'coriobacteridae', 'rubrobacteridae']:
-        return 'bacteria'  # temporary, add subclass to taxonomy
-    #makes sure taxon names with spaces can be used
-    taxon_name = taxon_name.replace('#', ' ')
-    for root, taxa in tmap.items():
-        if (taxon_name == root) or (taxon_name in taxa):
-            return root
-    raise ValueError('Taxon {0} not in mapping'.format(taxon_name))
-
-
-def get_koidx_taxon_map(annotations, attr='taxon'):
-    """
-    .. deprecated:: 0.1
-
-        Kept for compatibility until clean out of code base. Use
-        :func:`get_koidx_attr_map` should be used instead, the default values
-        match this function.
-
-    the same results are given by get_koidx_attr_map(annotations,
-    keyattr='ko_idx', valattr=attr, value_convert=str, aggr_func=lambda x: x[0])
-
-    """
-    warnings.warn("Function deprecated, use get_attr2attr_map",
-                  DeprecationWarning)
-    return get_attr2attr_map(annotations, keyattr='ko_idx', valattr=attr,
-                             value_convert=str, aggr_func=lambda x: x[0])
 
 
 def get_koidx_attr_map(annotations, valattr='ko_idx', value_convert=str,

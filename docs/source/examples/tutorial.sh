@@ -23,7 +23,7 @@ cat velvet_work/contigs.fa | sed -E 's/(>NODE_[0-9]+)_.+/\1/g' > assembly.fa
 translate_seq assembly.fa assembly.aa.fa
 
 #download offline data
-download_data -m email
+download_data -p -m email
 
 #download profile for the three taxa
 download_profiles -o bacteria_profiles -i 200795 201174 203682 -m email -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
@@ -114,6 +114,9 @@ unset SAMPLES
 
 #convert to gtf
 python -c "import mgkit;mgkit.logger.config_log(); import mgkit.io.gff; mgkit.io.gff.convert_gff_to_gtf('assembly.filt.gff', 'assembly.filt.gtf')"
+
+#Download SNPdat
+https://snpdat.googlecode.com/files/SNPdat_v1.0.5.pl
 
 #SNPdat
 for file in *SR*.vcf; do 

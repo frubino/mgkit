@@ -8,6 +8,7 @@ import functools
 import pandas
 import scipy.stats
 import csv
+import copy
 from ..consts import BLACK_LIST
 from .classes import GeneSyn
 from .. import consts
@@ -17,11 +18,14 @@ LOG = logging.getLogger(__name__)
 
 
 def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
-                              black_list=None, min_num=consts.MIN_NUM,
-                              rank=None, anc_map=None, rooted=True,
-                              var_map=None, feature='gene-taxon',
-                              only_rank=False, gene_map=None, taxa_filter=None):
+                                   black_list=None, min_num=consts.MIN_NUM,
+                                   rank=None, anc_map=None, rooted=True,
+                                   var_map=None, feature='gene-taxon',
+                                   only_rank=False, gene_map=None, taxa_filter=None):
     """
+    .. deprecated:: 0.1.11
+        use :func:`combine_sample_snps` instead
+
     Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
     with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
     row index and an :class:`pandas.Index` with the sample names as column
@@ -62,7 +66,6 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
     .. todo::
 
         * eliminate this duplicate function
-        * refactor the two functions to make it smaller/easier to maintain
     """
     LOG.info("Combining gene variants into DataFrame")
     LOG.info("Feature selected: %s", feature)
@@ -186,187 +189,6 @@ def combine_snps_in_dataframe_test(count_dict, taxonomy, min_cov=consts.MIN_COV,
                     multi_index.add(key)
 
                     if not key in sample_dict[sample]:
-                        sample_dict[sample][key] = GeneSyn(
-                            gid=key,
-                            taxon=anc_taxon,
-                            taxon_root=root_taxon
-                        )
-
-                    sample_dict[sample][key].add(gene)
-
-    if feature == 'gene-taxon':
-        multi_index = pandas.MultiIndex.from_tuples(
-            sorted(multi_index),
-            names=('gene', 'root', 'taxon') if rooted else ('gene', 'taxon')
-        )
-    else:
-        multi_index = pandas.Index(multi_index)
-
-    LOG.debug("Calculating pN/pS for all matrix elements")
-
-    sample_dict = dict(
-        (
-            sample,
-            dict(
-                (idx, gene.calc_ratio())
-                for idx, gene in row_dict.iteritems()
-            )
-        )
-        for sample, row_dict in sample_dict.iteritems()
-    )
-
-    LOG.debug("Skipped genes for coverage (%d): %.2f%%", min_cov,
-              float(skipped) / (skipped + added) * 100)
-
-    dataframe = pandas.DataFrame(sample_dict, index=multi_index,
-                                 columns=sorted(sample_dict.keys()))
-
-    return dataframe[dataframe.count(axis=1) >= min_num]
-
-
-def combine_snps_in_dataframe(count_dict, taxonomy, min_cov=consts.MIN_COV,
-                              black_list=None, min_num=consts.MIN_NUM,
-                              rank=None, anc_map=None, rooted=True,
-                              var_map=None, feature='gene-taxon',
-                              only_rank=False):
-    """
-    Convert a sample->gene->GeneSyn dictionary into a :class:`pandas.DataFrame`
-    with a :class:`pandas.MultiIndex` composed of gene_id, root_taxon, taxon as
-    row index and an :class:`pandas.Index` with the sample names as column
-    index.
-
-    :param dict count_dict: dictionary containing :class:`GeneSyn` instances of
-        KO_IDX sample->ko_idx->:class:`GeneSyn`
-    :param dict tmap: taxon root map obtained from :func:`taxon.group_by_root`
-        with only_names=True. If None the root won't be added to the index
-    :param int min_cov: minimum coverage allowed for inclusion of a gene
-    :param list black_list: black list of taxa to exclude; defaults to
-        :data:`taxon.BLACK_LIST`
-    :param int min_num: minimum number of replicates allowed for inclusion in
-        the resulting matrix
-    :param str rank: taxon level that represent the maximum specifity of the
-        dataset
-    :param bool rooted: if True, the index will include the root taxon of the
-        gene-taxon tuple (as a string)
-    :param dict anc_map: dictionary with the ancestry map to match a profile
-        based taxonomy
-    :param dict var_map: dictionary instance, used only if anc_map is not None,
-        to store the ko_idx that belong to a profile
-    :param str feature: one of 'gene', 'taxon', 'gene-taxon', works in the same
-        way as combine_genes_by_feature
-    :param bool only_rank: only active if rank is specified. If True only the
-        defined rank is included in the results. Any rank above is taken out.
-
-    .. note::
-
-        if anc_map is defined, the number of rows in the resulting DataFrame
-        may not correspond to the actual number of profiles, because the
-        DataFrame building doesn't take in account the genes that are in the
-        profiles (the guide is just the taxa), anc_map is returned by
-        :func:`taxon.get_ancestor_map`
-
-    :return DataFrame: returns a :class:`pandas.DataFrame`
-    """
-    LOG.info("Combining gene variants into DataFrame")
-    LOG.info("Feature selected: %s", feature)
-    if black_list is None:
-        black_list = BLACK_LIST
-    LOG.info("Black listed taxa: %s", ','.join(black_list))
-
-    if anc_map is not None:
-        LOG.info("Using ancestry map")
-    if not rooted:
-        LOG.info("Using index with no root")
-
-    sample_dict = dict((sample, {}) for sample in count_dict)
-    multi_index = set()
-
-    skipped = 0
-    added = 0
-
-    for sample, genes_dict in count_dict.iteritems():
-        LOG.debug("Sample %s loop", sample)
-        for gene in genes_dict.itervalues():
-
-            gene_taxon = gene.taxon
-
-            #skips genes belonging to taxa black listed
-            if any(True for blisted in black_list
-                   if blisted in taxonomy[gene_taxon].lineage or
-                   taxonomy[gene_taxon].s_name == blisted):
-                # print "Skipped", taxonomy[gene_taxon].s_name
-                continue
-
-            if rooted:
-                root_taxon = taxonomy.get_taxon_root(gene.taxon).s_name
-            else:
-                root_taxon = None
-
-            #skips genes that have low coverage
-            if gene.coverage < min_cov:
-                skipped += 1
-                continue
-            added += 1
-
-            gene_id = gene.gid.split('.')[0]
-
-            if rank is not None:
-                gene_taxon = taxonomy.get_ranked_taxon(
-                    gene_taxon,
-                    rank
-                ).taxon_id
-                if only_rank:
-                    if taxonomy[gene_taxon].rank != rank:
-                        continue
-
-            if anc_map is None:
-
-                if feature == 'gene-taxon':
-                    if rooted:
-                        key = (gene_id, root_taxon, gene_taxon)
-                    else:
-                        key = (gene_id, gene_taxon)
-                elif feature == 'taxon':
-                    key = gene_taxon
-                elif feature == 'gene':
-                    key = gene_id
-
-                multi_index.add(key)
-
-                if not key in sample_dict:
-                    sample_dict[sample][key] = GeneSyn(
-                        gid=key,
-                        taxon=gene_taxon,
-                        taxon_root=root_taxon
-                    )
-
-                sample_dict[sample][key].add(gene)
-
-            else:
-                #when the rows that have at least min_num of values are dropped
-                #the index is unchanged. So some can be still in the anc_map,
-                #which is based off the index.
-                if gene_taxon not in anc_map:
-                    continue
-
-                for anc_taxon in anc_map[gene_taxon]:
-
-                    if var_map is not None:
-                        var_key = (gene_id, anc_taxon)
-                        try:
-                            var_map[var_key].add(gene.gid)
-                        except KeyError:
-                            var_map[var_key] = set()
-                            var_map[var_key].add(gene.gid)
-
-                    if rooted:
-                        key = (gene_id, root_taxon, anc_taxon)
-                    else:
-                        key = (gene_id, anc_taxon)
-
-                    multi_index.add(key)
-
-                    if not key in sample_dict:
                         sample_dict[sample][key] = GeneSyn(
                             gid=key,
                             taxon=anc_taxon,
@@ -571,52 +393,6 @@ def write_pnps_grouped_by_pathway(data, gene_list, taxa_list=None):
     return part_data
 
 
-def wilcoxon_pairwise_test_dataframe(dataframe, test_func=scipy.stats.ranksums,
-                                     threshold=0.01):
-    """
-    Make a wilcoxon pairwise test on a dataframe whose rows are a MultiIndex
-    object, in the order gene, taxon.
-
-    For each gene, each taxon variant is tested against each other, in a
-    pairwise manner. If at least one of the tests is significant, the gene is
-    reported as significantly different.
-
-    :dataframe: dataframe instance
-    :test_func: function used to test, defaults to :func:`scipy.stats.ranksums`
-    :threshold: threshold for null hypotesis discard.
-
-    .. note::
-
-        The function access the row using the
-        'loc' attribute on the object, so the order must be correct. No checks
-        are made at the moment on the object for the consistence of it.
-    """
-    LOG.info("Performing Wilcoxon ranksums test pairwise")
-
-    genes = set(dataframe.index.get_level_values('gene'))
-    LOG.info("Number of genes to be tested: %d", len(genes))
-
-    sign_genes = []
-
-    for gene in genes:
-        dataframe_gene = dataframe.loc[gene]
-
-        if len(dataframe_gene) <= 1:
-            continue
-
-        iterator = itertools.combinations(dataframe_gene.index, 2)
-
-        for taxon_id1, taxon_id2 in iterator:
-            pvalue = test_func(dataframe_gene.loc[taxon_id1].dropna(),
-                               dataframe_gene.loc[taxon_id2].dropna())[1]
-
-            if pvalue < threshold:
-                sign_genes.append(gene)
-                break
-
-    return sign_genes
-
-
 def write_sign_genes_table(out_file, dataframe, sign_genes, taxonomy,
                            gene_names=None):
     """
@@ -708,9 +484,6 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
     return [x[1] for x in order]
 
 
-import copy
-
-
 def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                         gene_func=None, taxon_func=None):
     """
@@ -740,9 +513,9 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
             :mod:`.mapper.map_taxon_id_to_rank` or
             :mod:`.mapper.map_taxon_id_to_ancestor` for examples
 
-    Results:
-        :class:`pandas.DataFrame`: DataFrame with the pN/pS values for the input
-            SNPs.
+    Returns:
+        DataFrame: :class:`pandas.DataFrame` with the pN/pS values for the input
+        SNPs, with the columns being the samples.
 
     """
     sample_dict = dict((sample, {}) for sample in snps_data)
@@ -790,11 +563,14 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
     else:
         multi_index = pandas.Index(multi_index)
 
+    #we already satisfied a minimum coverage filter or at least if doesn't
+    #matter in the calculation anymore, using haplotypes=True, the special
+    #case where syn=nonsyn=0 will result in a 0 as pN/pS for a GeneSyn instance
     sample_dict = dict(
         (
             sample,
             dict(
-                (key, gene.calc_ratio())
+                (key, gene.calc_ratio(haplotypes=True))
                 for key, gene in row_dict.iteritems()
             )
         )
@@ -804,3 +580,84 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                                  columns=sorted(sample_dict.keys()))
 
     return dataframe[dataframe.count(axis=1) >= min_num]
+
+
+def significance_test(dataframe, taxon_id1, taxon_id2,
+                      test_func=scipy.stats.ks_2samp):
+    """
+    .. versionadded:: 0.1.11
+
+    Perform a statistical test on each gene distribution in two different taxa.
+
+    For each gene common to the two taxa, the distribution of values in all
+    samples (columns) between the two specified taxa is tested.
+
+    Arguments:
+        dataframe: :class:`pandas.DataFrame` instance
+        taxon_id1: the first taxon ID
+        taxon_id2: the second taxon ID
+        test_func: function used to test,
+          defaults to :func:`scipy.stats.ks_2samp`
+
+    Returns:
+        pandas.Series: with all pvalues from the tests
+    """
+    LOG.info("Performing %s test", test_func.__name__)
+
+    gene_ids = set(
+        dataframe.select(
+            lambda x: x[1] == taxon_id1
+        ).index.get_level_values('gene') &
+        dataframe.select(
+            lambda x: x[1] == taxon_id2
+        ).index.get_level_values('gene')
+    )
+    LOG.info("Number of genes to be tested: %d", len(gene_ids))
+
+    sign_genes = {}
+
+    for gene_id in gene_ids:
+        tx1_vals = dataframe.loc[gene_id].loc[taxon_id1].dropna()
+        tx2_vals = dataframe.loc[gene_id].loc[taxon_id2].dropna()
+
+        pvalue = test_func(tx1_vals, tx2_vals)[1]
+
+        sign_genes[gene_id] = pvalue
+
+    return pandas.Series(sign_genes)
+
+
+def flat_sample_snps(snps_data, min_cov):
+    """
+    .. versionadded:: 0.1.11
+
+    Adds all the values of a gene across all samples into one instance of
+    :class:`classes.GeneSyn`, giving the average gene among all samples.
+
+    Arguments:
+        snps_data (dict): dictionary with the instances of
+            :class:`classes.GeneSyn`
+        min_cov (int): minimum coverage required for the each instance to be
+            added
+
+    Returns:
+        dict: the dictionary with only one key (`all_samples`), which can be
+        used with :func:`combine_sample_snps`
+    """
+    samples = snps_data.keys()
+    gene_ids = snps_data[samples[0]].keys()
+    new_data = {'all_samples': {}}
+
+    for gene_id in gene_ids:
+        for sample in samples:
+            gene_syn = snps_data[sample][gene_id]
+
+            if gene_syn.coverage < min_cov:
+                continue
+
+            try:
+                new_data['all_samples'][gene_id].add(gene_syn)
+            except KeyError:
+                new_data['all_samples'][gene_id] = copy.copy(gene_syn)
+
+    return new_data
