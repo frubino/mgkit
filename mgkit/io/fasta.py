@@ -70,14 +70,13 @@ def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
     if isinstance(file_handle, str):
         file_handle = open(file_handle, write_mode)
 
-    file_handle.write(">{0}\n".format(name))
+    if wrap is not None:
+        seq = '\n'.join(
+            seq[pos:pos+wrap]
+            for pos in xrange(0, len(seq), wrap)
+        )
 
-    if wrap is None:
-        file_handle.write("{0}\n".format(seq))
-        return
-
-    for pos in xrange(0, len(seq), wrap):
-        file_handle.write("{0}\n".format(seq[pos:pos+wrap]))
+    file_handle.write(">{0}\n{1}\n".format(name, seq))
 
 # def filter_fasta(f_in, f_out, gff_file):
 #     f = open(f_in, 'r')
