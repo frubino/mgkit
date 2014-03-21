@@ -1008,7 +1008,6 @@ class KeggModule(object):
         entryd = {}
         curr_field = ''
         for line in entry.splitlines():
-            #print line
             if line.startswith(' '):
                 entryd[curr_field].append(line.strip())
             elif line.startswith('///'):

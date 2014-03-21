@@ -191,22 +191,38 @@ class GeneSyn(object):
 
     @property
     def gid(self):
-        "Alias for gid attribute at the moment"
+        """
+        .. deprecated:: 0.1.11
+
+        Alias for gid attribute at the moment
+        """
         return self.gene_id
 
     @gid.setter
     def gid(self, gene_id):
-        "Setter for gene_id"
+        """
+        .. deprecated:: 0.1.11
+
+        Setter for gene_id
+        """
         self.gene_id = gene_id
 
     @property
     def taxon(self):
-        "Alias for taxon attribute at the moment"
+        """
+        .. deprecated:: 0.1.11
+
+        Alias for taxon attribute at the moment
+        """
         return self.taxon_id
 
     @taxon.setter
     def taxon(self, taxon_id):
-        "Setter for taxon_id"
+        """
+        .. deprecated:: 0.1.11
+
+        Setter for taxon_id
+        """
         self.taxon_id = taxon_id
 
     def __str__(self):
