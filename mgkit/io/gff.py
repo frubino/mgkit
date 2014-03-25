@@ -168,6 +168,13 @@ class BaseGFFDict(object):
                     old_phase_value = True
 
         attributes = GFFAttributesDict()
+
+        self.attributes = attributes
+
+        #in case the last column (attributes) is empty
+        if len(line) < 9:
+            return
+
         for pair in line[-1].split(';'):
             try:
                 #by default the key,value separator '=' is assumed to be used
@@ -179,8 +186,6 @@ class BaseGFFDict(object):
 
         if old_phase_value or (not hasattr(self, 'phase')):
             self.phase = int(attributes.frame[1])
-
-        self.attributes = attributes
 
     def _parse_kwd(self, **kwd):
         """
@@ -315,7 +320,8 @@ class BaseGFFDict(object):
             feat_to=len(seq),
             score=0.0,
             strand='+',
-            phase=0
+            phase=0,
+            sequence=name
         )
 
         return annotation
