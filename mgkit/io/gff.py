@@ -159,7 +159,13 @@ class BaseGFFDict(object):
         #this hack will be taken out when all old files are converted
         old_phase_value = False
 
-        for var, value, vtype in zip(self._var_names, line[:-1],
+        #in case the last column (attributes) is empty
+        if len(line) < 9:
+            values = line
+        else:
+            values = line[:-1]
+
+        for var, value, vtype in zip(self._var_names, values,
                                      self._var_types):
             try:
                 setattr(self, var, vtype(value))
