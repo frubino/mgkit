@@ -187,3 +187,79 @@ def test_gffkegg_get_taxon_id2():
     ann.attributes.taxon_id = 12
     ann.attributes.blast_taxon_idx = 1
     eq_(ann.get_taxon_id(prefer_blast=False), 12)
+
+
+def test_gff_glimmer3_line1():
+    header = 'sequence0001'
+    line = 'orf00001       66      611  +3     6.08'
+    annotation = gff.BaseGFFDict.from_glimmer3(header, line)
+
+    eq_(
+        (
+            annotation.seq_id,
+            annotation.feat_from,
+            annotation.feat_to,
+            annotation.score,
+            annotation.strand,
+            annotation.phase,
+            annotation.attributes.ID,
+            annotation.attributes.frame
+        ),
+        (
+            header,
+            66,
+            611,
+            6.08,
+            '+',
+            2,
+            'orf00001',
+            '+3'
+        )
+    )
+
+
+def test_gff_glimmer3_line2():
+    header = 'sequence0001'
+    line = 'orf00001       66      11  -2     6.08'
+    annotation = gff.BaseGFFDict.from_glimmer3(header, line)
+
+    eq_(
+        (
+            annotation.feat_from,
+            annotation.feat_to,
+            annotation.strand,
+            annotation.phase,
+            annotation.attributes.frame
+        ),
+        (
+            11,
+            66,
+            '-',
+            1,
+            '-2'
+        )
+    )
+
+
+@with_setup(setup=misc_data.setup_glimmer3_data)
+def test_gff_glimmer_parse():
+    annotations = list(gff.parse_glimmer3(misc_data.GLIMMER3_FILE))
+
+    eq_(
+        (
+            sum(1 for annotation in annotations if annotation.seq_id == 'scaff01'),
+            sum(1 for annotation in annotations if annotation.seq_id == 'scaff21'),
+            annotations[4].feat_from,
+            annotations[6].feat_from,
+            annotations[7].feat_from,
+            annotations[8].feat_from,
+        ),
+        (
+            7,
+            2,
+            3340,
+            6079,
+            76,
+            60
+        )
+    )

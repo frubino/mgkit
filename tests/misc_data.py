@@ -90,3 +90,24 @@ def setup_nucseq_data():
                 data_dir
             )
         )
+
+### GLIMMER3 data
+
+glimmer3 = 'glimmer3.txt'
+
+try:
+    GLIMMER3_FILE = open(
+        os.path.join(base_dir, data_dir, glimmer3)
+    )
+except IOError:
+    GLIMMER3_FILE = None
+
+
+def setup_glimmer3_data():
+    if GLIMMER3_FILE is None:
+        raise SkipTest(
+            'No GLIMMER3 file found: expecting file "{0}" in dir {1}'.format(
+                glimmer3,
+                data_dir
+            )
+        )

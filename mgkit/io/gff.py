@@ -239,6 +239,29 @@ class BaseGFFDict(object):
 
     @staticmethod
     def from_glimmer3(header, line):
+        """
+        .. versionadded:: 0.1.12
+
+        Parses the line of a GLIMMER3 ouput and returns an instance of a GFF
+        annotation.
+
+        Arguments:
+            header (str): the seq_id to which the ORF belongs
+            line (str): the prediction line for the orf
+
+        Example:
+            Assuming a GLIMMER3 output like this::
+
+                >sequence0001
+                orf00001       66      611  +3     6.08
+
+            The code used is:
+
+            >>> header = 'sequence0001'
+            >>> line = 'orf00001       66      611  +3     6.08'
+            >>> BaseGFFDict.from_glimmer3(header, line)
+
+        """
         orf_id, start, end, frame, score = line.split()
 
         start = int(start)
@@ -1208,3 +1231,41 @@ def write_gff(annotations, file_handle):
 
     for annotation in annotations:
         annotation.to_file(file_handle)
+
+
+def parse_glimmer3(file_handle):
+    """
+    .. versionadded:: 0.1.12
+
+    Parse a GLIMMER3 file and returns generator of :class:`BaseGFFDict`
+    instances
+
+    Accepts a file handle or a string with the file name
+
+    Arguments:
+        file_handle (str, file): file name or file handle to read from
+
+    Returns:
+        generator: an iterator of :class:`BaseGFFDict` instances
+
+    """
+
+    if isinstance(file_handle, str):
+        file_handle = open(file_handle, 'w')
+
+    LOG.info(
+        "Parsing GLIMMER3 output from file (%s)",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
+
+    for line in file_handle:
+        line = line.strip()
+
+        if not line:
+            break
+
+        if line.startswith('>'):
+            header = line[1:]
+        else:
+            annotation = BaseGFFDict.from_glimmer3(header, line)
+            yield annotation
