@@ -202,7 +202,7 @@ def test_gff_glimmer3_line1():
             annotation.score,
             annotation.strand,
             annotation.phase,
-            annotation.attributes.ID,
+            annotation.attributes.orf_id,
             annotation.attributes.frame
         ),
         (
@@ -261,5 +261,25 @@ def test_gff_glimmer_parse():
             6079,
             76,
             60
+        )
+    )
+
+
+@with_setup(setup=misc_data.setup_nucseq_data)
+def test_gff_from_sequence1():
+    annotation = gff.BaseGFFDict.from_sequence(
+        'contig-110637',
+        misc_data.NUC_SEQS['contig-110637']
+    )
+    eq_(
+        (
+            annotation.seq_id,
+            annotation.feat_from,
+            annotation.feat_to,
+        ),
+        (
+            'contig-110637',
+            1,
+            len(misc_data.NUC_SEQS['contig-110637'])
         )
     )

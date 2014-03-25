@@ -238,7 +238,7 @@ class BaseGFFDict(object):
         file_handle.write(self.to_string(val_sep=val_sep))
 
     @staticmethod
-    def from_glimmer3(header, line):
+    def from_glimmer3(header, line, feat_type='CDS'):
         """
         .. versionadded:: 0.1.12
 
@@ -248,6 +248,10 @@ class BaseGFFDict(object):
         Arguments:
             header (str): the seq_id to which the ORF belongs
             line (str): the prediction line for the orf
+            feat_type (str): the feature type to use
+
+        Returns:
+            BaseGFFDict: instance of annotation
 
         Example:
             Assuming a GLIMMER3 output like this::
@@ -273,7 +277,7 @@ class BaseGFFDict(object):
         annotation = BaseGFFDict(
             seq_id=header,
             source='GLIMMER3',
-            feat_type='CDS',
+            feat_type=feat_type,
             feat_from=start,
             feat_to=end,
             score=score,
@@ -281,7 +285,37 @@ class BaseGFFDict(object):
             phase=int(frame[1]) - 1,
             frame=frame,
             glimmer_score=score,
-            ID=orf_id
+            orf_id=orf_id
+        )
+
+        return annotation
+
+    @staticmethod
+    def from_sequence(name, seq, feat_type='CDS'):
+        """
+        .. versionadded:: 0.1.12
+
+        Makes an annotation from a sequence. The annotation covers the entire
+        sequence.
+
+        Arguments:
+            name (str): the name of the sequence
+            seq (str): the nucleotide sequence
+            feat_type (str): the feature type to use
+
+        Returns:
+            BaseGFFDict: instance of annotation
+        """
+
+        annotation = BaseGFFDict(
+            seq_id=name,
+            source='SEQUENCE',
+            feat_type=feat_type,
+            feat_from=1,
+            feat_to=len(seq),
+            score=0.0,
+            strand='+',
+            phase=0
         )
 
         return annotation
@@ -1233,7 +1267,7 @@ def write_gff(annotations, file_handle):
         annotation.to_file(file_handle)
 
 
-def parse_glimmer3(file_handle):
+def parse_glimmer3(file_handle, feat_type='CDS'):
     """
     .. versionadded:: 0.1.12
 
@@ -1267,5 +1301,9 @@ def parse_glimmer3(file_handle):
         if line.startswith('>'):
             header = line[1:]
         else:
-            annotation = BaseGFFDict.from_glimmer3(header, line)
+            annotation = BaseGFFDict.from_glimmer3(
+                header,
+                line,
+                feat_type=feat_type
+            )
             yield annotation
