@@ -229,13 +229,39 @@ class BaseGFFDict(object):
 
     def to_file(self, file_handle, val_sep='='):
         """
-        Writes a GFF annotatio to disk, using the already open `file_handle`.
+        Writes a GFF annotation to disk, using the already open `file_handle`.
 
         Arguments:
             file_handle (file): open file handle
             val_sep (str): key-value separator for the attributes column
         """
         file_handle.write(self.to_string(val_sep=val_sep))
+
+    @staticmethod
+    def from_glimmer3(header, line):
+        orf_id, start, end, frame, score = line.split()
+
+        start = int(start)
+        end = int(end)
+
+        if start > end:
+            start, end = end, start
+
+        annotation = BaseGFFDict(
+            seq_id=header,
+            source='GLIMMER3',
+            feat_type='CDS',
+            feat_from=start,
+            feat_to=end,
+            score=score,
+            strand=frame[0],
+            phase=int(frame[1]) - 1,
+            frame=frame,
+            glimmer_score=score,
+            ID=orf_id
+        )
+
+        return annotation
 
     def __str__(self):
         return self.to_string()
