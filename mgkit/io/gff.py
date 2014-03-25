@@ -1251,7 +1251,7 @@ def parse_glimmer3(file_handle):
     """
 
     if isinstance(file_handle, str):
-        file_handle = open(file_handle, 'w')
+        file_handle = open(file_handle, 'r')
 
     LOG.info(
         "Parsing GLIMMER3 output from file (%s)",
