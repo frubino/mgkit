@@ -653,9 +653,17 @@ class GFFKegg(BaseGFFDict):
 
 def load_gff(f_handle, gff_type=GFFKegg):
     """
+    .. versionchanged:: 0.1.12
+        added *gff_type* parameter
+
     Loads GFF from file and returns a list of GFFKegg instances
 
-    Accepts a file handle or a string with the file name
+    Arguments:
+        f_handle (file, str): file handle or file name to load
+        gff_type (class): class used to parse a GFF annotation
+
+    Returns:
+        list: list of GFF annotations
     """
     if isinstance(f_handle, str):
         f_handle = open(f_handle, 'r')

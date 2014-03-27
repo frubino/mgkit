@@ -7,6 +7,7 @@ Changes
 * added :mod:`mgkit.graph` module
 * added function :func:`mgkit.io.gff.parse_glimmer3` and :meth:`mgkit.BaseGFFDict.from_glimmer3` to parse a GLIMMER3 output file and convert it to GFF annotation
 * added :meth:`mgkit.BaseGFFDict.from_sequence`
+* added option `gff_type` in :func:`mgkit.io.gff.load_gff`
 * added more tests
 
 0.1.11

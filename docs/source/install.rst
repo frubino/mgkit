@@ -8,7 +8,7 @@ Requirements
 
 The library is written completely in `Python <http://www.python.org>`_ and has been tested with both version 2.6.x and 2.7.x. It has not been tested with Python 3.x, but the authors are trying to write code that is potentially runnable with the use of the `2to3` tool.
 
-Most UNIX systems provide a version of Python installed. Latest versions of MacOSX provides Python 2.7.x, while most Linux variants may have different versions installed, sometimes version 3.x, but they usually provide python 2.7.x packages (`Archlinux <https://www.archlinux.org/>`_ uses version 3.x by default, by a `python2` package is provided). You can check the Python version installed with::
+Most UNIX systems provide a version of Python installed. Latest versions of MacOSX provides Python 2.7.x, while most Linux variants may have different versions installed, sometimes version 3.x, but they usually provide python 2.7.x packages (`Archlinux <https://www.archlinux.org/>`_ uses version 3.x by default, but a `python2` package is provided). You can check the Python version installed with::
 	
 	$ python --version
 
@@ -119,23 +119,43 @@ and then reissue the library installation::
 MacOSX
 ^^^^^^
 
+The version of MacOSX is 10.9 that comes with Python 2.7 installed. To install every dependency from source, however it's needed to install the *Xcode* app from the **App Store** which install the compilers, with the exception of `gfortran`. Another solution is using `Homebrew <http://brew.sh>`_ or `Macports <http://www.macports.org>`_, to install the compilers needed.
+
+If you want to use Xcode, you need to install the gfortran compiler, with the package provided `here <http://gcc.gnu.org/wiki/GFortranBinariesMacOS>`_. This should be enough to install most packages from source.
+
+.. warning:: 
+	
+	There seems to be a problem with `pandas` version 0.13.1 on MacOSX, with a segmentation fault happening when using DataFrames.
+
+Scipy
+*****
+
 There are different solutions available if you have trouble installing the dependencies on MacOSX, one of which is hosted `on this page <http://fonnesbeck.github.io/ScipySuperpack/>`_,
 
-The version tested is MacOSX (10.9) that comes with Python 2.7 installed. To install every dependency from source, however it's needed to install the *Xcode* app from the app store which install the compilers, with the exception of `gfortran` or a solution line `Homebrew <http://brew.sh>`_ or `Macports <http://www.macports.org>`_, which can be used to install the compilers needed.
-
-Either solution is fine, but if you wnat to use Xcode, you need to install the gfortran compiler, with the package provided `here <http://gcc.gnu.org/wiki/GFortranBinariesMacOS>`_. This should be fine to install most packages from source.
+Matplotlib
+**********
 
 The tricky package to install in MacOSX is actually `matplotlib <http://matplotlib.org>`_, with one of many solutions being posted on `a disccusion on stackoverflow <http://stackoverflow.com/questions/4092994/unable-to-install-matplotlib-on-mac-os-x>`_. In our case, installing `freetype2` and `libpng` through Homebrew it's the less painful::
 
 	$ brew install libpng freetype2
 
-There seems to be a problem with `pandas` version 0.13.1 on MacOSX, with a segmentation fault happening when using DataFrames
-
 .. note::
 
 	If you get a compilation error which refers to freetype2 in the `/opt/X11/` I found it easy to delete XQuartz installing matplotlib and then reinstall XQuartz.
 
-Installing scipy on Linux
+	Or use::
+
+	export LDFLAGS="-L/usr/local/opt/freetype/lib -L/usr/local/opt/libpng/lib"
+	export CPPFLAGS="-I/usr/local/opt/freetype/include -I/usr/local/opt/libpng/include -I/usr/local/opt/freetype/include/freetype2"
+
+
+.. note::
+
+	if there's a problem building matplotlib because of a compile error, dealing with an unknown command line option, use::
+
+	export ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future
+
+Installing Scipy on Linux
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In case you can't install scipy from the source, because of a compile error, you may try the solution on `stackoverflow  <http://stackoverflow.com/questions/7496547/python-scipy-needs-blas>`_
