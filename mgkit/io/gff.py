@@ -651,7 +651,7 @@ class GFFKegg(BaseGFFDict):
         return int(self.attributes.exp_nonsyn)
 
 
-def load_gff(f_handle):
+def load_gff(f_handle, gff_type=GFFKegg):
     """
     Loads GFF from file and returns a list of GFFKegg instances
 
@@ -663,7 +663,7 @@ def load_gff(f_handle):
     annotations = []
 
     for line in f_handle:
-        annotation = GFFKegg(line)
+        annotation = gff_type(line)
         annotations.append(annotation)
     return annotations
 
