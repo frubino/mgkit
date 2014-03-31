@@ -17,6 +17,8 @@ from .. import taxon
 from . import fasta
 import numpy
 import urllib
+import mgkit.io
+
 
 LOG = logging.getLogger(__name__)
 
@@ -666,7 +668,7 @@ def load_gff(f_handle, gff_type=GFFKegg):
         list: list of GFF annotations
     """
     if isinstance(f_handle, str):
-        f_handle = open(f_handle, 'r')
+        f_handle = mgkit.io.open_file(f_handle, 'r')
     LOG.info("Loading GFF file %s", f_handle.name)
     annotations = []
 

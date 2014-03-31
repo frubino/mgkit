@@ -4,6 +4,7 @@ Simple fasta parser and a few utility functions
 """
 # import gff
 import logging
+import mgkit.io
 
 TEXT_WRAP_DEFAULT = 80
 """
@@ -19,7 +20,7 @@ def load_fasta(f_handle):
     element is the name of the sequence and the second the sequence
     """
     if isinstance(f_handle, str):
-        f_handle = open(f_handle, 'r')
+        f_handle = mgkit.io.open_file(f_handle, 'r')
 
     if getattr(f_handle, 'name', None) is not None:
         LOG.info("Reading fasta file %s", f_handle.name)
