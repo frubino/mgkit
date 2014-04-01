@@ -1243,20 +1243,24 @@ def count_attr_by_sample(annotations, keyattr, valattr, samples,
     return count_dict
 
 
-def parse_gff(file_handle):
+def parse_gff(file_handle, gff_type=GFFKegg):
     """
+    .. versionchanged:: 0.1.12
+        added *gff_type* parameter
+
     Parse a GFF file and returns generator of :class:`GFFKegg` instances
 
     Accepts a file handle or a string with the file name
 
     Arguments:
         file_handle (str, file): file name or file handle to read from
+        gff_type (class): class used to parse a GFF annotation
 
     Returns:
         generator: an iterator of :class:`GFFKegg` instances
     """
     if isinstance(file_handle, str):
-        file_handle = open(file_handle, 'r')
+        file_handle = mgkit.io.open_file(file_handle, 'r')
 
     LOG.info(
         "Loading GFF from file (%s)",
@@ -1264,7 +1268,7 @@ def parse_gff(file_handle):
     )
 
     for line in file_handle:
-        annotation = GFFKegg(line)
+        annotation = gff_type(line)
         yield annotation
 
 
