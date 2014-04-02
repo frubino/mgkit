@@ -145,15 +145,15 @@ The tricky package to install in MacOSX is actually `matplotlib <http://matplotl
 
 	Or use::
 
-	export LDFLAGS="-L/usr/local/opt/freetype/lib -L/usr/local/opt/libpng/lib"
-	export CPPFLAGS="-I/usr/local/opt/freetype/include -I/usr/local/opt/libpng/include -I/usr/local/opt/freetype/include/freetype2"
+		export LDFLAGS="-L/usr/local/opt/freetype/lib -L/usr/local/opt/libpng/lib"
+		export CPPFLAGS="-I/usr/local/opt/freetype/include -I/usr/local/opt/libpng/include -I/usr/local/opt/freetype/include/freetype2"
 
 
 .. note::
 
 	if there's a problem building matplotlib because of a compile error, dealing with an unknown command line option, use::
 
-	export ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future
+		export ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future
 
 Installing Scipy on Linux
 ^^^^^^^^^^^^^^^^^^^^^^^^^
