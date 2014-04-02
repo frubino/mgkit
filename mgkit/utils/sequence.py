@@ -218,27 +218,57 @@ def get_seq_expected_syn_count(seq, start=0, syn_matrix=None):
     return seq_syn, seq_nonsyn
 
 
-def reverse_aa_coord(t_from, t_to, seq_len):
+def convert_aa_to_nuc_coord(start, end, frame=0):
     """
-    Used to reverse amino-acid coordinates when parsing an HMMER annotation
-    on the - strand.
+    Converts aa coordinates to nucleotidic ones. The coordinates must be from
+    '+' strand. For the '-' strand, use :func:`reverse_aa_coord` first.
+
+    Arguments:
+        start (int): start of the annotation (lowest number)
+        end (int): end of the annotation (highest number)
+        frame (int): frame of the AA translation (0, 1 or 2)
+
+    Returns:
+        tuple: the first element is the converted *start* and the second
+        element is the converted *end*
 
     .. note::
 
-        * t_from and t_to are 1-based indices
+        the coordinates a assumed to be 1-based indices
+
+    """
+    start = (start - 1) * 3 + 1  # gets the first base of the codon
+    end = (end - 1) * 3 + 3  # gets the third base of the codon
+
+    return (start + frame, end + frame)
+
+
+def reverse_aa_coord(start, end, seq_len):
+    """
+    Used to reverse amino-acid coordinates when parsing an AA annotation on
+    the - strand. Used when the BLAST or HMMER annotations use AA sequences.
+
+    Arguments:
+        start (int): start of the annotation
+        end (int): end of the annotation
+        seq_len (int): aa sequence lenght
+
+    Returns:
+        tuple: reversed (from strand - to strand +) coordinates. The first
+        element is the converted *start* and the second element is the
+        converted *end*
+
+    .. note::
+
+        * start and end are 1-based indices
         * refer to :class:`GFFKegg.from_hmmer` code for details
 
-    :param int t_from: start of the annotation
-    :param int t_to: end of the annotation
-    :param int seq_len: aa sequence lenght
-
-    :return: reversed (from strand - to strand +) coordinates
     """
-    feat_len = t_to - t_from + 1  # length of the feature
-    tmp_from = seq_len - t_to + 1
-    tmp_to = tmp_from + feat_len - 1
+    feat_len = end - start + 1  # length of the feature
+    tmp_start = seq_len - end + 1
+    tmp_end = tmp_start + feat_len - 1
 
-    return tmp_from, tmp_to
+    return tmp_start, tmp_end
 
 
 def calc_n50(seq_lengths):

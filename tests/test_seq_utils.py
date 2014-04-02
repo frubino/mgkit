@@ -17,6 +17,19 @@ def test_reverse_aa_coord():
     eq_(res, exp)
 
 
+def test_convert_aa_to_nuc_coord():
+    res = []
+    exp = [(1, 12), (2, 13), (7, 36), (6, 71)]
+
+    res.append(sequence.convert_aa_to_nuc_coord(1, 4, 0))
+    res.append(sequence.convert_aa_to_nuc_coord(1, 4, 1))
+
+    res.append(sequence.convert_aa_to_nuc_coord(3, 12, 0))
+    res.append(sequence.convert_aa_to_nuc_coord(2, 23, 2))
+
+    eq_(res, exp)
+
+
 def test_reverse_complement():
     seq = 'ACTGATATATGCGCGCATCT'
     rev = 'AGATGCGCGCATATATCAGT'
