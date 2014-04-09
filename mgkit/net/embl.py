@@ -3,6 +3,7 @@
 import logging
 import re
 from . import url_read
+import mgkit
 
 
 class NoEntryFound(Exception):
@@ -148,5 +149,54 @@ def get_sequences_by_ids(embl_ids, contact=None, out_format='fasta', num_req=10,
         else:
             entries = ''.join(error_re.split(entries))
             LOG.debug("At least one Entry was not found")
+
+    return entries
+
+
+def dbfetch(embl_ids, db='embl', contact=None, out_format='seqxml', num_req=10):
+    """
+    .. versionadded:: 0.1.12
+
+    Function that allows to use dbfetch service (REST). More information on the
+    output formats and the database available at the
+    `service page <http://www.ebi.ac.uk/Tools/dbfetch/syntax.jsp>`_
+
+    Arguments:
+        embl_ids (str, iterable): list or single sequence id to retrieve
+        db (str): database from which retrieve the sequence data
+        contact (str): email contact to use as per EMBL guidlines
+        out_format (str): output format, depends on database
+        num_req (int): number of ids per request
+
+    Returns:
+        list: a list with the results from each request sent. Each request sent
+        has a maximum number *num_req* of ids, so the number of items in the
+        list depends by the number of ids in *embl_ids* and the value of
+        *num_req*.
+    """
+    if isinstance(embl_ids, str):
+        embl_ids = [embl_ids]
+    elif isinstance(embl_ids, (set, dict)):
+        embl_ids = list(embl_ids)
+
+    entries = []
+
+    for idx in range(0, len(embl_ids), num_req):
+
+        if len(embl_ids) > num_req:
+            LOG.info("Downloading ids - range %d-%d", idx + 1, idx + num_req)
+
+        request_params = "{db_id}/{entry_id}/{format}?style=raw".format(
+            db_id=db,
+            entry_id=','.join(embl_ids[idx:idx+num_req]),
+            format=out_format
+        )
+
+        request_url = URL_REST + request_params
+
+        if mgkit.DEBUG:
+            LOG.debug(request_url)
+
+        entries.append(url_read(request_url, agent=contact))
 
     return entries
