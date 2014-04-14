@@ -31,17 +31,17 @@ Optional:
 Using pip
 ---------
 
-All dependencies ca usually installed either through a package system provided by the running OS or through the `pip <http://www.pip-installer.org/>`_ installer. If you're using a system that's shared with other people, you may not be able to install the dependencies system-wide, in which case the `--user` option in `pip` may solve the problem [#]_.
+All dependencies are usually installed either through a package system provided by the running OS or through the `pip <http://www.pip-installer.org/>`_ installer. If you're using a system that's shared with other people, you may not be able to install the dependencies system-wide, in which case the `--user` option in `pip` may solve the problem [#]_.
 
 A system-wide installation with `pip` can be done with::
 
 	$ pip install path/to/library
 
-while a user install is donw with::
+while a user install is done with::
 
 	$ pip install --user path/to/library
 
-all requirements we'll be downloaded/installed.
+all requirements will be downloaded/installed.
 
 Using virtualenv
 ^^^^^^^^^^^^^^^^
@@ -52,7 +52,7 @@ Assuming you've already installed `virtualenv`, a virtual environment can be cre
 
 	$ virtualenv -p python2 mgkit-env
 
-which create a virtual environment in `mgkit-env`, with the interpreter used being the one linked to `python2`. Activating the environment requires using::
+which creates a virtual environment in `mgkit-env`, with the interpreter used being the one linked to `python2`. Activating the environment requires using::
 
 	$ source mgkit-env/bin/activate
 
@@ -99,11 +99,11 @@ Other libraries:
 Troubleshooting
 ---------------
 
-Some of the dependencies requires available compilers to finish the installation. At the mimimum a system that provides the full gnu compiler suite, including a fortran compiler is required to install those dependencies by source.
+Some of the dependencies require available compilers to finish the installation. At the mimimum a system that provides the full GNU compiler suite, including a fortran compiler is required to install those dependencies by source.
 
-If a compilation errors is raised during installation, it's adviced to install each dependency by hand.
+If a compilation error is raised during installation, it's adviced to install each dependency manually.
 
-I'll try to keep this section updated, but there's not that many OS that I can keep working on (mostly MacOSX and Linux).
+I'll try to keep this section updated, but there's not that many OS that I can keep working on (mostly MacOSX and GNU/Linux).
 
 HTSeq
 ^^^^^
@@ -165,8 +165,8 @@ Remember to add **-fPIC** to the compilation options in LAPACK to the **make.inc
 Notes
 -----
 
-Not all packages are required to use the part of the library but it's
-recommended to do it. Requirements are bound to change, but pandas, scipy,
+Not all packages are required to use the part of the library, but it's
+recommended to install all. Requirements are bound to change, but pandas, scipy,
 numpy, pysam and matplotlib are the bases of the library.
 
 To avoid problems with the system installation, I suggest using the excellent
@@ -174,6 +174,6 @@ To avoid problems with the system installation, I suggest using the excellent
 installing packages system-wide and breaking a working installation.
 
 
-.. rubric:: Footnotea
+.. rubric:: Footnotes
 
 .. [#] http://www.pip-installer.org/en/latest/user_guide.html#user-installs
