@@ -500,7 +500,7 @@ class KeggData(object):
                 if description:
                     rn_links[ko_id] = [
                         "{0}: {1}".format(rn.rn_id, rn.description)
-                        for rn in self[path_id][ko_id].reactions.values()
+                        for rn in self[path_id][ko_id].reactions.itervalues()
                     ]
                 else:
                     rn_links[ko_id] = self[path_id][ko_id].reactions.keys()
@@ -513,7 +513,7 @@ class KeggData(object):
                 if path_id != path_filter:
                     continue
             for ko_id in self[path_id]:
-                for rn in self[path_id][ko_id].reactions.values():
+                for rn in self[path_id][ko_id].reactions.itervalues():
                     if rn.rn_id in rn_links:
                         continue
                     cp_set = set()
@@ -521,7 +521,7 @@ class KeggData(object):
                         cp_set.update(
                             "{0}: {1}".format(cp.cp_id, cp.description)
                             for cp in itertools.chain(
-                                rn.cp_in.values(), rn.cp_out.values()
+                                rn.cp_in.itervalues(), rn.cp_out.itervalues()
                             )
                         )
                     else:
@@ -539,13 +539,13 @@ class KeggData(object):
                 if ko_id in ko_links:
                     continue
                 cp_set = set()
-                for rn in self[path_id][ko_id].reactions.values():
+                for rn in self[path_id][ko_id].reactions.itervalues():
                     if description:
                         cp_set.update(
                             "{0}: {1}".format(
                             cp.cp_id, cp.description)
                             for cp in itertools.chain(
-                                rn.cp_in.values(), rn.cp_out.values()
+                                rn.cp_in.itervalues(), rn.cp_out.itervalues()
                             )
                         )
                     else:
@@ -560,10 +560,10 @@ class KeggData(object):
                 if ko_id in cp_links:
                     continue
                 cp = set()
-                for rn in self[path_id][ko_id].reactions.values():
+                for rn in self[path_id][ko_id].reactions.itervalues():
                     cp_dict = getattr(rn, 'cp_' + direction)
                     if description:
-                        for cp_obj in cp_dict.values():
+                        for cp_obj in cp_dict.itervalues():
                             cp.add("{0}: {1}".format(
                                    cp_obj.cp_id, cp_obj.description))
                     else:

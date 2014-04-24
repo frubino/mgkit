@@ -169,7 +169,7 @@ class UniprotTaxon(object):
         True
         """
         if line is None:
-            for name, value in kwd.items():
+            for name, value in kwd.iteritems():
                 setattr(self, name, value)
         else:
             line = line.rstrip().split('\t')
