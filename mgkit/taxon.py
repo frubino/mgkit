@@ -11,29 +11,45 @@ import collections
 
 LOG = logging.getLogger(__name__)
 
+ALGAE = (
+    'haptophyceae',
+    'chlorophyta',
+    'stramenopiles',
+    'cryptophyta',
+    'rhodophyta',
+    'chlorophyta',
+)
+
+PROTISTS = (
+    'apicomplexa',
+    'alveolata',
+    'euglenozoa',
+    'ciliophora',
+    'amoebozoa',
+    'parabasalia',
+    'diplomonadida',
+    'parabasalia',
+    'choanoflagellida',
+)
+
+PLANTS = (
+    'streptophyta',
+
+)
 
 TAXON_ROOTS = (
-    'ciliophora',
     'archaea',
     'bacteria',
     'fungi',
-    'streptophyta',
     'metazoa',
-    'stramenopiles',
-    'cryptophyta',
-    'diplomonadida',
-    'rhodophyta',
-    'chlorophyta',
-    'apicomplexa',
     'heterolobosea',
     'environmental samples',
     'viruses',
     'viroids'
-    'parabasalia',
     'eukaryota',
     'other sequences',
     'unidentified'
-)
+) + PROTISTS + PLANTS + ALGAE
 "Root taxa used in analysis and filtering"
 
 TAXON_RANKS = (
