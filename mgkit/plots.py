@@ -562,7 +562,8 @@ def boxplot_snp_dataframe(ratios, plot_order, taxon_colours=None,
 
 
 def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
-                      fill_box=True, colours=None, data_colours=None):
+                      fill_box=True, colours=None, data_colours=None,
+                      box_vert=True):
     """
     .. versionadded:: 0.1.7
         To move from an all-in-one drawing to a more modular one.
@@ -607,7 +608,10 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
     else:
         fonts = DEFAULT_BOXPLOT_FONTCONF.copy()
 
-    plot_data = axes.boxplot([dataframe.loc[x].dropna() for x in plot_order])
+    plot_data = axes.boxplot(
+        [dataframe.loc[x].dropna() for x in plot_order],
+        vert=box_vert
+    )
 
     for idx, row_id in enumerate(plot_order):
         box = plot_data['boxes'][idx]
@@ -636,17 +640,31 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
             # data_colours[tx] if data_colours else colours['fliers']
         )
     if fonts is not None:
-        axes.set_xticklabels(
-            [
-                label if label_map is None else label_map[label]
-                for label in plot_order
-            ],
-            rotation=fonts['rotation'], fontsize=fonts['fontsize']
-        )
-        for label in axes.get_yticklabels():
-            label.set_fontsize(fonts['fontsize'])
+        if box_vert:
+            axes.set_xticklabels(
+                [
+                    label if label_map is None else label_map[label]
+                    for label in plot_order
+                ],
+                rotation=fonts['rotation'], fontsize=fonts['fontsize']
+            )
+            for label in axes.get_yticklabels():
+                label.set_fontsize(fonts['fontsize'])
+        else:
+            axes.set_yticklabels(
+                [
+                    label if label_map is None else label_map[label]
+                    for label in plot_order
+                ],
+                rotation=fonts['rotation'], fontsize=fonts['fontsize']
+            )
+            for label in axes.get_yticklabels():
+                label.set_fontsize(fonts['fontsize'])
     else:
-        axes.set_xticklabels([])
+        if box_vert:
+            axes.set_xticklabels([])
+        else:
+            axes.set_yticklabels([])
 
     return plot_data
 
