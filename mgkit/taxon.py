@@ -20,17 +20,25 @@ ALGAE = (
     'chlorophyta',
 )
 
-PROTISTS = (
-    'apicomplexa',
-    'alveolata',
-    'euglenozoa',
-    'ciliophora',
-    'amoebozoa',
-    'parabasalia',
-    'diplomonadida',
-    'parabasalia',
-    'choanoflagellida',
-)
+PROTISTS = {
+    #'apicomplexa', alveolata
+    #'ciliophora', alveolata
+    'alveolata': 33630,
+    'amoebozoa': 554915,
+    'apusozoa': 554296,
+    'breviatea': 1401294,
+    'centroheliozoa': 193537,
+    'choanoflagellida': 28009,
+    'diplomonadida': 5738,
+    'euglenozoa': 33682,
+    'formicata': 207245,
+    'heterolobosea': 5752,
+    'jakobida': 556282,
+    'malawimonadidae': 136087,
+    'oxymonadida': 66288,
+    'parabasalia': 5719,
+    'rhizaria': 543769,
+}
 
 PLANTS = (
     'streptophyta',
@@ -38,18 +46,17 @@ PLANTS = (
 )
 
 TAXON_ROOTS = (
-    'archaea',
-    'bacteria',
-    'fungi',
+    'archaea',  # 2157
+    'bacteria',  # 2
+    'fungi',  # 4751
     'metazoa',
-    'heterolobosea',
     'environmental samples',
     'viruses',
     'viroids'
     'eukaryota',
     'other sequences',
     'unidentified'
-) + PROTISTS + PLANTS + ALGAE
+) + tuple(PROTISTS) + PLANTS + ALGAE
 "Root taxa used in analysis and filtering"
 
 TAXON_RANKS = (
