@@ -1,6 +1,6 @@
 from nose.tools import *
 
-from mgkit.utils.common import average_length, between
+from mgkit.utils.common import average_length, between, union_range
 from mgkit.utils.dictionary import *
 
 
@@ -136,4 +136,39 @@ def test_find_id_in_dict():
     eq_(
         sorted(find_id_in_dict('v1', map_dict)),
         ['k3', 'k4']
+    )
+
+
+def test_union_range1():
+    eq_(
+        union_range(1, 10, 2, 13),
+        (1, 13)
+    )
+
+
+def test_union_range2():
+    eq_(
+        union_range(1, 10, 10, 13),
+        (1, 13)
+    )
+
+
+def test_union_range3():
+    eq_(
+        union_range(10, 13, 1, 10),
+        (1, 13)
+    )
+
+
+def test_union_range4():
+    eq_(
+        union_range(1, 10, 11, 13),
+        None
+    )
+
+
+def test_union_range5():
+    eq_(
+        union_range(10.0, 13.0, 1, 10),
+        (1, 13)
     )
