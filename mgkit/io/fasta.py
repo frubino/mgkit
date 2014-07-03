@@ -2,14 +2,8 @@
 """
 Simple fasta parser and a few utility functions
 """
-# import gff
 import logging
 import mgkit.io
-
-TEXT_WRAP_DEFAULT = 80
-"""
-Number of characters to use for wrapping
-"""
 
 LOG = logging.getLogger(__name__)
 
@@ -78,38 +72,3 @@ def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
         )
 
     file_handle.write(">{0}\n{1}\n".format(name, seq))
-
-# def filter_fasta(f_in, f_out, gff_file):
-#     f = open(f_in, 'r')
-#     Sequence = collections.namedtuple('Sequence', "name seq")
-
-#     LOG.info("Loading GFF annotations %s", gff_file)
-#     contigs = set(x.seq_id for x in gff.load_gff(open(gff_file, 'r')))
-    # seqs = [Sequence(name, seq)
-    #         for name, seq in load_fasta(f) if name in contigs]
-#     f = open(f_out, 'w')
-
-#     print "Writing %d sequences to file %s" % (len(seqs), f_out)
-#     for x in seqs:
-#         f.write(">{0}\n{1}\n".format(x.name, x.seq))
-
-
-# def contigs_stats(fname, all_length, gff_file=None):
-#     f = open(fname, 'r')
-#     Sequence = collections.namedtuple('Sequence', "name seq")
-#     if gff_file is None:
-#         seqs = [Sequence(name, seq) for name, seq in load_fasta(f)]
-#     else:
-#         print "Loading GFF annotations", gff_file
-#         contigs = set(x.seq_id for x in gff.load_gff(open(gff_file, 'r')))
-#         seqs = [Sequence(name, seq)
-# for name, seq in load_fasta(f) if name in contigs]
-
-#     all_len = [len(x.seq) for x in seqs]
-#     avg_len = sum(all_len) / float(len(seqs))
-#     print "Number of sequences %d with an average length of %f,
-    # print minimum %f, maximum %d" % (len(seqs), avg_len, min(all_len),
-    # print max(all_len))
-#     f = open(all_length, 'w')
-#     for x in all_len:
-#         f.write("{0}\n".format(x))
