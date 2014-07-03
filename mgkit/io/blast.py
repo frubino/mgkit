@@ -153,10 +153,10 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         value_funcs (None, list): list of functions to transform the value of
             all the requested columns. If *None* the values are not converted
 
-    Returns:
-        iterator: iterator of tuples with the first element being the query id
-        after key_func is applied, if requested and the second element of the
-        tuple is a tuple with the requested columns *ret_col*
+    Yields:
+        tuple: iterator of tuples with the first element being the query id
+            after key_func is applied, if requested and the second element of the
+            tuple is a tuple with the requested columns *ret_col*
 
     .. table:: BLAST+ used with `-outfmt 6`, default columns
 
