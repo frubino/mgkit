@@ -283,3 +283,294 @@ def test_gff_from_sequence1():
             len(misc_data.NUC_SEQS['contig-110637'])
         )
     )
+
+
+def test_genomicrange_union1():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 19
+    gen_range2.end = 30
+
+    gen_range_u = gen_range1.union(gen_range2)
+
+    eq_(
+        (gen_range_u.start, gen_range_u.end),
+        (10, 30)
+    )
+
+
+def test_genomicrange_union2():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 10
+    gen_range2.end = 20
+
+    gen_range_u = gen_range1.union(gen_range2)
+
+    eq_(
+        (gen_range_u.start, gen_range_u.end),
+        (10, 20)
+    )
+
+
+def test_genomicrange_union3():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 20
+    gen_range2.end = 30
+
+    gen_range_u = gen_range1.union(gen_range2)
+
+    eq_(
+        (gen_range_u.start, gen_range_u.end),
+        (10, 30)
+    )
+
+
+def test_genomicrange_union4():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 20
+    gen_range2.end = 30
+
+    gen_range_u = gen_range2.union(gen_range1)
+
+    eq_(
+        (gen_range_u.start, gen_range_u.end),
+        (10, 30)
+    )
+
+
+def test_genomicrange_union_fail1():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq2'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 19
+    gen_range2.end = 30
+
+    gen_range_u = gen_range1.union(gen_range2)
+
+    eq_(
+        gen_range_u,
+        None
+    )
+
+
+def test_genomicrange_union_fail2():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '-'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 19
+    gen_range2.end = 30
+
+    gen_range_u = gen_range1.union(gen_range2)
+
+    eq_(
+        gen_range_u,
+        None
+    )
+
+
+def test_genomicrange_union_fail3():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 21
+    gen_range2.end = 30
+
+    gen_range_u = gen_range1.union(gen_range2)
+
+    eq_(
+        gen_range_u,
+        None
+    )
+
+
+def test_genomicrange_intersect1():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 19
+    gen_range2.end = 30
+
+    gen_range_u = gen_range1.intersect(gen_range2)
+
+    eq_(
+        (gen_range_u.start, gen_range_u.end),
+        (19, 20)
+    )
+
+
+def test_genomicrange_intersect2():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 15
+    gen_range2.end = 30
+
+    gen_range_u = gen_range1.intersect(gen_range2)
+
+    eq_(
+        (gen_range_u.start, gen_range_u.end),
+        (15, 20)
+    )
+
+
+def test_genomicrange_intersect3():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 15
+    gen_range2.end = 30
+
+    gen_range_u = gen_range2.intersect(gen_range1)
+
+    eq_(
+        (gen_range_u.start, gen_range_u.end),
+        (15, 20)
+    )
+
+
+def test_genomicrange_intersect4():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 10
+    gen_range2.end = 20
+
+    gen_range_u = gen_range2.intersect(gen_range1)
+
+    eq_(
+        (gen_range_u.start, gen_range_u.end),
+        (10, 20)
+    )
+
+
+def test_genomicrange_intersect_fail1():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq2'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 10
+    gen_range2.end = 20
+
+    gen_range_u = gen_range2.intersect(gen_range1)
+
+    eq_(
+        gen_range_u,
+        None
+    )
+
+
+def test_genomicrange_intersect_fail2():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '-'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 10
+    gen_range2.end = 20
+
+    gen_range_u = gen_range2.intersect(gen_range1)
+
+    eq_(
+        gen_range_u,
+        None
+    )
+
+
+def test_genomicrange_intersect_fail3():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 30
+    gen_range2.end = 40
+
+    gen_range_u = gen_range2.intersect(gen_range1)
+
+    eq_(
+        gen_range_u,
+        None
+    )
+
+
+def elongate_data():
+    seq_id = 'test1'
+
+    test_ann = [
+        gff.GenomicRange(seq_id=seq_id, start=1, end=10),
+        gff.GenomicRange(seq_id=seq_id, start=10, end=15),
+        gff.GenomicRange(seq_id=seq_id, start=16, end=18),
+    ]
+    return test_ann
