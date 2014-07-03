@@ -13,18 +13,20 @@ import logging
 from ..utils import sequence as seq_utils
 from ..filter.lists import aggr_filtered_list
 from ..consts import MIN_COV
+from ..utils.common import between, union_range
 from .. import taxon
 from . import fasta
 import numpy
 import urllib
 import mgkit.io
 
-
 LOG = logging.getLogger(__name__)
 
 
 class AttributeNotFound(Exception):
     """
+    .. deprecated:: 0.1.12
+
     Raised if an attribute is not found in a GFF file
     """
     pass
@@ -32,6 +34,9 @@ class AttributeNotFound(Exception):
 
 class GFFAttributesDict(dict):
     """
+    .. deprecated:: 0.1.12
+        Use :class:`Annotation` instead
+
     Class used to store attributes stored in the last column of a GFF file.
     All attribute values are stored as string in the GFF file.
 
@@ -126,6 +131,9 @@ class GFFAttributesDict(dict):
 
 class BaseGFFDict(object):
     """
+    .. deprecated:: 0.1.12
+        Use :class:`Annotation` instead
+
     Base GFF class
     """
     _hash = None
@@ -250,90 +258,6 @@ class BaseGFFDict(object):
         """
         file_handle.write(self.to_string(val_sep=val_sep))
 
-    @staticmethod
-    def from_glimmer3(header, line, feat_type='CDS'):
-        """
-        .. versionadded:: 0.1.12
-
-        Parses the line of a GLIMMER3 ouput and returns an instance of a GFF
-        annotation.
-
-        Arguments:
-            header (str): the seq_id to which the ORF belongs
-            line (str): the prediction line for the orf
-            feat_type (str): the feature type to use
-
-        Returns:
-            BaseGFFDict: instance of annotation
-
-        Example:
-            Assuming a GLIMMER3 output like this::
-
-                >sequence0001
-                orf00001       66      611  +3     6.08
-
-            The code used is:
-
-            >>> header = 'sequence0001'
-            >>> line = 'orf00001       66      611  +3     6.08'
-            >>> BaseGFFDict.from_glimmer3(header, line)
-
-        """
-        orf_id, start, end, frame, score = line.split()
-
-        start = int(start)
-        end = int(end)
-
-        if start > end:
-            start, end = end, start
-
-        annotation = BaseGFFDict(
-            seq_id=header,
-            source='GLIMMER3',
-            feat_type=feat_type,
-            feat_from=start,
-            feat_to=end,
-            score=score,
-            strand=frame[0],
-            phase=int(frame[1]) - 1,
-            frame=frame,
-            glimmer_score=score,
-            orf_id=orf_id
-        )
-
-        return annotation
-
-    @staticmethod
-    def from_sequence(name, seq, feat_type='CDS'):
-        """
-        .. versionadded:: 0.1.12
-
-        Makes an annotation from a sequence. The annotation covers the entire
-        sequence.
-
-        Arguments:
-            name (str): the name of the sequence
-            seq (str): the nucleotide sequence
-            feat_type (str): the feature type to use
-
-        Returns:
-            BaseGFFDict: instance of annotation
-        """
-
-        annotation = BaseGFFDict(
-            seq_id=name,
-            source='SEQUENCE',
-            feat_type=feat_type,
-            feat_from=1,
-            feat_to=len(seq),
-            score=0.0,
-            strand='+',
-            phase=0,
-            sequence=name
-        )
-
-        return annotation
-
     def __str__(self):
         return self.to_string()
 
@@ -360,6 +284,9 @@ class BaseGFFDict(object):
 
 class GFFKegg(BaseGFFDict):
     """
+    .. deprecated:: 0.1.12
+        Use :class:`Annotation` instead
+
     GFF with Kegg specific attributes/methods
     """
     def __init__(self, line=None, **kwd):
@@ -1293,43 +1220,476 @@ def write_gff(annotations, file_handle):
         annotation.to_file(file_handle)
 
 
-def parse_glimmer3(file_handle, feat_type='CDS'):
+class GenomicRange(object):
+    """
+    Defines a genomic range
+    """
+    seq_id = 'None'
+    "Sequence ID"
+    strand = '+'
+    "Strand"
+    start = None
+    "Start of the range, 1-based"
+    end = None
+    "End of the range 1-based"
+
+    def __init__(self, seq_id='None', start=1, end=1, strand='+'):
+        self.seq_id = seq_id
+        self.strand = strand
+        self.start = start
+        self.end = end
+
+    def __eq__(self, other):
+        if (self.seq_id != other.seq_id) or (self.strand != other.strand):
+            return False
+        if (self.start != other.start) or (self.end != other.end):
+            return False
+        return True
+
+    def __len__(self):
+        return self.end - self.start + 1
+
+    def __str__(self):
+        return "{0}({1}):{2}-{3}".format(
+            self.seq_id,
+            self.strand,
+            self.start,
+            self.end
+        )
+
+    def __repr__(self):
+        return str(self)
+
+    def union(self, other):
+        """
+        Return the union of two :class:`GenomicRange`
+        """
+        if (self.seq_id == other.seq_id) and (self.strand == other.strand):
+            result = union_range(self.start, self.end, other.start, other.end)
+            if result is not None:
+
+                gen_range = GenomicRange()
+                gen_range.seq_id = self.seq_id
+                gen_range.strand = self.strand
+                gen_range.start = result[0]
+                gen_range.end = result[1]
+
+                return gen_range
+
+        return None
+
+    def expand_from_list(self, others):
+        """
+        Expand the :class:`GenomicRange` range instance with a list of
+        :class:`GenomicRange`
+
+        Arguments:
+            others (iterable): iterable of :class:`GenomicRange`
+        """
+        new_range = self
+
+        for other in others:
+            union = new_range.union(other)
+            if union is None:
+                continue
+            new_range = union
+
+        self.start = new_range.start
+        self.end = new_range.end
+
+    def intersect(self, other):
+        """
+        Return an instance of :class:`GenomicRange` that represent the
+        intersection of the current instance and another.
+        """
+        if (self.seq_id == other.seq_id) and (self.strand == other.strand):
+
+            if between(other.start, self.start, self.end) or \
+               between(other.end, self.start, self.end):
+
+                gen_range = GenomicRange()
+                gen_range.start = max(self.start, other.start)
+                gen_range.end = min(self.end, other.end)
+
+                return gen_range
+
+        return None
+
+
+class Annotation(GenomicRange):
     """
     .. versionadded:: 0.1.12
 
-    Parse a GLIMMER3 file and returns generator of :class:`BaseGFFDict`
-    instances
+    Alternative implementation for an Annotation
+    """
+    source = 'None'
+    feat_type = 'None'
+    score = 0.0
+    phase = 0
+    attr = None
 
-    Accepts a file handle or a string with the file name
+    def __init__(self, seq_id='None', start=1, end=1, strand='+', source='None', feat_type='None', score=0.0, phase=0, **kwd):
+        super(Annotation, self).__init__(
+            seq_id=seq_id,
+            start=start,
+            end=end,
+            strand=strand
+        )
+        self.source = source
+        self.feat_type = feat_type
+        self.score = score
+        self.phase = phase
+        self.attr = kwd
+
+    @property
+    def taxon_id(self):
+        try:
+            return int(self.attr['taxon_id'])
+        except KeyError:
+            return None
+
+    @taxon_id.setter
+    def taxon_id(self, value):
+        self.attr['taxon_id'] = int(value)
+
+    @property
+    def db(self):
+        return self.attr.get('db', None)
+
+    @db.setter
+    def db(self, value):
+        self.attr['db'] = value
+
+    @property
+    def bitscore(self):
+        try:
+            return float(self.attr['bitscore'])
+        except KeyError:
+            #legacy for old data
+            return float(self.attr.get('bit_score', None))
+
+    @bitscore.setter
+    def bitscore(self, value):
+        self.attr['bitscore'] = float(value)
+
+    @property
+    def gene_id(self):
+        try:
+            return self.attr['gene_id']
+        except KeyError:
+            #legacy for old data
+            return self.attr.get('ko', None)
+
+    @gene_id.setter
+    def gene_id(self, value):
+        self.attr['gene_id'] = value
+
+    def to_gff(self, sep='='):
+        """
+        Format the Annotation as a GFF string.
+
+        Arguments:
+            sep (str): separator key -> value
+
+        Returns:
+            str: annotation formatted as GFF
+        """
+        var_names = (
+            'seq_id', 'source', 'feat_type', 'start', 'end',
+            'score', 'strand', 'phase'
+        )
+
+        values = '\t'.join(
+            str(getattr(self, var_name))
+            for var_name in var_names
+        )
+
+        attr_column = ';'.join(
+            '{0}{1}"{2}"'.format(
+                key,
+                sep,
+                urllib.quote(str(self.attr[key]), ' ()/')
+            )
+            for key in sorted(self.attr)
+        )
+
+        return "{0}\t{1}\n".format(values, attr_column)
+
+    def to_gtf(self):
+        pass
+
+
+def from_glimmer3(header, line, feat_type='CDS'):
+    """
+    .. versionadded:: 0.1.12
+
+    Parses the line of a GLIMMER3 ouput and returns an instance of a GFF
+    annotation.
 
     Arguments:
-        file_handle (str, file): file name or file handle to read from
+        header (str): the seq_id to which the ORF belongs
+        line (str): the prediction line for the orf
+        feat_type (str): the feature type to use
 
     Returns:
-        generator: an iterator of :class:`BaseGFFDict` instances
+        BaseGFFDict: instance of annotation
+
+    Example:
+        Assuming a GLIMMER3 output like this::
+
+            >sequence0001
+            orf00001       66      611  +3     6.08
+
+        The code used is:
+
+        >>> header = 'sequence0001'
+        >>> line = 'orf00001       66      611  +3     6.08'
+        >>> from_glimmer3(header, line)
 
     """
+    orf_id, start, end, frame, score = line.split()
 
-    if isinstance(file_handle, str):
-        file_handle = open(file_handle, 'r')
+    start = int(start)
+    end = int(end)
 
-    LOG.info(
-        "Parsing GLIMMER3 output from file (%s)",
-        getattr(file_handle, 'name', repr(file_handle))
+    if start > end:
+        start, end = end, start
+
+    annotation = Annotation(
+        seq_id=header,
+        source='GLIMMER3',
+        feat_type=feat_type,
+        start=start,
+        end=end,
+        score=score,
+        strand=frame[0],
+        phase=int(frame[1]) - 1,
+        frame=frame,
+        glimmer_score=score,
+        orf_id=orf_id
     )
 
-    for line in file_handle:
-        line = line.strip()
+    return annotation
 
-        if not line:
-            break
 
-        if line.startswith('>'):
-            header = line[1:]
-        else:
-            annotation = BaseGFFDict.from_glimmer3(
-                header,
-                line,
-                feat_type=feat_type
-            )
-            yield annotation
+class DuplicateKeyError(Exception):
+    """
+    .. versionadded:: 0.1.12
+
+    Raised if a GFF annotation contains duplicate keys
+    """
+    pass
+
+
+def from_gff(line):
+    """
+    .. versionadded:: 0.1.12
+
+    Parse GFF line and returns an :class:`Annotation` instance
+
+    Arguments:
+        line (str): GFF line
+
+    Returns:
+        Annotation: instance of :class:`Annotation` for the line
+
+    Raises:
+        DuplicateKeyError: if the attribute column has duplicate keys
+
+    """
+    line = line.rstrip()
+    line = line.split('\t')
+
+    #in case the last column (attributes) is empty
+    if len(line) < 9:
+        values = line
+    else:
+        values = line[:-1]
+
+    var_names = (
+        'seq_id', 'source', 'feat_type', 'start', 'end',
+        'score', 'strand', 'phase'
+    )
+    var_types = (str, str, str, int, int, float, str, int)
+
+    attr = {}
+
+    for var, value, vtype in zip(var_names, values, var_types):
+        attr[var] = vtype(value)
+
+    #in case the last column (attributes) is empty
+    if len(line) < 9:
+        return Annotation(**attr)
+
+    for pair in line[-1].split(';'):
+        try:
+            #by default the key,value separator '=' is assumed to be used
+            var, value = pair.strip().split('=', 1)
+        except ValueError:
+            #in case it doesn't work, it is assumed to be a space
+            var, value = pair.strip().split(' ', 1)
+
+        if var in attr:
+            raise DuplicateKeyError("Duplicate attribute: {0}".format(var))
+
+        attr[var] = urllib.unquote(value.replace('"', ''))
+
+    return Annotation(**attr)
+
+
+def from_sequence(name, seq, feat_type='CDS', **kwd):
+    """
+    .. versionadded:: 0.1.12
+
+    Returns an instance of :class:`Annotation` for the full length of a sequence
+
+    Arguments:
+        name (str): name of the sequence
+        seq (str): sequence, to get the length of the annotation
+
+    Keyword Args:
+        feat_type (str): feature type in the GFF
+        **kwd: any additional column
+
+    Returns:
+        Annotation: instance of :class:`Annotation`
+
+    """
+    annotation = Annotation(
+        seq_id=name,
+        source='SEQUENCE',
+        feat_type=feat_type,
+        start=1,
+        end=len(seq),
+        score=0.0,
+        strand='+',
+        phase=0,
+        sequence=name,
+        **kwd
+    )
+
+    return annotation
+
+
+def from_aa_blast_frag(hit, parent_ann, aa_seqs):
+    frag_id, frame = hit[0].split('-')
+    strand = '+' if frame.startswith('f') else '-'
+    frame = int(frame[1])
+    identity = hit[2]
+    bitscore = hit[-1]
+    start = hit[3]
+    end = hit[4]
+    if strand == '-':
+        start, end = seq_utils.reverse_aa_coord(
+            start,
+            end,
+            len(aa_seqs[hit[0]])
+        )
+    start, end = seq_utils.convert_aa_to_nuc_coord(start, end, frame)
+
+    annotation = Annotation(
+        seq_id=parent_ann.seq_id,
+        source='BLAST',
+        feat_type='CDS',
+        start=start+parent_ann.start-1,
+        end=end+parent_ann.start-1,
+        score=bitscore,
+        strand=strand,
+        phase=frame,
+        db='UNIPROT',
+        gene_id=hit[1],
+        identity=identity,
+        bitscore=bitscore,
+        ID=frag_id
+    )
+
+    return annotation
+
+
+def from_nuc_blast_frag(hit, parent_ann, db='NCBI-NT'):
+    frag_id = hit[0]
+    strand = '+'
+    identity = hit[2]
+    bitscore = hit[-1]
+    start = hit[3]
+    end = hit[4]
+
+    annotation = Annotation(
+        seq_id=parent_ann.seq_id,
+        source='BLAST',
+        feat_type='CDS',
+        start=start+parent_ann.start-1,
+        end=end+parent_ann.start-1,
+        score=bitscore,
+        strand=strand,
+        phase=0,
+        db=db,
+        gene_id=hit[1],
+        identity=identity,
+        bitscore=bitscore,
+        ID=frag_id
+    )
+
+    return annotation
+
+
+def annotate_sequence(name, seq, window=None):
+
+    length = len(seq)
+
+    if window is None:
+        window = length
+
+    for index in xrange(1, length, window):
+        annotation = Annotation.from_sequence(name, seq)
+        annotation.start = index
+        annotation.end = index + window - 1
+        if annotation.end > length:
+            annotation.end = length
+        yield annotation
+
+
+def from_nuc_blast(hit, db, **kwd):
+    """
+    .. versionadded:: 0.1.12
+
+    Returns an instance of :class:`Annotation`
+
+    Arguments:
+        hit (tuple): a BLAST hit, from :func:`mgkit.io.blast.parse_blast_tab`
+        db (str): db used with BLAST
+
+    Keyword Args:
+        **kwd: any additional column
+
+    Returns:
+        Annotation: instance of :class:`Annotation`
+    """
+    seq_id = hit[0]
+    strand = '+'
+    identity = hit[2]
+    bitscore = hit[-1]
+    start = hit[3]
+    end = hit[4]
+
+    if start > end:
+        start, end = end, start
+        strand = '-'
+
+    annotation = Annotation(
+        seq_id=seq_id,
+        source='BLAST',
+        feat_type='CDS',
+        start=start,
+        end=end,
+        score=bitscore,
+        strand=strand,
+        phase=0,
+        db=db,
+        gene_id=hit[1],
+        identity=identity,
+        bitscore=bitscore,
+        **kwd
+    )
+
+    return annotation
