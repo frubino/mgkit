@@ -1170,41 +1170,13 @@ def count_attr_by_sample(annotations, keyattr, valattr, samples,
     return count_dict
 
 
-def parse_gff(file_handle, gff_type=GFFKegg):
-    """
-    .. versionchanged:: 0.1.12
-        added *gff_type* parameter
-
-    Parse a GFF file and returns generator of :class:`GFFKegg` instances
-
-    Accepts a file handle or a string with the file name
-
-    Arguments:
-        file_handle (str, file): file name or file handle to read from
-        gff_type (class): class used to parse a GFF annotation
-
-    Returns:
-        generator: an iterator of :class:`GFFKegg` instances
-    """
-    if isinstance(file_handle, str):
-        file_handle = mgkit.io.open_file(file_handle, 'r')
-
-    LOG.info(
-        "Loading GFF from file (%s)",
-        getattr(file_handle, 'name', repr(file_handle))
-    )
-
-    for line in file_handle:
-        annotation = gff_type(line)
-        yield annotation
-
-
 def write_gff(annotations, file_handle):
     """
     Write a GFF to file
 
     Arguments:
-        annotations (iterable): iterable that returns :class:`GFFKegg` instances
+        annotations (iterable): iterable that returns :class:`GFFKegg`
+            of :class:`Annotation` instances
         file_handle (str, file): file name or file handle to write to
     """
 
@@ -1305,7 +1277,9 @@ class GenomicRange(object):
         if (self.seq_id == other.seq_id) and (self.strand == other.strand):
 
             if between(other.start, self.start, self.end) or \
-               between(other.end, self.start, self.end):
+               between(other.end, self.start, self.end) or \
+               between(self.start, other.start, other.end) or \
+               between(self.end, other.start, other.end):
 
                 gen_range = GenomicRange()
                 gen_range.start = max(self.start, other.start)
@@ -1414,6 +1388,12 @@ class Annotation(GenomicRange):
         )
 
         return "{0}\t{1}\n".format(values, attr_column)
+
+    def to_file(self, file_handle):
+        """
+        Writes the GFF annotation to *file_handle*
+        """
+        file_handle.write(self.to_gff())
 
     def to_gtf(self):
         pass
@@ -1649,7 +1629,7 @@ def annotate_sequence(name, seq, window=None):
         yield annotation
 
 
-def from_nuc_blast(hit, db, **kwd):
+def from_nuc_blast(hit, db, feat_type='CDS', **kwd):
     """
     .. versionadded:: 0.1.12
 
@@ -1660,6 +1640,7 @@ def from_nuc_blast(hit, db, **kwd):
         db (str): db used with BLAST
 
     Keyword Args:
+        feat_type (str): feature type in the GFF
         **kwd: any additional column
 
     Returns:
@@ -1679,7 +1660,7 @@ def from_nuc_blast(hit, db, **kwd):
     annotation = Annotation(
         seq_id=seq_id,
         source='BLAST',
-        feat_type='CDS',
+        feat_type=feat_type,
         start=start,
         end=end,
         score=bitscore,
@@ -1693,3 +1674,32 @@ def from_nuc_blast(hit, db, **kwd):
     )
 
     return annotation
+
+
+def parse_gff(file_handle, gff_type=from_gff):
+    """
+    .. versionchanged:: 0.1.12
+        added *gff_type* parameter
+
+    Parse a GFF file and returns generator of :class:`GFFKegg` instances
+
+    Accepts a file handle or a string with the file name
+
+    Arguments:
+        file_handle (str, file): file name or file handle to read from
+        gff_type (class): class/function used to parse a GFF annotation
+
+    Yields:
+        Annotation: an iterator of :class:`Annotation` instances
+    """
+    if isinstance(file_handle, str):
+        file_handle = mgkit.io.open_file(file_handle, 'r')
+
+    LOG.info(
+        "Loading GFF from file (%s)",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
+
+    for line in file_handle:
+        annotation = gff_type(line)
+        yield annotation

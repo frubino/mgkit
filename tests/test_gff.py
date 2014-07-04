@@ -481,6 +481,30 @@ def test_genomicrange_intersect4():
     )
 
 
+def test_genomicrange_intersect5():
+    gen_range1 = gff.GenomicRange(seq_id='seq1', strand='+', start=10, end=20)
+    gen_range2 = gff.GenomicRange(seq_id='seq1', strand='+', start=12, end=18)
+
+    gen_range_u = gen_range2.intersect(gen_range1)
+
+    eq_(
+        len(gen_range_u),
+        len(gen_range2)
+    )
+
+
+def test_genomicrange_intersect6():
+    gen_range1 = gff.GenomicRange(seq_id='seq1', strand='+', start=10, end=20)
+    gen_range2 = gff.GenomicRange(seq_id='seq1', strand='+', start=12, end=18)
+
+    gen_range_u = gen_range1.intersect(gen_range2)
+
+    eq_(
+        len(gen_range_u),
+        len(gen_range2)
+    )
+
+
 def test_genomicrange_intersect_fail1():
     gen_range1 = gff.GenomicRange()
     gen_range1.seq_id = 'seq2'
@@ -550,3 +574,13 @@ def elongate_data():
         gff.GenomicRange(seq_id=seq_id, start=16, end=18),
     ]
     return test_ann
+
+
+def test_annotation1():
+    ann = gff.Annotation(start=1, end=10)
+    eq_(len(ann), 10)
+
+
+def test_genomicrange_misc1():
+    ann = gff.GenomicRange(start=1, end=10)
+    eq_(len(ann), 10)
