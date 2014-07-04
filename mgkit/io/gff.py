@@ -1461,11 +1461,11 @@ def from_glimmer3(header, line, feat_type='CDS'):
         feat_type=feat_type,
         start=start,
         end=end,
-        score=score,
+        score=float(score),
         strand=frame[0],
         phase=int(frame[1]) - 1,
         frame=frame,
-        glimmer_score=score,
+        glimmer_score=float(score),
         orf_id=orf_id
     )
 

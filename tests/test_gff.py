@@ -192,18 +192,18 @@ def test_gffkegg_get_taxon_id2():
 def test_gff_glimmer3_line1():
     header = 'sequence0001'
     line = 'orf00001       66      611  +3     6.08'
-    annotation = gff.BaseGFFDict.from_glimmer3(header, line)
+    annotation = gff.from_glimmer3(header, line)
 
     eq_(
         (
             annotation.seq_id,
-            annotation.feat_from,
-            annotation.feat_to,
+            annotation.start,
+            annotation.end,
             annotation.score,
             annotation.strand,
             annotation.phase,
-            annotation.attributes.orf_id,
-            annotation.attributes.frame
+            annotation.attr['orf_id'],
+            annotation.attr['frame']
         ),
         (
             header,
@@ -221,15 +221,15 @@ def test_gff_glimmer3_line1():
 def test_gff_glimmer3_line2():
     header = 'sequence0001'
     line = 'orf00001       66      11  -2     6.08'
-    annotation = gff.BaseGFFDict.from_glimmer3(header, line)
+    annotation = gff.from_glimmer3(header, line)
 
     eq_(
         (
-            annotation.feat_from,
-            annotation.feat_to,
+            annotation.start,
+            annotation.end,
             annotation.strand,
             annotation.phase,
-            annotation.attributes.frame
+            annotation.attr['frame']
         ),
         (
             11,
@@ -241,41 +241,17 @@ def test_gff_glimmer3_line2():
     )
 
 
-@with_setup(setup=misc_data.setup_glimmer3_data)
-def test_gff_glimmer_parse():
-    annotations = list(gff.parse_glimmer3(misc_data.GLIMMER3_FILE))
-
-    eq_(
-        (
-            sum(1 for annotation in annotations if annotation.seq_id == 'scaff01'),
-            sum(1 for annotation in annotations if annotation.seq_id == 'scaff21'),
-            annotations[4].feat_from,
-            annotations[6].feat_from,
-            annotations[7].feat_from,
-            annotations[8].feat_from,
-        ),
-        (
-            7,
-            2,
-            3340,
-            6079,
-            76,
-            60
-        )
-    )
-
-
 @with_setup(setup=misc_data.setup_nucseq_data)
 def test_gff_from_sequence1():
-    annotation = gff.BaseGFFDict.from_sequence(
+    annotation = gff.from_sequence(
         'contig-110637',
         misc_data.NUC_SEQS['contig-110637']
     )
     eq_(
         (
             annotation.seq_id,
-            annotation.feat_from,
-            annotation.feat_to,
+            annotation.start,
+            annotation.end,
         ),
         (
             'contig-110637',
