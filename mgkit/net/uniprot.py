@@ -7,6 +7,7 @@ from __future__ import division
 import urllib
 import mgkit
 import logging
+import itertools
 from . import url_read
 
 UNIPROT_MAP = 'http://www.uniprot.org/mapping/'
@@ -277,3 +278,42 @@ def query_uniprot(query, columns, format='tab', limit=None, contact=None):
         LOG.debug("request length %d", len(data))
 
     return url_read(UNIPROT_GET, data, agent=contact)
+
+
+def parse_uniprot_response(data, simple=True):
+    """
+    Parses raw response from a Uniprot query (tab format only) from functions
+    like :func:`query_uniprot` into a dictionary. It requires that the first
+    column is the entry id (or any other unique id).
+
+    Arguments:
+        data (str): string response from Uniprot
+        simple (bool): if True and the number of columns is 1, the dictionary
+            returned has a simplified structure
+
+    Returns:
+        dict: The format of the resulting dictionary is
+        entry_id -> {column1 -> value, column2 -> value, ..} unless there's
+        only one column and *simple* is True, in which case the value is
+        equal to the value of the only column.
+    """
+    data = data.splitlines()
+
+    columns = [x.lower() for x in data[0].split('\t')[1:]]
+
+    del data[0]
+
+    parsed_data = {}
+
+    for line in data:
+        line = line.split('\t')
+        entry_id = line[0]
+
+        if (len(columns) == 1) and simple:
+            parsed_data[entry_id] = line[1]
+        else:
+            parsed_data[entry_id] = dict(
+                itertools.izip(columns, line[1:])
+            )
+
+    return parsed_data
