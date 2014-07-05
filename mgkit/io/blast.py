@@ -5,6 +5,8 @@ Blast routines and parsers
 
 import logging
 import collections
+from . import gff
+from . import open_file
 
 NUM_LINES = 10**6
 
@@ -144,7 +146,7 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     id) and the columns requested in a tuple.
 
     Arguments:
-        file_handle (file): file handle for the blast ouput
+        file_handle (file): file name or file handle for the blast ouput
         seq_id (int): index for the column which has the query id
         ret_col (list, None): list of indexes for the columns to be returned or
             *None* if all columns must be returned
@@ -199,6 +201,9 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     if ret_col is None:
         ret_col = range(12)
 
+    if isinstance(file_handle, str):
+        file_handle = open_file(file_handle, 'r')
+
     for line in file_handle:
         if line.startswith('#'):
             continue
@@ -216,3 +221,33 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         )
 
         yield key, values
+
+
+def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10):
+    """
+    .. versionadded:: 0.1.12
+
+    Parses BLAST results in tabular format using :func:`parse_blast_tab`,
+    applying a basic bitscore filter. Returns the annotations associated with
+    each BLAST hit.
+
+    Arguments:
+        file_handle (str, file): file name or open file handle
+        bitscore (int, float): the minimum bitscore for an annotation to be
+            accepted
+        dbq (int): an index indicating the quality of the sequence database
+            used; this value is used in the filtering of annotations
+
+    Yields:
+        Annotation: instances of :class:`mgkit.io.gff.Annotation` instance of
+        each BLAST hit.
+    """
+
+    #the second function extract the Uniprot ID from the sequence header
+    value_funcs = (str, lambda x: x.split('|')[1], float, int, int, float)
+
+    for seq_id, hit in parse_blast_tab(file_handle, value_funcs=value_funcs):
+        if hit[-1] < bitscore:
+            continue
+
+        yield gff.from_nuc_blast(hit, db=db, dbq=dbq)
