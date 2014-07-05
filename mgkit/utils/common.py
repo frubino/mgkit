@@ -1,6 +1,7 @@
 """
 Utility functions
 """
+from __future__ import division
 
 
 def average_length(a1s, a1e, a2s, a2e):
@@ -51,6 +52,8 @@ def union_range(start1, end1, start2, end2):
     Example:
         >>> union_range(10, 13, 1, 10)
         (1, 13)
+        >>> union_range(1, 10, 11, 13)
+        None
 
     """
     if between(start2, start1, end1) or between(end2, start1, end1):

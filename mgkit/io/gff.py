@@ -1297,10 +1297,15 @@ class Annotation(GenomicRange):
     Alternative implementation for an Annotation
     """
     source = 'None'
+    "Annotation source"
     feat_type = 'None'
+    "Annotation type (e.g. CDS, gene, exon, etc.)"
     score = 0.0
+    "Score associated to the annotation"
     phase = 0
+    "Annotation phase, (0, 1, 2)"
     attr = None
+    "Dictionary with the key value pairs in the last column of a GFF/GTF"
 
     def __init__(self, seq_id='None', start=1, end=1, strand='+', source='None', feat_type='None', score=0.0, phase=0, **kwd):
         super(Annotation, self).__init__(
@@ -1317,6 +1322,7 @@ class Annotation(GenomicRange):
 
     @property
     def taxon_id(self):
+        "taxon_id of the annotation"
         try:
             return int(self.attr['taxon_id'])
         except KeyError:
@@ -1328,6 +1334,7 @@ class Annotation(GenomicRange):
 
     @property
     def db(self):
+        "db name of the annotation"
         return self.attr.get('db', None)
 
     @db.setter
@@ -1335,7 +1342,17 @@ class Annotation(GenomicRange):
         self.attr['db'] = value
 
     @property
+    def dbq(self):
+        "db quality of the annotation"
+        return self.attr.get('dbq', None)
+
+    @dbq.setter
+    def dbq(self, value):
+        self.attr['dbq'] = value
+
+    @property
     def bitscore(self):
+        "bitscore of the annotation"
         try:
             return float(self.attr['bitscore'])
         except KeyError:
@@ -1348,6 +1365,7 @@ class Annotation(GenomicRange):
 
     @property
     def gene_id(self):
+        "gene_id of the annotation, or *ko* if available"
         try:
             return self.attr['gene_id']
         except KeyError:
@@ -1703,3 +1721,24 @@ def parse_gff(file_handle, gff_type=from_gff):
     for line in file_handle:
         annotation = gff_type(line)
         yield annotation
+
+
+def diff_gff(files, key_func=None):
+
+    if isinstance(files, str) or len(files) == 1:
+        return
+
+    if key_func is None:
+        key_func = lambda x: (x.seq_id, x.strand, x.start, x.end, x.gene_id, x.bitscore)
+
+    gff_diff = {}
+
+    for index, file_handle in enumerate(files):
+        for lineno, annotation in enumerate(parse_gff(file_handle)):
+            key = key_func(annotation)
+            try:
+                gff_diff[key].append((index, lineno))
+            except KeyError:
+                gff_diff[key] = [(index, lineno)]
+
+    return gff_diff
