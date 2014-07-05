@@ -1357,7 +1357,8 @@ class Annotation(GenomicRange):
             return float(self.attr['bitscore'])
         except KeyError:
             #legacy for old data
-            return float(self.attr.get('bit_score', None))
+            bitscore = self.attr.get('bit_score', None)
+            return None if bitscore is None else float(bitscore)
 
     @bitscore.setter
     def bitscore(self, value):
