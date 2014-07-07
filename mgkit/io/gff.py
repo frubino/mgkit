@@ -1653,7 +1653,7 @@ def annotate_sequence(name, seq, window=None):
         yield annotation
 
 
-def from_nuc_blast(hit, db, feat_type='CDS', **kwd):
+def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
     """
     .. versionadded:: 0.1.12
 
@@ -1665,6 +1665,8 @@ def from_nuc_blast(hit, db, feat_type='CDS', **kwd):
 
     Keyword Args:
         feat_type (str): feature type in the GFF
+        seq_len (int): sequence length, if supplied, the phase for strand '-'
+            can be assigned, otherwise is assigned a 0
         **kwd: any additional column
 
     Returns:
@@ -1680,6 +1682,23 @@ def from_nuc_blast(hit, db, feat_type='CDS', **kwd):
     if start > end:
         start, end = end, start
         strand = '-'
+        if seq_len is None:
+            phase = 0
+        else:
+            if (seq_len - end + 1) % 2 == 0:
+                phase = 1
+            elif (seq_len - end + 1) % 3 == 0:
+                phase = 2
+            else:
+                phase = 0
+
+    if strand == '+':
+        if start % 2 == 0:
+            phase = 2
+        elif start % 3 == 0:
+            phase = 2
+        else:
+            phase = 0
 
     annotation = Annotation(
         seq_id=seq_id,
@@ -1689,7 +1708,7 @@ def from_nuc_blast(hit, db, feat_type='CDS', **kwd):
         end=end,
         score=bitscore,
         strand=strand,
-        phase=0,
+        phase=phase,
         db=db,
         gene_id=hit[1],
         identity=identity,
