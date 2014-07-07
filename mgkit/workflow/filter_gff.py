@@ -203,6 +203,30 @@ def set_values_parser(parser):
     parser.set_defaults(func=filter_values)
 
 
+def set_overlap_parser(parser):
+    parser.add_argument(
+        '-s',
+        '--size',
+        action='store',
+        type=int,
+        help='Size of the overlap that triggers the filter',
+        default=100
+    )
+    parser.add_argument(
+        '-c',
+        '--choose-func',
+        action='store',
+        type=str,
+        help='Function to choose between two overlapping annotations',
+        choices=['bitscore'],
+        default='bitscore'
+    )
+
+    common_options(parser)
+
+    parser.set_defaults(func=filter_overlaps)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -219,7 +243,7 @@ def set_parser():
 
     parser_o = subparsers.add_parser('overlap', help='Use overlapping filter')
 
-    set_values_parser(parser_o)
+    set_overlap_parser(parser_o)
 
     utils.add_basic_options(parser)
 
@@ -376,8 +400,41 @@ def filter_values(options):
             annotation.to_file(options.output_file)
 
 
-def filter_overlaps():
-    pass
+def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
+    grouped = {}
+
+    for annotation in annotations:
+        key = key_func(annotation)
+        try:
+            grouped[key].append(annotation)
+        except KeyError:
+            grouped[key] = [annotation]
+
+    return grouped
+
+
+def filter_overlaps(options):
+
+    grouped = group_annotations(
+        gff.parse_gff(options.input_file, gff_type=gff.from_gff)
+    )
+
+    #right now there's only one possible way to choose between the annotations
+    choose_func = functools.partial(
+        filter_gff.choose_annotation,
+        overlap=options.size,
+        choose_func=None
+    )
+
+    for annotations in grouped.itervalues():
+        filtered = filter_gff.filter_annotations(
+            annotations,
+            choose_func=choose_func,
+            sort_func=lambda x: x.bitscore,
+            reverse=True
+        )
+        for annotation in filtered:
+            annotation.to_file(options.output_file)
 
 
 def main():
