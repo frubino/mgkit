@@ -18,6 +18,8 @@ Contents:
 
    pipeline
 
+   scripts/blast2gff
+
    library
 
    changes

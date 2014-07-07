@@ -37,6 +37,7 @@ extensions = [
     'sphinxcontrib.blockdiag',
     'sphinxcontrib.napoleon',
     'sphinx.ext.mathjax',
+    'sphinxarg.ext',
     #, 'rst2pdf.pdfbuilder'
 ]
 

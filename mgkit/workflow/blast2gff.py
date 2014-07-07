@@ -51,13 +51,15 @@ def set_common_options(parser):
         'input_file',
         nargs='?',
         type=argparse.FileType('r'),
-        default='-'
+        default='-',
+        help='BLAST+ output file in tabular format, defaults to stdin'
     )
     parser.add_argument(
         'output_file',
         nargs='?',
         type=argparse.FileType('w'),
-        default=sys.stdout
+        default=sys.stdout,
+        help='output GFF file, defaults to stdout'
     )
 
 
@@ -208,7 +210,7 @@ def set_parser():
     subparsers = parser.add_subparsers()
     parser_u = subparsers.add_parser(
         'uniprot',
-        help='Blast results from Uniprot'
+        help='Blast results from a Uniprot database, by default SwissProt'
     )
 
     set_uniprot_parser(parser_u)
