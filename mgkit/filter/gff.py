@@ -107,10 +107,35 @@ def filter_annotations(annotations, choose_func=None, sort_func=None, reverse=Tr
 
 
 def filter_base(annotation, attr=None, value=None):
+    """
+    Checks if an annotation attribute is equal to the requested value
+
+    Arguments:
+        annotation: :class:`mgkit.io.gff.Annotation` instance
+        attr (str): attribute of the annotation
+        value: the value that the attribute should be equal to
+
+    Returns:
+        bool: True if the supplied value is equal to the attribute ot False
+        otherwise
+    """
     return getattr(annotation, attr, None) == value
 
 
 def filter_len(annotation, value=None, greater=True):
+    """
+    Checks if an annotation length is longer, equal of shorter than the
+    requested value
+
+    Arguments:
+        annotation: :class:`mgkit.io.gff.Annotation` instance
+        value (int): the length to which the attribute should be compared to
+        greater (bool): if True the annotation length must be equal or greater
+            than and if False equal of lower than
+
+    Returns:
+        bool: True if the test passes
+    """
     if greater:
         return len(annotation) >= value
     else:
@@ -118,6 +143,20 @@ def filter_len(annotation, value=None, greater=True):
 
 
 def filter_base_num(annotation, attr=None, value=None, greater=True):
+    """
+    Checks if an annotation attribute is greater, equal of lower than the
+    requested value
+
+    Arguments:
+        annotation: :class:`mgkit.io.gff.Annotation` instance
+        attr (str): attribute of the annotation
+        value (int): the value to which the attribute should be compared to
+        greater (bool): if True the attribute value must be equal or greater
+            than and if False equal of lower than
+
+    Returns:
+        bool: True if the test passes
+    """
     annotation_value = getattr(annotation, attr, None)
     if annotation_value is None:
         return False
@@ -129,6 +168,21 @@ def filter_base_num(annotation, attr=None, value=None, greater=True):
 
 
 def filter_attr_num(annotation, attr=None, value=None, greater=True):
+    """
+    Checks if an annotation *attr* dictionary contains a key shose value is
+    greater, equal of lower than the requested value
+
+    Arguments:
+        annotation: :class:`mgkit.io.gff.Annotation` instance
+        attr (str): key in the :attribute:`mgkit.io.gff.Annotation.attr`
+            dictionary
+        value (int): the value to which we need to compare
+        greater (bool): if True the value must be equal or greater than and if
+            False equal of lower than
+
+    Returns:
+        bool: True if the test passes
+    """
     annotation_value = annotation.attr.get(attr, None)
     if annotation_value is None:
         return False
@@ -140,6 +194,21 @@ def filter_attr_num(annotation, attr=None, value=None, greater=True):
 
 
 def filter_attr_str(annotation, attr=None, value=None, equal=True):
+    """
+    Checks if an annotation *attr* dictionary contains a key shose value is
+    equal to, or contains the requested value
+
+    Arguments:
+        annotation: :class:`mgkit.io.gff.Annotation` instance
+        attr (str): key in the :attribute:`mgkit.io.gff.Annotation.attr`
+            dictionary
+        value (int): the value to which we need to compare
+        equal (bool): if True the value must be equal and if False equal value
+            must be contained
+
+    Returns:
+        bool: True if the test passes
+    """
     annotation_value = annotation.attr.get(attr, None)
     if annotation_value is None:
         return False
