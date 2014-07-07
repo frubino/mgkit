@@ -1170,23 +1170,28 @@ def count_attr_by_sample(annotations, keyattr, valattr, samples,
     return count_dict
 
 
-def write_gff(annotations, file_handle):
+def write_gff(annotations, file_handle, verbose=True):
     """
+    .. versionchanged:: 0.1.12
+        added *verbose* argument
+
     Write a GFF to file
 
     Arguments:
         annotations (iterable): iterable that returns :class:`GFFKegg`
             of :class:`Annotation` instances
         file_handle (str, file): file name or file handle to write to
+        verbose (bool): if True, a message is logged
     """
 
     if isinstance(file_handle, str):
         file_handle = open(file_handle, 'w')
 
-    LOG.info(
-        "Writing annotations to file (%s)",
-        getattr(file_handle, 'name', repr(file_handle))
-    )
+    if verbose:
+        LOG.info(
+            "Writing annotations to file (%s)",
+            getattr(file_handle, 'name', repr(file_handle))
+        )
 
     for annotation in annotations:
         annotation.to_file(file_handle)
