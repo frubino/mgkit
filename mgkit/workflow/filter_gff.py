@@ -22,14 +22,14 @@ def common_options(parser):
         nargs='?',
         type=argparse.FileType('r'),
         default='-',
-        help='input GFF file, defaults to stdin'
+        help='Input GFF file, defaults to stdin'
     )
     parser.add_argument(
         'output_file',
         nargs='?',
         type=argparse.FileType('w'),
         default=sys.stdout,
-        help='output GFF file, defaults to stdout'
+        help='Output GFF file, defaults to stdout'
     )
     parser.add_argument(
         '-v',
