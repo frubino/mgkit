@@ -47,6 +47,7 @@ setup(
             'download_profiles = mgkit.workflow.download_profiles:main',
             'filter_gff = mgkit.workflow.filter_gff:main',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
+            'blast2gff = mgkit.workflow.blast2gff:main',
             'snp_parser = mgkit.workflow.snp_parser:main',
             'translate_seq = mgkit.workflow.nuc2aa:main',
             'fastq_utils = mgkit.workflow.fastq_utils:main',
