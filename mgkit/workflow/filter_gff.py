@@ -1,7 +1,60 @@
 """
 .. versionadded:: 0.1.12
 
-GFF Filtering script
+Filters GFF annotations in different ways.
+
+Value Filtering
+***************
+
+Enables filtering of GFF annotations based on the the first 8 columns, which
+are fixed values as well using the last column which holds information in a
+key=value way. There are some predefined key=value filters, like `gene_id`,
+but `--str-eq`, `--str-in`, `--num-ge` and `--num-le` allow to make additional
+filters.
+
+The functions used to make the filters are located in the module
+:mod:`mgkit.filter.gff`, and their names start with `filter_base`, `filter_attr`
+and `filter_len`.
+
+.. blockdiag::
+
+    {
+        class mgkit [color = "#e41a1c" , textcolor = 'white', width=200, fontsize=15];
+        class data [color = "#4daf4a" , textcolor = 'white', width=200, fontsize=15];
+        "GFF" [class = data, shape = flowchart.input];
+        parse_gff [class = "mgkit"];
+        setup_filters [class = "mgkit"];
+        "Filters" [class = "mgkit", stacked, shape = flowchart.condition];
+        "GFF" -> parse_gff -> "Filters";
+        setup_filters -> Filters;
+        "Filtered Annotations" [class = data, stacked];
+        "Filters" -> "Filtered Annotations";
+        Filters -> "Filtered Annotations" [folded];
+    }
+
+Overlap Filtering
+*****************
+
+Filters overlapping annotations using the functions :func:`mgkit.filter.gff.choose_annotation`
+and :func:`mgkit.filter.gff.filter_annotations`, after the annotations are grouped
+by both sequence and strand.
+
+.. blockdiag::
+
+    {
+        class mgkit [color = "#e41a1c" , textcolor = 'white', width=200, fontsize=15];
+        class data [color = "#4daf4a" , textcolor = 'white', width=200, fontsize=15];
+        "GFF" [class = data, shape = flowchart.input];
+        parse_gff [class = "mgkit"];
+        group_annotations [class = "mgkit"];
+        filter_annotations [class = "mgkit", shape = flowchart.condition, fontsize=12];
+        "GFF" -> parse_gff -> group_annotations -> filter_annotations;
+        group_annotations -> filter_annotations [folded];
+        "Filtered Annotations" [class = data, stacked];
+        "filter_annotations" -> "Filtered Annotations";
+        filter_annotations -> "Filtered Annotations";
+    }
+
 """
 
 import sys

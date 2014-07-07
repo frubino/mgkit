@@ -15,6 +15,15 @@ annotation with the value `UNIPROT-SP`, indicating that the SwissProt db is
 used and a *dbq* attribute with the value 10. The feature type used in the GFF
 is CDS.
 
+.. blockdiag::
+
+    {
+        "BLAST+" [color = "#377eb8" , textcolor = 'white', shape = flowchart.input];
+        "parse_uniprot_blast" [color = "#e41a1c" , textcolor = 'white', width=200, fontsize=16];
+        "GFF" [color = "#4daf4a" , textcolor = 'white'];
+        "BLAST+"  -> "parse_uniprot_blast" -> GFF;
+    }
+
 """
 import sys
 import argparse
