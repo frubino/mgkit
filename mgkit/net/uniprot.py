@@ -180,7 +180,8 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
     Returns:
         dict: dictionary where the keys are the *gene_ids* requested and the
         values are dictionaries with the names of the *columns* requested as
-        keys and the corresponding values.
+        keys and the corresponding values, which can be lists if the values are
+        are semicolon separated strings.
 
     Example:
         To get the taxonomy ids for some genes:
@@ -221,7 +222,11 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
             gene_id = values[0]
 
             infos[gene_id] = dict(
-                (column, value)
+                (
+                    column,
+                    value if (not value.endswith(';')) and (not value.endswith('; '))
+                    else [x.strip() for x in value.split(';') if x.strip()]
+                )
                 for column, value in zip(columns, values[1:])
             )
 
