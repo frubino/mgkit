@@ -204,6 +204,11 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
 
+    LOG.info(
+        "Reading BLAST results from file (%s)",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
+
     for line in file_handle:
         if line.startswith('#'):
             continue
