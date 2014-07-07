@@ -174,7 +174,7 @@ def filter_attr_num(annotation, attr=None, value=None, greater=True):
 
     Arguments:
         annotation: :class:`mgkit.io.gff.Annotation` instance
-        attr (str): key in the :attribute:`mgkit.io.gff.Annotation.attr`
+        attr (str): key in the :attr:`mgkit.io.gff.Annotation.attr`
             dictionary
         value (int): the value to which we need to compare
         greater (bool): if True the value must be equal or greater than and if
@@ -200,7 +200,7 @@ def filter_attr_str(annotation, attr=None, value=None, equal=True):
 
     Arguments:
         annotation: :class:`mgkit.io.gff.Annotation` instance
-        attr (str): key in the :attribute:`mgkit.io.gff.Annotation.attr`
+        attr (str): key in the :attr:`mgkit.io.gff.Annotation.attr`
             dictionary
         value (int): the value to which we need to compare
         equal (bool): if True the value must be equal and if False equal value

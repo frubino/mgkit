@@ -18,7 +18,7 @@ Contents:
 
    pipeline
 
-   scripts/blast2gff
+   scripts/index
 
    library
 

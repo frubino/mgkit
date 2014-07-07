@@ -1,7 +1,20 @@
 """
 .. versionadded:: 0.1.12
 
-Blast output conversion in GFF
+Blast output conversion in GFF requires a BLAST+ tabular format which can be
+obtained by using the `--outfmt 6` option with the default columns, as
+specified in :func:`mgkit.io.blast.parse_blast_tab`. The script can be get data
+from the standard in and ouputs GFF line on the standard output by default.
+
+Uniprot
+*******
+
+The Function :func:`mgkit.io.blast.parse_uniprot_blast` is used, which filters
+BLAST hits based on bitscore and adds by default a *db* attribute to the
+annotation with the value `UNIPROT-SP`, indicating that the SwissProt db is
+used and a *dbq* attribute with the value 10. The feature type used in the GFF
+is CDS.
+
 """
 import sys
 import argparse
