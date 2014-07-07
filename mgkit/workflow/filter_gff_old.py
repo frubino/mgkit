@@ -8,7 +8,7 @@ import logging
 import pickle
 from mgkit.io import gff
 from mgkit import logger
-from mgkit.filter.gff import *
+from mgkit.filter.gff_old import *
 from . import utils
 
 
