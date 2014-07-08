@@ -4,12 +4,22 @@ Changes
 0.1.12
 ------
 
+* added functions to elongate annotations, measure the coverage of them and diff GFF files in :mod:`mgkit.io.gff`
+* added ranges_length and union_ranges to :mod:`mgkit.utils.common`
+* added script filter-gff, filter_gff will be deprecated
+* added script blast2gff to convert blast output to a GFF
+* removed unneeded dependencies to build docs
+* added script add-gff-info to add more annotations to GFF files
+* added :func:`mgkit.io.blast.parse_blast_tab` to parse BLAST tabular format
+* added :func:`mgkit.io.blast.parse_uniprot_blast` to return annotations from a BLAST tabular file
 * added :mod:`mgkit.graph` module
-* added function :func:`mgkit.io.gff.parse_glimmer3` and :meth:`mgkit.BaseGFFDict.from_glimmer3` to parse a GLIMMER3 output file and convert it to GFF annotation
-* added :meth:`mgkit.BaseGFFDict.from_sequence`
+* added classes :class:`mgkit.io.gff.Annotation` and :class:`mgkit.io.gff.GenomicRange` and deprecated old classes to handle GFF annotations (API not stable)
+* added :exc:`mgkit.io.gff.DuplicateKeyError` raised in parsing GFF files
+* added functions used to return annotations from several sources
 * added option `gff_type` in :func:`mgkit.io.gff.load_gff`
 * added :func:`mgkit.net.embl.dbfetch`
-* added :func:`mgkit.net.uniprot.get_gene_info` and :func:`mgkit.net.uniprot.query_uniprot`
+* added :func:`mgkit.net.uniprot.get_gene_info` and :func:`mgkit.net.uniprot.query_uniprot` :func:`mgkit.net.uniprot.parse_uniprot_response`
+* added apply_func_to_values to :mod:`mgkit.utils.dictionary`
 * added more tests
 
 0.1.11

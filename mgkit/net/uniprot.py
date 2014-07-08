@@ -167,6 +167,8 @@ def ko_to_mapping(ko_id, query, columns, contact=None):
 
 def get_gene_info(gene_ids, columns, max_req=50, contact=None):
     """
+    .. versionadded:: 0.1.12
+
     Get informations about a list of genes. it uses :func:`query_uniprot` to
     send the request and format the response in a dictionary.
 
@@ -235,6 +237,8 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
 
 def query_uniprot(query, columns, format='tab', limit=None, contact=None):
     """
+    .. versionadded:: 0.1.12
+
     Queries Uniprot, returning the raw response in tbe format specified. More
     informations at the `page <http://www.uniprot.org/faq/28>`_
 
@@ -287,6 +291,8 @@ def query_uniprot(query, columns, format='tab', limit=None, contact=None):
 
 def parse_uniprot_response(data, simple=True):
     """
+    .. versionadded:: 0.1.12
+
     Parses raw response from a Uniprot query (tab format only) from functions
     like :func:`query_uniprot` into a dictionary. It requires that the first
     column is the entry id (or any other unique id).

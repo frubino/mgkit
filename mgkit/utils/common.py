@@ -63,6 +63,8 @@ def union_range(start1, end1, start2, end2):
 
 def ranges_length(ranges):
     """
+    .. versionadded:: 0.1.12
+
     Given an iterable of where each element is a range, a tuple whose elements
     are numbers with the first being less than or equal to the second, the
     function sums the lengths of all ranges.
