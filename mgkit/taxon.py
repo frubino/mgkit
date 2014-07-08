@@ -11,29 +11,52 @@ import collections
 
 LOG = logging.getLogger(__name__)
 
-
-TAXON_ROOTS = (
-    'ciliophora',
-    'archaea',
-    'bacteria',
-    'fungi',
-    'streptophyta',
-    'metazoa',
+ALGAE = (
+    'haptophyceae',
+    'chlorophyta',
     'stramenopiles',
     'cryptophyta',
-    'diplomonadida',
     'rhodophyta',
     'chlorophyta',
-    'apicomplexa',
-    'heterolobosea',
+)
+
+PROTISTS = {
+    #'apicomplexa', alveolata
+    #'ciliophora', alveolata
+    'alveolata': 33630,
+    'amoebozoa': 554915,
+    'apusozoa': 554296,
+    'breviatea': 1401294,
+    'centroheliozoa': 193537,
+    'choanoflagellida': 28009,
+    'diplomonadida': 5738,
+    'euglenozoa': 33682,
+    'formicata': 207245,
+    'heterolobosea': 5752,
+    'jakobida': 556282,
+    'malawimonadidae': 136087,
+    'oxymonadida': 66288,
+    'parabasalia': 5719,
+    'rhizaria': 543769,
+}
+
+PLANTS = (
+    'streptophyta',
+
+)
+
+TAXON_ROOTS = (
+    'archaea',  # 2157
+    'bacteria',  # 2
+    'fungi',  # 4751
+    'metazoa',
     'environmental samples',
     'viruses',
     'viroids'
-    'parabasalia',
     'eukaryota',
     'other sequences',
     'unidentified'
-)
+) + tuple(PROTISTS) + PLANTS + ALGAE
 "Root taxa used in analysis and filtering"
 
 TAXON_RANKS = (
@@ -169,7 +192,7 @@ class UniprotTaxon(object):
         True
         """
         if line is None:
-            for name, value in kwd.items():
+            for name, value in kwd.iteritems():
                 setattr(self, name, value)
         else:
             line = line.rstrip().split('\t')

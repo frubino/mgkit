@@ -18,6 +18,8 @@ Contents:
 
    pipeline
 
+   scripts/index
+
    library
 
    changes

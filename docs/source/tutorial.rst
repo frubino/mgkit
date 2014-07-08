@@ -3,7 +3,7 @@ Tutorial
 
 We're going to use `Peru Margin Subseafloor Biosphere <https://www.ebi.ac.uk/metagenomics/project/SRP000183>`_ as an example, which can be download from the ENA website.
 
-For detailed informations about the pipeline, you can refer to the :ref:`metagenome-pipeline` section of the documentation. This tutorial is expected to run on a
+For more information about the pipeline, you can refer to the :ref:`metagenome-pipeline` section of the documentation. This tutorial is expected to run on a
 UNIX (Linux/MacOSX/Solaris), with the bash shell running, because of some of
 the loops (not tested with other shells).
 
@@ -18,9 +18,9 @@ the loops (not tested with other shells).
 Initial setup
 -------------
 
-We're going to assume that the pipeline and it's relative packages are already installed on the system were the tutorial is run, either through a system-wide install or a virtual environment (advised). The details are in the :ref:`install-ref` section of the documentation.
+We will assume that the pipeline and it's relative packages are already installed on the system where the tutorial is run, either through a system-wide install or a virtual environment (advised). The details are in the :ref:`install-ref` section of the documentation.
 
-Also for the rest of the tutorial we assume that the following softwares are installed and accessible system-wide:
+Also for the rest of the tutorial we assume that the following software are installed and accessible system-wide:
 
     * `Clustal Omega <http://www.clustal.org/omega/>`_
     * `ea-utils <https://code.google.com/p/ea-utils/>`_
@@ -91,7 +91,7 @@ command::
 
     $ download_data -m email
 
-Where *email* should be replaced by your email address. The data we'll be saved in the directory `mg_data` to which we'll refer from now on.
+Where *email* should be replaced by your email address. The data will be saved in the directory `mg_data` to which we'll refer from now on.
 
 Find Taxa IDs
 ^^^^^^^^^^^^^
@@ -106,7 +106,7 @@ You can either find the taxa IDs necessary to download the profiles by going to 
 
 .. note::
     
-    We're going to split the download into 3 parts. For the purpose of this tutorial, you don't have to download all of them. It may be better to just donwload the archaea-phylum profiles. For a full tutorial, refer to :ref:`full-script`
+    We're going to split the download into 3 parts. For the purpose of this tutorial, you don't have to download all of them. It may be better to just download the archaea-phylum profiles. For a full tutorial, refer to :ref:`full-script`
 
 Download Profiles
 ^^^^^^^^^^^^^^^^^
@@ -134,7 +134,7 @@ Where email should be the user email address. The files we'll be place in `profi
 Profile Alignment
 ^^^^^^^^^^^^^^^^^
 
-The profiles can be aligned with aligned with the following bash lines:
+The profiles can be aligned with the following bash lines:
 
 .. code-block:: bash
 
@@ -147,7 +147,7 @@ Or in any other way you prefer. Refer to :ref:`full-script`
 Convert to HMM
 ^^^^^^^^^^^^^^
 
-To build the HMM profiles we need to use `hmmbuild`, which is included with HMMER. It can be quicly done with these bash lines:
+To build the HMM profiles we need to use `hmmbuild`, which is included with HMMER. It can be quickly done with these bash lines:
 
 .. code-block:: bash
 
@@ -181,16 +181,16 @@ We'll use this command to filter them::
 
     $ filter_gff -l -i assembly.gff -o assembly.filt.gff
 
-This we'll result in a much more manageble file.
+This will result in a much more manageable file.
 
 Alignment
 ---------
 
-The alignment of all reads to the assmbly we'll be made with `bowtie2`. The first step is to build the index for the reference (out assmbly) with the following command::
+The alignment of all reads to the assembly we'll be made with `bowtie2`. The first step is to build the index for the reference (out assembly) with the following command::
     
     $ bowtie2-build assembly.fa assembly.fa
 
-and subsequently start the alignment, using bowtie2 and pipeing the output SAM file to `samtools` to convert it into BAM files with this command:
+and subsequently start the alignment, using bowtie2 and piping the output SAM file to `samtools` to convert it into BAM files with this command:
 
 .. code-block:: bash
 
@@ -221,12 +221,12 @@ The coverage information is added to the GFF and needs to be added for later SNP
     $ add_coverage_to_gff -v $SAMPLES assembly.filt.gff assembly.filt.cov.gff
     $ unset SAMPLES
 
-The first line prepare part of the command line for the script and stores it into an environment variables, while the last command unset the variable, as it's not needed anymore.
+The first line prepares part of the command line for the script and stores it into an environment variable, while the last command unsets the variable, as it's not needed anymore.
 
-SNPs Calling
-------------
+SNP Calling
+-----------
 
-Before running samtools, which we'll do the SNPs calling and GATK, to merge the vcf files, the reference `assembly.fa` must be indexed with Picard Tools and samtools::
+Before running samtools, which we'll use to do the SNP calling and GATK, to merge the vcf files, the reference `assembly.fa` must be indexed with Picard Tools and samtools::
     
     $ samtools faidx assembly.fa
     $ java -jar picard-tools/CreateSequenceDictionary.jar R=assembly.fa O=assembly.dict
@@ -244,7 +244,7 @@ SAMtools
 
 For calling SNPs, we're going to use SAMtools, as it's the one having lower requirements for this tutorial. The output required by SNPdat and the later part of this tutorial is a vcf, so any software that can output can be used.
 
-Running samtools to make the SNPs calling requires a simple loop, which 
+Running samtools to make the SNP calling requires a simple loop, which 
 
 .. code-block:: bash
 

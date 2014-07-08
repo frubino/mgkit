@@ -13,16 +13,20 @@ import logging
 from ..utils import sequence as seq_utils
 from ..filter.lists import aggr_filtered_list
 from ..consts import MIN_COV
+from ..utils.common import between, union_range, ranges_length
 from .. import taxon
 from . import fasta
 import numpy
 import urllib
+import mgkit.io
 
 LOG = logging.getLogger(__name__)
 
 
 class AttributeNotFound(Exception):
     """
+    .. deprecated:: 0.1.12
+
     Raised if an attribute is not found in a GFF file
     """
     pass
@@ -30,6 +34,9 @@ class AttributeNotFound(Exception):
 
 class GFFAttributesDict(dict):
     """
+    .. deprecated:: 0.1.12
+        Use :class:`Annotation` instead
+
     Class used to store attributes stored in the last column of a GFF file.
     All attribute values are stored as string in the GFF file.
 
@@ -124,6 +131,9 @@ class GFFAttributesDict(dict):
 
 class BaseGFFDict(object):
     """
+    .. deprecated:: 0.1.12
+        Use :class:`Annotation` instead
+
     Base GFF class
     """
     _hash = None
@@ -159,7 +169,13 @@ class BaseGFFDict(object):
         #this hack will be taken out when all old files are converted
         old_phase_value = False
 
-        for var, value, vtype in zip(self._var_names, line[:-1],
+        #in case the last column (attributes) is empty
+        if len(line) < 9:
+            values = line
+        else:
+            values = line[:-1]
+
+        for var, value, vtype in zip(self._var_names, values,
                                      self._var_types):
             try:
                 setattr(self, var, vtype(value))
@@ -168,6 +184,13 @@ class BaseGFFDict(object):
                     old_phase_value = True
 
         attributes = GFFAttributesDict()
+
+        self.attributes = attributes
+
+        #in case the last column (attributes) is empty
+        if len(line) < 9:
+            return
+
         for pair in line[-1].split(';'):
             try:
                 #by default the key,value separator '=' is assumed to be used
@@ -179,8 +202,6 @@ class BaseGFFDict(object):
 
         if old_phase_value or (not hasattr(self, 'phase')):
             self.phase = int(attributes.frame[1])
-
-        self.attributes = attributes
 
     def _parse_kwd(self, **kwd):
         """
@@ -229,7 +250,7 @@ class BaseGFFDict(object):
 
     def to_file(self, file_handle, val_sep='='):
         """
-        Writes a GFF annotatio to disk, using the already open `file_handle`.
+        Writes a GFF annotation to disk, using the already open `file_handle`.
 
         Arguments:
             file_handle (file): open file handle
@@ -263,6 +284,9 @@ class BaseGFFDict(object):
 
 class GFFKegg(BaseGFFDict):
     """
+    .. deprecated:: 0.1.12
+        Use :class:`Annotation` instead
+
     GFF with Kegg specific attributes/methods
     """
     def __init__(self, line=None, **kwd):
@@ -556,19 +580,27 @@ class GFFKegg(BaseGFFDict):
         return int(self.attributes.exp_nonsyn)
 
 
-def load_gff(f_handle):
+def load_gff(f_handle, gff_type=GFFKegg):
     """
+    .. versionchanged:: 0.1.12
+        added *gff_type* parameter
+
     Loads GFF from file and returns a list of GFFKegg instances
 
-    Accepts a file handle or a string with the file name
+    Arguments:
+        f_handle (file, str): file handle or file name to load
+        gff_type (class): class used to parse a GFF annotation
+
+    Returns:
+        list: list of GFF annotations
     """
     if isinstance(f_handle, str):
-        f_handle = open(f_handle, 'r')
+        f_handle = mgkit.io.open_file(f_handle, 'r')
     LOG.info("Loading GFF file %s", f_handle.name)
     annotations = []
 
     for line in f_handle:
-        annotation = GFFKegg(line)
+        annotation = gff_type(line)
         annotations.append(annotation)
     return annotations
 
@@ -1138,20 +1170,573 @@ def count_attr_by_sample(annotations, keyattr, valattr, samples,
     return count_dict
 
 
-def parse_gff(file_handle):
+def write_gff(annotations, file_handle, verbose=True):
     """
+    .. versionchanged:: 0.1.12
+        added *verbose* argument
+
+    Write a GFF to file
+
+    Arguments:
+        annotations (iterable): iterable that returns :class:`GFFKegg`
+            of :class:`Annotation` instances
+        file_handle (str, file): file name or file handle to write to
+        verbose (bool): if True, a message is logged
+    """
+
+    if isinstance(file_handle, str):
+        file_handle = open(file_handle, 'w')
+
+    if verbose:
+        LOG.info(
+            "Writing annotations to file (%s)",
+            getattr(file_handle, 'name', repr(file_handle))
+        )
+
+    for annotation in annotations:
+        annotation.to_file(file_handle)
+
+
+class GenomicRange(object):
+    """
+    Defines a genomic range
+    """
+    seq_id = 'None'
+    "Sequence ID"
+    strand = '+'
+    "Strand"
+    start = None
+    "Start of the range, 1-based"
+    end = None
+    "End of the range 1-based"
+
+    def __init__(self, seq_id='None', start=1, end=1, strand='+'):
+        self.seq_id = seq_id
+        self.strand = strand
+        self.start = start
+        self.end = end
+
+    def __eq__(self, other):
+        if (self.seq_id != other.seq_id) or (self.strand != other.strand):
+            return False
+        if (self.start != other.start) or (self.end != other.end):
+            return False
+        return True
+
+    def __len__(self):
+        return self.end - self.start + 1
+
+    def __str__(self):
+        return "{0}({1}):{2}-{3}".format(
+            self.seq_id,
+            self.strand,
+            self.start,
+            self.end
+        )
+
+    def __repr__(self):
+        return str(self)
+
+    def union(self, other):
+        """
+        Return the union of two :class:`GenomicRange`
+        """
+        if (self.seq_id == other.seq_id) and (self.strand == other.strand):
+            result = union_range(self.start, self.end, other.start, other.end)
+            if result is not None:
+
+                gen_range = GenomicRange()
+                gen_range.seq_id = self.seq_id
+                gen_range.strand = self.strand
+                gen_range.start = result[0]
+                gen_range.end = result[1]
+
+                return gen_range
+
+        return None
+
+    def expand_from_list(self, others):
+        """
+        Expand the :class:`GenomicRange` range instance with a list of
+        :class:`GenomicRange`
+
+        Arguments:
+            others (iterable): iterable of :class:`GenomicRange`
+        """
+        new_range = self
+
+        for other in others:
+            union = new_range.union(other)
+            if union is None:
+                continue
+            new_range = union
+
+        self.start = new_range.start
+        self.end = new_range.end
+
+    def intersect(self, other):
+        """
+        Return an instance of :class:`GenomicRange` that represent the
+        intersection of the current instance and another.
+        """
+        if (self.seq_id == other.seq_id) and (self.strand == other.strand):
+
+            if between(other.start, self.start, self.end) or \
+               between(other.end, self.start, self.end) or \
+               between(self.start, other.start, other.end) or \
+               between(self.end, other.start, other.end):
+
+                gen_range = GenomicRange()
+                gen_range.start = max(self.start, other.start)
+                gen_range.end = min(self.end, other.end)
+
+                return gen_range
+
+        return None
+
+
+class Annotation(GenomicRange):
+    """
+    .. versionadded:: 0.1.12
+
+    Alternative implementation for an Annotation
+    """
+    source = 'None'
+    "Annotation source"
+    feat_type = 'None'
+    "Annotation type (e.g. CDS, gene, exon, etc.)"
+    score = 0.0
+    "Score associated to the annotation"
+    phase = 0
+    "Annotation phase, (0, 1, 2)"
+    attr = None
+    "Dictionary with the key value pairs in the last column of a GFF/GTF"
+
+    def __init__(self, seq_id='None', start=1, end=1, strand='+', source='None', feat_type='None', score=0.0, phase=0, **kwd):
+        super(Annotation, self).__init__(
+            seq_id=seq_id,
+            start=start,
+            end=end,
+            strand=strand
+        )
+        self.source = source
+        self.feat_type = feat_type
+        self.score = score
+        self.phase = phase
+        self.attr = kwd
+
+    @property
+    def taxon_id(self):
+        "taxon_id of the annotation"
+        try:
+            return int(self.attr['taxon_id'])
+        except KeyError:
+            return None
+
+    @taxon_id.setter
+    def taxon_id(self, value):
+        self.attr['taxon_id'] = int(value)
+
+    @property
+    def db(self):
+        "db name of the annotation"
+        return self.attr.get('db', None)
+
+    @db.setter
+    def db(self, value):
+        self.attr['db'] = value
+
+    @property
+    def dbq(self):
+        "db quality of the annotation"
+        return self.attr.get('dbq', None)
+
+    @dbq.setter
+    def dbq(self, value):
+        self.attr['dbq'] = value
+
+    @property
+    def bitscore(self):
+        "bitscore of the annotation"
+        try:
+            return float(self.attr['bitscore'])
+        except KeyError:
+            #legacy for old data
+            bitscore = self.attr.get('bit_score', None)
+            return None if bitscore is None else float(bitscore)
+
+    @bitscore.setter
+    def bitscore(self, value):
+        self.attr['bitscore'] = float(value)
+
+    @property
+    def gene_id(self):
+        "gene_id of the annotation, or *ko* if available"
+        try:
+            return self.attr['gene_id']
+        except KeyError:
+            #legacy for old data
+            return self.attr.get('ko', None)
+
+    @gene_id.setter
+    def gene_id(self, value):
+        self.attr['gene_id'] = value
+
+    def to_gff(self, sep='='):
+        """
+        Format the Annotation as a GFF string.
+
+        Arguments:
+            sep (str): separator key -> value
+
+        Returns:
+            str: annotation formatted as GFF
+        """
+        var_names = (
+            'seq_id', 'source', 'feat_type', 'start', 'end',
+            'score', 'strand', 'phase'
+        )
+
+        values = '\t'.join(
+            str(getattr(self, var_name))
+            for var_name in var_names
+        )
+
+        attr_column = ';'.join(
+            '{0}{1}"{2}"'.format(
+                key,
+                sep,
+                urllib.quote(str(self.attr[key]), ' ()/')
+            )
+            for key in sorted(self.attr)
+        )
+
+        return "{0}\t{1}\n".format(values, attr_column)
+
+    def to_file(self, file_handle):
+        """
+        Writes the GFF annotation to *file_handle*
+        """
+        file_handle.write(self.to_gff())
+
+    def to_gtf(self):
+        pass
+
+
+def from_glimmer3(header, line, feat_type='CDS'):
+    """
+    .. versionadded:: 0.1.12
+
+    Parses the line of a GLIMMER3 ouput and returns an instance of a GFF
+    annotation.
+
+    Arguments:
+        header (str): the seq_id to which the ORF belongs
+        line (str): the prediction line for the orf
+        feat_type (str): the feature type to use
+
+    Returns:
+        Annotation: instance of annotation
+
+    Example:
+        Assuming a GLIMMER3 output like this::
+
+            >sequence0001
+            orf00001       66      611  +3     6.08
+
+        The code used is:
+
+        >>> header = 'sequence0001'
+        >>> line = 'orf00001       66      611  +3     6.08'
+        >>> from_glimmer3(header, line)
+
+    """
+    orf_id, start, end, frame, score = line.split()
+
+    start = int(start)
+    end = int(end)
+
+    if start > end:
+        start, end = end, start
+
+    annotation = Annotation(
+        seq_id=header,
+        source='GLIMMER3',
+        feat_type=feat_type,
+        start=start,
+        end=end,
+        score=float(score),
+        strand=frame[0],
+        phase=int(frame[1]) - 1,
+        frame=frame,
+        glimmer_score=float(score),
+        orf_id=orf_id
+    )
+
+    return annotation
+
+
+class DuplicateKeyError(Exception):
+    """
+    .. versionadded:: 0.1.12
+
+    Raised if a GFF annotation contains duplicate keys
+    """
+    pass
+
+
+def from_gff(line):
+    """
+    .. versionadded:: 0.1.12
+
+    Parse GFF line and returns an :class:`Annotation` instance
+
+    Arguments:
+        line (str): GFF line
+
+    Returns:
+        Annotation: instance of :class:`Annotation` for the line
+
+    Raises:
+        DuplicateKeyError: if the attribute column has duplicate keys
+
+    """
+    line = line.rstrip()
+    line = line.split('\t')
+
+    #in case the last column (attributes) is empty
+    if len(line) < 9:
+        values = line
+    else:
+        values = line[:-1]
+
+    var_names = (
+        'seq_id', 'source', 'feat_type', 'start', 'end',
+        'score', 'strand', 'phase'
+    )
+    var_types = (str, str, str, int, int, float, str, int)
+
+    attr = {}
+
+    for var, value, vtype in zip(var_names, values, var_types):
+        attr[var] = vtype(value)
+
+    #in case the last column (attributes) is empty
+    if len(line) < 9:
+        return Annotation(**attr)
+
+    for pair in line[-1].split(';'):
+        try:
+            #by default the key,value separator '=' is assumed to be used
+            var, value = pair.strip().split('=', 1)
+        except ValueError:
+            #in case it doesn't work, it is assumed to be a space
+            var, value = pair.strip().split(' ', 1)
+
+        if var in attr:
+            raise DuplicateKeyError("Duplicate attribute: {0}".format(var))
+
+        attr[var] = urllib.unquote(value.replace('"', ''))
+
+    return Annotation(**attr)
+
+
+def from_sequence(name, seq, feat_type='CDS', **kwd):
+    """
+    .. versionadded:: 0.1.12
+
+    Returns an instance of :class:`Annotation` for the full length of a sequence
+
+    Arguments:
+        name (str): name of the sequence
+        seq (str): sequence, to get the length of the annotation
+
+    Keyword Args:
+        feat_type (str): feature type in the GFF
+        **kwd: any additional column
+
+    Returns:
+        Annotation: instance of :class:`Annotation`
+
+    """
+    annotation = Annotation(
+        seq_id=name,
+        source='SEQUENCE',
+        feat_type=feat_type,
+        start=1,
+        end=len(seq),
+        score=0.0,
+        strand='+',
+        phase=0,
+        sequence=name,
+        **kwd
+    )
+
+    return annotation
+
+
+def from_aa_blast_frag(hit, parent_ann, aa_seqs):
+    frag_id, frame = hit[0].split('-')
+    strand = '+' if frame.startswith('f') else '-'
+    frame = int(frame[1])
+    identity = hit[2]
+    bitscore = hit[-1]
+    start = hit[3]
+    end = hit[4]
+    if strand == '-':
+        start, end = seq_utils.reverse_aa_coord(
+            start,
+            end,
+            len(aa_seqs[hit[0]])
+        )
+    start, end = seq_utils.convert_aa_to_nuc_coord(start, end, frame)
+
+    annotation = Annotation(
+        seq_id=parent_ann.seq_id,
+        source='BLAST',
+        feat_type='CDS',
+        start=start+parent_ann.start-1,
+        end=end+parent_ann.start-1,
+        score=bitscore,
+        strand=strand,
+        phase=frame,
+        db='UNIPROT',
+        gene_id=hit[1],
+        identity=identity,
+        bitscore=bitscore,
+        ID=frag_id
+    )
+
+    return annotation
+
+
+def from_nuc_blast_frag(hit, parent_ann, db='NCBI-NT'):
+    frag_id = hit[0]
+    strand = '+'
+    identity = hit[2]
+    bitscore = hit[-1]
+    start = hit[3]
+    end = hit[4]
+
+    annotation = Annotation(
+        seq_id=parent_ann.seq_id,
+        source='BLAST',
+        feat_type='CDS',
+        start=start+parent_ann.start-1,
+        end=end+parent_ann.start-1,
+        score=bitscore,
+        strand=strand,
+        phase=0,
+        db=db,
+        gene_id=hit[1],
+        identity=identity,
+        bitscore=bitscore,
+        ID=frag_id
+    )
+
+    return annotation
+
+
+def annotate_sequence(name, seq, window=None):
+
+    length = len(seq)
+
+    if window is None:
+        window = length
+
+    for index in xrange(1, length, window):
+        annotation = Annotation.from_sequence(name, seq)
+        annotation.start = index
+        annotation.end = index + window - 1
+        if annotation.end > length:
+            annotation.end = length
+        yield annotation
+
+
+def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
+    """
+    .. versionadded:: 0.1.12
+
+    Returns an instance of :class:`Annotation`
+
+    Arguments:
+        hit (tuple): a BLAST hit, from :func:`mgkit.io.blast.parse_blast_tab`
+        db (str): db used with BLAST
+
+    Keyword Args:
+        feat_type (str): feature type in the GFF
+        seq_len (int): sequence length, if supplied, the phase for strand '-'
+            can be assigned, otherwise is assigned a 0
+        **kwd: any additional column
+
+    Returns:
+        Annotation: instance of :class:`Annotation`
+    """
+    seq_id = hit[0]
+    strand = '+'
+    identity = hit[2]
+    bitscore = hit[-1]
+    start = hit[3]
+    end = hit[4]
+
+    if start > end:
+        start, end = end, start
+        strand = '-'
+        if seq_len is None:
+            phase = 0
+        else:
+            if (seq_len - end + 1) % 2 == 0:
+                phase = 1
+            elif (seq_len - end + 1) % 3 == 0:
+                phase = 2
+            else:
+                phase = 0
+
+    if strand == '+':
+        if start % 2 == 0:
+            phase = 2
+        elif start % 3 == 0:
+            phase = 2
+        else:
+            phase = 0
+
+    annotation = Annotation(
+        seq_id=seq_id,
+        source='BLAST',
+        feat_type=feat_type,
+        start=start,
+        end=end,
+        score=bitscore,
+        strand=strand,
+        phase=phase,
+        db=db,
+        gene_id=hit[1],
+        identity=identity,
+        bitscore=bitscore,
+        **kwd
+    )
+
+    return annotation
+
+
+def parse_gff(file_handle, gff_type=from_gff):
+    """
+    .. versionchanged:: 0.1.12
+        added *gff_type* parameter
+
     Parse a GFF file and returns generator of :class:`GFFKegg` instances
 
     Accepts a file handle or a string with the file name
 
     Arguments:
         file_handle (str, file): file name or file handle to read from
+        gff_type (class): class/function used to parse a GFF annotation
 
-    Returns:
-        generator: an iterator of :class:`GFFKegg` instances
+    Yields:
+        Annotation: an iterator of :class:`Annotation` instances
     """
     if isinstance(file_handle, str):
-        file_handle = open(file_handle, 'r')
+        file_handle = mgkit.io.open_file(file_handle, 'r')
 
     LOG.info(
         "Loading GFF from file (%s)",
@@ -1159,26 +1744,185 @@ def parse_gff(file_handle):
     )
 
     for line in file_handle:
-        annotation = GFFKegg(line)
+        annotation = gff_type(line)
         yield annotation
 
 
-def write_gff(annotations, file_handle):
+def diff_gff(files, key_func=None):
     """
-    Write a GFF to file
+    .. versionadded:: 0.1.12
+
+    Returns a simple diff made between a list of gff files. The annotations are
+    grouped using *key_func*, so it depends on it to find similar annotations.
 
     Arguments:
-        annotations (iterable): iterable that returns :class:`GFFKegg` instances
-        file_handle (str, file): file name or file handle to write to
+        files (iterable): an iterable of file handles, pointing to GFF files
+        key_func (func): function used to group annotations, defaults to this
+            key: *(x.seq_id, x.strand, x.start, x.end, x.gene_id, x.bitscore)*
+
+    Returns:
+        dict: the returned dictionary keys are determined by key_func and as
+        values lists. The lists elements are tuple whose first element is the
+        index of the file, relative to *files* and the second element is the
+        line number in which the annotation is. Can be used with the
+        :mod:`linecache` module.
+    """
+    if isinstance(files, str) or len(files) == 1:
+        return
+
+    if key_func is None:
+        key_func = lambda x: (x.seq_id, x.strand, x.start, x.end, x.gene_id, x.bitscore)
+
+    gff_diff = {}
+
+    for index, file_handle in enumerate(files):
+        for lineno, annotation in enumerate(parse_gff(file_handle)):
+            key = key_func(annotation)
+            try:
+                gff_diff[key].append((index, lineno))
+            except KeyError:
+                gff_diff[key] = [(index, lineno)]
+
+    return gff_diff
+
+
+def annotation_elongation(ann1, annotations):
+    """
+    .. versionadded:: 0.1.12
+
+    Given an :class:`Annotation` instance and a list of the instances of the
+    same class, returns the longest overlapping range that can be found and the
+    annotations that are included in it.
+
+    .. warning::
+
+        annotations are not checked for seq_id and strand
+
+    Arguments:
+        ann1 (Annotation): annotation to elongate
+        annotations (iterable): iterable of :class:`Annotation` instances
+
+    Returns:
+        tuple: the first element is the longest range found, while the the
+        second element is a set with the annotations used
+
+    """
+    used = set([ann1])
+
+    union = (ann1.start, ann1.end)
+
+    for ann2 in annotations:
+        new_union = union_range(union[0], union[1], ann2.start, ann2.end)
+        if new_union is not None:
+            used.add(ann2)
+            union = new_union
+
+    return union, used
+
+
+def elongate_annotations(annotations):
+    """
+    Given an iterable of :class:`Annotation` instances, tries to find the all
+    possible longest ranges and returns them.
+
+    .. warning::
+
+        annotations are not checked for seq_id and strand
+
+    Arguments:
+        annotations (iterable): iterable of :class:`Annotation` instances
+
+    Returns:
+        set: set with the all ranges found
     """
 
-    if isinstance(file_handle, str):
-        file_handle = open(file_handle, 'w')
+    annotations = sorted(annotations, key=lambda x: x.start)
 
-    LOG.info(
-        "Writing annotations to file (%s)",
-        getattr(file_handle, 'name', repr(file_handle))
+    ranges = set()
+
+    while len(annotations) > 0:
+        ann1 = annotations.pop(0)
+        union, used = annotation_elongation(ann1, annotations)
+        if union is None:
+            ranges.add((ann1.start, ann1.end))
+        else:
+            annotations = sorted(set(annotations) - used, key=lambda x: x.start)
+            ranges.add(union)
+
+    return ranges
+
+
+def annotation_coverage(annotations, seqs, strand=True):
+    """
+    Given a list of annotations and a dictionary where the keys are the sequence
+    names referred in the annotations and the values are the sequences
+    themselves, returns a number which indicated how much the sequence length is
+    "covered" in annotations. If *strand* is True the coverage is strand
+    specific.
+
+    Arguments:
+        annotations (iterable): iterable of :class:`Annotation` instances
+        seqs (dict): dictionary in which the keys are the sequence names and the
+            the values are the sequneces
+        strand (bool): if True, the values are strand specific (the annotations)
+            are grouped by (seq_id, strand) instead of seq_id
+
+    Yields:
+        tuple: the first element is the key, (seq_id, strand) if *strand* is
+        True or seq_id if *strand* is False, and the coverage is the second
+        value.
+    """
+
+    if strand:
+        key_func = lambda x: (x.seq_id, x.strand)
+    else:
+        key_func = lambda x: x.seq_id
+
+    annotations = group_annotations(
+        annotations,
+        key_func=key_func
     )
 
+    for key, key_ann in annotations.iteritems():
+        if isinstance(key, str):
+            seq_len = len(seqs[key])
+        else:
+            seq_len = len(seqs[key[0]])
+
+        covered = ranges_length(elongate_annotations(key_ann))
+
+        yield key, covered / seq_len * 100
+
+
+def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
+    """
+    Group :class:`Annotation` instances in a dictionary by using a key function
+    that returns the key to be used in the dictionary.
+
+    Arguments:
+        annotations (iterable): iterable with :class:`Annotation` instances
+        key_func (func): function used to extract the key used in the
+            dictionary, defaults to a function that returns
+            (ann.seq_id, ann.strand)
+
+    Returns:
+        dict: dictionary whose keys are returned by *key_func* and the values
+        are lists of annotations
+
+    Example:
+        >>> ann = [Annotation(seq_id='seq1', strand='+', start=10, end=15),
+        ... Annotation(seq_id='seq1', strand='+', start=1, end=5),
+        ... Annotation(seq_id='seq1', strand='-', start=30, end=100)]
+        >>> group_annotations(ann)
+        {('seq1', '+'): [seq1(+):10-15, seq1(+):1-5], ('seq1', '-'): [seq1(-):30-100]}
+    """
+    grouped = {}
+
     for annotation in annotations:
-        annotation.to_file(file_handle)
+        key = key_func(annotation)
+        try:
+            grouped[key].append(annotation)
+        except KeyError:
+            grouped[key] = [annotation]
+
+    return grouped

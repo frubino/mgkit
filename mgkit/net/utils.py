@@ -5,6 +5,7 @@ Utility functions for the network package
 import urllib2
 import gzip
 import cStringIO
+import sys
 
 
 def url_open(url, data=None, compress=True, agent=None):
@@ -25,7 +26,13 @@ def url_open(url, data=None, compress=True, agent=None):
         request = urllib2.Request(url, data)
 
     if agent is not None:
-        request.add_header('User-Agent', "Python {0}".format(agent))
+        request.add_header(
+            'User-Agent', "Python {0}.{1} - {2}".format(
+                sys.version_info.major,
+                sys.version_info.minor,
+                agent
+            )
+        )
 
     if compress:
         request.add_header('Accept-encoding', 'gzip')

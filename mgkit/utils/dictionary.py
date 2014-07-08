@@ -197,6 +197,26 @@ def split_dictionary_by_value(value_dict, threshold, aggr_func=numpy.median,
     return lower_dict, higher_dict
 
 
+def apply_func_to_values(dictionary, func):
+    """
+    .. versionadded:: 0.1.12
+
+    Assuming a dictionary whose values are iterables, *func* is applied to each
+    element of the iterable, retuning a *set* of all transformed elements.
+
+    Arguments:
+        dictionary (dict): dictionary whose values are iterables
+        func (func): function to apply to the dictionary values
+
+    Returns:
+        dict: dictionary with transformed values
+    """
+    return dict(
+        (key, set(func(value) for value in values))
+        for key, values in dictionary.iteritems()
+    )
+
+
 def filter_ratios_by_numbers(ratios, min_num):
     """
     Returns from a dictionary only the items for which the length of the

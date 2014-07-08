@@ -2,7 +2,7 @@ import sys
 # import ez_setup
 # ez_setup.use_setuptools()
 
-__VERSION__ = "0.1.11"
+__VERSION__ = "0.1.12"
 
 from setuptools import setup, find_packages
 
@@ -45,8 +45,11 @@ setup(
         'console_scripts': [
             'download_data = mgkit.workflow.download_data:main',
             'download_profiles = mgkit.workflow.download_profiles:main',
-            'filter_gff = mgkit.workflow.filter_gff:main',
+            'filter_gff = mgkit.workflow.filter_gff_old:main',
+            'filter-gff = mgkit.workflow.filter_gff:main',
+            'add-gff-info = mgkit.workflow.add_gff_info:main',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
+            'blast2gff = mgkit.workflow.blast2gff:main',
             'snp_parser = mgkit.workflow.snp_parser:main',
             'translate_seq = mgkit.workflow.nuc2aa:main',
             'fastq_utils = mgkit.workflow.fastq_utils:main',

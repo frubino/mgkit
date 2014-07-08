@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys, os, subprocess
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -37,21 +37,28 @@ extensions = [
     'sphinxcontrib.blockdiag',
     'sphinxcontrib.napoleon',
     'sphinx.ext.mathjax',
+    'sphinxarg.ext',
     #, 'rst2pdf.pdfbuilder'
 ]
 
-# readthedocs theme
+# additional themes
 import sphinx_rtd_theme
+#import sphinx_bootstrap_theme
 
-#
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
+#blockdiag extension
 blockdiag_antialias = True
 blockdiag_html_image_format = 'SVG'
 blockdiag_tex_image_format = 'PDF'
-blockdiag_fontpath = '/usr/local/texlive/2013/texmf-dist/fonts/truetype/public/gnu-freefont/FreeMonoBold.ttf'
+blockdiag_fontpath = subprocess.check_output(
+    "locate FreeMonoBold.ttf", shell=True
+).strip()
 
+#graphviz
 graphviz_output_format = 'svg'
 
+#napoleon extension
 napoleon_numpy_docstring = True
 napoleon_google_docstring = True
 napoleon_include_private_with_doc = True
@@ -81,7 +88,7 @@ copyright = u'2013, Francesco Rubino'
 #
 # The short X.Y version.
 
-__VERSION__ = '0.1.11'
+__VERSION__ = '0.1.12'
 
 version = __VERSION__
 # The full version, including alpha/beta/rc tags.
@@ -126,7 +133,10 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme' #'solar'
+if on_rtd:
+    html_theme = 'default'
+else:
+    html_theme = 'sphinx_rtd_theme' #'solar' 'bootstrap' 'graphite'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -134,7 +144,13 @@ html_theme = 'sphinx_rtd_theme' #'solar'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['./_themes/', sphinx_rtd_theme.get_html_theme_path()]
+html_theme_path = ['./_themes/']
+#bootstrap theme
+#html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+if not on_rtd:
+  html_theme_path.append(
+    sphinx_rtd_theme.get_html_theme_path()
+)
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

@@ -7,13 +7,13 @@ Metagenome Pipeline
    :linenothreshold: 5
 
 This section goes into the details of one pipeline used to analyse a metagenome.
-The following image gives an overview of the pipeline, whose colours we'll be
-used in the sections' diagrams for consistency.
+The following image gives an overview of the pipeline, whose colours will be
+used in the section's diagrams for consistency.
 
 .. figure:: images/pipeline.png
    :width: 1024 px
 
-   A complete metagenome analysis pipeline. Part of the pipeline are explained
+   A complete metagenome analysis pipeline. Parts of the pipeline are explained
    in this section.
 
 .. note:: 
@@ -100,7 +100,7 @@ Download Profiles
 Sequence Alignment
 ^^^^^^^^^^^^^^^^^^
 
-The :term:`aa` sequences donwload needs to be aligned using a software like
+The :term:`aa` sequences download needs to be aligned using a software like
 clustalo or muscle and the resulting alignments run with hmmbuild in the HMMER
 package to produce the HMM profiles. The `download_profiles` script will also
 write a file with the average length of each profile that can be used when
@@ -235,7 +235,7 @@ GFF Filtering
 	}
 
 All the files produced by HMMER can be converted to gff in one go and then
-filtered. There several filtering options, based on information of the 
+filtered. There are several filtering options, based on information of the 
 annotations being filtered or multiple overlapping annotations can be filtered.
 
 .. note::
@@ -252,9 +252,7 @@ The filters that are annotation based are:
 * `-s` HMMER evalue
 * `-b` HMMER bit score
 * `-f` and `-p` requires that the annotation length is at least a set
-  percentage of the average length of the profile; `-f` specifies the file
-  with the profile data (outputted by `download_profiles`) and `-p` the
-  minimum percentage
+  percentage of the average length of the profile; `-f` specifies the file with the profile data (outputted by `download_profiles`) and `-p` the minimum percentage
 * `-t` only annotation belonging to the specified taxa pass
 * `-k` only annotation whose gene predicted is specified pass
 * `-r` only predictions based on reviewed profiles pass
@@ -271,13 +269,9 @@ with a minimum size of at least 60% of the average size::
 Per-Sequence Options
 ^^^^^^^^^^^^^^^^^^^^
 
-The additional filter is sequence-based, as it keep only the annoations on a
-sequence that don't overlap or if they do, keeps only the ones with the lowest
-evalue. It's activated by the `-l` option and the following modifiers can be
-specified:
+The additional filter is sequence-based, as it keep only the annoations on a sequence that don't overlap or if they do, keeps only the ones with the lowest evalue. It's activated by the `-l` option and the following modifiers can be specified:
 
-* `-z` threshold used to choose between overlapping regions (percentange of 
-  average lenght)
+* `-z` threshold used to choose between overlapping regions (percentange of average length)
 * `-g` specify that the overlaps apply only if it's the same gene
 * `-n` to apply the filter regardless of the strand the annotation is on
 
@@ -321,7 +315,7 @@ Coverage information
 The above diagram shows an example on how to add coverage information for the samples using the provided script, but it can be done in any other way, provided that the following convention are respected, for later analysis:
 
 * total coverage is stored as a integer value as an attribute name 'cov'
-* sample coverage follows the same rule, but the attribute is 'sample_cov', adding a suffix '_cov' after the sample name. when referring to the sample, in later parts, we only use the 'sample' part of the attribute.
+* sample coverage follows the same rule, but the attribute is 'sample_cov', adding a suffix '_cov' after the sample name. When referring to the sample, in later parts, we only use the 'sample' part of the attribute.
 
 Taxonomic Refinement
 ^^^^^^^^^^^^^^^^^^^^
@@ -343,16 +337,16 @@ While the functional/taxonomic assignment with this pipeline is useful, it is li
 
 BLASTP 2.2.25+, tab output
 
-SNPs Calling
-------------
+SNP Calling
+-----------
 
 Preparing Data
 ^^^^^^^^^^^^^^
 
 
 
-SNPs analysis
--------------
+SNP analysis
+------------
 
 Overview
 ^^^^^^^^

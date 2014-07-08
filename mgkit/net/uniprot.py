@@ -2,15 +2,22 @@
 Contains function and constants for Uniprot access
 """
 
+from __future__ import division
+
 import urllib
 import mgkit
 import logging
+import itertools
 from . import url_read
 
 UNIPROT_MAP = 'http://www.uniprot.org/mapping/'
 "URL to Uniprot mapping REST API"
+
 UNIPROT_GET = 'http://www.uniprot.org/uniprot/'
 "URL to Uniprot REST API"
+
+UNIPROT_TAXONOMY = 'http://www.uniprot.org/taxonomy/'
+"URL to Uniprot REST API - Taxonomy"
 
 LOG = logging.getLogger(__name__)
 
@@ -156,3 +163,168 @@ def ko_to_mapping(ko_id, query, columns, contact=None):
         pass
 
     return categories
+
+
+def get_gene_info(gene_ids, columns, max_req=50, contact=None):
+    """
+    .. versionadded:: 0.1.12
+
+    Get informations about a list of genes. it uses :func:`query_uniprot` to
+    send the request and format the response in a dictionary.
+
+    Arguments:
+        gene_ids (iterable, str): gene id(s) to get informations for
+        columns (list): list of columns
+        max_req (int): number of maximum *gene_ids* per request
+        contact (str): email address to be passed in the query (requested
+            Uniprot API)
+
+    Returns:
+        dict: dictionary where the keys are the *gene_ids* requested and the
+        values are dictionaries with the names of the *columns* requested as
+        keys and the corresponding values, which can be lists if the values are
+        are semicolon separated strings.
+
+    Example:
+        To get the taxonomy ids for some genes:
+
+        >>> uniprot.get_gene_info(['Q09575', 'Q8DQI6'], ['organism-id'])
+        {'Q09575': {'organism-id': '6239'}, 'Q8DQI6': {'organism-id': '171101'}}
+
+    """
+    if isinstance(gene_ids, str):
+        gene_ids = [gene_ids]
+
+    infos = {}
+
+    for index in range(0, len(gene_ids), max_req):
+
+        LOG.info(
+            "Querying uniprot ids (%d/%d)",
+            (index // max_req) + 1,
+            (len(gene_ids) // max_req) + 1
+        )
+
+        info_lines = query_uniprot(
+            ' OR '.join(gene_ids[index:index+max_req]),
+            columns=['id'] + columns,
+            contact=contact
+        )
+
+        info_lines = info_lines.split('\n')
+
+        del info_lines[0]
+
+        for info_line in info_lines:
+            info_line = info_line.strip()
+            if not info_line:
+                continue
+            values = info_line.split('\t')
+
+            gene_id = values[0]
+
+            infos[gene_id] = dict(
+                (
+                    column,
+                    value if (not value.endswith(';')) and (not value.endswith('; '))
+                    else [x.strip() for x in value.split(';') if x.strip()]
+                )
+                for column, value in zip(columns, values[1:])
+            )
+
+    return infos
+
+
+def query_uniprot(query, columns, format='tab', limit=None, contact=None):
+    """
+    .. versionadded:: 0.1.12
+
+    Queries Uniprot, returning the raw response in tbe format specified. More
+    informations at the `page <http://www.uniprot.org/faq/28>`_
+
+    Arguments:
+        query (str): query to submit, as put in the input box
+        columns (iterable): list of columns to return
+        format (str): response format
+        limit (int, None): number of entries to return or *None* to request all
+            entries
+        contact (str): email address to be passed in the query (requested
+            Uniprot API)
+    Returns:
+        str: raw response from the query
+
+    Example:
+        To get the taxonomy ids for some genes:
+
+        >>> uniprot.query_uniprot('Q09575 OR Q8DQI6', ['id', 'organism-id'])
+        'Entry\\tOrganism ID\\nQ8DQI6\\t171101\\nQ09575\\t6239\\n'
+
+    .. warning::
+
+        because of limits in the length of URLs, it's advised to limit the
+        length of the query string.
+
+    """
+    data = {
+        'query': query,
+        'format': format
+    }
+
+    if limit is not None:
+        data['limit'] = limit
+
+    data = urllib.urlencode(data)
+
+    data += "&columns={0}".format(
+        ','.join(
+            urllib.quote(column)
+            for column in columns
+        )
+    )
+
+    if mgkit.DEBUG:
+        LOG.debug("query: %s?%s", UNIPROT_GET, data)
+        LOG.debug("request length %d", len(data))
+
+    return url_read(UNIPROT_GET, data, agent=contact)
+
+
+def parse_uniprot_response(data, simple=True):
+    """
+    .. versionadded:: 0.1.12
+
+    Parses raw response from a Uniprot query (tab format only) from functions
+    like :func:`query_uniprot` into a dictionary. It requires that the first
+    column is the entry id (or any other unique id).
+
+    Arguments:
+        data (str): string response from Uniprot
+        simple (bool): if True and the number of columns is 1, the dictionary
+            returned has a simplified structure
+
+    Returns:
+        dict: The format of the resulting dictionary is
+        entry_id -> {column1 -> value, column2 -> value, ..} unless there's
+        only one column and *simple* is True, in which case the value is
+        equal to the value of the only column.
+    """
+    data = data.splitlines()
+
+    columns = [x.lower() for x in data[0].split('\t')[1:]]
+
+    del data[0]
+
+    parsed_data = {}
+
+    for line in data:
+        line = line.split('\t')
+        entry_id = line[0]
+
+        if (len(columns) == 1) and simple:
+            parsed_data[entry_id] = line[1]
+        else:
+            parsed_data[entry_id] = dict(
+                itertools.izip(columns, line[1:])
+            )
+
+    return parsed_data
