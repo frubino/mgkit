@@ -134,6 +134,7 @@ def add_uniprot_info(annotations, options):
                 annotation.attr['taxon_name'] = values
             elif column == 'organism-id':
                 annotation.attr['taxon_id'] = int(values)
+                annotation.attr['taxon_db'] = 'UNIPROT'
             elif column.startswith('database'):
                 annotation.attr[
                     column[:-1].split('(')[1]
