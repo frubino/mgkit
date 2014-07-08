@@ -453,22 +453,9 @@ def filter_values(options):
             annotation.to_file(options.output_file)
 
 
-def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
-    grouped = {}
-
-    for annotation in annotations:
-        key = key_func(annotation)
-        try:
-            grouped[key].append(annotation)
-        except KeyError:
-            grouped[key] = [annotation]
-
-    return grouped
-
-
 def filter_overlaps(options):
 
-    grouped = group_annotations(
+    grouped = gff.group_annotations(
         gff.parse_gff(options.input_file, gff_type=gff.from_gff)
     )
 
