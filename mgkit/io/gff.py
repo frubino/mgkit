@@ -13,7 +13,7 @@ import logging
 from ..utils import sequence as seq_utils
 from ..filter.lists import aggr_filtered_list
 from ..consts import MIN_COV
-from ..utils.common import between, union_range
+from ..utils.common import between, union_range, ranges_length
 from .. import taxon
 from . import fasta
 import numpy
@@ -1436,7 +1436,7 @@ def from_glimmer3(header, line, feat_type='CDS'):
         feat_type (str): the feature type to use
 
     Returns:
-        BaseGFFDict: instance of annotation
+        Annotation: instance of annotation
 
     Example:
         Assuming a GLIMMER3 output like this::
@@ -1749,7 +1749,24 @@ def parse_gff(file_handle, gff_type=from_gff):
 
 
 def diff_gff(files, key_func=None):
+    """
+    .. versionadded:: 0.1.12
 
+    Returns a simple diff made between a list of gff files. The annotations are
+    grouped using *key_func*, so it depends on it to find similar annotations.
+
+    Arguments:
+        files (iterable): an iterable of file handles, pointing to GFF files
+        key_func (func): function used to group annotations, defaults to this
+            key: *(x.seq_id, x.strand, x.start, x.end, x.gene_id, x.bitscore)*
+
+    Returns:
+        dict: the returned dictionary keys are determined by key_func and as
+        values lists. The lists elements are tuple whose first element is the
+        index of the file, relative to *files* and the second element is the
+        line number in which the annotation is. Can be used with the
+        :mod:`linecache` module.
+    """
     if isinstance(files, str) or len(files) == 1:
         return
 
@@ -1767,3 +1784,145 @@ def diff_gff(files, key_func=None):
                 gff_diff[key] = [(index, lineno)]
 
     return gff_diff
+
+
+def annotation_elongation(ann1, annotations):
+    """
+    .. versionadded:: 0.1.12
+
+    Given an :class:`Annotation` instance and a list of the instances of the
+    same class, returns the longest overlapping range that can be found and the
+    annotations that are included in it.
+
+    .. warning::
+
+        annotations are not checked for seq_id and strand
+
+    Arguments:
+        ann1 (Annotation): annotation to elongate
+        annotations (iterable): iterable of :class:`Annotation` instances
+
+    Returns:
+        tuple: the first element is the longest range found, while the the
+        second element is a set with the annotations used
+
+    """
+    used = set([ann1])
+
+    union = (ann1.start, ann1.end)
+
+    for ann2 in annotations:
+        new_union = union_range(union[0], union[1], ann2.start, ann2.end)
+        if new_union is not None:
+            used.add(ann2)
+            union = new_union
+
+    return union, used
+
+
+def elongate_annotations(annotations):
+    """
+    Given an iterable of :class:`Annotation` instances, tries to find the all
+    possible longest ranges and returns them.
+
+    .. warning::
+
+        annotations are not checked for seq_id and strand
+
+    Arguments:
+        annotations (iterable): iterable of :class:`Annotation` instances
+
+    Returns:
+        set: set with the all ranges found
+    """
+
+    annotations = sorted(annotations, key=lambda x: x.start)
+
+    ranges = set()
+
+    while len(annotations) > 0:
+        ann1 = annotations.pop(0)
+        union, used = annotation_elongation(ann1, annotations)
+        if union is None:
+            ranges.add((ann1.start, ann1.end))
+        else:
+            annotations = sorted(set(annotations) - used, key=lambda x: x.start)
+            ranges.add(union)
+
+    return ranges
+
+
+def annotation_coverage(annotations, seqs, strand=True):
+    """
+    Given a list of annotations and a dictionary where the keys are the sequence
+    names referred in the annotations and the values are the sequences
+    themselves, returns a number which indicated how much the sequence length is
+    "covered" in annotations. If *strand* is True the coverage is strand
+    specific.
+
+    Arguments:
+        annotations (iterable): iterable of :class:`Annotation` instances
+        seqs (dict): dictionary in which the keys are the sequence names and the
+            the values are the sequneces
+        strand (bool): if True, the values are strand specific (the annotations)
+            are grouped by (seq_id, strand) instead of seq_id
+
+    Yields:
+        tuple: the first element is the key, (seq_id, strand) if *strand* is
+        True or seq_id if *strand* is False, and the coverage is the second
+        value.
+    """
+
+    if strand:
+        key_func = lambda x: (x.seq_id, x.strand)
+    else:
+        key_func = lambda x: x.seq_id
+
+    annotations = group_annotations(
+        annotations,
+        key_func=key_func
+    )
+
+    for key, key_ann in annotations.iteritems():
+        if isinstance(key, str):
+            seq_len = len(seqs[key])
+        else:
+            seq_len = len(seqs[key[0]])
+
+        covered = ranges_length(elongate_annotations(key_ann))
+
+        yield key, covered / seq_len * 100
+
+
+def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
+    """
+    Group :class:`Annotation` instances in a dictionary by using a key function
+    that returns the key to be used in the dictionary.
+
+    Arguments:
+        annotations (iterable): iterable with :class:`Annotation` instances
+        key_func (func): function used to extract the key used in the
+            dictionary, defaults to a function that returns
+            (ann.seq_id, ann.strand)
+
+    Returns:
+        dict: dictionary whose keys are returned by *key_func* and the values
+        are lists of annotations
+
+    Example:
+        >>> ann = [Annotation(seq_id='seq1', strand='+', start=10, end=15),
+        ... Annotation(seq_id='seq1', strand='+', start=1, end=5),
+        ... Annotation(seq_id='seq1', strand='-', start=30, end=100)]
+        >>> group_annotations(ann)
+        {('seq1', '+'): [seq1(+):10-15, seq1(+):1-5], ('seq1', '-'): [seq1(-):30-100]}
+    """
+    grouped = {}
+
+    for annotation in annotations:
+        key = key_func(annotation)
+        try:
+            grouped[key].append(annotation)
+        except KeyError:
+            grouped[key] = [annotation]
+
+    return grouped
