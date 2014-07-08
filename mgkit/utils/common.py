@@ -59,3 +59,19 @@ def union_range(start1, end1, start2, end2):
     if between(start2, start1, end1) or between(end2, start1, end1):
         return min(start1, start2), max(end1, end2)
     return None
+
+
+def ranges_length(ranges):
+    """
+    Given an iterable of where each element is a range, a tuple whose elements
+    are numbers with the first being less than or equal to the second, the
+    function sums the lengths of all ranges.
+
+    Arguments:
+        ranges (iterable): each element is a tuple like *(1, 10)*
+
+    Returns:
+        int: sum of all ranges lengths
+
+    """
+    return sum(range[1] - range[0] + 1 for range in ranges)
