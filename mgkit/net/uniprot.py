@@ -202,7 +202,7 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
         LOG.info(
             "Querying uniprot ids (%d/%d)",
             (index // max_req) + 1,
-            (len(gene_ids) // max_req) + 1
+            (len(gene_ids) // max_req) + 1 if (len(gene_ids) % max_req > 0) else 0
         )
 
         info_lines = query_uniprot(
