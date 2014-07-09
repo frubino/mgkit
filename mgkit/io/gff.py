@@ -1326,6 +1326,28 @@ class Annotation(GenomicRange):
         self.phase = phase
         self.attr = kwd
 
+    def get_ec(self, level=4):
+        """
+        .. versionadded:: 0.1.13
+
+        Returns the EC values associated with the annotation, cutting them at
+        the desired level.
+
+        Arguments:
+            level (int): level of classification desired (between 1 and 4)
+
+        Returns:
+            list: list of all EC numbers associated, at the desired level, if
+            none are found an empty list is returned
+        """
+        ec = self.attr.get('EC')
+        if ec is None:
+            return []
+
+        ec = ec.split(',')
+
+        return ['.'.join(x.split('.')[:level]) for x in ec]
+
     @property
     def taxon_id(self):
         """
