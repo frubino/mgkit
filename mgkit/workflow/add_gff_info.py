@@ -146,7 +146,7 @@ def add_uniprot_info(annotations, options):
                         for x in values
                     )
                 else:
-                    annotation.attr['EC'] = values.split('-')[0]
+                    annotation.attr['EC'] = values
             elif column.startswith('lineage'):
                 annotation.attr['lineage'] = values
 

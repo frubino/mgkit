@@ -226,7 +226,7 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
             infos[gene_id] = dict(
                 (
                     column,
-                    value if (not value.endswith(';')) and (not value.endswith('; '))
+                    value if (not value.endswith(';')) and (not value.endswith('; ')) and (not '; ' in value)
                     else [x.strip() for x in value.split(';') if x.strip()]
                 )
                 for column, value in zip(columns, values[1:])
