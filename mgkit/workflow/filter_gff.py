@@ -37,7 +37,10 @@ Overlap Filtering
 
 Filters overlapping annotations using the functions :func:`mgkit.filter.gff.choose_annotation`
 and :func:`mgkit.filter.gff.filter_annotations`, after the annotations are grouped
-by both sequence and strand.
+by both sequence and strand. If the GFF is sorted by sequence name and strand,
+the `-t` can be used to make the filtering use less memory. It can be sorted in
+Unix using `sort -s -k 1,1 -k 7,7 gff_file`, which applies a stable sort using
+the sequence name as the first key and the strand as the second key.
 
 .. blockdiag::
 
@@ -266,6 +269,15 @@ def set_overlap_parser(parser):
         default=100
     )
     parser.add_argument(
+        '-t',
+        '--sorted',
+        action='store_true',
+        help='''If the GFF file is sorted (all of a sequence annotations are
+                contiguos and sorted by strand) can use less memory,
+                `sort -s -k 1,1 -k 7,7` can be used''',
+        default=False
+    )
+    parser.add_argument(
         '-c',
         '--choose-func',
         action='store',
@@ -455,9 +467,13 @@ def filter_values(options):
 
 def filter_overlaps(options):
 
-    grouped = gff.group_annotations(
-        gff.parse_gff(options.input_file, gff_type=gff.from_gff)
-    )
+    file_iterator = gff.parse_gff(options.input_file, gff_type=gff.from_gff)
+
+    if options.sorted:
+        LOG.info("Input GFF is assumed sorted")
+        grouped = gff.group_annotations_sorted(file_iterator)
+    else:
+        grouped = gff.group_annotations(file_iterator).itervalues()
 
     #right now there's only one possible way to choose between the annotations
     choose_func = functools.partial(
@@ -466,7 +482,7 @@ def filter_overlaps(options):
         choose_func=None
     )
 
-    for annotations in grouped.itervalues():
+    for annotations in grouped:
         filtered = filter_gff.filter_annotations(
             annotations,
             choose_func=choose_func,
