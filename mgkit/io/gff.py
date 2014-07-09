@@ -1926,3 +1926,39 @@ def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
             grouped[key] = [annotation]
 
     return grouped
+
+
+def group_annotations_sorted(annotations, key_func=lambda x: (x.seq_id, x.strand)):
+    """
+    Group :class:`Annotation` instances by using a key function that returns a
+    key. Assumes that the annotations are already sorted to return an iterator
+    and save memory. One way to sort them is using: `sort -s -k 1,1 -k 7,7` on
+    the file.
+
+    Arguments:
+        annotations (iterable): iterable with :class:`Annotation` instances
+        key_func (func): function used to extract the key used in the
+            dictionary, defaults to a function that returns
+            (ann.seq_id, ann.strand)
+
+    Yields:
+        list: a list of the grouped annotations by *key_func* values
+
+    """
+    curr_key = ''
+    curr_ann = []
+
+    for annotation in annotations:
+        new_key = key_func(annotation)
+        if curr_key == new_key:
+            curr_ann.append(annotation)
+        else:
+            if curr_key == '':
+                curr_ann.append(annotation)
+                curr_key = new_key
+            else:
+                yield curr_ann
+                curr_key = new_key
+                curr_ann = [annotation]
+    else:
+        yield curr_ann
