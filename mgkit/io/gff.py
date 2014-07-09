@@ -10,15 +10,16 @@ from __future__ import print_function
 from __future__ import division
 
 import logging
+import uuid
+import numpy
+import urllib
+import mgkit.io
 from ..utils import sequence as seq_utils
 from ..filter.lists import aggr_filtered_list
 from ..consts import MIN_COV
 from ..utils.common import between, union_range, ranges_length
 from .. import taxon
 from . import fasta
-import numpy
-import urllib
-import mgkit.io
 
 LOG = logging.getLogger(__name__)
 
@@ -1179,7 +1180,7 @@ def write_gff(annotations, file_handle, verbose=True):
 
     Arguments:
         annotations (iterable): iterable that returns :class:`GFFKegg`
-            of :class:`Annotation` instances
+            or :class:`Annotation` instances
         file_handle (str, file): file name or file handle to write to
         verbose (bool): if True, a message is logged
     """
@@ -1327,11 +1328,19 @@ class Annotation(GenomicRange):
 
     @property
     def taxon_id(self):
-        "taxon_id of the annotation"
+        """
+        .. versionchanged:: 0.1.13
+            uses the *blast_taxon_idx* attribute if available
+
+        taxon_id of the annotation
+        """
+        #old data where the taxon id doubled as a blast_taxon_idx (preferred)
         try:
-            return int(self.attr['taxon_id'])
+            value = self.attr['blast_taxon_idx']
         except KeyError:
-            return None
+            value = self.attr.get('taxon_id', None)
+
+        return None if value is None else int(value)
 
     @taxon_id.setter
     def taxon_id(self, value):
@@ -1354,6 +1363,24 @@ class Annotation(GenomicRange):
     @dbq.setter
     def dbq(self, value):
         self.attr['dbq'] = value
+
+    @property
+    def uid(self):
+        """
+        .. versionadded:: 0.1.13
+
+        uid of the annotation
+        """
+        value = self.attr.get('uid', None)
+        if value is None:
+            #old data where the unique id is marked as ko_idx
+            value = self.attr.get('ko_idx', None)
+
+        return value
+
+    @uid.setter
+    def uid(self, value):
+        self.attr['uid'] = value
 
     @property
     def bitscore(self):
@@ -1507,6 +1534,9 @@ def from_gff(line):
     #in case the last column (attributes) is empty
     if len(line) < 9:
         values = line
+        #bug in which the phase was not written
+        if len(line[-1]) > 1:
+            line.insert(-1, 0)
     else:
         values = line[:-1]
 
@@ -1514,7 +1544,8 @@ def from_gff(line):
         'seq_id', 'source', 'feat_type', 'start', 'end',
         'score', 'strand', 'phase'
     )
-    var_types = (str, str, str, int, int, float, str, int)
+    #the phase sometimes can be set as unknown, using '-'. We prefer using 0
+    var_types = (str, str, str, int, int, float, str, lambda x: 0 if x == '' else int(x))
 
     attr = {}
 
@@ -1653,9 +1684,12 @@ def annotate_sequence(name, seq, window=None):
         yield annotation
 
 
-def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
+def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, uid=True, **kwd):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.1.13
+        added *uid* argument
 
     Returns an instance of :class:`Annotation`
 
@@ -1667,6 +1701,8 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
         feat_type (str): feature type in the GFF
         seq_len (int): sequence length, if supplied, the phase for strand '-'
             can be assigned, otherwise is assigned a 0
+        uid (bool): if True adds a `uid` attribute with a unique id (using
+            `uuid.uuid4`)
         **kwd: any additional column
 
     Returns:
@@ -1715,6 +1751,9 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
         bitscore=bitscore,
         **kwd
     )
+
+    if uid:
+        annotation.attr['uid'] = str(uuid.uuid4())
 
     return annotation
 
@@ -1822,6 +1861,8 @@ def annotation_elongation(ann1, annotations):
 
 def elongate_annotations(annotations):
     """
+    .. versionadded:: 0.1.12
+
     Given an iterable of :class:`Annotation` instances, tries to find the all
     possible longest ranges and returns them.
 
@@ -1854,6 +1895,8 @@ def elongate_annotations(annotations):
 
 def annotation_coverage(annotations, seqs, strand=True):
     """
+    .. versionadded:: 0.1.12
+
     Given a list of annotations and a dictionary where the keys are the sequence
     names referred in the annotations and the values are the sequences
     themselves, returns a number which indicated how much the sequence length is
@@ -1896,6 +1939,8 @@ def annotation_coverage(annotations, seqs, strand=True):
 
 def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
     """
+    .. versionadded:: 0.1.12
+
     Group :class:`Annotation` instances in a dictionary by using a key function
     that returns the key to be used in the dictionary.
 
@@ -1930,6 +1975,8 @@ def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
 
 def group_annotations_sorted(annotations, key_func=lambda x: (x.seq_id, x.strand)):
     """
+    .. versionadded:: 0.1.13
+
     Group :class:`Annotation` instances by using a key function that returns a
     key. Assumes that the annotations are already sorted to return an iterator
     and save memory. One way to sort them is using: `sort -s -k 1,1 -k 7,7` on
