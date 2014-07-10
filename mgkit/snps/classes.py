@@ -5,59 +5,14 @@ Manage SNP data.
 from __future__ import division
 import logging
 import numpy
+import enum
+import json
 from ..consts import MIN_COV
 
 LOG = logging.getLogger(__name__)
 
 
-class GeneSyn(object):
-    """
-    Class defining gene and synonymous/non-synonymous SNPs.
-
-    It defines background synonymous/non-synonymous attributes and only has a
-    method right now, which calculate pN/pS ratio.
-
-    Attributes:
-        gene_id (str): gene id
-        taxon_id (int): gene taxon
-        exp_syn (int): expected synonymous changes
-        exp_nonsyn (int): expected non-synonymous changes
-        syn (int): synonymous changes
-        nonsyn (int): non-synonymous changes
-        coverage (int): gene coverage
-
-    .. warning::
-
-        the `gid` and `taxon` attributes (methods now) will be renamed in
-        `gene_id` and `taxon_id` in later versions (0.3.x) of the library, so
-        they shouldn't be used.
-
-    """
-    __slots__ = (
-        'gene_id',
-        'taxon_id',
-        'exp_syn',
-        'exp_nonsyn',
-        'syn',
-        'nonsyn',
-        'coverage',
-        'taxon_root'
-    )
-
-    def __init__(self, gene_id='', taxon_id=0, exp_syn=0, exp_nonsyn=0, syn=0,
-                 nonsyn=0, coverage=None, taxon_root='', gid='', taxon=''):
-
-        self.gene_id = gid
-        self.taxon_id = taxon
-        self.taxon_root = taxon_root
-        self.exp_syn = exp_syn
-        self.exp_nonsyn = exp_nonsyn
-        self.syn = syn
-        self.nonsyn = nonsyn
-        self.coverage = coverage
-        self.gene_id = gene_id
-        self.taxon_id = taxon_id
-
+class RatioMixIn(object):
     def calc_ratio(self, flag_value=False, min_cov=None, haplotypes=False):
         """
         Calculate :math:`\\frac {pN}{pS}` for the gene.
@@ -174,6 +129,62 @@ class GeneSyn(object):
 
         return numpy.nan
 
+
+class GeneSyn(RatioMixIn):
+    """
+    .. deprecated:: 0.1.13
+        use :class:`GeneSNP` instead
+
+    Class defining gene and synonymous/non-synonymous SNPs.
+
+    It defines background synonymous/non-synonymous attributes and only has a
+    method right now, which calculate pN/pS ratio.
+
+    Attributes:
+        gene_id (str): gene id
+        taxon_id (int): gene taxon
+        exp_syn (int): expected synonymous changes
+        exp_nonsyn (int): expected non-synonymous changes
+        syn (int): synonymous changes
+        nonsyn (int): non-synonymous changes
+        coverage (int): gene coverage
+        snps (list): list of SNPs associated with the gene, each element is a
+            tuple with the position (relative to the gene start) and the second
+            is defined by :class:`SNPType`
+
+
+    .. warning::
+
+        the `gid` and `taxon` attributes (methods now) will be renamed in
+        `gene_id` and `taxon_id` in later versions (0.3.x) of the library, so
+        they shouldn't be used.
+
+    """
+    __slots__ = (
+        'gene_id',
+        'taxon_id',
+        'exp_syn',
+        'exp_nonsyn',
+        'syn',
+        'nonsyn',
+        'coverage',
+        'taxon_root',
+    )
+
+    def __init__(self, gene_id='', taxon_id=0, exp_syn=0, exp_nonsyn=0, syn=0,
+                 nonsyn=0, coverage=None, taxon_root='', gid='', taxon=''):
+
+        self.gene_id = gid
+        self.taxon_id = taxon
+        self.taxon_root = taxon_root
+        self.exp_syn = exp_syn
+        self.exp_nonsyn = exp_nonsyn
+        self.syn = syn
+        self.nonsyn = nonsyn
+        self.coverage = coverage
+        self.gene_id = gene_id
+        self.taxon_id = taxon_id
+
     def __getstate__(self):
         return dict((x, getattr(self, x)) for x in self.__slots__)
 
@@ -251,3 +262,171 @@ class GeneSyn(object):
                 self.coverage = other.coverage
             else:
                 self.coverage += other.coverage
+
+
+class SNPType(enum.Enum):
+    """
+    .. versionadded:: 0.1.13
+
+    Enum that defines SNP types. Supported at the moment:
+
+    * unknown = 0
+    * syn (synonymous) = 1
+    * nonsyn (non-synonymous) = 2
+
+    .. note::
+
+        No support is planned at the moment to support indel mutations
+
+    """
+    unknown = 0
+    syn = 1
+    nonsyn = 2
+
+
+class GeneSNP(RatioMixIn):
+    """
+    .. versionadded:: 0.1.13
+
+    Class defining gene and synonymous/non-synonymous SNPs.
+
+    It defines background synonymous/non-synonymous attributes and only has a
+    method right now, which calculate pN/pS ratio. The method is added through
+    a mixin object, so the ratio can be customised and be shared with the old
+    implementation.
+
+    Attributes:
+        uid (str): unique id for the isoform (to be referenced in a GFF file)
+        gene_id (str): gene id
+        taxon_id (int): gene taxon
+        exp_syn (int): expected synonymous changes
+        exp_nonsyn (int): expected non-synonymous changes
+        coverage (int): gene coverage
+        snps (list): list of SNPs associated with the gene, each element is a
+            tuple with the position (relative to the gene start), the second is
+            the nucleotidic change and the third is the aa SNP type as defined
+            by :class:`SNPType`.
+
+    .. note::
+
+        The main difference with the :class:`GeneSyn` is that all snps are kept
+        and `syn` and `nonsyn` are not attributes but properties that return
+        the count of synonymous and non-synonymous SNPs in the `snps` list.
+
+    .. warning::
+
+        This class uses more memory than :class:`GeneSyn` because it doesn't
+        use __slots__, it may be changed in later versions.
+
+    """
+    uid = None
+    gene_id = None
+    taxon_id = None
+    exp_syn = None
+    exp_nonsyn = None
+    coverage = None
+    snps = None
+
+    def __init__(self, gene_id='', taxon_id=0, exp_syn=0, exp_nonsyn=0,
+                 coverage=None, snps=None, uid=None, json_data=None):
+        """
+        If json_data is passed, that's used to initialise the instance
+        """
+
+        if json_data is not None:
+            self.from_json(json_data)
+            return
+
+        self.uid = uid
+        self.gene_id = gene_id
+        self.taxon_id = taxon_id
+        self.exp_syn = exp_syn
+        self.exp_nonsyn = exp_nonsyn
+        self.coverage = coverage
+        self.snps = [] if snps is None else snps
+
+    def add_snp(self, position, change, snp_type=SNPType.unknown):
+        """
+        Adds a SNP to the list
+
+        Arguments:
+            position (int): SNP position, relative to the gene start
+            change (str): nucleotidic change
+            snp_type (enum): one of the values defined in :class:`SNPType`
+        """
+        self.snps.append(
+            (position, change, snp_type)
+        )
+
+    def add(self, other):
+        """
+        Inplace addition of another instance values. No check for them being the
+        same gene/taxon, it's up to the user to check that they can be added
+        together.
+
+        Arguments:
+            other: instance of :class:`GeneSyn` to add
+        """
+
+        self.snps.extend(other.snps)
+
+        self.exp_syn += self.syn
+        self.exp_nonsyn += self.nonsyn
+
+        if other.coverage is not None:
+            if self.coverage is None:
+                self.coverage = other.coverage
+            else:
+                self.coverage += other.coverage
+
+    def to_json(self):
+        """
+        Returns a json definition of the instance
+
+        Returns:
+            str: json representation of the instance
+        """
+        return json.dumps(
+            {
+                'uid': self.uid,
+                'gene_id': self.gene_id,
+                'exp_syn': self.exp_syn,
+                'exp_nonsyn': self.exp_nonsyn,
+                'taxon_id': self.taxon_id,
+                'coverage': self.coverage,
+                'snps': [
+                    (pos, change, snptype.value)
+                    for pos, change, snptype in self.snps
+                ]
+            }
+        )
+
+    def from_json(self, data):
+        """
+        Instantiate the instance with values from a json definition
+
+        Arguments:
+            data (str): json representation, as returned by
+                :meth:`GeneSNP.to_json`
+        """
+        data = json.loads(data)
+        self.uid = str(data['uid'])
+        self.gene_id = str(data['gene_id'])
+        self.exp_syn = data['exp_syn']
+        self.exp_nonsyn = data['exp_nonsyn']
+        self.taxon_id = data['taxon_id']
+        self.coverage = data['coverage']
+        self.snps = [
+            (pos, str(change), SNPType(snptype))
+            for pos, change, snptype in data['snps']
+        ]
+
+    @property
+    def syn(self):
+        "Returns the expected synonymous changes"
+        return sum(1 for x in self.snps if x[2] is SNPType.syn)
+
+    @property
+    def nonsyn(self):
+        "Returns the expected non-synonymous changes"
+        return sum(1 for x in self.snps if x[2] is SNPType.nonsyn)
