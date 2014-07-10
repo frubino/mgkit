@@ -1351,16 +1351,9 @@ class Annotation(GenomicRange):
     @property
     def taxon_id(self):
         """
-        .. versionchanged:: 0.1.13
-            uses the *blast_taxon_idx* attribute if available
-
         taxon_id of the annotation
         """
-        #old data where the taxon id doubled as a blast_taxon_idx (preferred)
-        try:
-            value = self.attr['blast_taxon_idx']
-        except KeyError:
-            value = self.attr.get('taxon_id', None)
+        value = self.attr.get('taxon_id', None)
 
         return None if value is None else int(value)
 
@@ -1470,6 +1463,72 @@ class Annotation(GenomicRange):
 
     def to_gtf(self):
         pass
+
+    @property
+    def sample_coverage(self):
+        """
+        Returns a dictionary with the coverage for each sample, the returned
+        dictionary has the sample id (stripped of the *_cov*) suffix and as
+        values the coverage (converted via :func:`int`).
+
+        :return dict: dictionary with the samples' coverage
+        """
+        attributes = self.attr
+
+        return dict(
+            (attribute.replace('_cov', ''), int(value))
+            for attribute, value in attributes.iteritems()
+            if attribute.endswith('_cov')
+        )
+
+    def get_number_of_samples(self, min_cov=MIN_COV):
+        """
+        Returns the number of sample that have at least a minimum coverage of
+        `min_cov`.
+
+        :param int min_cov: minimum coverage
+        :return int: number of samples passing the filter
+        :raise AttributeNotFound: if no sample coverage attribute is found
+        """
+        coverage = self.sample_coverage
+
+        if not coverage:
+            raise AttributeNotFound(
+                'No coverage attribute found (ending in "_cov")'
+            )
+
+        return sum(
+            1 for sample, coverage in coverage.iteritems()
+            if coverage >= min_cov
+        )
+
+    def get_attr(self, attr, conv=str):
+        try:
+            value = self.attr[attr]
+        except KeyError:
+            raise AttributeNotFound('No {0} attribute found'.format(attr))
+
+        return conv(value)
+
+    @property
+    def coverage(self):
+        """
+        Return the total coverage for the annotation
+
+        :return int: coverage
+        :raise AttributeNotFound: if no coverage attribute is found
+        """
+        return self.get_attr('cov', int)
+
+    @property
+    def exp_syn(self):
+        "Returns the expected number of synonymous changes"
+        return self.get_attr('exp_syn', int)
+
+    @property
+    def exp_nonsyn(self):
+        "Returns the expected number of non-synonymous changes"
+        return self.get_attr('exp_nonsyn', int)
 
 
 def from_glimmer3(header, line, feat_type='CDS'):
@@ -2031,3 +2090,53 @@ def group_annotations_sorted(annotations, key_func=lambda x: (x.seq_id, x.strand
                 curr_ann = [annotation]
     else:
         yield curr_ann
+
+
+def correct_old_annotations(annotations, taxonomy):
+    """
+    Corrects old annotations containing a mix of taxonomic annotations (or none
+    at all), plus some misspelled taxa.
+
+    * BLAST assigned ID from `blast_taxon_idx` (a number)
+    * Profile assigned ID from `taxon_id` which can be in the forms:
+
+        * `id`
+        * `name.id`
+
+    * A taxon *name* in which case uses the provided  taxonomy to find its
+      ID and returns the first one matching or `None` if no taxonomy is
+      passed.
+
+    The taxon_id attribute is set to the correct one, prefferring the
+    blast_taxon_idx, then taxon_id, which can be attached to the taxon name and
+    as last resort tries to reverse lookup the taxon name.
+
+    :param taxonomy: taxonomy used to resolve the taxon name
+    """
+
+    LOG.debug('Correcting old annotations')
+
+    for annotation in annotations:
+        #a taxon id from blast
+        if ('blast_taxon_idx' in annotation.attr):
+            taxon_id = annotation.attr['blast_taxon_idx']
+        #a taxon id from profile
+        elif 'taxon_id' in annotation.attr:
+            taxon_id = annotation.taxon_id
+        #a taxon name is provided
+        else:
+            #if a taxon_name contains the id
+            if len(annotation.attr['taxon'].split('.')) == 2:
+                taxon_id = annotation.attr['taxon'].split('.')[1]
+            #if a taxon_name DOESN'T contains the id try to reverse
+            #it using the taxonomy (if provided), using the first matching ID
+            else:
+                taxon_name = annotation.attr['taxon'].replace('#', ' ')
+
+                if taxon_name in taxon.MISPELLED_TAXA:
+                    taxon_name = taxon.MISPELLED_TAXA[taxon_name]
+
+                taxon_id = taxonomy.find_by_name(taxon_name)[0]
+
+        if taxon_id is not None:
+            annotation.taxon_id = int(taxon_id)

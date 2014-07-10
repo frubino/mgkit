@@ -10,7 +10,7 @@ Welcome to Metagenomic framework's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    install
 
