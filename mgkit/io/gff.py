@@ -1467,6 +1467,8 @@ class Annotation(GenomicRange):
     @property
     def sample_coverage(self):
         """
+        .. versionadded:: 0.1.13
+
         Returns a dictionary with the coverage for each sample, the returned
         dictionary has the sample id (stripped of the *_cov*) suffix and as
         values the coverage (converted via :func:`int`).
@@ -1483,6 +1485,8 @@ class Annotation(GenomicRange):
 
     def get_number_of_samples(self, min_cov=MIN_COV):
         """
+        .. versionadded:: 0.1.13
+
         Returns the number of sample that have at least a minimum coverage of
         `min_cov`.
 
@@ -1503,6 +1507,11 @@ class Annotation(GenomicRange):
         )
 
     def get_attr(self, attr, conv=str):
+        """
+        .. versionadded:: 0.1.13
+
+        Generic method to get an attribute and convert it
+        """
         try:
             value = self.attr[attr]
         except KeyError:
@@ -1513,6 +1522,8 @@ class Annotation(GenomicRange):
     @property
     def coverage(self):
         """
+        .. versionadded:: 0.1.13
+
         Return the total coverage for the annotation
 
         :return int: coverage
@@ -1522,12 +1533,20 @@ class Annotation(GenomicRange):
 
     @property
     def exp_syn(self):
-        "Returns the expected number of synonymous changes"
+        """
+        .. versionadded:: 0.1.13
+
+        Returns the expected number of synonymous changes
+        """
         return self.get_attr('exp_syn', int)
 
     @property
     def exp_nonsyn(self):
-        "Returns the expected number of non-synonymous changes"
+        """
+        .. versionadded:: 0.1.13
+
+        Returns the expected number of non-synonymous changes
+        """
         return self.get_attr('exp_nonsyn', int)
 
 
@@ -2094,6 +2113,8 @@ def group_annotations_sorted(annotations, key_func=lambda x: (x.seq_id, x.strand
 
 def correct_old_annotations(annotations, taxonomy):
     """
+    .. versionadded:: 0.1.13
+
     Corrects old annotations containing a mix of taxonomic annotations (or none
     at all), plus some misspelled taxa.
 

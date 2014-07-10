@@ -23,6 +23,8 @@ with open('README.rst') as file:
 if sys.version_info < (2, 7):
     install_requires.append('argparse>=1.1')
 
+if sys.version_info < (3, 4):
+   install_requires.append('enum34') # support for enum backported from Python 3.4
 
 setup(
     name="mgkit",
