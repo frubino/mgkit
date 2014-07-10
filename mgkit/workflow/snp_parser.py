@@ -6,6 +6,9 @@ This script parses results of SNPs analysis from any tool for SNP calling [#]_
 and `SNPDat <http://code.google.com/p/snpdat/>`_ and integrates them into a
 format that can be later used for other scripts in the pipeline.
 
+It integrates coverage and expected number of syn/nonsyn change and taxonomy
+from a GFF file, SNP data from a VCF file, syn/nonsyn information from SNPDat.
+
 The data written to disk is two files; each one contains a dictionary with
 instances of :class:`snps.GeneSyn` class. One file with suffix '_tot' and one
 with suffix '_set':
@@ -16,7 +19,7 @@ with suffix '_set':
 
 .. note::
 
-    The script accept gzipped VCF files but not SNPDat result files right now
+    The script accept gzipped VCF and SNPDat result files
 
 .. [#] GATK pipeline was the one tested at this time
 """
@@ -117,26 +120,30 @@ def set_parser():
              "attribute in the annotation must be 'sample_cov'"
     )
     parser.add_argument(
-        '-b',
-        '--blast',
-        action='store_true',
-        default=False,
-        help="Use BLAST data if available in the GFF file. The taxon used is " +
-             "the one found by BLAST."
-    )
-    parser.add_argument(
         '-t',
         '--taxonomy',
         action='store',
         default=None,
         help="File containing the full Uniprot taxonomy"
     )
+    parser.add_argument(
+        '-d',
+        '--corr-old',
+        action='store_true',
+        default=False,
+        help="Correct old annotations taxonomy"
+    )
     utils.add_basic_options(parser)
 
     return parser
 
 
-def init_count_set(annotations, taxonomy):
+def exit_script(message, ret_value):
+    LOG.critical(message)
+    sys.exit(ret_value)
+
+
+def init_count_set(annotations, taxonomy, correct_ann=False):
     LOG.info("Init data structures")
 
     samples = annotations[0].sample_coverage.keys()
@@ -146,11 +153,8 @@ def init_count_set(annotations, taxonomy):
     )
     count_syn = {}
 
-    #############Add check for KeyError if no coverage was found.
-    #or simply use new gff method
-
-    #make a switch to indicate that we want to use it
-    gff.correct_old_annotations(annotations, taxonomy)
+    if correct_ann:
+        gff.correct_old_annotations(annotations, taxonomy)
 
     for annotation in annotations:
 
@@ -337,14 +341,15 @@ def parse_vcf(vcf_file, count_set, count_syn, snp_dat_info, min_reads,
             count_tot += 1
 
         if vcf_handle.line_no % line_num == 0:
-            LOG.info("Line %d, SNPs passed %d; skipped for: qual %d, " +
-                     "depth %d, freq %d; tot syn/nonsyn: %r",
-                     vcf_handle.line_no, count_tot, skip_qual, skip_dp, skip_af,
-                     (
-                     sum(x.syn for x in count_syn.values()),
-                     sum(x.nonsyn for x in count_syn.values())
-                     )
-                     )
+            LOG.info(
+                "Line %d, SNPs passed %d; skipped for: qual %d, " +
+                "depth %d, freq %d; tot syn/nonsyn: %r",
+                vcf_handle.line_no, count_tot, skip_qual, skip_dp, skip_af,
+                (
+                    sum(x.syn for x in count_syn.values()),
+                    sum(x.nonsyn for x in count_syn.values())
+                )
+            )
 
 
 def save_data(base_name, count_set, count_syn, tot_suff='tot', set_suff='set',
@@ -363,13 +368,19 @@ def save_data(base_name, count_set, count_syn, tot_suff='tot', set_suff='set',
 
     """
 
-    set_fname = "{base}_{type}.{ext}".format(base=base_name, type=set_suff,
-                                             ext=ext)
+    set_fname = "{base}_{type}.{ext}".format(
+        base=base_name,
+        type=set_suff,
+        ext=ext
+    )
     LOG.info("Saving sample SNPs to %s", set_fname)
     cPickle.dump(count_set, open(set_fname, 'w'), -1)
 
-    tot_fname = "{base}_{type}.{ext}".format(base=base_name, type=tot_suff,
-                                             ext=ext)
+    tot_fname = "{base}_{type}.{ext}".format(
+        base=base_name,
+        type=tot_suff,
+        ext=ext
+    )
     LOG.info("Saving total SNPs to %s", tot_fname)
     cPickle.dump(count_syn, open(tot_fname, 'w'), -1)
 
@@ -383,18 +394,31 @@ def main():
 
     #the number of SNPDat result files must be the same as the sample ids
     if len(options.snpdat_file) != len(options.samples_id):
-        LOG.critical("Number of sample ids and SNPDat result files must be " +
-                     "the same")
-        sys.exit(1)
+        exit_script(
+            "Number of sample ids and SNPDat result files must be the same",
+            1
+        )
 
-    taxonomy = UniprotTaxonomy(options.taxonomy)
+    if options.taxonomy:
+        taxonomy = UniprotTaxonomy(options.taxonomy)
+    else:
+        taxonomy = options.taxonomy
+        if options.corr_old:
+            exit_script(
+                "To correct old annotation the taxonomy is required",
+                3
+            )
 
     annotations = list(gff.parse_gff(options.gff_file))
-    LOG.debug(len(annotations))
+    LOG.debug("Loaded %d annotations", len(annotations))
+
+    if len(annotations[0].sample_coverage) != len(options.samples_id):
+        exit_script("Coverage information was not found for all samples", 2)
 
     count_syn, count_set = init_count_set(
         annotations,
-        taxonomy
+        taxonomy,
+        options.corr_old
     )
 
     snp_dat_info = load_snpdat_files(
