@@ -248,6 +248,9 @@ class KeggClientRest(object):
         """
         if isinstance(ids, str):
             ids = [ids]
+        if isinstance(ids, (set, frozenset)):
+            ids = list(ids)
+
         data = []
         for idx in range(0, len(ids), max_len):
             if len(ids) > max_len:
