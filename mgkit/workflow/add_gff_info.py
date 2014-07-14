@@ -123,7 +123,7 @@ def add_uniprot_info(annotations, options):
         try:
             gene_info = data[annotation.gene_id]
         except KeyError:
-            #no data were found
+            #no data was found
             continue
 
         for column, values in gene_info.iteritems():
@@ -137,7 +137,9 @@ def add_uniprot_info(annotations, options):
                 annotation.attr['taxon_db'] = 'UNIPROT'
             elif column.startswith('database'):
                 annotation.attr[
-                    column[:-1].split('(')[1]
+                    'map_{0}'.format(
+                        column[:-1].split('(')[1]
+                    )
                 ] = ','.join(values)
             elif column == 'ec':
                 if isinstance(values, list):
