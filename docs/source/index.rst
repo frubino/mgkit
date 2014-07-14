@@ -18,6 +18,8 @@ Contents:
 
    pipeline
 
+   gff
+
    scripts/index
 
    library
