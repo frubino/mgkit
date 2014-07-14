@@ -1326,10 +1326,13 @@ class Annotation(GenomicRange):
         self.feat_type = feat_type
         self.score = score
         self.phase = phase
+
         self.attr = kwd
 
         if uid is None:
             self.uid = str(uuid.uuid4())
+        else:
+            self.uid = uid
 
     def get_ec(self, level=4):
         """
