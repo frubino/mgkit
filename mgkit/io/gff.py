@@ -1300,7 +1300,8 @@ class Annotation(GenomicRange):
     """
     .. versionadded:: 0.1.12
 
-    Alternative implementation for an Annotation
+    Alternative implementation for an Annotation. When initialised, If *uid* is
+    None, a unique id is added using `uuid.uuid4`.
     """
     source = 'None'
     "Annotation source"
@@ -1313,18 +1314,22 @@ class Annotation(GenomicRange):
     attr = None
     "Dictionary with the key value pairs in the last column of a GFF/GTF"
 
-    def __init__(self, seq_id='None', start=1, end=1, strand='+', source='None', feat_type='None', score=0.0, phase=0, **kwd):
+    def __init__(self, seq_id='None', start=1, end=1, strand='+', source='None', feat_type='None', score=0.0, phase=0, uid=None, **kwd):
         super(Annotation, self).__init__(
             seq_id=seq_id,
             start=start,
             end=end,
             strand=strand
         )
+
         self.source = source
         self.feat_type = feat_type
         self.score = score
         self.phase = phase
         self.attr = kwd
+
+        if uid is None:
+            self.uid = str(uuid.uuid4())
 
     def get_ec(self, level=4):
         """
@@ -1340,13 +1345,33 @@ class Annotation(GenomicRange):
             list: list of all EC numbers associated, at the desired level, if
             none are found an empty list is returned
         """
-        ec = self.attr.get('EC')
+        ec = self.attr.get('EC', None)
         if ec is None:
             return []
 
         ec = ec.split(',')
 
         return ['.'.join(x.split('.')[:level]) for x in ec]
+
+    def get_mapping(self, db):
+        """
+        .. versionadded:: 0.1.13
+
+        Returns the mappings, to a particular db, associated with the
+        annotation.
+
+        Arguments:
+            db (str): database to which the mappings come from
+
+        Returns:
+            list: list of all mappings associated, to the specified db, if
+            none are found an empty list is returned
+        """
+        mappings = self.attr.get('map_{0}'.format(db))
+        if mappings is None:
+            return []
+
+        return mappings.split(',')
 
     @property
     def taxon_id(self):
@@ -1363,12 +1388,21 @@ class Annotation(GenomicRange):
 
     @property
     def db(self):
-        "db name of the annotation"
+        "db used for the gene_id prediction"
         return self.attr.get('db', None)
 
     @db.setter
     def db(self, value):
         self.attr['db'] = value
+
+    @property
+    def taxon_db(self):
+        "db used for the taxon_id prediction"
+        return self.attr.get('taxon_db', None)
+
+    @taxon_db.setter
+    def taxon_db(self, value):
+        self.attr['taxon_db'] = value
 
     @property
     def dbq(self):
@@ -1548,6 +1582,20 @@ class Annotation(GenomicRange):
         Returns the expected number of non-synonymous changes
         """
         return self.get_attr('exp_nonsyn', int)
+
+    def get_nuc_seq(self, seq):
+        """
+        .. versionadded:: 0.1.13
+
+        Returns the nucleotidic sequence that the annotation covers. if the
+        annotation's strand is *-*, the reverse complement is returned.
+        """
+        ann_seq = seq[self.start-1:self.end]
+
+        if self.strand == '-':
+            ann_seq = seq_utils.reverse_complement(ann_seq)
+
+        return ann_seq
 
 
 def from_glimmer3(header, line, feat_type='CDS'):
@@ -1784,12 +1832,9 @@ def annotate_sequence(name, seq, window=None):
         yield annotation
 
 
-def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, uid=True, **kwd):
+def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
     """
     .. versionadded:: 0.1.12
-
-    .. versionchanged:: 0.1.13
-        added *uid* argument
 
     Returns an instance of :class:`Annotation`
 
@@ -1801,8 +1846,6 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, uid=True, **kwd):
         feat_type (str): feature type in the GFF
         seq_len (int): sequence length, if supplied, the phase for strand '-'
             can be assigned, otherwise is assigned a 0
-        uid (bool): if True adds a `uid` attribute with a unique id (using
-            `uuid.uuid4`)
         **kwd: any additional column
 
     Returns:
@@ -1851,9 +1894,6 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, uid=True, **kwd):
         bitscore=bitscore,
         **kwd
     )
-
-    if uid:
-        annotation.attr['uid'] = str(uuid.uuid4())
 
     return annotation
 
@@ -2161,3 +2201,27 @@ def correct_old_annotations(annotations, taxonomy):
 
         if taxon_id is not None:
             annotation.taxon_id = int(taxon_id)
+
+
+def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid):
+    """
+    .. versionadded:: 0.1.13
+
+    Extract the nucleotidic sequences from a list of annotations. Internally
+    uses the method :meth:`Annotation.get_nuc_seq`.
+
+    Arguments:
+        annotations (iterable): iterable of :class:`Annotation` instances
+        seqs (dict): dictionary with the sequences referenced in the annotations
+        name_func (func): function used to extract the sequence name to be used,
+            defaults to the uid of the annotation
+
+    Yields:
+        tuple: tuple whose first element is the sequence name and the second is
+        the sequence to which the annotation refers.
+    """
+    for annotation in annotations:
+        name = name_func(annotation)
+        seq = annotation.get_nuc_seq(seqs[annotation.seq_id])
+
+        yield name, seq
