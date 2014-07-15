@@ -14,7 +14,6 @@ LOG = logging.getLogger(__name__)
 
 def set_common_options(parser):
     parser.add_argument(
-        '-f',
         '--buffer',
         action='store',
         type=int,
@@ -48,11 +47,21 @@ def set_common_options(parser):
 def set_uniprot_parser(parser):
     group = parser.add_argument_group('Require Internet connection')
     group.add_argument(
+        '-f',
+        '--force-taxon-id',
+        action='store_true',
+        default=False,
+        help='Overwrite taxon_id if already present'
+    )
+    group.add_argument(
         '-t',
         '--taxon-id',
         action='store_true',
         default=False,
-        help='Add taxonomic ids to annotations'
+        help="""
+             Add taxonomic ids to annotations, if taxon_id is found, it won't
+             be Overwritten.
+             """
     )
     group.add_argument(
         '-l',
@@ -130,11 +139,17 @@ def add_uniprot_info(annotations, options):
             #nothing found
             if not values:
                 continue
-            if column == 'organism':
-                annotation.attr['taxon_name'] = values
-            elif column == 'organism-id':
-                annotation.attr['taxon_id'] = int(values)
-                annotation.attr['taxon_db'] = 'UNIPROT'
+
+            if column == 'organism-id':
+                if (annotation.taxon_id and options.force_taxon_id) or \
+                   (annotation.taxon_id is None):
+                    annotation.attr['taxon_id'] = int(values)
+                    annotation.attr['taxon_db'] = 'UNIPROT'
+                    #test with a try/expect maybe
+                    if 'organism' in columns:
+                        annotation.attr['taxon_name'] = gene_info['organism']
+                    if column.startswith('lineage'):
+                        annotation.attr['lineage'] = gene_info['lineage()']
             elif column.startswith('database'):
                 annotation.attr[
                     'map_{0}'.format(
@@ -149,8 +164,6 @@ def add_uniprot_info(annotations, options):
                     )
                 else:
                     annotation.attr['EC'] = values
-            elif column.startswith('lineage'):
-                annotation.attr['lineage'] = values
 
 
 def uniprot_command(options):
