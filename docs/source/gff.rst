@@ -4,11 +4,11 @@ MGKit GFF Specifications
 The GFF produced with MGKit follows the conventions of GFF/GTF files but they provide some additional fields in the 9th column which translate to a
 Python dictionary when an annotation is loaded into an :class:`Annotation` instance.
 
-The 9th column is a list of **key=value** item, separated by a semicolon (;); each value is also expected to be quoted with double quotes and the values to not include a semicolon or other characters that can make the parsing difficult. MGKit uses uses :func:`urllib.quote` to encode those characters, adding to the default ones " ()/". The :func:`mgkit.io.gff.from_gff` uses :func:`urllib.unquote` to set the values.
+The 9th column is a list of **key=value** item, separated by a semicolon (;); each value is also expected to be quoted with double quotes and the values to not include a semicolon or other characters that can make the parsing difficult. MGKit uses :func:`urllib.quote` to encode those characters and also " ()/". The :func:`mgkit.io.gff.from_gff` uses :func:`urllib.unquote` to set the values.
 
 .. warning::
 	
-	As the last column translates to a dictionary, duplicate keys are not allowed.
+	As the last column translates to a dictionary, duplicate keys are not allowed. :func:`mgkit.io.gff.from_gff` raises an exception if any are found.
 
 Reserved Values
 ---------------
@@ -17,6 +17,7 @@ Any key can be added to a GFF annotation, but MGKit expects a few key to be in t
 
 .. list-table:: Reserved values, used by the scripts
 	:header-rows: 1
+	:stub-columns: 1
 
 	* - Key
 	  - Value
@@ -46,10 +47,11 @@ Any key can be added to a GFF annotation, but MGKit expects a few key to be in t
 	  - integer
 	  - used for expected number of synonymous and non-synonymous change for the annotation
 
-The following keys are added by different scripts and may be used in different scripts ot annotation methods. 
+The following keys are added by different scripts and may be used in different scripts or annotation methods. 
 
 .. list-table:: Interpreted Values
 	:header-rows: 1
+	:stub-columns: 1
 
 	* - Key
 	  - Value
