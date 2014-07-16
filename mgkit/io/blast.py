@@ -55,8 +55,10 @@ def _parse_blast_tab(f_handle, gid_col=1, score_col=11, num_lines=NUM_LINES):
     return hits
 
 
-def parse_gi_taxa_table(f_handle, hits, num_lines=NUM_LINES):
+def _parse_gi_taxa_table(f_handle, hits, num_lines=NUM_LINES):
     """
+    .. deprecated:: 0.1.13
+
     Integrates hits dictionary with taxonomic data, parsing the gi taxa table
     from NCBI. Taxon IDs from NCBI are the same as Uniprot taxonomy.
 
@@ -256,3 +258,92 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10):
             continue
 
         yield gff.from_nuc_blast(hit, db=db, dbq=dbq)
+
+
+def parse_fragment_blast(file_handle, bitscore=40.0):
+    """
+    .. versionadded:: 0.1.13
+
+    Parse the output of a BLAST output where the sequences are the single
+    annotations, so the sequence names are the *uid* of the annotations.
+
+    The only returned values are the best hits, maxed by bitscore and identity.
+
+    Arguments:
+        file_handle (str, file): file name or open file handle
+        bitscore (float): minimum bitscore for accepting a hit
+
+    Yields:
+        tuple: a tuple whose first element is the *uid* (the sequence name) and
+        the second is the a tuple whose first element is the GID (NCBI
+        identifier), the second one is the identity and the third is the
+        bitscore of the hit.
+
+    """
+
+    value_funcs = (lambda x: x.split('|')[1], float, float)
+
+    iterator = parse_blast_tab(
+        file_handle,
+        ret_col=(1, 2, 11),
+        value_funcs=value_funcs
+    )
+
+    uidmap = {}
+
+    for uid, hit in iterator:
+
+        if hit[-1] < bitscore:
+            continue
+
+        try:
+            uidmap[uid].append(hit)
+        except KeyError:
+            uidmap[uid] = [hit]
+
+    for uid, hits in uidmap.iteritems():
+        #returns the hit with the max bitscore and max identity
+        yield uid, max(hits, key=lambda x: (x[-1], x[-2]))
+
+
+def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
+    """
+    .. versionadded:: 0.1.13
+
+    Parses the taxonomy files from the `ncbi ftp
+    <ftp://ftp.ncbi.nih.gov/pub/taxonomy/>`_; the file names are
+    `gi_taxid_prot*` for the protein db and `gi_taxid_nucl*` for the nucleotide
+    db. It contains two columns: the first is the GID and the second is its
+    correspondent taxonomy ID.
+
+    Arguments:
+        file_handle (str, file): file name or open file handle
+        gids (None, list): if it's not `None` only the GIDs included in the
+            passed `gids` list will be returned
+        num_lines (None, int): number of which a message is logged. If None,
+            no message is logged
+
+    Yields:
+        tuple: the first element is the GID and the second is the taxonomy ID,
+        converted into an integer.
+
+    .. warning::
+
+        When using gids, it's advised to use a set to speed up comparisons,
+        which are slower on lists.
+
+    """
+    if isinstance(file_handle, str):
+        file_handle = open_file(file_handle, 'r')
+
+    for idx, line in enumerate(file_handle):
+
+        if (num_lines is not None) and ((idx + 1) % num_lines == 0):
+            LOG.info("Parsed %d lines", idx + 1)
+
+        gid, taxon_id = line.strip().split('\t')
+
+        if (gids is not None) and (gid not in gids):
+            continue
+
+        yield gid, int(taxon_id)
