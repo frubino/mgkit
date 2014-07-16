@@ -1,10 +1,8 @@
 """
-.. versionadded:: 0.1.12
-
 Blast output conversion in GFF requires a BLAST+ tabular format which can be
 obtained by using the `--outfmt 6` option with the default columns, as
-specified in :func:`mgkit.io.blast.parse_blast_tab`. The script can be get data
-from the standard in and ouputs GFF line on the standard output by default.
+specified in :func:`mgkit.io.blast.parse_blast_tab`. The script can get data
+from the standard in and ouputs GFF lines on the standard output by default.
 
 Uniprot
 *******
@@ -23,6 +21,11 @@ is CDS.
         "GFF" [color = "#4daf4a" , textcolor = 'white'];
         "BLAST+"  -> "parse_uniprot_blast" -> GFF;
     }
+
+Changes
+*******
+
+.. versionadded:: 0.1.12
 
 """
 import sys

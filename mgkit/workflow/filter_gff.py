@@ -1,9 +1,4 @@
 """
-.. versionadded:: 0.1.12
-
-.. versionchanged:: 0.1.13
-    added *--sorted* option
-
 Filters GFF annotations in different ways.
 
 Value Filtering
@@ -74,6 +69,14 @@ the sequence name as the first key and the strand as the second key.
         "Filtered Annotations" [class = data, stacked];
         filter_annotations -> "Filtered Annotations";
     }
+
+Changes
+*******
+
+.. versionadded:: 0.1.12
+
+.. versionchanged:: 0.1.13
+    added *--sorted* option
 
 """
 

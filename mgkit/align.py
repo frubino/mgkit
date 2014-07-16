@@ -1,9 +1,5 @@
 """
 Module dealing with BAM/SAM files
-
-.. todo::
-
-    * make a script to add coverage info to gff file
 """
 
 import numpy
