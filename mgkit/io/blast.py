@@ -329,7 +329,7 @@ def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
 
     .. warning::
 
-        When using gids, it's advised to use a set to speed up comparisons,
+        When using `gids`, it's advised to use a set to speed up comparisons,
         which are slower on lists.
 
     """

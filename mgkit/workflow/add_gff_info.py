@@ -1,33 +1,20 @@
 """
 Annotate GFF with more information/mappings
 """
+from __future__ import division
 import sys
 import argparse
 import logging
+import itertools
 from .. import logger
 from . import utils
-from ..io import gff
+from ..io import gff, blast
 from ..net import uniprot
 
 LOG = logging.getLogger(__name__)
 
 
 def set_common_options(parser):
-    parser.add_argument(
-        '--buffer',
-        action='store',
-        type=int,
-        help='Number of annotations to keep in memory',
-        default=50
-    )
-    parser.add_argument(
-        '-c',
-        '--email',
-        action='store',
-        type=str,
-        help='Contact email',
-        default=None
-    )
     parser.add_argument(
         'input_file',
         nargs='?',
@@ -45,6 +32,21 @@ def set_common_options(parser):
 
 
 def set_uniprot_parser(parser):
+    parser.add_argument(
+        '-c',
+        '--email',
+        action='store',
+        type=str,
+        help='Contact email',
+        default=None
+    )
+    parser.add_argument(
+        '--buffer',
+        action='store',
+        type=int,
+        help='Number of annotations to keep in memory',
+        default=50
+    )
     group = parser.add_argument_group('Require Internet connection')
     group.add_argument(
         '-f',
@@ -168,6 +170,9 @@ def add_uniprot_info(annotations, options):
 
 def uniprot_command(options):
 
+    if options.buffer < 1:
+        options.buffer = 1
+
     ann_buffer = []
 
     for annotation in gff.parse_gff(options.input_file, gff_type=gff.from_gff):
@@ -189,6 +194,83 @@ def uniprot_command(options):
             annotation.to_file(options.output_file)
 
 
+def set_blast_taxonomy_parser(parser):
+    parser.add_argument(
+        '-t',
+        '--gi-taxa-table',
+        action='store',
+        default=None,
+        required=True,
+        help="GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz)"
+    )
+    parser.add_argument(
+        '-b',
+        '--blast-output',
+        action='store',
+        nargs='+',
+        required=True,
+        help="BLAST output file(s)"
+    )
+    parser.add_argument(
+        '-s',
+        '--bitscore',
+        action='store',
+        default=40,
+        type=float,
+        help="Minimum bitscore allowed"
+    )
+    parser.add_argument(
+        '-d',
+        '--taxon-db',
+        action='store',
+        default='NCBI-NT',
+        help="NCBI database used"
+    )
+    parser.set_defaults(func=taxonomy_command)
+
+
+def taxonomy_command(options):
+
+    uid_gid_map = dict(
+        itertools.chain(
+            *(blast.parse_fragment_blast(x, bitscore=options.bitscore)
+              for x in options.blast_output)
+        )
+    )
+
+    gids = set(x[0] for x in uid_gid_map.itervalues())
+
+    gid_taxon_map = dict(
+        (gid, taxon_id)
+        for gid, taxon_id in blast.parse_gi_taxa_table(
+            options.gi_taxa_table, gids=gids
+        )
+    )
+
+    count = 0
+    tot_count = 0
+
+    for annotation in gff.parse_gff(options.input_file):
+        tot_count += 1
+        try:
+            gid, bitscore, identity = uid_gid_map[annotation.uid]
+            annotation.taxon_id = gid_taxon_map[gid]
+            annotation.taxon_db = options.taxon_db
+        except KeyError:
+            continue
+        finally:
+            annotation.to_file(options.output_file)
+
+        count += 1
+
+    LOG.info(
+        "Added taxonomy information for %.2f%% annotations (%d/%d)",
+        count / tot_count * 100,
+        count,
+        tot_count
+    )
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -199,6 +281,7 @@ def set_parser():
     )
 
     subparsers = parser.add_subparsers()
+
     parser_u = subparsers.add_parser(
         'uniprot',
         help='Adds information from GFF whose gene_id is from Uniprot'
@@ -206,6 +289,15 @@ def set_parser():
 
     set_uniprot_parser(parser_u)
     set_common_options(parser_u)
+
+    parser_t = subparsers.add_parser(
+        'taxonomy',
+        help='''Adds taxonomic information from annotation sequences blasted
+                against a NCBI db'''
+    )
+
+    set_blast_taxonomy_parser(parser_t)
+    set_common_options(parser_t)
 
     utils.add_basic_options(parser)
 
@@ -216,9 +308,6 @@ def main():
     "Main function"
 
     options = set_parser().parse_args()
-
-    if options.buffer < 1:
-        options.buffer = 1
 
     logger.config_log(options.verbose)
     options.func(options)
