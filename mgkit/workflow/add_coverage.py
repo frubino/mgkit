@@ -8,20 +8,9 @@ from . import utils
 from .. io.gff import parse_gff, write_gff
 from .. align import add_coverage_info
 from .. import logger
+from .add_gff_info import split_sample_alg
 
 LOG = logging.getLogger(__name__)
-
-
-def split_sample_alg(argument):
-    "Split sample/alignment option"
-    try:
-        sample, bam_file_name = argument.split(',', 1)
-    except ValueError:
-        raise argparse.ArgumentTypeError(
-            "Can't get get both sample and bam file from '%s'" % argument
-        )
-
-    return (sample, bam_file_name)
 
 
 def set_parser():
@@ -47,7 +36,7 @@ def set_parser():
         '--sample-alignment',
         action='append',
         type=split_sample_alg,
-        help='Number of processors to use'
+        help='sample name and correspondent alignment file separated by comma'
     )
     utils.add_basic_options(parser)
 

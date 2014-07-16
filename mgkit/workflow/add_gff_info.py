@@ -1,11 +1,6 @@
 """
-.. versionadded:: 0.1.12
-
-.. versionchanged:: 0.1.13
-    added *taxonomy* command and *--force-taxon-id* option to the *uniprot*
-    command
-
-Add more information to GFF annotations, like gene mappings.
+Add more information to GFF annotations: gene mappings, coverage, taxonomy,
+etc..
 
 Uniprot Command
 ***************
@@ -51,12 +46,49 @@ The command accept a minimum bitscore to accept an hit and a the best hit is
 selected from all those found for a sequence, more details can be found in the
 documentation for :func:`mgkit.io.blast.parse_fragment_blast`.
 
+Coverage Command
+****************
+
+Adds coverage information from BAM alignment files to a GFF file, using the
+function :func:`mgkit.align.add_coverage_info`, the user needs to supply for
+each sample a BAM file, using the `-a` option, whose parameter is in the form
+`sample,samplealg.bam`. More samples can be supplied adding more `-a` arguments.
+
+.. hint::
+
+    As an example, to add coverage for `sample1`, `sample2` the command line
+    is::
+
+        add-gff-info coverage -a sample1,sample1.bam -a sample2,sample2.bam \\
+        inputgff outputgff
+
+A total coverage for the annotation is also calculated and stored in the
+`cov` attribute, while each sample coverage is stored into `sample_cov` as per
+:ref:`gff-specs`.
+
+Changes
+*******
+
+.. versionadded:: 0.1.12
+
+.. versionchanged:: 0.1.13
+    added *taxonomy* command
+
+.. versionchanged:: 0.1.13
+    added *--force-taxon-id* option to the *uniprot*
+    command
+
+.. versionchanged:: 0.1.13
+    added *coverage* command
+
 """
 from __future__ import division
 import sys
 import argparse
 import logging
 import itertools
+import pysam
+from .. import align
 from .. import logger
 from . import utils
 from ..io import gff, blast
@@ -322,6 +354,49 @@ def taxonomy_command(options):
     )
 
 
+def split_sample_alg(argument):
+    "Split sample/alignment option"
+    try:
+        sample, bam_file_name = argument.split(',', 1)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "Can't get get both sample and bam file from '%s'" % argument
+        )
+
+    return (sample, bam_file_name)
+
+
+def set_coverage_parser(parser):
+    parser.add_argument(
+        '-a',
+        '--sample-alignment',
+        action='append',
+        required=True,
+        type=split_sample_alg,
+        help='sample name and correspondent alignment file separated by comma'
+    )
+    parser.set_defaults(func=coverage_command)
+
+
+def coverage_command(options):
+    samples = []
+    bam_files = []
+
+    for sample, bam_file_name in options.sample_alignment:
+        samples.append(sample)
+        bam_files.append(pysam.Samfile(bam_file_name, 'rb'))
+
+    if len(samples) != len(set(samples)):
+        LOG.critical("There are duplicate sample names")
+        return 1
+
+    annotations = list(gff.parse_gff(options.input_file))
+
+    align.add_coverage_info(annotations, bam_files, samples)
+
+    gff.write_gff(annotations, options.output_file)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -349,6 +424,14 @@ def set_parser():
 
     set_blast_taxonomy_parser(parser_t)
     set_common_options(parser_t)
+
+    parser_c = subparsers.add_parser(
+        'coverage',
+        help='Adds coverage information from BAM Alignment files'
+    )
+
+    set_coverage_parser(parser_c)
+    set_common_options(parser_c)
 
     utils.add_basic_options(parser)
 
