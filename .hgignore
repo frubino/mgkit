@@ -7,3 +7,4 @@ docs/source/_themes
 docs/build
 dist
 build
+docs/source/api
