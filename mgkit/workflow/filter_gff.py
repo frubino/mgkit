@@ -1,6 +1,9 @@
 """
 .. versionadded:: 0.1.12
 
+.. versionchanged:: 0.1.13
+    added *--sorted* option
+
 Filters GFF annotations in different ways.
 
 Value Filtering

@@ -1,3 +1,5 @@
+.. _gff-specs:
+
 MGKit GFF Specifications
 ========================
 

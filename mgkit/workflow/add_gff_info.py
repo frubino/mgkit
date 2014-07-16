@@ -1,5 +1,56 @@
 """
-Annotate GFF with more information/mappings
+.. versionadded:: 0.1.12
+
+.. versionchanged:: 0.1.13
+    added *taxonomy* command and *--force-taxon-id* option to the *uniprot*
+    command
+
+Add more information to GFF annotations, like gene mappings.
+
+Uniprot Command
+***************
+
+If the *gene_id* of an annotation is a Uniprot ID, the script queries Uniprot
+for the requested information. At the moment the information that can be added
+is the taxon_id, taxon_name, lineage and mapping to EC, KO, eggNOG IDs.
+
+It's also possible to add mappings to other databases using the *-m* option with
+the correct identifier for the mapping, which can be found at `this page
+<http://www.uniprot.org/faq/28>`_; for example if it's we want to add the
+mappings of uniprot IDs to *BioCyc*, in the *abbreviation* column of the
+mappings we find that it's identifier is *REACTOME_ID*, so we pass *-m REACTOME*
+to the script (leaving *_ID* out). Mapped IDs are separated by commas.
+
+The taxonomy IDs are not overwritten if they are found in the annotations, the
+*-f* is provided to force the overwriting of those values.
+
+See also :ref:`gff-specs` for more informations about the GFF specifications
+used.
+
+.. note::
+
+    As the script needs to query Uniprot a lot, it is reccommended to split
+    the GFF in several files, so an error in the connection doesn't waste time.
+
+Taxonomy Command
+****************
+
+To refine the taxonomic assignments of predicted genes annotations, the
+annotation sequences may be searched against a database like the NCBI *nt*.
+
+This commands takes as input a GFF file, one or more blast output files and a
+file with all mappings from GIDs to taxonomy IDs. More information on how to
+get the file can be read in the documentation of the function
+:func:`mgkit.io.blast.parse_gi_taxa_table`.
+
+The fasta sequences used with BLAST must have as name the uid of the annotations
+they refer to, and one way to obtain these sequences is to use the function
+:func:`mgkit.io.gff.extract_nuc_seqs` and save them to a fasta file.
+
+The command accept a minimum bitscore to accept an hit and a the best hit is
+selected from all those found for a sequence, more details can be found in the
+documentation for :func:`mgkit.io.blast.parse_fragment_blast`.
+
 """
 from __future__ import division
 import sys
