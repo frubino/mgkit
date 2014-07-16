@@ -14,10 +14,10 @@ Most UNIX systems provide a version of Python installed. Latest versions of MacO
 
 The library requires these Python packages:
 
-* numpy >= 1.7.1
-* scipy >= 0.13.0
-* pandas >= 0.12.0
-* HTSeq >= 0.5.4p5
+* numpy >= 1.8.1
+* scipy >= 0.14.0
+* pandas >= 0.14.1
+* HTSeq >= 0.6.1p1
 * matplotlib >= 1.3.1
 * pysam >= 0.7.7 (required by :mod:`mgkit.align`)
 * `goatools <https://github.com/tanghaibao/goatools>`_ (required by :mod:`mgkit.mappings.go`), has package `fisher` as a dependency
@@ -63,9 +63,9 @@ assuming you're in the same directory where you created the environment. The pip
 Using the repository
 ^^^^^^^^^^^^^^^^^^^^
 
-bitbucket link
+The source code can also be obtained from the `Bitbucket repository <https://bitbucket.org/setsuna80/mgkit>`_.
 
-Runnining Tests
+Running Tests
 ---------------
 
 The tests requires the `nosetests` package::
@@ -83,18 +83,18 @@ Some test won't be run if the required library/data is not found. Consult the ou
 Building Documentation
 ----------------------
 
-Needs sphinx >=1.2
+Needs sphinx >=1.2.2
 
 * sphinx_rtd_theme
 * sphinxcontrib-actdiag
 * sphinxcontrib-blockdiag
-* rst2pdf
 * sphinxcontrib-napoleon (we'll be part of sphinx 1.3, needed until then)
+* sphinx-argparse
 
 Other libraries:
 
 * graphviz
-* latex (for pdf output - latex pdf)
+* latex (for pdf output - `make latexpdf`)
 
 Troubleshooting
 ---------------
@@ -125,12 +125,20 @@ If you want to use Xcode, you need to install the gfortran compiler, with the pa
 
 .. warning:: 
 	
-	There seems to be a problem with `pandas` version 0.13.1 on MacOSX, with a segmentation fault happening when using DataFrames.
+	There seems to be a problem with `pandas` version 0.13.1 on MacOSX, with a segmentation fault happening when using DataFrames. The 0.14.1 version is the one tested.
+
+.. note::
+
+	if there's a problem building a python package because of a compile error, dealing with an unknown command line option, use::
+
+		export ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future
+
+	It's related to the clang toolchain included with Xcode
 
 Scipy
 *****
 
-There are different solutions available if you have trouble installing the dependencies on MacOSX, one of which is hosted `on this page <http://fonnesbeck.github.io/ScipySuperpack/>`_,
+There are different solutions available if you have trouble installing the dependencies on MacOSX, one of which is hosted `on this page <http://fonnesbeck.github.io/ScipySuperpack/>`_, but installing from source is another option, provided that the Xcode and gfortran are installed.
 
 Matplotlib
 **********
@@ -149,12 +157,6 @@ The tricky package to install in MacOSX is actually `matplotlib <http://matplotl
 		export CPPFLAGS="-I/usr/local/opt/freetype/include -I/usr/local/opt/libpng/include -I/usr/local/opt/freetype/include/freetype2"
 
 
-.. note::
-
-	if there's a problem building matplotlib because of a compile error, dealing with an unknown command line option, use::
-
-		export ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future
-
 Installing Scipy on Linux
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -166,7 +168,7 @@ Notes
 -----
 
 Not all packages are required to use the part of the library, but it's
-recommended to install all. Requirements are bound to change, but pandas, scipy,
+recommended to install all of them. Requirements are bound to change, but pandas, scipy,
 numpy, pysam and matplotlib are the bases of the library.
 
 To avoid problems with the system installation, I suggest using the excellent
