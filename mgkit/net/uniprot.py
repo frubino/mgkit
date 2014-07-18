@@ -235,7 +235,8 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
     return infos
 
 
-def query_uniprot(query, columns, format='tab', limit=None, contact=None):
+def query_uniprot(query, columns=None, format='tab', limit=None, contact=None,
+                  baseurl=UNIPROT_GET):
     """
     .. versionadded:: 0.1.12
 
@@ -244,12 +245,14 @@ def query_uniprot(query, columns, format='tab', limit=None, contact=None):
 
     Arguments:
         query (str): query to submit, as put in the input box
-        columns (iterable): list of columns to return
+        columns (None, iterable): list of columns to return
         format (str): response format
         limit (int, None): number of entries to return or *None* to request all
             entries
         contact (str): email address to be passed in the query (requested
             Uniprot API)
+        baseurl (str): base url for the REST API, can be either
+            :data:`UNIPROT_GET` or :data:`UNIPROT_TAXONOMY`
     Returns:
         str: raw response from the query
 
@@ -275,18 +278,19 @@ def query_uniprot(query, columns, format='tab', limit=None, contact=None):
 
     data = urllib.urlencode(data)
 
-    data += "&columns={0}".format(
-        ','.join(
-            urllib.quote(column)
-            for column in columns
+    if columns is not None:
+        data += "&columns={0}".format(
+            ','.join(
+                urllib.quote(column)
+                for column in columns
+            )
         )
-    )
 
     if mgkit.DEBUG:
-        LOG.debug("query: %s?%s", UNIPROT_GET, data)
+        LOG.debug("query: %s?%s", baseurl, data)
         LOG.debug("request length %d", len(data))
 
-    return url_read(UNIPROT_GET, data, agent=contact)
+    return url_read(baseurl, data, agent=contact)
 
 
 def parse_uniprot_response(data, simple=True):
