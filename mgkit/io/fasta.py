@@ -10,8 +10,19 @@ LOG = logging.getLogger(__name__)
 
 def load_fasta(f_handle):
     """
+    .. versionchanged:: 0.1.13
+        now returns uppercase sequences
+
     Loads a fasta file and returns a generator of tuples in which the first
     element is the name of the sequence and the second the sequence
+
+    Arguments:
+        f_handle (str, file): fasta file to open; a file name or a file handle
+            is expected
+
+    Yields:
+        tuple: first element is the sequence name/header, the second element is
+        the sequence
     """
     if isinstance(f_handle, str):
         f_handle = mgkit.io.open_file(f_handle, 'r')
@@ -24,12 +35,12 @@ def load_fasta(f_handle):
     nseq = 0
     # Better use ''.join(list) than seq+=seq, it's faster
     cur_seq = []
-    # main loop to read file's sequences into an Alignment Object
+    # main loop to read file's sequences
     for line in f_handle:
         if line.startswith('>'):
             if cur_seq != []:
                 # start of next sequence
-                yield cur_name, ''.join(cur_seq)
+                yield cur_name, ''.join(cur_seq).upper()
                 nseq += 1
                 cur_seq = []
             # save previous name for loop's else clause
@@ -44,10 +55,10 @@ def load_fasta(f_handle):
         # portion of the sequence at EOF
         if nseq != 0:
             if cur_name != last_name:
-                yield cur_name, ''.join(cur_seq)
+                yield cur_name, ''.join(cur_seq).upper()
         # case in which only one sequence is present
         else:
-            yield cur_name, ''.join(cur_seq)
+            yield cur_name, ''.join(cur_seq).upper()
     f_handle.close()
 
 
