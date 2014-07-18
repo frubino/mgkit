@@ -327,14 +327,12 @@ def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
         tuple: the first element is the GID and the second is the taxonomy ID,
         converted into an integer.
 
-    .. warning::
-
-        When using `gids`, it's advised to use a set to speed up comparisons,
-        which are slower on lists.
-
     """
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
+
+    if gids is not None:
+        gids = set(gids)
 
     for idx, line in enumerate(file_handle):
 
