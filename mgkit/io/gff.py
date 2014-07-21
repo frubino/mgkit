@@ -831,6 +831,9 @@ def get_attr2attr_map(annotations, keyattr='ko_idx', valattr='taxon',
 
 def add_expected_syn_count(annotation, seqs, syn_matrix=None):
     """
+    .. deprecated:: 0.1.13
+        use the :meth:`Annotation.add_exp_syn_count` method
+
     Adds expected synonymous/non-synonymous values for an annotation.
 
     :param annotation: :class:`GFFKegg` instance
@@ -1461,6 +1464,41 @@ class Annotation(GenomicRange):
     def gene_id(self, value):
         self.attr['gene_id'] = value
 
+    @property
+    def region(self):
+        """
+        .. versionadded:: 0.1.13
+
+        Return the *region* covered by the annotation, to use in samtools
+        """
+        return "{0}:{1}:{2}".format(self.seq_id, self.start, self.end)
+
+    def add_exp_syn_count(self, seq, syn_matrix=None):
+        """
+        .. versionadded:: 0.1.13
+
+        Adds expected synonymous/non-synonymous values for an annotation.
+
+        Arguments:
+            seq (str): sequence corresponding to the annotation seq_id
+            syn_matrix (None, dict): matrix that determines the return values.
+            Defaults to the one defined in the called function
+            :func:`mgkit.utils.sequnce.get_seq_expected_syn_count`
+
+        """
+        seq = seq[self.start-1:self.end]
+
+        if self.strand == '-':
+            seq = seq_utils.reverse_complement(seq)
+
+        syn_count, nonsyn_count = seq_utils.get_seq_expected_syn_count(
+            seq,
+            syn_matrix=syn_matrix
+        )
+
+        self.set_attr('exp_syn', syn_count)
+        self.set_attr('exp_nonsyn', nonsyn_count)
+
     def to_gff(self, sep='='):
         """
         Format the Annotation as a GFF string.
@@ -1547,7 +1585,7 @@ class Annotation(GenomicRange):
         """
         .. versionadded:: 0.1.13
 
-        Generic method to get an attribute and convert it
+        Generic method to get an attribute and convert it to a specific datatype
         """
         try:
             value = self.attr[attr]
@@ -1555,6 +1593,14 @@ class Annotation(GenomicRange):
             raise AttributeNotFound('No {0} attribute found'.format(attr))
 
         return conv(value)
+
+    def set_attr(self, attr, value):
+        """
+        .. versionadded:: 0.1.13
+
+        Generic method to set an attribute
+        """
+        value = self.attr[attr] = value
 
     @property
     def coverage(self):
