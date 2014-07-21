@@ -83,3 +83,22 @@ def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
         )
 
     file_handle.write(">{0}\n{1}\n".format(name, seq))
+
+
+def split_fasta_file(file_handle, name_mask, num_files):
+    """
+    .. versionadded:: 0.1.13
+
+    Splits a fasta file into a series of smaller files.
+
+    Arguments:
+        file_handle (file, str): fasta file with the input sequences
+        name_mask (str): file name template for the splitted files, more
+            informations are found in :func:`mgkit.io.split_write`
+        num_files (int): number of files in which to distribute the sequences
+    """
+    records = load_fasta(file_handle)
+
+    write_func = lambda h, r: write_fasta_sequence(h, *r)
+
+    mgkit.io.split_write(records, name_mask, write_func, num_files=num_files)

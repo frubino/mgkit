@@ -74,3 +74,28 @@ def compressed_handle(file_handle):
             file_handle = lzma.LZMAFile(file_handle)
 
     return file_handle
+
+
+def split_write(records, name_mask, write_func, num_files=2):
+    """
+    .. versionadded:: 0.1.13
+
+    Splits the writing of a number of records in a series of files. The
+    `name_mask` is used as template for the file names. A string like
+    "split-files-{0}" can be specified and the function applies format with the
+    index of the pieces.
+
+    Arguments:
+        records (iterable): an iterable that returns a object to be saved
+        name_mask (str): a string used as template for the output file names
+            on which the function applies :func:`string.format`
+        write_func (func): a function that is called to write to the files. It
+            needs to accept a file handles as first argument and the record
+            returned by `records` as the second argument
+        num_files (int): the number of files to split the records
+    """
+    out_handles = [open(name_mask.format(x), 'w') for x in xrange(num_files)]
+
+    for index, record in enumerate(records):
+        out_handle = out_handles[index % num_files]
+        write_func(out_handle, record)
