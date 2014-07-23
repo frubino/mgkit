@@ -6,6 +6,7 @@ from __future__ import division  # add check to use only on python 2.x
 import itertools
 import logging
 import random
+import numpy
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
 
@@ -473,3 +474,77 @@ def check_snp_in_seq(ref_seq, pos, change, start=0, trans_table=None):
     snp_codon = ''.join(snp_codon)
 
     return trans_table[snp_codon] == trans_table[ref_codon]
+
+
+def sequence_gc_ratio(sequence):
+    """
+    .. versionadded:: 0.1.13
+
+    Calculate GC ratio information for a sequence. The formula is:
+
+    .. math::
+        :label: gc_ratio
+
+        \\frac {(A + T)}{(G + C)}
+
+    Arguments:
+        sequence (str): sequence
+
+    Returns:
+        float: GC ratio, or `numpy.nan` if G = C = 0
+    """
+
+    at_sum = (sequence.count('A') + sequence.count('T'))
+    gc_sum = (sequence.count('G') + sequence.count('C'))
+
+    try:
+        return at_sum / gc_sum
+    except ZeroDivisionError:
+        return numpy.nan
+
+
+def sequence_gc_content(sequence):
+    """
+    .. versionadded:: 0.1.13
+
+    Calculate GC content information for an annotation. The formula is:
+
+    .. math::
+        :label: ge_content
+
+        \\frac {(G + C)}{(G + C + A + T)}
+
+
+    Arguments:
+        sequence (str): sequence
+
+    Returns:
+        float: GC content
+    """
+
+    at_sum = (sequence.count('A') + sequence.count('T'))
+    gc_sum = (sequence.count('G') + sequence.count('C'))
+
+    return gc_sum / (gc_sum + at_sum)
+
+
+def sequence_composition(sequence, chars=tuple(REV_COMP)):
+    """
+    .. versionadded:: 0.1.13
+
+    Returns the number of occurences of each unique character in the sequence
+
+    Arguments:
+        sequence (str): sequence
+        chars (iterable, None): iterable of the chars to test, default to
+            (A, C, T, G). if None checks all unique characters in the sequencce
+
+    Yields:
+        tuple: the first element is the nucleotide and the second is the number
+        of occurences in *sequence*
+    """
+    if chars is None:
+        chars = set(sequence)
+
+    for nuc in chars:
+        yield nuc, sequence.count(nuc)

@@ -1,5 +1,7 @@
+from __future__ import division
 from nose.tools import *
 
+import numpy
 from mgkit.utils import sequence
 from mgkit.utils import trans_tables
 
@@ -208,3 +210,52 @@ def test_get_seq_number_of_syn3():
     counts = sequence.get_seq_number_of_syn(ref_seq, snps, start=2,
                                             trans_table=trans_tables.UNIVERSAL)
     eq_(counts, (1, 2))
+
+
+def test_sequence_gc_ratio1():
+    seq = 'A' * 10 + 'C' * 4 + 'T' * 4 + 'G' * 11
+    eq_(
+        sequence.sequence_gc_ratio(seq),
+        14 / 15
+    )
+
+
+def test_sequence_gc_ratio_fail1():
+    seq = 'A' * 10 + 'T' * 4
+    ok_(
+        numpy.isnan(
+            sequence.sequence_gc_ratio(seq)
+        )
+    )
+
+
+def test_sequence_gc_content1():
+    seq = 'A' * 10 + 'C' * 4 + 'T' * 4 + 'G' * 11
+    eq_(
+        sequence.sequence_gc_content(seq),
+        15 / 29
+    )
+
+
+def test_sequence_composition1():
+    seq = 'A' * 10 + 'C' * 4 + 'T' * 5 + 'G' * 11
+    eq_(
+        sorted(sequence.sequence_composition(seq)),
+        [('A', 10), ('C', 4), ('G', 11), ('T', 5)]
+    )
+
+
+def test_sequence_composition2():
+    seq = 'A' * 10 + 'C' * 4 + 'T' * 5 + 'G' * 11 + 'N' * 2
+    eq_(
+        sorted(sequence.sequence_composition(seq, chars=None)),
+        [('A', 10), ('C', 4), ('G', 11), ('N', 2), ('T', 5)]
+    )
+
+
+def test_sequence_composition3():
+    seq = 'A' * 10 + 'C' * 4 + 'T' * 5 + 'G' * 11 + 'N' * 2
+    eq_(
+        sorted(sequence.sequence_composition(seq, chars=('A', 'C'))),
+        [('A', 10), ('C', 4)]
+    )

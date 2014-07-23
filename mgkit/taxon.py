@@ -314,6 +314,9 @@ class UniprotTaxonomy(object):
 
     def load_data(self, file_handle):
         """
+        .. versionchanged:: 0.1.13
+            now accepts file handles and compressed files (if file names)
+
         Loads pickled data from file name "file_handle", accept gzipped data
 
         :param str file_handle: file name (or file handle) of the pickled data
@@ -354,6 +357,9 @@ class UniprotTaxonomy(object):
 
     def is_ancestor(self, leaf_id, anc_id):
         """
+        .. versionchanged:: 0.1.13
+            noe uses :func:`is_ancestor`
+
         Checks if a taxon is the leaf of another one.
 
         :param int leaf_id: leaf taxon id
@@ -631,6 +637,8 @@ def is_ancestor(taxonomy, taxon_id, anc_id):
 
 class NoLcaFound(Exception):
     """
+    .. versionadded:: 0.1.13
+
     Raised if no lowest common ancestor can be found in the taxonomy
     """
     pass
@@ -638,6 +646,8 @@ class NoLcaFound(Exception):
 
 def lowest_common_ancestor(taxonomy, taxon_id1, taxon_id2):
     """
+    .. versionadded:: 0.1.13
+
     Finds the lowest common ancestor of two taxon IDs.
 
     Arguments:
