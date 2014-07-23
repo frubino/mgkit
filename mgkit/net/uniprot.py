@@ -240,6 +240,9 @@ def query_uniprot(query, columns=None, format='tab', limit=None, contact=None,
     """
     .. versionadded:: 0.1.12
 
+    .. versionchanged:: 0.1.13
+        added *baseurl* and made *columns* a default argument
+
     Queries Uniprot, returning the raw response in tbe format specified. More
     informations at the `page <http://www.uniprot.org/faq/28>`_
 
