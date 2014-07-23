@@ -230,9 +230,13 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         yield key, values
 
 
-def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10):
+def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
+                        name_func=None):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.1.13
+        added *name_func* argument
 
     Parses BLAST results in tabular format using :func:`parse_blast_tab`,
     applying a basic bitscore filter. Returns the annotations associated with
@@ -242,8 +246,12 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10):
         file_handle (str, file): file name or open file handle
         bitscore (int, float): the minimum bitscore for an annotation to be
             accepted
+        db (str): database used
         dbq (int): an index indicating the quality of the sequence database
             used; this value is used in the filtering of annotations
+        name_func (func): function to convert the name of the database
+            sequences. Defaults to `lambda x: x.split('|')[1]`, which can be
+            be used with fasta files provided by Uniprot
 
     Yields:
         Annotation: instances of :class:`mgkit.io.gff.Annotation` instance of
@@ -251,7 +259,14 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10):
     """
 
     #the second function extract the Uniprot ID from the sequence header
-    value_funcs = (str, lambda x: x.split('|')[1], float, int, int, float)
+    value_funcs = (
+        str,
+        lambda x: x.split('|')[1] if name_func is None else name_func,
+        float,
+        int,
+        int,
+        float
+    )
 
     for seq_id, hit in parse_blast_tab(file_handle, value_funcs=value_funcs):
         if hit[-1] < bitscore:
@@ -275,7 +290,7 @@ def parse_fragment_blast(file_handle, bitscore=40.0):
 
     Yields:
         tuple: a tuple whose first element is the *uid* (the sequence name) and
-        the second is the a tuple whose first element is the GID (NCBI
+        the second is the a list of tuples whose first element is the GID (NCBI
         identifier), the second one is the identity and the third is the
         bitscore of the hit.
 
@@ -303,7 +318,7 @@ def parse_fragment_blast(file_handle, bitscore=40.0):
 
     for uid, hits in uidmap.iteritems():
         #returns the hit with the max bitscore and max identity
-        yield uid, max(hits, key=lambda x: (x[-1], x[-2]))
+        yield uid, hits
 
 
 def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
