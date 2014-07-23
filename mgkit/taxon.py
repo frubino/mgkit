@@ -8,6 +8,7 @@ import gzip
 import cPickle
 import itertools
 import collections
+from .io import open_file
 
 LOG = logging.getLogger(__name__)
 
@@ -311,18 +312,19 @@ class UniprotTaxonomy(object):
             except KeyError:
                 self._name_map[taxon_obj.s_name] = [taxon_obj.taxon_id]
 
-    def load_data(self, fname):
+    def load_data(self, file_handle):
         """
-        Loads pickled data from file name "fname", accept gzipped data
+        Loads pickled data from file name "file_handle", accept gzipped data
 
-        :param str fname: file name of the pickled data
+        :param str file_handle: file name (or file handle) of the pickled data
         """
-        LOG.info("Loading taxonomy from file %s", fname)
-        if fname.endswith('.gz'):
-            f_handle = gzip.open(fname, 'r')
-        else:
-            f_handle = open(fname, 'r')
-        self._taxa = cPickle.load(f_handle)
+
+        if isinstance(file_handle, str):
+            file_handle = open_file(file_handle)
+
+        LOG.info("Loading taxonomy from file %s", file_handle.name)
+
+        self._taxa = cPickle.load(file_handle)
 
     def save_data(self, fname):
         """
@@ -361,7 +363,7 @@ class UniprotTaxonomy(object):
 
         """
 
-        return self[anc_id].s_name in self[leaf_id].lineage
+        return is_ancestor(self, leaf_id, anc_id)
 
     def get_ranked_taxon(self, taxon_id, rank=None, ranks=TAXON_RANKS):
         """
@@ -613,7 +615,7 @@ def is_ancestor(taxonomy, taxon_id, anc_id):
     :param int taxon_id: leaf taxon to test
     :param int anc_id: ancestor taxon to test against
 
-    :return bool: True if anc_id is an ancestor of taxon_id
+    :return bool: True if anc_id is an ancestor of taxon_id or their the same
     """
     if taxon_id == anc_id:
         return True
@@ -625,3 +627,38 @@ def is_ancestor(taxonomy, taxon_id, anc_id):
             return True
         if taxon_id is None:
             return False
+
+
+class NoLcaFound(Exception):
+    """
+    Raised if no lowest common ancestor can be found in the taxonomy
+    """
+    pass
+
+
+def lowest_common_ancestor(taxonomy, taxon_id1, taxon_id2):
+    """
+    Finds the lowest common ancestor of two taxon IDs.
+
+    Arguments:
+        taxonomy: :class:`UniprotTaxonomy` instance used to test
+        taxon_id1 (int): first taxon ID
+        taxon_id2 (int): second taxon ID
+
+    Raturns:
+        int: taxon ID of the lowest common ancestor
+
+    Raises:
+        NoLcaFound: if no common ancestor can be found
+    """
+    lca_id = taxon_id1
+
+    while True:
+        if is_ancestor(taxonomy, taxon_id2, lca_id):
+            break
+        else:
+            lca_id = taxonomy[lca_id].parent_id
+            if lca_id is None:
+                raise NoLcaFound('No common ancestry')
+
+    return lca_id
