@@ -27,7 +27,6 @@ with suffix '_set':
 import HTSeq
 import logging
 import argparse
-import sys
 import cPickle
 from . import utils
 from ..io import gff, compressed_handle
@@ -136,11 +135,6 @@ def set_parser():
     utils.add_basic_options(parser)
 
     return parser
-
-
-def exit_script(message, ret_value):
-    LOG.critical(message)
-    sys.exit(ret_value)
 
 
 def init_count_set(annotations, taxonomy, correct_ann=False):
@@ -394,7 +388,7 @@ def main():
 
     #the number of SNPDat result files must be the same as the sample ids
     if len(options.snpdat_file) != len(options.samples_id):
-        exit_script(
+        utils.exit_script(
             "Number of sample ids and SNPDat result files must be the same",
             1
         )
@@ -404,7 +398,7 @@ def main():
     else:
         taxonomy = options.taxonomy
         if options.corr_old:
-            exit_script(
+            utils.exit_script(
                 "To correct old annotation the taxonomy is required",
                 3
             )
@@ -413,7 +407,7 @@ def main():
     LOG.debug("Loaded %d annotations", len(annotations))
 
     if len(annotations[0].sample_coverage) != len(options.samples_id):
-        exit_script("Coverage information was not found for all samples", 2)
+        utils.exit_script("Coverage information was not found for all samples", 2)
 
     count_syn, count_set = init_count_set(
         annotations,

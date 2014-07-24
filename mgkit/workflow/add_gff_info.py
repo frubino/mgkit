@@ -42,9 +42,24 @@ The fasta sequences used with BLAST must have as name the uid of the annotations
 they refer to, and one way to obtain these sequences is to use the function
 :func:`mgkit.io.gff.extract_nuc_seqs` and save them to a fasta file.
 
-The command accept a minimum bitscore to accept an hit and a the best hit is
-selected from all those found for a sequence, more details can be found in the
-documentation for :func:`mgkit.io.blast.parse_fragment_blast`.
+The command accept a minimum bitscore to accept an hit and the taxon ID is
+selected by default using top hit method, but LCA can be used, using the *-l*
+switch.
+
+Top Hit
++++++++
+
+The best hit is selected from all those found for a sequence which has the
+maximum bitscore and identity, with the bitscore having the highest priority.
+
+LCA Taxon
++++++++++
+
+Activated with the *-l* switch, it selects the lowest common ancestor of all
+taxon IDs that are from the cellular organism root in the taxonomy and are
+within a 10 bits (by default, can be customised with *-a*) from the hit with
+the highest bitscore. If a taxon ID is not found in the taxonomy, it is
+excluded.
 
 Coverage Command
 ****************
@@ -72,14 +87,10 @@ Changes
 .. versionadded:: 0.1.12
 
 .. versionchanged:: 0.1.13
-    added *taxonomy* command
 
-.. versionchanged:: 0.1.13
-    added *--force-taxon-id* option to the *uniprot*
-    command
-
-.. versionchanged:: 0.1.13
-    added *coverage* command
+    * added *--force-taxon-id* option to the *uniprot* command
+    * added *coverage* command
+    * added *taxonomy* command
 
 """
 from __future__ import division
@@ -87,10 +98,13 @@ import sys
 import argparse
 import logging
 import itertools
+import functools
 import pysam
+import mgkit
+from . import utils
 from .. import align
 from .. import logger
-from . import utils
+from .. import taxon
 from ..io import gff, blast
 from ..net import uniprot
 
@@ -309,19 +323,124 @@ def set_blast_taxonomy_parser(parser):
         default='NCBI-NT',
         help="NCBI database used"
     )
+    group = parser.add_argument_group('LCA options')
+    group.add_argument(
+        '-l',
+        '--lca',
+        action='store_true',
+        default=False,
+        help="Use lowest common ancestor to solve ambiguities"
+    )
+    group.add_argument(
+        '-x',
+        '--taxonomy',
+        action='store',
+        type=argparse.FileType('r'),
+        default=None,
+        help="Taxonomy file"
+    )
+    group.add_argument(
+        '-a',
+        '--max-diff',
+        action='store',
+        default=10,
+        type=float,
+        help="Bitscore difference from the max hit"
+    )
     parser.set_defaults(func=taxonomy_command)
+
+
+def get_gids(uid_gid_map):
+
+    gids = set()
+
+    for hits in uid_gid_map.itervalues():
+        gids.update(x[0] for x in hits)
+
+    return gids
+
+
+def choose_by_lca(hits, taxonomy, gid_taxon_map, score=10):
+    #the minimum score required to be part of the taxon IDs selected is to
+    #be at most 10 bits (by default) from the maximum bitscore found in the hits
+    min_score = max(hits, key=lambda x: x[-1])[-1] - score
+
+    #filter over only cellular organisms
+    cellular_organism = 131567
+
+    taxon_ids = set()
+
+    for gid, identity, bitscore in hits:
+        #No taxon_id found for the gid
+        taxon_id = gid_taxon_map.get(gid, None)
+
+        #skip already included taxon_ids
+        if taxon_id in taxon_ids:
+            continue
+
+        #if the requirements are met
+        if (taxon_id is not None) and (bitscore >= min_score):
+            try:
+                #test to make sure it is a cellular organism
+                if taxon.is_ancestor(taxonomy, taxon_id, cellular_organism):
+                    taxon_ids.add(taxon_id)
+                #not part of the loop
+                else:
+                    LOG.debug("%d not part of cellular organisms", taxon_id)
+            #The taxon id is not in the taxonomy used. It's skipped
+            except KeyError:
+                LOG.warning("%d is not part of the taxonomy", taxon_id)
+                continue
+
+    #no taxon_id passes the filters
+    if len(taxon_ids) == 0:
+        return None
+
+    #log message fired up only if the package is set on DEBUG
+    if mgkit.DEBUG and (len(taxon_ids) > 1):
+        LOG.debug(
+            "Num hits %d: %s",
+            len(taxon_ids),
+            ','.join(
+                taxonomy[taxon_id].s_name
+                for taxon_id in taxon_ids
+                if taxon_id in taxonomy
+            )
+        )
+
+    func = functools.partial(
+        taxon.lowest_common_ancestor,
+        taxonomy
+    )
+
+    return reduce(func, taxon_ids)
+
+
+def choose_by_score(hits, gid_taxon_map):
+    return gid_taxon_map.get(max(hits, key=lambda x: (x[-1], x[-2]))[0], None)
 
 
 def taxonomy_command(options):
 
+    if options.lca:
+        LOG.info(
+            "Using LCA to resolve multiple hits %.2f bits from the top hit",
+            options.max_diff
+        )
+        if options.taxonomy is None:
+            utils.exit_script('A taxonomy file is required', 1)
+        options.taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+
     uid_gid_map = dict(
         itertools.chain(
-            *(blast.parse_fragment_blast(x, bitscore=options.bitscore)
-              for x in options.blast_output)
+            *(
+                blast.parse_fragment_blast(x, bitscore=options.bitscore)
+                for x in options.blast_output
+            )
         )
     )
 
-    gids = set(x[0] for x in uid_gid_map.itervalues())
+    gids = get_gids(uid_gid_map)
 
     gid_taxon_map = dict(
         (gid, taxon_id)
@@ -335,19 +454,40 @@ def taxonomy_command(options):
 
     for annotation in gff.parse_gff(options.input_file):
         tot_count += 1
-        try:
-            gid, bitscore, identity = uid_gid_map[annotation.uid]
-            annotation.taxon_id = gid_taxon_map[gid]
-            annotation.taxon_db = options.taxon_db
-        except KeyError:
-            continue
-        finally:
-            annotation.to_file(options.output_file)
 
-        count += 1
+        hits = uid_gid_map.get(annotation.uid, None)
+
+        if hits is not None:
+            if options.lca:
+                taxon_id = choose_by_lca(
+                    hits,
+                    options.taxonomy,
+                    gid_taxon_map,
+                    options.max_diff
+                )
+                if taxon_id is not None:
+                    LOG.debug(
+                        "Selected %s (%s) by LCA",
+                        options.taxonomy[taxon_id].s_name,
+                        options.taxonomy[taxon_id].rank
+                    )
+            else:
+                taxon_id = choose_by_score(
+                    hits,
+                    gid_taxon_map
+                )
+        else:
+            taxon_id = None
+
+        if taxon_id is not None:
+            count += 1
+            annotation.taxon_id = taxon_id
+            annotation.taxon_db = options.taxon_db
+
+        annotation.to_file(options.output_file)
 
     LOG.info(
-        "Added taxonomy information for %.2f%% annotations (%d/%d)",
+        "Added taxonomy information to %.2f%% annotations (%d/%d)",
         count / tot_count * 100,
         count,
         tot_count
@@ -415,6 +555,7 @@ def set_parser():
 
     set_uniprot_parser(parser_u)
     set_common_options(parser_u)
+    utils.add_basic_options(parser_u)
 
     parser_t = subparsers.add_parser(
         'taxonomy',
@@ -424,6 +565,7 @@ def set_parser():
 
     set_blast_taxonomy_parser(parser_t)
     set_common_options(parser_t)
+    utils.add_basic_options(parser_t)
 
     parser_c = subparsers.add_parser(
         'coverage',
@@ -432,6 +574,7 @@ def set_parser():
 
     set_coverage_parser(parser_c)
     set_common_options(parser_c)
+    utils.add_basic_options(parser_c)
 
     utils.add_basic_options(parser)
 

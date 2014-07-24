@@ -2,7 +2,10 @@
 Utility functions for workflows
 """
 import logging
+import sys
 import mgkit
+
+LOG = logging.getLogger(__name__)
 
 
 def add_basic_options(parser):
@@ -22,3 +25,8 @@ def add_basic_options(parser):
         action='version',
         version='%(prog)s {0}'.format(mgkit.__VERSION__)
     )
+
+
+def exit_script(message, ret_value):
+    LOG.critical(message)
+    sys.exit(ret_value)
