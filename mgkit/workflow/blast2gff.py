@@ -27,6 +27,9 @@ Changes
 
 .. versionadded:: 0.1.12
 
+.. versionchanged:: 0.1.13
+    added *-n* parameter to *uniprot* command
+
 """
 import sys
 import argparse
@@ -81,17 +84,31 @@ def set_uniprot_parser(parser):
         default='UNIPROT-SP',
         help='Uniprot database used with BLAST'
     )
+    parser.add_argument(
+        '-n',
+        '--no-split',
+        action='store_true',
+        default=False,
+        help='''if used, the script assumes that the sequence header contains
+                only the gene id'''
+    )
 
     parser.set_defaults(func=convert_from_uniprot)
 
 
 def convert_from_uniprot(options):
 
+    if options.no_split is True:
+        name_func = lambda x: x
+    else:
+        name_func = None
+
     iterator = blast.parse_uniprot_blast(
         options.input_file,
         bitscore=options.bitscore,
         db=options.db_used,
-        dbq=options.db_quality
+        dbq=options.db_quality,
+        name_func=name_func
     )
 
     for annotation in iterator:
