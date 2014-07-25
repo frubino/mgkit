@@ -258,10 +258,13 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
         each BLAST hit.
     """
 
+    if name_func is None:
+        name_func = lambda x: x.split('|')[1]
+
     #the second function extract the Uniprot ID from the sequence header
     value_funcs = (
         str,
-        lambda x: x.split('|')[1] if name_func is None else name_func,
+        name_func,
         float,
         int,
         int,
