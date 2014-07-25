@@ -152,6 +152,14 @@ class GenomicRange(object):
 
         return None
 
+    def get_range(self):
+        """
+        .. versionadded:: 0.1.13
+
+        Returns the start and end position as a tuple
+        """
+        return (self.start, self.end)
+
 
 class Annotation(GenomicRange):
     """
