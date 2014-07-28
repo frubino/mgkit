@@ -2,8 +2,11 @@
 
 import logging
 import re
+import gzip
+import urllib
 from . import url_read
 import mgkit
+import cStringIO
 
 
 class NoEntryFound(Exception):
@@ -24,6 +27,8 @@ class EntryNotFound(Exception):
 
 URL_REST = "http://www.ebi.ac.uk/Tools/dbfetch/dbfetch/"
 "Base URL for EMBL DBFetch REST API"
+
+URL_DATAWAREHOUSE = "http://www.ebi.ac.uk/ena/data/warehouse/search?"
 
 EMBL_DBID = 'embl_cds'
 "Default database id"
@@ -200,3 +205,65 @@ def dbfetch(embl_ids, db='embl', contact=None, out_format='seqxml', num_req=10):
         entries.append(url_read(request_url, agent=contact))
 
     return entries
+
+
+def datawarehouse_search(query, domain='sequence', result='sequence_release',
+                         display='fasta', offset=0, length=100000, contact=None,
+                         download='gzip', url=URL_DATAWAREHOUSE):
+    """
+    .. versionadded:: 0.1.13
+
+    Perform a datawarehouse search on EMBL dbs. Instructions on the query
+    language used to query the datawarehouse are available at `this page
+    <http://www.ebi.ac.uk/ena/about/browser#data_warehouse>`_ with more details
+    about the databases domains `at this page
+    <http://www.ebi.ac.uk/ena/data/warehouse/usage>`_
+
+    Arguments:
+        query (str): query for the search enging
+        domain (str): database domain to search
+        result (str): domain result requested
+        display (str): display option (format to retrieve the entries)
+        offset (int): the offset of the search results, defaults to the first
+        length (int): number of results to retrieve at the specified offset
+        contact (str): email of the user
+        download (str): type of response. Gzip responses are automatically
+            decompressed
+        url (str): base URL for the resource
+
+    Returns:
+        str: the raw request
+
+    Examples:
+        Querying EMBL for all sequences of type rRNA of the  *Clostridium*
+        genus. Only from the EMBL release database in fasta format:
+
+        >>> query = 'tax_tree(1485) AND mol_type="rRNA"'
+        >>> result = 'sequence_release'
+        >>> display = 'fasta'
+        >>> data = embl.datawarehouse_search(query, result=result, display=display)
+        >>> len(data)
+        35919
+
+    """
+
+    params = urllib.urlencode(
+        {
+            'query': query,
+            'domain': domain,
+            'result': result,
+            'display': display,
+            'offset': offset,
+            'length': length,
+            'download': download
+        }
+    )
+
+    data = cStringIO.StringIO(url_read(url, params, agent=contact))
+
+    if download == 'gzip':
+        data = gzip.GzipFile(fileobj=data)
+
+    return data.read()
+
+#query: 'tax_tree({0}) AND mol_type="rRNA"'
