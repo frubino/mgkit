@@ -28,8 +28,8 @@ def url_open(url, data=None, compress=True, agent=None):
     if agent is not None:
         request.add_header(
             'User-Agent', "Python {0}.{1} - {2}".format(
-                sys.version_info.major,
-                sys.version_info.minor,
+                sys.version_info[0],
+                sys.version_info[1],
                 agent
             )
         )
