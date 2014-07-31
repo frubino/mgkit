@@ -88,9 +88,9 @@ Changes
 
 .. versionchanged:: 0.1.13
 
-    * added *--force-taxon-id* option to the *uniprot* command
-    * added *coverage* command
-    * added *taxonomy* command
+* added *--force-taxon-id* option to the *uniprot* command
+* added *coverage* command
+* added *taxonomy* command
 
 """
 from __future__ import division

@@ -47,7 +47,7 @@ Any key can be added to a GFF annotation, but MGKit expects a few key to be in t
 	  - coverage for the annotation over all samples, keys ending with *_cov* indicates coverage for each sample
 	* - exp_syn, exp_nonsyn
 	  - integer
-	  - used for expected number of synonymous and non-synonymous change for the annotation
+	  - used for expected number of synonymous and non-synonymous changes for the annotation
 
 The following keys are added by different scripts and may be used in different scripts or annotation methods. 
 
