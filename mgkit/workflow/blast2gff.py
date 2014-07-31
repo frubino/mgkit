@@ -28,7 +28,9 @@ Changes
 .. versionadded:: 0.1.12
 
 .. versionchanged:: 0.1.13
-    added *-n* parameter to *uniprot* command
+
+* added *-n* parameter to *uniprot* command
+* added *-k* option to *uniprot* command
 
 """
 import sys
@@ -40,6 +42,16 @@ from ..io import blast
 
 
 LOG = logging.getLogger(__name__)
+
+
+def parse_attr_arg(value):
+    values = value.split(':')
+    if len(values) != 2:
+        raise argparse.ArgumentTypeError(
+            "Wrong filter format, must be 'key:value' 'key:value'"
+        )
+
+    return values[0], values[1]
 
 
 def set_common_options(parser):
@@ -58,6 +70,15 @@ def set_common_options(parser):
         type=float,
         help='Minimum bitscore to keep the annotation',
         default=0.0
+    )
+    parser.add_argument(
+        '-k',
+        '--attr-value',
+        action='append',
+        type=parse_attr_arg,
+        help='''Additional attribute and value to add to each annotation,
+                in the form attr:value''',
+        default=None
     )
     parser.add_argument(
         'input_file',
@@ -112,6 +133,10 @@ def convert_from_uniprot(options):
     )
 
     for annotation in iterator:
+        if options.attr_value is not None:
+            for key, value in options.attr_value:
+                annotation.set_attr(key, value)
+
         annotation.to_file(options.output_file)
 
 
