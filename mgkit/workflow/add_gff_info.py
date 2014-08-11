@@ -81,6 +81,14 @@ A total coverage for the annotation is also calculated and stored in the
 `cov` attribute, while each sample coverage is stored into `sample_cov` as per
 :ref:`gff-specs`.
 
+Uniprot Offline Mappings
+************************
+
+Similar to the *uniprot* command, it uses the `idmapping <ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz>`_
+file provided by Uniprot, which speeds up the process of adding mappings and
+taxonomy IDs from Uniprot gene IDs. It's not possible tough to add *EC* mappings
+with this command, as those are not included in the file.
+
 Changes
 *******
 
@@ -91,6 +99,7 @@ Changes
 * added *--force-taxon-id* option to the *uniprot* command
 * added *coverage* command
 * added *taxonomy* command
+* added *unipfile* command
 
 """
 from __future__ import division
@@ -106,7 +115,8 @@ from .. import align
 from .. import logger
 from .. import taxon
 from ..io import gff, blast
-from ..net import uniprot
+from ..io import uniprot as uniprot_io
+from ..net import uniprot as uniprot_net
 
 LOG = logging.getLogger(__name__)
 
@@ -221,7 +231,7 @@ def add_uniprot_info(annotations, options):
 
     LOG.info("Retrieving gene information from Uniprot")
 
-    data = uniprot.get_gene_info(
+    data = uniprot_net.get_gene_info(
         [x.gene_id for x in annotations],
         columns=columns,
         contact=options.email
@@ -537,6 +547,80 @@ def coverage_command(options):
     gff.write_gff(annotations, options.output_file)
 
 
+def uniprot_offline_command(options):
+
+    LOG.info("Mappings selected: %s", ', '.join(options.mapping))
+
+    annotations = []
+    gene_ids = set()
+
+    for annotation in gff.parse_gff(options.input_file):
+        annotations.append(annotation)
+        gene_ids.add(annotation.gene_id)
+
+    iterator = uniprot_io.uniprot_mappings_to_dict(
+        options.mapping_file,
+        gene_ids=set(gene_ids),
+        mappings=set(options.mapping)
+    )
+
+    file_mappings = dict(iterator)
+
+    count = 0
+
+    for annotation in annotations:
+        try:
+            mappings = file_mappings[annotation.gene_id]
+            for mapping_id, mapping_values in mappings.iteritems():
+                if mapping_id == uniprot_io.MAPPINGS['taxonomy']:
+                    if (annotation.taxon_id and options.force_taxon_id) or \
+                       (annotation.taxon_id is None):
+                        annotation.taxon_id = mapping_values[0]
+                        annotation.taxon_db = 'UNIPROT'
+                else:
+                    annotation.set_mapping(mapping_id, mapping_values)
+            count += 1
+        except KeyError:
+            pass
+
+        annotation.to_file(options.output_file)
+
+    LOG.info(
+        "Number of annotation changed: %d/%d (%.2f%%)",
+        count,
+        len(annotations),
+        count / len(annotations) * 100
+    )
+
+
+def set_uniprot_offline_parser(parser):
+    parser.add_argument(
+        '-i',
+        '--mapping-file',
+        action='store',
+        default='idmapping.dat.gz',
+        required=True,
+        help="Uniprot mapping file"
+    )
+    parser.add_argument(
+        '-f',
+        '--force-taxon-id',
+        action='store_true',
+        default=False,
+        help="Overwrite taxon_id if already present"
+    )
+    parser.add_argument(
+        '-m',
+        '--mapping',
+        action='append',
+        default=None,
+        required=True,
+        choices=uniprot_io.MAPPINGS.values(),
+        help="Mappings to add"
+    )
+    parser.set_defaults(func=uniprot_offline_command)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -575,6 +659,15 @@ def set_parser():
     set_coverage_parser(parser_c)
     set_common_options(parser_c)
     utils.add_basic_options(parser_c)
+
+    parser_f = subparsers.add_parser(
+        'unipfile',
+        help='Adds mappings and taxonomy from Uniprot mapping file'
+    )
+
+    set_uniprot_offline_parser(parser_f)
+    set_common_options(parser_f)
+    utils.add_basic_options(parser_f)
 
     utils.add_basic_options(parser)
 
