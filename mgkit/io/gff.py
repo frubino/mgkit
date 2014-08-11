@@ -241,6 +241,23 @@ class Annotation(GenomicRange):
 
         return mappings.split(',')
 
+    def set_mapping(self, db, values):
+        """
+        .. versionadded:: 0.1.13
+
+        Set mappings to a particular db, associated with the
+        annotation.
+
+        Arguments:
+            db (str): database to which the mappings come from
+            mappings (iterable): iterable of mappings
+
+        """
+        self.set_attr(
+            'map_{0}'.format(db.upper()),
+            ','.join(values)
+        )
+
     @property
     def taxon_id(self):
         """
@@ -462,7 +479,7 @@ class Annotation(GenomicRange):
 
         Generic method to set an attribute
         """
-        value = self.attr[attr] = value
+        self.attr[attr] = value
 
     @property
     def coverage(self):
