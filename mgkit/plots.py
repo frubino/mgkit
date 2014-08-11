@@ -721,7 +721,7 @@ def get_single_figure(dpi=300, figsize=(10, 20)):
     return fig, ax
 
 
-def get_grid_figure(rows, cols, dpi=300, figsize=(10, 20)):
+def get_grid_figure(rows, cols, dpi=300, figsize=(10, 20), **kwd):
     """
     .. versionadded:: 0.1.13
 
@@ -737,7 +737,7 @@ def get_grid_figure(rows, cols, dpi=300, figsize=(10, 20)):
         tuple: the figure and axes objects
     """
     fig = plt.figure(dpi=dpi, figsize=figsize)
-    gs = GridSpec(rows, cols)
+    gs = GridSpec(rows, cols, **kwd)
     return fig, gs
 
 
