@@ -12,14 +12,13 @@ from .io import open_file
 
 LOG = logging.getLogger(__name__)
 
-ALGAE = (
-    'haptophyceae',
-    'chlorophyta',
-    'stramenopiles',
-    'cryptophyta',
-    'rhodophyta',
-    'chlorophyta',
-)
+ALGAE = {
+    'haptophyceae': 2830,
+    'chlorophyta': 3041,
+    'stramenopiles': 33634,
+    'cryptophyta': 3027,
+    'rhodophyta': 2763,
+}
 
 PROTISTS = {
     #'apicomplexa', alveolata
@@ -41,10 +40,9 @@ PROTISTS = {
     'rhizaria': 543769,
 }
 
-PLANTS = (
-    'streptophyta',
-
-)
+PLANTS = {
+    'streptophyta': 35493,
+}
 
 TAXON_ROOTS = (
     'archaea',  # 2157
@@ -57,7 +55,7 @@ TAXON_ROOTS = (
     'eukaryota',
     'other sequences',
     'unidentified'
-) + tuple(PROTISTS) + PLANTS + ALGAE
+) + tuple(PROTISTS) + tuple(PLANTS) + tuple(ALGAE)
 "Root taxa used in analysis and filtering"
 
 TAXON_RANKS = (
@@ -355,21 +353,27 @@ class UniprotTaxonomy(object):
             self.gen_name_map()
         return self._name_map[s_name]
 
-    def is_ancestor(self, leaf_id, anc_id):
+    def is_ancestor(self, leaf_id, anc_ids):
         """
         .. versionchanged:: 0.1.13
-            noe uses :func:`is_ancestor`
+            noe uses :func:`is_ancestor` and changed behavior
 
-        Checks if a taxon is the leaf of another one.
+        Checks if a taxon is the leaf of another one, or a list of taxa.
 
         :param int leaf_id: leaf taxon id
-        :param int anc_id: ancestor taxon id
+        :param int anc_ids: ancestor taxon id(s)
 
         :return bool: True if the ancestor taxon is in the leaf taxon lineage
 
         """
 
-        return is_ancestor(self, leaf_id, anc_id)
+        if isinstance(anc_ids, int):
+            anc_ids = [anc_ids]
+
+        for anc_id in anc_ids:
+            if is_ancestor(self, leaf_id, anc_id):
+                return True
+        return False
 
     def get_ranked_taxon(self, taxon_id, rank=None, ranks=TAXON_RANKS):
         """
