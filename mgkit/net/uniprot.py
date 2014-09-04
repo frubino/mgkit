@@ -194,6 +194,11 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
     """
     if isinstance(gene_ids, str):
         gene_ids = [gene_ids]
+    elif isinstance(gene_ids, set):
+        gene_ids = list(gene_ids)
+
+    if isinstance(columns, str):
+        columns = [columns]
 
     infos = {}
 
