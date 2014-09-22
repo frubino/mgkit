@@ -9,6 +9,8 @@ import pandas
 
 def scale_factor_deseq(dataframe):
     """
+    .. versionadded:: 0.1.13
+
     Returns the scale factor according to he deseq paper. The columns of the
     dataframe are the samples.
 
@@ -46,6 +48,8 @@ def scale_factor_deseq(dataframe):
 
 def scale_deseq(dataframe):
     """
+    .. versionadded:: 0.1.13
+
     Scale a dataframe using the deseq scaling. Uses :func:`scale_factor_deseq`
     """
     scale_factors = scale_factor_deseq(dataframe)

@@ -235,7 +235,7 @@ class Annotation(GenomicRange):
             list: list of all mappings associated, to the specified db, if
             none are found an empty list is returned
         """
-        mappings = self.attr.get('map_{0}'.format(db))
+        mappings = self.attr.get('map_{0}'.format(db.upper()))
         if mappings is None:
             return []
 
@@ -1153,3 +1153,34 @@ def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid):
         seq = annotation.get_nuc_seq(seqs[annotation.seq_id])
 
         yield name, seq
+
+
+def group_annotations_by_ancestor(annotations, ancestors, taxonomy):
+    """
+    .. versionadded:: 0.1.13
+
+    Group annotations by the ancestors provided.
+
+    Arguments:
+        annotations (iterable): annotations to group
+        ancestors (iterable): list of ancestors accepted
+        taxonomy: taxonomy class
+
+    Returns:
+        dict: grouped annotations
+    """
+    ann_dict = dict((ancestor, []) for ancestor in ancestors)
+
+    unknown = []
+
+    for annotation in annotations:
+        anc_found = False
+        for ancestor, anc_ids in ancestors.iteritems():
+            if taxonomy.is_ancestor(annotation.taxon_id, anc_ids):
+                ann_dict[ancestor].append(annotation)
+                anc_found = True
+                break
+        if not anc_found:
+            unknown.append(annotation)
+
+    return ann_dict, unknown
