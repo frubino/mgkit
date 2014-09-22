@@ -88,10 +88,19 @@ A substitute for UniprotTaxon, to be tested
 
 
 def parse_uniprot_taxon(line):
-    "Parses a Uniprot taxonomy file (tab delimited) and returns a UniprotTaxonTuple"
+    """
+    .. versionchanged:: 0.1.13
+        now accepts empty scientific names, for root taxa
+
+    Parses a Uniprot taxonomy file (tab delimited) line and returns a
+    UniprotTaxonTuple instance
+    """
     line = line.rstrip().split('\t')
     taxon_id = int(line[0])
-    s_name = line[2].lower()
+    try:
+        s_name = line[2].lower()
+    except IndexError:
+        s_name = ''
     try:
         c_name = line[3].lower() if line[3] else ''
     except IndexError:
@@ -375,16 +384,26 @@ class UniprotTaxonomy(object):
                 return True
         return False
 
-    def get_ranked_taxon(self, taxon_id, rank=None, ranks=TAXON_RANKS):
+    def get_ranked_taxon(self, taxon_id, rank=None, ranks=TAXON_RANKS, roots=False):
         """
+        .. versionchanged:: 0.1.13
+            added *roots* argument
+
         Traverse the branch of which the *taxon* argument is the leaf backward,
         to get the specific rank to which the *taxon* belongs to.
+
+        .. warning::
+
+            the *roots* options is kept for backward compatibility and should be
+            be set to *False*
 
         :param taxon_id: id of the taxon or instance of :class:`UniprotTaxon`
         :param str rank: string that specify the rank, if None, the first valid
             rank will be searched. (i.e. the first with a value different from '')
         :param ranks: tuple of all taxonomy ranks, default to the default module
             value
+        :param bool roots: if True, uses :data:`TAXON_ROOTS` to solve the root
+            taxa
         :return: instance of :class:`UniprotTaxon` for the rank found.
         """
 
@@ -405,7 +424,9 @@ class UniprotTaxonomy(object):
                 break
             elif ranked.parent_id is None:
                 break
-            elif ranked.s_name in TAXON_ROOTS:
+            #kept only for backward compatibility.
+            #needs a check to other scripts
+            elif roots and (ranked.s_name in TAXON_ROOTS):
                 break
 
             ranked = self[ranked.parent_id]
