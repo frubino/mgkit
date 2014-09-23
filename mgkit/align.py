@@ -39,7 +39,6 @@ def get_region_coverage(bam_file, seq_id, feat_from, feat_to):
             for pileup_proxy in iterator
         ),
         dtype=numpy.int,
-        index=range(norm_start, norm_end + 1)
     )
 
     return coverage
