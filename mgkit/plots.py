@@ -58,6 +58,8 @@ DEFAULT_BOXPLOT_FONTCONF = {
 
 def lineplot_values_on_second_axis(gene_num, axis, colour='c', ylabel=''):
     """
+    .. deprecated:: 0.1.13
+
     Adds a lineplot on a second axis using twinx
     """
     ax2 = axis.twinx()
@@ -308,98 +310,6 @@ def plot_contig_assignment_bar(series, taxon_colours=None, log_scale=False,
     ax.set_ylabel('Number of contigs assigned', fontsize='medium',
                   horizontalalignment='right')
     ax.set_xlabel('Taxa', fontsize='medium')
-
-    if file_name is not None:
-        LOG.info("Saving graph to file %s", file_name)
-        fig.savefig(file_name, bbox_inches='tight',
-                    bbox_extra_artist=(xlabels,))
-        fig.clf()
-
-    return ax
-
-
-def histogram_gene_len(gene_len, xlabel='Gene length', colour='g', bins=100,
-                       linewidth=0.3, log=False, title='', file_name=None):
-    """
-    Plots histogram for gene lengths
-
-    :param gene_len: iterable with gene lengths
-    :param colour: colour of the bars
-    :param str xlabel: label for x axis
-    :param int bins: number of bins for the histogram
-    :param float linewidth: line width in the histogram
-    :param bool log: if True the y axis is log scaled
-    :param str title: title of the graph
-    :param str file_name: name of the file to write the graph to
-    """
-    fig = plt.figure(dpi=300)
-    ax = plt.subplot(111)
-
-    n, bins, patches = ax.hist(gene_len, bins=bins, color=colour,
-                               linewidth=linewidth, log=log)
-    ax.set_xlabel(xlabel, fontsize='large')
-    ax.set_ylabel('Frequency', fontsize='large', horizontalalignment='right')
-    ax.set_title(title)
-
-    gene_mean = numpy.mean(gene_len)
-
-    for idx, x in enumerate(bins):
-        if x > gene_mean:
-            mean_idx = idx - 1
-            break
-
-    ax.annotate(
-        'Mean ({0:.2f})'.format(gene_mean),
-        (bins[mean_idx], n[mean_idx]),
-        (bins[mean_idx + 5], n[mean_idx] + 5),
-        arrowprops={'width': 1.0, 'frac': .1, 'headwidth': .0}
-    )
-
-    if file_name is not None:
-        LOG.info("Saving graph to file %s", file_name)
-        fig.savefig(file_name)
-        fig.clf()
-
-    return ax
-
-
-def barchart_categories_counts(series, colour='g', ylabel='Number of genes',
-                               name_map=None, xlabel='Functional categories',
-                               fig_aspect=None, fontsize=7, log=False, title='',
-                               file_name=None):
-    """
-    Plots barchart for mappings counts
-
-    :param series: :class:`pandas.Series` instance with the data
-    :param colour: colour of the bars
-    :param str xlabel: label for x axis
-    :param str ylabel: label for y axis
-    :param dict name_map: dictionary of category names, if None specified, the
-        series index is used
-    :param tuple fig_aspect: tuple with figure size
-    :param int fontsize: size of the category labels
-    :param bool log: if True the y axis is log scaled
-    :param str title: title of the graph
-    :param str file_name: name of the file to write the graph to
-    """
-    if fig_aspect is None:
-        fig_aspect = plt.figaspect(2. / len(series))
-
-    fig = plt.figure(dpi=300, figsize=fig_aspect)
-    ax = plt.subplot(111)
-
-    ax.bar(range(1, series.count() + 1), series, color=colour, log=log, align='center')
-    ax.set_xlim(0, series.count() + 1)
-
-    ax.set_xticks(range(1, series.count() + 1))
-    xlabels = ax.set_xticklabels(
-        series.index if name_map is None else [name_map[x] for x in series.index],
-        rotation='vertical', fontsize=fontsize)
-
-    ax.grid(True, axis='y')
-    ax.set_title(title)
-    ax.set_ylabel(ylabel, fontsize='large', horizontalalignment='right')
-    ax.set_xlabel(xlabel, fontsize='large')
 
     if file_name is not None:
         LOG.info("Saving graph to file %s", file_name)
