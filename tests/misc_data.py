@@ -111,3 +111,25 @@ def setup_glimmer3_data():
                 data_dir
             )
         )
+
+
+### Kegg modules
+
+keggmod1 = 'kmod-entry1.txt'
+
+try:
+    KEGGMOD_FILE = open(
+        os.path.join(base_dir, data_dir, 'kmod-entry1.txt')
+    ).read()
+except IOError:
+    KEGGMOD_FILE = None
+
+
+def setup_keggmod_data():
+    if KEGGMOD_FILE is None:
+        raise SkipTest(
+            'No Kegg module entries file found: expecting file "{0}" in dir {1}'.format(
+                keggmod1,
+                data_dir
+            )
+        )
