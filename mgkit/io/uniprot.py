@@ -1,4 +1,6 @@
 """
+.. versionadded:: 0.1.13
+
 Uniprot file formats
 """
 
