@@ -511,16 +511,17 @@ class Annotation(GenomicRange):
         """
         return self.get_attr('exp_nonsyn', int)
 
-    def get_nuc_seq(self, seq):
+    def get_nuc_seq(self, seq, reverse=False):
         """
         .. versionadded:: 0.1.13
 
         Returns the nucleotidic sequence that the annotation covers. if the
-        annotation's strand is *-*, the reverse complement is returned.
+        annotation's strand is *-*, and *reverse* is True, the reverse
+        complement is returned.
         """
         ann_seq = seq[self.start-1:self.end]
 
-        if self.strand == '-':
+        if (self.strand == '-') and reverse:
             ann_seq = seq_utils.reverse_complement(ann_seq)
 
         return ann_seq
