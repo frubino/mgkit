@@ -2,6 +2,8 @@
 Utility functions
 """
 from __future__ import division
+import itertools
+import operator
 
 
 def average_length(a1s, a1e, a2s, a2e):
@@ -65,7 +67,7 @@ def ranges_length(ranges):
     """
     .. versionadded:: 0.1.12
 
-    Given an iterable of where each element is a range, a tuple whose elements
+    Given an iterable where each element is a range, a tuple whose elements
     are numbers with the first being less than or equal to the second, the
     function sums the lengths of all ranges.
 
@@ -77,3 +79,47 @@ def ranges_length(ranges):
 
     """
     return sum(range[1] - range[0] + 1 for range in ranges)
+
+
+def range_substract(start1, end1, start2, end2):
+    intersect = range_intersect(start1, end1, start2, end2)
+
+    if intersect is None:
+        return [(start1, end1)]
+
+    ranges = []
+    if start1 != intersect[0]:
+        ranges.append((start1, intersect[0] - 1))
+    if end1 != intersect[1]:
+        ranges.append((intersect[1] + 1, end1))
+    return ranges
+
+
+def range_intersect(start1, end1, start2, end2):
+    if between(start2, start1, end1) or between(end2, start1, end1) or \
+       between(start1, start2, end2) or between(end1, start2, end2):
+        return max(start1, start2), min(end1, end2)
+    return None
+
+
+def apply_func_window(func, data, window, step=0):
+
+    if step == 0:
+        step = window
+
+    for index in xrange(0, len(data), step):
+        yield func(data[index:index+window])
+
+
+def range_substract_(range1, ranges):
+    range1 = set(xrange(range1[0], range1[1] + 1))
+    range1.difference_update(
+        *(
+            xrange(x[0], x[1] + 1)
+            for x in ranges
+        )
+    )
+
+    for k, g in itertools.groupby(enumerate(range1), lambda (i, x): i - x):
+        group = map(operator.itemgetter(1), g)
+        yield min(group), max(group)

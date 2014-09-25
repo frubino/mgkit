@@ -365,7 +365,7 @@ class UniprotTaxonomy(object):
     def is_ancestor(self, leaf_id, anc_ids):
         """
         .. versionchanged:: 0.1.13
-            noe uses :func:`is_ancestor` and changed behavior
+            now uses :func:`is_ancestor` and changed behavior
 
         Checks if a taxon is the leaf of another one, or a list of taxa.
 
