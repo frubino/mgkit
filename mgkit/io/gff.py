@@ -1132,7 +1132,8 @@ def correct_old_annotations(annotations, taxonomy):
             annotation.taxon_id = int(taxon_id)
 
 
-def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid):
+def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid,
+                     reverse=False):
     """
     .. versionadded:: 0.1.13
 
@@ -1144,6 +1145,8 @@ def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid):
         seqs (dict): dictionary with the sequences referenced in the annotations
         name_func (func): function used to extract the sequence name to be used,
             defaults to the uid of the annotation
+        reverse (bool): if True the annotations on the *-* strand are reverse
+            complemented
 
     Yields:
         tuple: tuple whose first element is the sequence name and the second is
@@ -1151,7 +1154,7 @@ def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid):
     """
     for annotation in annotations:
         name = name_func(annotation)
-        seq = annotation.get_nuc_seq(seqs[annotation.seq_id])
+        seq = annotation.get_nuc_seq(seqs[annotation.seq_id], reverse=reverse)
 
         yield name, seq
 
