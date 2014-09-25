@@ -1,16 +1,11 @@
 """
 Module dealing with BAM/SAM files
-
-.. todo::
-
-    * make a script to add coverage info to gff file
 """
 
 import numpy
 import logging
-import pandas
-from .utils.common import between
 import itertools
+import pandas
 
 LOG = logging.getLogger(__name__)
 
@@ -34,16 +29,16 @@ def get_region_coverage(bam_file, seq_id, feat_from, feat_to):
     iterator = bam_file.pileup(
         reference=seq_id,
         start=norm_start,
-        end=norm_end
+        end=norm_end,
+        truncate=True
     )
 
     coverage = pandas.Series(
         dict(
-            (pileup_proxy.pos, pileup_proxy.n) for pileup_proxy in iterator
-            if between(pileup_proxy.pos, norm_start, norm_end)
+            (pileup_proxy.pos, pileup_proxy.n)
+            for pileup_proxy in iterator
         ),
         dtype=numpy.int,
-        index=range(norm_start, norm_end + 1)
     )
 
     return coverage
@@ -68,10 +63,7 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
     for bam_file, sample in zip(bam_files, samples):
         LOG.info("Sample %s, file %s", sample, bam_file.filename)
 
-    tot_coverage = [
-        numpy.zeros(len(annotation))
-        for annotation in annotations
-    ]
+    tot_coverage = {}
 
     for bam_file, sample in itertools.izip(bam_files, samples):
         LOG.info("Adding coverage for sample %s", sample)
@@ -79,14 +71,23 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
             sample_coverage = get_region_coverage(
                 bam_file,
                 annotation.seq_id,
-                annotation.feat_from,
-                annotation.feat_to
+                annotation.start,
+                annotation.end
             )
             #adds the results of the coverage to the total coverage
-            tot_coverage[index] += sample_coverage
+            #uses the add method of a Series to make sure that possible
+            #nan values are filled with 0 before the sum
+            try:
+                tot_coverage[annotation.uid] = sample_coverage.add(
+                    tot_coverage[annotation.uid],
+                    fill_value=0
+                )
+            except KeyError:
+                tot_coverage[annotation.uid] = sample_coverage
+
             cov_mean = sample_coverage.mean()
-            setattr(
-                annotation.attributes,
+
+            annotation.set_attr(
                 sample + attr_suff,
                 0 if numpy.isnan(cov_mean) else int(cov_mean)
             )
@@ -96,10 +97,9 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
                     index + 1,
                     len(annotations)
                 )
-    for index, annotation in enumerate(annotations):
-        cov_mean = tot_coverage[index].mean()
-        setattr(
-            annotation.attributes,
+    for annotation in annotations:
+        cov_mean = tot_coverage[annotation.uid].mean()
+        annotation.set_attr(
             'cov',
             0 if numpy.isnan(cov_mean) else int(cov_mean)
         )

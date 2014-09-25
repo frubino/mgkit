@@ -1,8 +1,12 @@
 """
+.. versionadded:: 0.1.9
+
 Taxa filtering functions
 """
 
 from .common import FilterFails
+from ..taxon import is_ancestor
+import functools
 
 
 def filter_taxonomy_by_lineage(taxa, lineage):
@@ -103,3 +107,18 @@ def filter_taxon_by_id_list(taxon_id, filter_list=None, exclude=False,
     )
 
     return ret_val ^ exclude
+
+
+def filter_by_ancestor(taxon_id, filter_list=None, exclude=False, taxonomy=None):
+    """
+    .. versionadded:: 0.1.13
+
+    Convenience function for :func:`filter_taxon_by_id_list`, as explained in
+    the latter example.
+    """
+    if filter_list is None:
+        raise FilterFails('No filter_list')
+
+    func = functools.partial(is_ancestor, taxonomy)
+
+    return filter_taxon_by_id_list(taxon_id, filter_list, func=func, exclude=exclude)

@@ -2,8 +2,8 @@
 #
 
 # You can set these variables from the command line.
-LATEXDIR = /usr/local/texlive/2013/bin/universal-darwin/
-SPHINXOPTS    = -D pngmath_latex=$(LATEXDIR)/latex -D pngmath_dvipng=$(LATEXDIR)/dvipng
+#LATEXDIR = /usr/local/texlive/2014/bin/universal-darwin/
+#SPHINXOPTS    = -D pngmath_latex=$(LATEXDIR)/latex -D pngmath_dvipng=$(LATEXDIR)/dvipng
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build

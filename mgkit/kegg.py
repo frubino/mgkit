@@ -228,6 +228,8 @@ class KeggClientRest(object):
     )
     id_prefix = {'C': 'cpd', 'k': 'map', 'K': 'ko', 'R': 'rn', 'm': 'path'}
 
+    ####### Kegg primitives #######
+
     def link_ids(self, target, ids, strip=True, max_len=50):
         """
         The method abstract the use of the 'link' operation in the Kegg API
@@ -248,6 +250,9 @@ class KeggClientRest(object):
         """
         if isinstance(ids, str):
             ids = [ids]
+        if isinstance(ids, (set, frozenset)):
+            ids = list(ids)
+
         data = []
         for idx in range(0, len(ids), max_len):
             if len(ids) > max_len:
@@ -296,25 +301,6 @@ class KeggClientRest(object):
         #leave out the last \n
         return data[:-1]
 
-    def get_names(self, k_type, strip=True):
-        """
-        Returns a dictionary kegg_id->description for the specified kegg module.
-
-        If strip=True the id will stripped of the module abbreviation (e.g.
-        md:M00002->M00002)
-        """
-        data = self.list_ids(k_type)
-
-        names = {}
-
-        for line in data.splitlines():
-            kegg_id, name = line.split('\t')
-            if strip:
-                kegg_id = kegg_id.split(':')[1]
-            names[kegg_id] = name
-
-        return names
-
     def get_entry(self, k_id, option=None):
         """
         The method abstract the use of the 'get' operation in the Kegg API
@@ -329,6 +315,93 @@ class KeggClientRest(object):
         )
         data = url_read(url, agent=self.contact)
         return data
+
+    ####### names #######
+
+    def get_ids_names(self, target='ko', strip=True):
+        """
+        .. versionadded:: 0.1.13
+
+        Returns a dictionary with the names/description of all the id of a
+        specific target, (ko, path, cpd, etc.)
+
+        If strip=True the id will stripped of the module abbreviation (e.g.
+        md:M00002->M00002)
+        """
+        id_names = {}
+
+        for line in self.list_ids(target).splitlines():
+            kegg_id, name = line.strip().split('\t')
+            if strip:
+                kegg_id = kegg_id.split(':')[1]
+            id_names[kegg_id] = name
+        return id_names
+
+    def get_names(self, k_type, strip=True):
+        """
+        .. deprecated:: 0.1.13
+            use :meth:`KeggClientRest.get_ids_names`
+
+        Returns a dictionary kegg_id->description for the specified kegg module.
+
+        If strip=True the id will stripped of the module abbreviation (e.g.
+        md:M00002->M00002)
+        """
+        return self.get_ids_names(target=k_type, strip=strip)
+
+    def get_compound_names(self, ids=None):
+        """
+        .. deprecated:: 0.1.13
+            use :meth:`KeggClientRest.get_ids_names`
+        """
+        if ids is not None:
+            return self.get_compound_names(ids)
+
+        return self.get_ids_names('cpd')
+
+    def get_kos_descriptions(self, rex=False):
+        """
+        .. deprecated:: 0.1.13
+            use :meth:`KeggClientRest.get_ids_names`
+
+        Get all KOs descriptions
+
+        """
+
+        return self.get_ids_names(target='ko')
+
+    def get_ortholog_pathways(self):
+        """
+        Gets ortholog pathways, replace 'map' with 'ko' in the id
+        """
+        data = self.get_ids_names('pathway')
+        pathways = {}
+        for kegg_id, name in data.iteritems():
+
+            kegg_id = kegg_id.replace('map', 'ko')
+            pathways[kegg_id] = name
+
+        return pathways
+
+    def get_compounds_descriptions(self):
+        """
+        .. deprecated:: 0.1.13
+            use *get_compound_names* instead
+
+        Get compound descriptions
+        """
+        return self.get_ids_names('cpd')
+
+    def get_reactions_descriptions(self):
+        """
+        .. deprecated:: 0.1.13
+            use *get_compound_names* instead
+
+        Get reaction descriptions
+        """
+        return self.get_ids_names('reaction')
+
+    ####### end names #######
 
     def get_reaction_equations(self, ids, max_len=10):
         "Get the equation for the reactions"
@@ -362,74 +435,6 @@ class KeggClientRest(object):
                 data[name] = {'in': cp_in, 'out': cp_out}
 
         return data
-    # def prepare_data(self, ids):
-    #     return ['{0}:{1}'.format(self.id_prefix[x[0]], x) for x in ids]
-
-    def get_compound_names(self, ids, max_len=10):
-        "Get the compound names"
-        if isinstance(ids, str):
-            ids = [ids]
-        data = {}
-        for idx in range(0, len(ids), max_len):
-            url = "{0}get/{1}".format(
-                self.api_url, '+'.join(ids[idx:idx+max_len])
-            )
-
-            t_data = url_read(url)
-            # for x in t_data.split('\n'):
-            #     if x.startswith('NAME'): print x
-            # print t_data.count('NAME')
-            for cpd, name in self.cpd_re.findall(t_data):
-                # print cpd, name
-                data[cpd] = name
-        # print len(ids), len(data)
-        # print set(ids) - set(data)
-        return data
-
-    def get_kos_descriptions(self, rex=False):
-        "Get all KOs descriptions"
-        data = self.list_ids('ko')
-        ko_desc = {}
-        if rex:
-            for ko_id, description, etc in self.ko_desc_re.findall(data):
-                ko_desc[ko_id] = description.strip().split(' [EC:')[0]
-        else:
-            for line in data.split('\n'):
-                ko_id, description = line.split('\t', 1)
-                ko_id = ko_id.split(':')[1]
-                ko_desc[ko_id] = description.rstrip()
-        return ko_desc
-
-    def get_ortholog_pathways(self):
-        """
-        Gets ortholog pathways, replace 'map' with 'ko' in the id
-        """
-        data = self.list_ids('pathway')
-        pathways = {}
-        for line in data.split('\n'):
-            pathway, description = line.split('\t', 1)
-            pathway = pathway.split(':')[1].replace('map', 'ko')
-            pathways[pathway] = description.rstrip()
-        return pathways
-
-    def get_compounds_descriptions(self):
-        "Get compound descriptions"
-        cpd_desc = {}
-        data = self.list_ids('compound')
-        for cpd_id, description in self.cpd_desc_re.findall(data):
-            cpd_desc[cpd_id] = description.strip()
-        return cpd_desc
-
-    def get_reactions_descriptions(self):
-        "Get reaction descriptions"
-        rn_desc = {}
-        data = self.list_ids('reaction')
-        for line in data.split('\n'):
-            rn_id, description = line.split('\t', 1)
-            rn_id = rn_id.split(':')[1]
-            description = description.split(';')[0]
-            rn_desc[rn_id] = description
-        return rn_desc
 
     def get_pathway_links(self, pathway):
         """
@@ -991,13 +996,23 @@ def download_data(fname='kegg.pickle', contact=None):
 
 
 class KeggModule(object):
+    """
+    .. versionadded:: 0.1.13
+
+    Used to extract information from a pathway module entry in Kegg
+
+    The entry, as a string, can be either passed at instance creation or with
+    :meth:`KeggModule.parse_entry`
+
+    """
     entry = ''
     name = ''
     classes = None
     compounds = None
 
-    # orthologs = None
-    # reacions = None
+    _orthologs = None
+    _reactions = None
+    reactions = None
 
     def __init__(self, entry=None):
         if entry is None:
@@ -1005,6 +1020,10 @@ class KeggModule(object):
         self.parse_entry(entry)
 
     def parse_entry(self, entry):
+        """
+        Parses a Kegg module entry and change the instance values. By default
+        the reactions IDs are substituted with the KO IDs
+        """
         entryd = {}
         curr_field = ''
         for line in entry.splitlines():
@@ -1026,10 +1045,43 @@ class KeggModule(object):
             for line in entryd['COMPOUND']
         ]
 
+        self.reactions = [
+            self.parse_reaction(reaction, ko_ids)
+            for ko_ids, reaction in zip(entryd['DEFINITION'][0].split(' '), entryd['REACTION'])
+        ]
+        self._orthologs = entryd['DEFINITION'][0].split(' ')
+        self._reactions = entryd['REACTION']
+
+    @staticmethod
+    def parse_reaction(line, ko_ids=None):
+        """
+        parses the lines with the reactions and substitute reaction IDs with the
+        corresponding KO IDs if provided
+        """
+
+        #line = 'R00294,R02492,R09446,R09808,R09809  C00533 -> C00887'
+        #ko_ids = '(K00370+K00371+K00374+K00373,K02567+K02568)'
+        #some reaction lines have only one space
+        rn_ids, reaction = line.replace('  ', ' ').split(' ', 1)
+        rn_ids = rn_ids.split(',')
+        comp1, comp2 = reaction.split(' -> ')
+        if ko_ids is not None:
+            rn_ids = ko_ids.replace('+', ',').replace('-', ',').replace('(', '').replace(')', '').split(',')
+        return tuple(rn_ids), (comp1, comp2)
+
     @property
     def first_cp(self):
+        "Returns the first compound in the module"
         return self.compounds[0]
 
     @property
     def last_cp(self):
+        "Returns the first compound in the module"
         return self.compounds[-1]
+
+    def to_edges(self):
+        "Returns the reactions as edges that can be supplied to a graph"
+        for ko_ids, (comp1, comp2) in self.reactions:
+            for ko_id in ko_ids:
+                yield (comp1, ko_id)
+                yield (ko_id, comp2)

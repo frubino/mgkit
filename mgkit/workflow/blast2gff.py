@@ -1,10 +1,8 @@
 """
-.. versionadded:: 0.1.12
-
 Blast output conversion in GFF requires a BLAST+ tabular format which can be
 obtained by using the `--outfmt 6` option with the default columns, as
-specified in :func:`mgkit.io.blast.parse_blast_tab`. The script can be get data
-from the standard in and ouputs GFF line on the standard output by default.
+specified in :func:`mgkit.io.blast.parse_blast_tab`. The script can get data
+from the standard in and ouputs GFF lines on the standard output by default.
 
 Uniprot
 *******
@@ -24,6 +22,16 @@ is CDS.
         "BLAST+"  -> "parse_uniprot_blast" -> GFF;
     }
 
+Changes
+*******
+
+.. versionadded:: 0.1.12
+
+.. versionchanged:: 0.1.13
+
+* added *-n* parameter to *uniprot* command
+* added *-k* option to *uniprot* command
+
 """
 import sys
 import argparse
@@ -34,6 +42,16 @@ from ..io import blast
 
 
 LOG = logging.getLogger(__name__)
+
+
+def parse_attr_arg(value):
+    values = value.split(':')
+    if len(values) != 2:
+        raise argparse.ArgumentTypeError(
+            "Wrong filter format, must be 'key:value' 'key:value'"
+        )
+
+    return values[0], values[1]
 
 
 def set_common_options(parser):
@@ -52,6 +70,15 @@ def set_common_options(parser):
         type=float,
         help='Minimum bitscore to keep the annotation',
         default=0.0
+    )
+    parser.add_argument(
+        '-k',
+        '--attr-value',
+        action='append',
+        type=parse_attr_arg,
+        help='''Additional attribute and value to add to each annotation,
+                in the form attr:value''',
+        default=None
     )
     parser.add_argument(
         'input_file',
@@ -78,20 +105,38 @@ def set_uniprot_parser(parser):
         default='UNIPROT-SP',
         help='Uniprot database used with BLAST'
     )
+    parser.add_argument(
+        '-n',
+        '--no-split',
+        action='store_true',
+        default=False,
+        help='''if used, the script assumes that the sequence header contains
+                only the gene id'''
+    )
 
     parser.set_defaults(func=convert_from_uniprot)
 
 
 def convert_from_uniprot(options):
 
+    if options.no_split is True:
+        name_func = lambda x: x
+    else:
+        name_func = None
+
     iterator = blast.parse_uniprot_blast(
         options.input_file,
         bitscore=options.bitscore,
         db=options.db_used,
-        dbq=options.db_quality
+        dbq=options.db_quality,
+        name_func=name_func
     )
 
     for annotation in iterator:
+        if options.attr_value is not None:
+            for key, value in options.attr_value:
+                annotation.set_attr(key, value)
+
         annotation.to_file(options.output_file)
 
 

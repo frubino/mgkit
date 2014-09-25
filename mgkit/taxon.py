@@ -8,17 +8,17 @@ import gzip
 import cPickle
 import itertools
 import collections
+from .io import open_file
 
 LOG = logging.getLogger(__name__)
 
-ALGAE = (
-    'haptophyceae',
-    'chlorophyta',
-    'stramenopiles',
-    'cryptophyta',
-    'rhodophyta',
-    'chlorophyta',
-)
+ALGAE = {
+    'haptophyceae': 2830,
+    'chlorophyta': 3041,
+    'stramenopiles': 33634,
+    'cryptophyta': 3027,
+    'rhodophyta': 2763,
+}
 
 PROTISTS = {
     #'apicomplexa', alveolata
@@ -40,10 +40,9 @@ PROTISTS = {
     'rhizaria': 543769,
 }
 
-PLANTS = (
-    'streptophyta',
-
-)
+PLANTS = {
+    'streptophyta': 35493,
+}
 
 TAXON_ROOTS = (
     'archaea',  # 2157
@@ -56,7 +55,7 @@ TAXON_ROOTS = (
     'eukaryota',
     'other sequences',
     'unidentified'
-) + tuple(PROTISTS) + PLANTS + ALGAE
+) + tuple(PROTISTS) + tuple(PLANTS) + tuple(ALGAE)
 "Root taxa used in analysis and filtering"
 
 TAXON_RANKS = (
@@ -89,10 +88,19 @@ A substitute for UniprotTaxon, to be tested
 
 
 def parse_uniprot_taxon(line):
-    "Parses a Uniprot taxonomy file (tab delimited) and returns a UniprotTaxonTuple"
+    """
+    .. versionchanged:: 0.1.13
+        now accepts empty scientific names, for root taxa
+
+    Parses a Uniprot taxonomy file (tab delimited) line and returns a
+    UniprotTaxonTuple instance
+    """
     line = line.rstrip().split('\t')
     taxon_id = int(line[0])
-    s_name = line[2].lower()
+    try:
+        s_name = line[2].lower()
+    except IndexError:
+        s_name = ''
     try:
         c_name = line[3].lower() if line[3] else ''
     except IndexError:
@@ -311,18 +319,22 @@ class UniprotTaxonomy(object):
             except KeyError:
                 self._name_map[taxon_obj.s_name] = [taxon_obj.taxon_id]
 
-    def load_data(self, fname):
+    def load_data(self, file_handle):
         """
-        Loads pickled data from file name "fname", accept gzipped data
+        .. versionchanged:: 0.1.13
+            now accepts file handles and compressed files (if file names)
 
-        :param str fname: file name of the pickled data
+        Loads pickled data from file name "file_handle", accept gzipped data
+
+        :param str file_handle: file name (or file handle) of the pickled data
         """
-        LOG.info("Loading taxonomy from file %s", fname)
-        if fname.endswith('.gz'):
-            f_handle = gzip.open(fname, 'r')
-        else:
-            f_handle = open(fname, 'r')
-        self._taxa = cPickle.load(f_handle)
+
+        if isinstance(file_handle, str):
+            file_handle = open_file(file_handle)
+
+        LOG.info("Loading taxonomy from file %s", file_handle.name)
+
+        self._taxa = cPickle.load(file_handle)
 
     def save_data(self, fname):
         """
@@ -350,29 +362,48 @@ class UniprotTaxonomy(object):
             self.gen_name_map()
         return self._name_map[s_name]
 
-    def is_ancestor(self, leaf_id, anc_id):
+    def is_ancestor(self, leaf_id, anc_ids):
         """
-        Checks if a taxon is the leaf of another one.
+        .. versionchanged:: 0.1.13
+            now uses :func:`is_ancestor` and changed behavior
+
+        Checks if a taxon is the leaf of another one, or a list of taxa.
 
         :param int leaf_id: leaf taxon id
-        :param int anc_id: ancestor taxon id
+        :param int anc_ids: ancestor taxon id(s)
 
         :return bool: True if the ancestor taxon is in the leaf taxon lineage
 
         """
 
-        return self[anc_id].s_name in self[leaf_id].lineage
+        if isinstance(anc_ids, int):
+            anc_ids = [anc_ids]
 
-    def get_ranked_taxon(self, taxon_id, rank=None, ranks=TAXON_RANKS):
+        for anc_id in anc_ids:
+            if is_ancestor(self, leaf_id, anc_id):
+                return True
+        return False
+
+    def get_ranked_taxon(self, taxon_id, rank=None, ranks=TAXON_RANKS, roots=False):
         """
+        .. versionchanged:: 0.1.13
+            added *roots* argument
+
         Traverse the branch of which the *taxon* argument is the leaf backward,
         to get the specific rank to which the *taxon* belongs to.
+
+        .. warning::
+
+            the *roots* options is kept for backward compatibility and should be
+            be set to *False*
 
         :param taxon_id: id of the taxon or instance of :class:`UniprotTaxon`
         :param str rank: string that specify the rank, if None, the first valid
             rank will be searched. (i.e. the first with a value different from '')
         :param ranks: tuple of all taxonomy ranks, default to the default module
             value
+        :param bool roots: if True, uses :data:`TAXON_ROOTS` to solve the root
+            taxa
         :return: instance of :class:`UniprotTaxon` for the rank found.
         """
 
@@ -393,7 +424,9 @@ class UniprotTaxonomy(object):
                 break
             elif ranked.parent_id is None:
                 break
-            elif ranked.s_name in TAXON_ROOTS:
+            #kept only for backward compatibility.
+            #needs a check to other scripts
+            elif roots and (ranked.s_name in TAXON_ROOTS):
                 break
 
             ranked = self[ranked.parent_id]
@@ -613,7 +646,7 @@ def is_ancestor(taxonomy, taxon_id, anc_id):
     :param int taxon_id: leaf taxon to test
     :param int anc_id: ancestor taxon to test against
 
-    :return bool: True if anc_id is an ancestor of taxon_id
+    :return bool: True if anc_id is an ancestor of taxon_id or their the same
     """
     if taxon_id == anc_id:
         return True
@@ -625,3 +658,42 @@ def is_ancestor(taxonomy, taxon_id, anc_id):
             return True
         if taxon_id is None:
             return False
+
+
+class NoLcaFound(Exception):
+    """
+    .. versionadded:: 0.1.13
+
+    Raised if no lowest common ancestor can be found in the taxonomy
+    """
+    pass
+
+
+def lowest_common_ancestor(taxonomy, taxon_id1, taxon_id2):
+    """
+    .. versionadded:: 0.1.13
+
+    Finds the lowest common ancestor of two taxon IDs.
+
+    Arguments:
+        taxonomy: :class:`UniprotTaxonomy` instance used to test
+        taxon_id1 (int): first taxon ID
+        taxon_id2 (int): second taxon ID
+
+    Raturns:
+        int: taxon ID of the lowest common ancestor
+
+    Raises:
+        NoLcaFound: if no common ancestor can be found
+    """
+    lca_id = taxon_id1
+
+    while True:
+        if is_ancestor(taxonomy, taxon_id2, lca_id):
+            break
+        else:
+            lca_id = taxonomy[lca_id].parent_id
+            if lca_id is None:
+                raise NoLcaFound('No common ancestry')
+
+    return lca_id

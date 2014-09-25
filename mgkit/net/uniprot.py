@@ -194,6 +194,11 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
     """
     if isinstance(gene_ids, str):
         gene_ids = [gene_ids]
+    elif isinstance(gene_ids, set):
+        gene_ids = list(gene_ids)
+
+    if isinstance(columns, str):
+        columns = [columns]
 
     infos = {}
 
@@ -201,8 +206,8 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
 
         LOG.info(
             "Querying uniprot ids (%d/%d)",
-            (index // max_req) + 1,
-            (len(gene_ids) // max_req) + 1
+            index + max_req,
+            len(gene_ids)
         )
 
         info_lines = query_uniprot(
@@ -226,7 +231,7 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
             infos[gene_id] = dict(
                 (
                     column,
-                    value if (not value.endswith(';')) and (not value.endswith('; '))
+                    value if (not value.endswith(';')) and (not value.endswith('; ')) and (not '; ' in value)
                     else [x.strip() for x in value.split(';') if x.strip()]
                 )
                 for column, value in zip(columns, values[1:])
@@ -235,21 +240,27 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
     return infos
 
 
-def query_uniprot(query, columns, format='tab', limit=None, contact=None):
+def query_uniprot(query, columns=None, format='tab', limit=None, contact=None,
+                  baseurl=UNIPROT_GET):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.1.13
+        added *baseurl* and made *columns* a default argument
 
     Queries Uniprot, returning the raw response in tbe format specified. More
     informations at the `page <http://www.uniprot.org/faq/28>`_
 
     Arguments:
         query (str): query to submit, as put in the input box
-        columns (iterable): list of columns to return
+        columns (None, iterable): list of columns to return
         format (str): response format
         limit (int, None): number of entries to return or *None* to request all
             entries
         contact (str): email address to be passed in the query (requested
             Uniprot API)
+        baseurl (str): base url for the REST API, can be either
+            :data:`UNIPROT_GET` or :data:`UNIPROT_TAXONOMY`
     Returns:
         str: raw response from the query
 
@@ -275,18 +286,19 @@ def query_uniprot(query, columns, format='tab', limit=None, contact=None):
 
     data = urllib.urlencode(data)
 
-    data += "&columns={0}".format(
-        ','.join(
-            urllib.quote(column)
-            for column in columns
+    if columns is not None:
+        data += "&columns={0}".format(
+            ','.join(
+                urllib.quote(column)
+                for column in columns
+            )
         )
-    )
 
     if mgkit.DEBUG:
-        LOG.debug("query: %s?%s", UNIPROT_GET, data)
+        LOG.debug("query: %s?%s", baseurl, data)
         LOG.debug("request length %d", len(data))
 
-    return url_read(UNIPROT_GET, data, agent=contact)
+    return url_read(baseurl, data, agent=contact)
 
 
 def parse_uniprot_response(data, simple=True):

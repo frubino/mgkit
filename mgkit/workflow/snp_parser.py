@@ -1,8 +1,13 @@
-#!/usr/bin/env python
 """
+.. versionchanged:: 0.1.13
+    reworked the internals and the classes used
+
 This script parses results of SNPs analysis from any tool for SNP calling [#]_
 and `SNPDat <http://code.google.com/p/snpdat/>`_ and integrates them into a
 format that can be later used for other scripts in the pipeline.
+
+It integrates coverage and expected number of syn/nonsyn change and taxonomy
+from a GFF file, SNP data from a VCF file, syn/nonsyn information from SNPDat.
 
 The data written to disk is two files; each one contains a dictionary with
 instances of :class:`snps.GeneSyn` class. One file with suffix '_tot' and one
@@ -14,23 +19,21 @@ with suffix '_set':
 
 .. note::
 
-    The script accept gzipped VCF files but not SNPDat result files right now
+    The script accept gzipped VCF and SNPDat result files
 
 .. [#] GATK pipeline was the one tested at this time
 """
 
 import HTSeq
-import gzip
 import logging
 import argparse
-import sys
 import cPickle
 from . import utils
-from ..io import gff
+from ..io import gff, compressed_handle
 from .. import logger
-from ..snps import GeneSyn
+from ..snps.classes import GeneSNP, SNPType
 from ..io.snpdat import snpdat_reader
-from ..taxon import UniprotTaxonomy, MISPELLED_TAXA
+from ..taxon import UniprotTaxonomy
 
 LOG = logging.getLogger(__name__)
 
@@ -92,28 +95,19 @@ def set_parser():
         help='Merged VCF file'
     )
     parser.add_argument(
-        '-z',
-        '--zipped',
-        action='store_true',
-        default=False,
-        help='If used, the VCF and SNPDat files are expected to be gzipped'
-    )
-    parser.add_argument(
         '-s',
         '--snpdat-file',
         required=True,
         type=argparse.FileType('r'),
-        nargs='+',
-        action='store',
+        action='append',
         help='SNPDat result file(s)'
     )
     parser.add_argument(
         '-m',
         '--samples-id',
-        action='store',
+        action='append',
         required=True,
         type=lambda sample: sample.lower(),
-        nargs='+',
         help='the ids of the samples used in the analysis'
     )
     parser.add_argument(
@@ -125,193 +119,25 @@ def set_parser():
              "attribute in the annotation must be 'sample_cov'"
     )
     parser.add_argument(
-        '-b',
-        '--blast',
-        action='store_true',
-        default=False,
-        help="Use BLAST data if available in the GFF file. The taxon used is " +
-             "the one found by BLAST."
-    )
-    parser.add_argument(
         '-t',
         '--taxonomy',
         action='store',
         default=None,
         help="File containing the full Uniprot taxonomy"
     )
+    parser.add_argument(
+        '-d',
+        '--corr-old',
+        action='store_true',
+        default=False,
+        help="Correct old annotations taxonomy"
+    )
     utils.add_basic_options(parser)
 
     return parser
 
 
-def reverse_taxon_names(ko2taxon, taxonomy):
-    """
-    Reverse taxa names
-
-    .. todo::
-
-        take it out and use the taxon_id method of GFF annotations
-
-    """
-    LOG.debug("Reversing taxon names for taxa dictionary")
-    taxonomy.gen_name_map()
-    return dict(
-        (ko_idx, taxonomy.find_by_name(taxon_name.replace('#', ' '))[0])
-        for ko_idx, taxon_name in ko2taxon.iteritems()
-    )
-
-
-def get_gff_info(gff_file, samples, cov_suff, taxonomy, blast_data):
-    """
-    Reads the GFF file, reads info about gene expected number of synonymous,
-    non-synonymous and per sample coverage.
-
-    Returns:
-
-    * cov_dict: per sample coverage of all genes
-    * ko2taxon: dictionary ko_idx->taxon
-    * koidx_syn: per gene expected number of synonymous
-    * koidx_nonsyn: per gene expected number of non-synonymous
-
-    :param file gff_file: file handle for GFF file
-    :param iterable samples: list of sample names
-    :param str cov_suff: suffix for the sample coverage attribute in annotations
-
-    :return: cov_dict, ko2taxon, koidx_syn, koidx_nonsyn
-    """
-    cov_dict = {}
-
-    LOG.info("Getting info from GFF file")
-
-    annotations = gff.load_gff(gff_file)
-
-    ko2taxon = gff.get_attr2attr_map(annotations, keyattr='ko_idx',
-                                     valattr='taxon', value_convert=str,
-                                     aggr_func=lambda x: x[0])
-
-    ko2taxon_idx = gff.get_attr2attr_map(annotations, keyattr='ko_idx',
-                                         valattr='taxon_id', value_convert=int,
-                                         aggr_func=lambda x: x[0])
-
-    #correction for the mispelled taxa in old gff file
-    #to be taken out after I make sure that all gff files are correct
-    ko2taxon_corrected = {}
-
-    for ko_idx, taxon_name in ko2taxon.iteritems():
-        try:
-            ko2taxon_corrected[ko_idx] = MISPELLED_TAXA[taxon_name]
-        except KeyError:
-            ko2taxon_corrected[ko_idx] = taxon_name
-
-    ko2taxon = ko2taxon_corrected
-
-    ko2taxon = reverse_taxon_names(ko2taxon, taxonomy)
-    ko2taxon.update(ko2taxon_idx)
-
-    if blast_data:
-        ko2taxon_blast = gff.get_attr2attr_map(
-            annotations,
-            keyattr='ko_idx',
-            valattr='blast_taxon_idx',
-            value_convert=int,
-            aggr_func=lambda x: x[0]
-        )
-        update_ko_taxa(ko2taxon, ko2taxon_blast)
-
-    koidx_syn = gff.get_attr2attr_map(annotations, keyattr='ko_idx',
-                                      valattr='exp_syn', value_convert=int,
-                                      aggr_func=lambda x: x[0])
-
-    koidx_nonsyn = gff.get_attr2attr_map(annotations, keyattr='ko_idx',
-                                         valattr='exp_nonsyn',
-                                         value_convert=int,
-                                         aggr_func=lambda x: x[0])
-
-    for sample in samples:
-        cov_dict[sample] = gff.get_attr2attr_map(annotations, keyattr='ko_idx',
-                                                 valattr=sample+cov_suff,
-                                                 value_convert=int,
-                                                 aggr_func=lambda x: x[0])
-
-    return cov_dict, ko2taxon, koidx_syn, koidx_nonsyn
-
-
-def init_count_set(samples, ko2taxon, koidx_syn, koidx_nonsyn, cov_dict,
-                   taxonomy):
-    """
-    Init the data structures for the counting of SNPs
-
-    Returns:
-
-    * count_syn: dictionary of :class:`snps.GeneSyn` instances in the form
-        ko_idx->GeneSyn
-    * count_set: dictionary in the form sample->ko_idx->GeneSyn
-
-    :param iterable samples: list of sample names
-    :param dict cov_dict: per sample coverage of all genes
-    :param dict ko2taxon: dictionary ko_idx->taxon
-    :param dict koidx_syn: per gene expected number of synonymous
-    :param dict koidx_nonsyn: per gene expected number of non-synonymous
-    :param dict tmap: root taxon map
-
-    :return: count_syn, count_set
-    """
-
-    LOG.info("Init data structures")
-
-    count_set = dict(
-        (sample, {}) for sample in samples
-    )
-    count_syn = {}
-
-    #############Add check for KeyError if no coverage was found.
-    #or simply use new gff method
-
-    for koidx, taxon_name in ko2taxon.iteritems():
-
-        # print idx, len(ko2taxon)
-
-        taxon_root = taxonomy.get_taxon_root(taxon_name).s_name
-
-        count_syn[koidx] = GeneSyn(
-            gid=koidx, taxon=taxon_name,
-            exp_syn=koidx_syn[koidx],
-            exp_nonsyn=koidx_nonsyn[koidx],
-            taxon_root=taxon_root
-        )
-        for sample in count_set.keys():
-            count_set[sample][koidx] = GeneSyn(
-                gid=koidx,
-                taxon=taxon_name,
-                exp_syn=koidx_syn[koidx],
-                exp_nonsyn=koidx_nonsyn[koidx],
-                coverage=cov_dict[sample][koidx],
-                taxon_root=taxon_root
-            )
-
-    return count_syn, count_set
-
-
-def init_count_set2(annotations, taxonomy, prefer_blast):
-    """
-    Init the data structures for the counting of SNPs
-
-    Returns:
-
-    * count_syn: dictionary of :class:`snps.GeneSyn` instances in the form
-        ko_idx->GeneSyn
-    * count_set: dictionary in the form sample->ko_idx->GeneSyn
-
-    :param iterable samples: list of sample names
-    :param dict cov_dict: per sample coverage of all genes
-    :param dict ko2taxon: dictionary ko_idx->taxon
-    :param dict koidx_syn: per gene expected number of synonymous
-    :param dict koidx_nonsyn: per gene expected number of non-synonymous
-    :param dict tmap: root taxon map
-
-    :return: count_syn, count_set
-    """
-
+def init_count_set(annotations, taxonomy, correct_ann=False):
     LOG.info("Init data structures")
 
     samples = annotations[0].sample_coverage.keys()
@@ -321,54 +147,39 @@ def init_count_set2(annotations, taxonomy, prefer_blast):
     )
     count_syn = {}
 
-    #############Add check for KeyError if no coverage was found.
-    #or simply use new gff method
+    if correct_ann:
+        gff.correct_old_annotations(annotations, taxonomy)
 
     for annotation in annotations:
 
-        taxon_id = annotation.get_taxon_id(
-            taxonomy, prefer_blast=prefer_blast
-        )
+        taxon_id = annotation.taxon_id
 
-        taxon_root = taxonomy.get_taxon_root(taxon_id)
+        ko_idx = annotation.uid
 
-        ko_idx = annotation.attributes.ko_idx
-
-        count_syn[ko_idx] = GeneSyn(
-            gene_id=ko_idx,
+        count_syn[ko_idx] = GeneSNP(
+            uid=ko_idx,
+            gene_id=annotation.gene_id,
             taxon_id=taxon_id,
             exp_syn=annotation.exp_syn,
-            exp_nonsyn=annotation.exp_nonsyn,
-            taxon_root=taxon_root
+            exp_nonsyn=annotation.exp_nonsyn
         )
 
         sample_coverage = annotation.sample_coverage
 
         for sample in sample_coverage:
-            count_set[sample][ko_idx] = GeneSyn(
-                gene_id=ko_idx,
+            count_set[sample][ko_idx] = GeneSNP(
+                uid=ko_idx,
+                gene_id=annotation.gene_id,
                 taxon_id=taxon_id,
                 exp_syn=annotation.exp_syn,
                 exp_nonsyn=annotation.exp_nonsyn,
                 coverage=sample_coverage[sample],
-                taxon_root=taxon_root
             )
 
     return count_syn, count_set
 
 
-def update_ko_taxa(ko2taxon, ko2taxon_blast):
-    "Update the taxa dictionary with the blast IDs"
-    LOG.info("Updating taxa dictionary with blast id")
-    name_dict = {}
-
-    for ko_idx, taxon_id in ko2taxon_blast.iteritems():
-        name_dict[ko_idx] = taxon_id
-
-    ko2taxon.update(name_dict)
-
-
-def load_snpdat_files(snpdat_file, samples, zipped):
+def load_snpdat_files(snpdat_file, samples):
     """
     Loads information from SNPDat result files
 
@@ -388,8 +199,7 @@ def load_snpdat_files(snpdat_file, samples, zipped):
 
     for f_handle, sample in zip(snpdat_file, samples):
 
-        if zipped:
-            f_handle = gzip.GzipFile(fileobj=f_handle, mode='rb')
+        f_handle = compressed_handle(f_handle)
 
         for snp in snpdat_reader(f_handle):
             if snp.nuc_change:
@@ -400,7 +210,8 @@ def load_snpdat_files(snpdat_file, samples, zipped):
     return snp_dat_info
 
 
-def check_snp_in_set(var_set, snp_dat_info, count_syn, count_set, info_keys):
+def check_snp_in_set(var_set, snp_dat_info, count_syn, count_set, info_keys,
+                     annotations, start):
     """
     Used by :func:`parse_vcf` to check if a SNP is in a SNPDat result file
 
@@ -425,20 +236,23 @@ def check_snp_in_set(var_set, snp_dat_info, count_syn, count_set, info_keys):
         except KeyError:
             continue
         if snp.region == 'exonic':
+            gene_start = start - annotations[snp.gene_id].start + 1
             if snp.synonymous:
+                snp_tuple = (gene_start, info_keys[2], SNPType.syn)
                 if syn_check is None:
-                    count_syn[snp.gene_id].syn += 1
-                count_set[var][snp.gene_id].syn += 1
+                    count_syn[snp.gene_id].add_snp(*snp_tuple)
+                count_set[var][snp.gene_id].add_snp(*snp_tuple)
             else:
+                snp_tuple = (gene_start, info_keys[2], SNPType.nonsyn)
                 if syn_check is None:
-                    count_syn[snp.gene_id].nonsyn += 1
-                count_set[var][snp.gene_id].nonsyn += 1
+                    count_syn[snp.gene_id].add_snp(*snp_tuple)
+                count_set[var][snp.gene_id].add_snp(*snp_tuple)
             #to make sure we count a snp only once for the total counts
             syn_check = True
 
 
 def parse_vcf(vcf_file, count_set, count_syn, snp_dat_info, min_reads,
-              min_af, min_qual, zipped, line_num=100000):
+              min_af, min_qual, annotations, line_num=100000):
     """
     Parse VCF file counts synonymous and non-synonymous SNPs
 
@@ -455,9 +269,7 @@ def parse_vcf(vcf_file, count_set, count_syn, snp_dat_info, min_reads,
     :param int line_num: the interval in number of lines at which progress will
         be printed
     """
-    vcf_handle = HTSeq.VCF_Reader(
-        gzip.GzipFile(fileobj=vcf_file, mode='rb') if zipped else vcf_file
-    )
+    vcf_handle = HTSeq.VCF_Reader(compressed_handle(vcf_file))
 
     vcf_handle.parse_meta()
     vcf_handle.make_info_dict()
@@ -514,20 +326,24 @@ def parse_vcf(vcf_file, count_set, count_syn, snp_dat_info, min_reads,
                 snp_dat_info,
                 count_syn,
                 count_set,
-                (vcf_record.chrom, vcf_record.pos.pos, alt)
+                #keep pos.pos for backward compatibility
+                (vcf_record.chrom, vcf_record.pos.pos, alt),
+                annotations,
+                vcf_record.pos.start
             )
             #increase the total number of snps available
             count_tot += 1
 
         if vcf_handle.line_no % line_num == 0:
-            LOG.info("Line %d, SNPs passed %d; skipped for: qual %d, " +
-                     "depth %d, freq %d; tot syn/nonsyn: %r",
-                     vcf_handle.line_no, count_tot, skip_qual, skip_dp, skip_af,
-                     (
-                     sum(x.syn for x in count_syn.values()),
-                     sum(x.nonsyn for x in count_syn.values())
-                     )
-                     )
+            LOG.info(
+                "Line %d, SNPs passed %d; skipped for: qual %d, " +
+                "depth %d, freq %d; tot syn/nonsyn: %r",
+                vcf_handle.line_no, count_tot, skip_qual, skip_dp, skip_af,
+                (
+                    sum(x.syn for x in count_syn.values()),
+                    sum(x.nonsyn for x in count_syn.values())
+                )
+            )
 
 
 def save_data(base_name, count_set, count_syn, tot_suff='tot', set_suff='set',
@@ -546,13 +362,19 @@ def save_data(base_name, count_set, count_syn, tot_suff='tot', set_suff='set',
 
     """
 
-    set_fname = "{base}_{type}.{ext}".format(base=base_name, type=set_suff,
-                                             ext=ext)
+    set_fname = "{base}_{type}.{ext}".format(
+        base=base_name,
+        type=set_suff,
+        ext=ext
+    )
     LOG.info("Saving sample SNPs to %s", set_fname)
     cPickle.dump(count_set, open(set_fname, 'w'), -1)
 
-    tot_fname = "{base}_{type}.{ext}".format(base=base_name, type=tot_suff,
-                                             ext=ext)
+    tot_fname = "{base}_{type}.{ext}".format(
+        base=base_name,
+        type=tot_suff,
+        ext=ext
+    )
     LOG.info("Saving total SNPs to %s", tot_fname)
     cPickle.dump(count_syn, open(tot_fname, 'w'), -1)
 
@@ -566,34 +388,38 @@ def main():
 
     #the number of SNPDat result files must be the same as the sample ids
     if len(options.snpdat_file) != len(options.samples_id):
-        LOG.critical("Number of sample ids and SNPDat result files must be " +
-                     "the same")
-        sys.exit(1)
+        utils.exit_script(
+            "Number of sample ids and SNPDat result files must be the same",
+            1
+        )
 
-    #loads gff file and get all needed information
-    #gff_file, samples, cov_suff, taxonomy, blast_data
-    taxonomy = UniprotTaxonomy(options.taxonomy)
-    # cov_dict, ko2taxon, koidx_syn, koidx_nonsyn = get_gff_info(
-    #     options.gff_file,
-    #     options.samples_id,
-    #     options.cov_suff,
-    #     taxonomy,
-    #     options.blast
-    # )
+    if options.taxonomy:
+        taxonomy = UniprotTaxonomy(options.taxonomy)
+    else:
+        taxonomy = options.taxonomy
+        if options.corr_old:
+            utils.exit_script(
+                "To correct old annotation the taxonomy is required",
+                3
+            )
 
-    annotations = gff.load_gff(options.gff_file)
-    LOG.debug(len(annotations))
+    annotations = list(gff.parse_gff(options.gff_file))
+    LOG.debug("Loaded %d annotations", len(annotations))
 
-    count_syn, count_set = init_count_set2(
+    if len(annotations[0].sample_coverage) != len(options.samples_id):
+        utils.exit_script("Coverage information was not found for all samples", 2)
+
+    count_syn, count_set = init_count_set(
         annotations,
         taxonomy,
-        options.blast
+        options.corr_old
     )
 
-    # del taxonomy  # to free some memory
+    snp_dat_info = load_snpdat_files(
+        options.snpdat_file, options.samples_id
+    )
 
-    snp_dat_info = load_snpdat_files(options.snpdat_file, options.samples_id,
-                                     options.zipped)
+    annotations = dict((x.uid, x) for x in annotations)
 
     parse_vcf(
         options.vcf_file,
@@ -603,7 +429,7 @@ def main():
         options.min_reads,
         options.min_freq,
         options.min_qual,
-        options.zipped
+        annotations
     )
 
     save_data(options.output_file, count_set, count_syn)

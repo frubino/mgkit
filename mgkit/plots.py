@@ -1,16 +1,12 @@
 """
 Function to plot results from the datasets.
 
-.. todo::
-
-    * add function to create a basic figure: figure, gridspec, ax
-    * add function to put some basic text: title, xlabel, ylabel
-
 """
 from __future__ import division
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.gridspec import GridSpec
 from mpl_toolkits.mplot3d import Axes3D
 import numpy
 import logging
@@ -19,6 +15,11 @@ try:
     from scipy.spatial import ConvexHull
 except ImportError:
     ConvexHull = None
+
+try:
+    import seaborn as sns
+except ImportError:
+    sns = None
 
 LOG = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ DEFAULT_BOXPLOT_COLOURS = {
     'whiskers': '#636363',
     'caps': 'black',
     'fliers': '#636363',
+    'vals': '#636363',
 }
 
 
@@ -51,6 +53,8 @@ DEFAULT_BOXPLOT_FONTCONF = {
 
 def lineplot_values_on_second_axis(gene_num, axis, colour='c', ylabel=''):
     """
+    .. deprecated:: 0.1.13
+
     Adds a lineplot on a second axis using twinx
     """
     ax2 = axis.twinx()
@@ -311,98 +315,6 @@ def plot_contig_assignment_bar(series, taxon_colours=None, log_scale=False,
     return ax
 
 
-def histogram_gene_len(gene_len, xlabel='Gene length', colour='g', bins=100,
-                       linewidth=0.3, log=False, title='', file_name=None):
-    """
-    Plots histogram for gene lengths
-
-    :param gene_len: iterable with gene lengths
-    :param colour: colour of the bars
-    :param str xlabel: label for x axis
-    :param int bins: number of bins for the histogram
-    :param float linewidth: line width in the histogram
-    :param bool log: if True the y axis is log scaled
-    :param str title: title of the graph
-    :param str file_name: name of the file to write the graph to
-    """
-    fig = plt.figure(dpi=300)
-    ax = plt.subplot(111)
-
-    n, bins, patches = ax.hist(gene_len, bins=bins, color=colour,
-                               linewidth=linewidth, log=log)
-    ax.set_xlabel(xlabel, fontsize='large')
-    ax.set_ylabel('Frequency', fontsize='large', horizontalalignment='right')
-    ax.set_title(title)
-
-    gene_mean = numpy.mean(gene_len)
-
-    for idx, x in enumerate(bins):
-        if x > gene_mean:
-            mean_idx = idx - 1
-            break
-
-    ax.annotate(
-        'Mean ({0:.2f})'.format(gene_mean),
-        (bins[mean_idx], n[mean_idx]),
-        (bins[mean_idx + 5], n[mean_idx] + 5),
-        arrowprops={'width': 1.0, 'frac': .1, 'headwidth': .0}
-    )
-
-    if file_name is not None:
-        LOG.info("Saving graph to file %s", file_name)
-        fig.savefig(file_name)
-        fig.clf()
-
-    return ax
-
-
-def barchart_categories_counts(series, colour='g', ylabel='Number of genes',
-                               name_map=None, xlabel='Functional categories',
-                               fig_aspect=None, fontsize=7, log=False, title='',
-                               file_name=None):
-    """
-    Plots barchart for mappings counts
-
-    :param series: :class:`pandas.Series` instance with the data
-    :param colour: colour of the bars
-    :param str xlabel: label for x axis
-    :param str ylabel: label for y axis
-    :param dict name_map: dictionary of category names, if None specified, the
-        series index is used
-    :param tuple fig_aspect: tuple with figure size
-    :param int fontsize: size of the category labels
-    :param bool log: if True the y axis is log scaled
-    :param str title: title of the graph
-    :param str file_name: name of the file to write the graph to
-    """
-    if fig_aspect is None:
-        fig_aspect = plt.figaspect(2. / len(series))
-
-    fig = plt.figure(dpi=300, figsize=fig_aspect)
-    ax = plt.subplot(111)
-
-    ax.bar(range(1, series.count() + 1), series, color=colour, log=log, align='center')
-    ax.set_xlim(0, series.count() + 1)
-
-    ax.set_xticks(range(1, series.count() + 1))
-    xlabels = ax.set_xticklabels(
-        series.index if name_map is None else [name_map[x] for x in series.index],
-        rotation='vertical', fontsize=fontsize)
-
-    ax.grid(True, axis='y')
-    ax.set_title(title)
-    ax.set_ylabel(ylabel, fontsize='large', horizontalalignment='right')
-    ax.set_xlabel(xlabel, fontsize='large')
-
-    if file_name is not None:
-        LOG.info("Saving graph to file %s", file_name)
-        fig.savefig(file_name, bbox_inches='tight',
-                    bbox_extra_artist=(xlabels,))
-        fig.clf()
-
-    return ax
-
-
 def scatter_gene_values(gene_dict, xlabel="Profile pN/pS", ylabel="Rumen pN/pS",
                         title="", colours=None, file_name=None, plot_order=None,
                         line_colour='r', max_limit=None, axes=None):
@@ -568,6 +480,9 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
     .. versionadded:: 0.1.7
         To move from an all-in-one drawing to a more modular one.
 
+    .. versionchanged:: 0.1.13
+        added box_vert parameter
+
     The function draws a series of boxplots from a DataFrame object, whose order
     is directed by the iterable plot_order. The columns of each DataFrame row
     contains the values for each boxplot. An axes object is needed.
@@ -586,8 +501,9 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
         to :data:`DEFAULT_BOXPLOT_COLOURS`
     :param dict data_colours: dictionary of colours for each boxplot, a set of
         colours can be obtained using func:`map_taxon_to_colours`
+    :param bool box_vert: if False the boxplots are drawn horizontally
 
-    :return: the plot data same as matplotlib boxplot function
+    :return: the plot data; same as matplotlib boxplot function
     """
 
     if colours is not None:
@@ -639,32 +555,26 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
             colours['whiskers']
             # data_colours[tx] if data_colours else colours['fliers']
         )
-    if fonts is not None:
-        if box_vert:
-            axes.set_xticklabels(
-                [
-                    label if label_map is None else label_map[label]
-                    for label in plot_order
-                ],
-                rotation=fonts['rotation'], fontsize=fonts['fontsize']
-            )
-            for label in axes.get_yticklabels():
-                label.set_fontsize(fonts['fontsize'])
-        else:
-            axes.set_yticklabels(
-                [
-                    label if label_map is None else label_map[label]
-                    for label in plot_order
-                ],
-                rotation=fonts['rotation'], fontsize=fonts['fontsize']
-            )
-            for label in axes.get_yticklabels():
-                label.set_fontsize(fonts['fontsize'])
+
+    if box_vert:
+        ltick_setfunc = axes.set_xticklabels
+        vtick_getfunc = axes.get_yticklabels
     else:
-        if box_vert:
-            axes.set_xticklabels([])
-        else:
-            axes.set_yticklabels([])
+        ltick_setfunc = axes.set_yticklabels
+        vtick_getfunc = axes.get_xticklabels
+
+    if fonts is not None:
+        ltick_setfunc(
+            [
+                label if label_map is None else label_map[label]
+                for label in plot_order
+            ],
+            rotation=fonts['rotation'], fontsize=fonts['fontsize']
+        )
+        for label in vtick_getfunc():
+            label.set_fontsize(fonts['fontsize'])
+    else:
+        ltick_setfunc([])
 
     return plot_data
 
@@ -703,7 +613,207 @@ get_taxon_colors_new = map_taxon_to_colours
 def get_single_figure(dpi=300, figsize=(10, 20)):
     """
     Simple wrapper to init a single figure
+
+    Arguments:
+        dpi (int): dpi used for the figure
+        figsize (tuple): size of the figure in inches
+
+    Returns:
+        tuple: the figure and axes objects
     """
     fig = plt.figure(dpi=dpi, figsize=figsize)
     ax = fig.add_subplot(111)
     return fig, ax
+
+
+def get_grid_figure(rows, cols, dpi=300, figsize=(10, 20), **kwd):
+    """
+    .. versionadded:: 0.1.13
+
+    Simple wrapper to init a GridSpec figure
+
+    Arguments:
+        rows (int): number of rows
+        columns (int): number of columns
+        dpi (int): dpi used for the figure
+        figsize (tuple): size of the figure in inches
+
+    Returns:
+        tuple: the figure and axes objects
+    """
+    fig = plt.figure(dpi=dpi, figsize=figsize)
+    gs = GridSpec(rows, cols, **kwd)
+    return fig, gs
+
+
+def boxplot_dataframe_multindex(dataframe, axes, plot_order=None, label_map=None,
+                                fonts=None, fill_box=True, colours=None,
+                                data_colours=None, box_vert=True):
+    """
+    .. versionadded:: 0.1.13
+
+    .. todo::
+
+        documentation
+
+    The function draws a series of boxplots from a DataFrame object, whose order
+    is directed by the iterable plot_order. The columns of each DataFrame row
+    contains the values for each boxplot. An axes object is needed.
+
+    :param dataframe: dataframe to plot
+    :param iterable plot_order: row order used to plot the boxes
+    :param axes: an axes instance
+    :param dict label_map: a map that converts the items in plot_order to a
+        label used on the plot X axes
+    :param dict fonts: dictionary with properties for x axis labels,
+        :data:`DEFAULT_BOXPLOT_FONTCONF` is used by default
+    :param bool fill_box: if True each box is filled with the same colour of its
+        outline
+    :param dict colours: dictionary with properties for each boxplot if
+        data_colours is None, whi overrides box, whiskers and fliers. Defaults
+        to :data:`DEFAULT_BOXPLOT_COLOURS`
+    :param dict data_colours: dictionary of colours for each boxplot, a set of
+        colours can be obtained using func:`map_taxon_to_colours`
+
+    :return: the plot data same as matplotlib boxplot function
+    """
+
+    if colours is not None:
+        colours = dict(
+            (feature, colours[feature]) if feature in colours else (feature, colour)
+            for feature, colour in DEFAULT_BOXPLOT_COLOURS.items()
+        )
+        DEFAULT_BOXPLOT_COLOURS.copy().update(colours)
+    else:
+        colours = DEFAULT_BOXPLOT_COLOURS.copy()
+
+    if fonts is not None:
+        fonts = dict(
+            (feature, fonts[feature]) if feature in fonts else (feature, option)
+            for feature, option in DEFAULT_BOXPLOT_FONTCONF.items()
+        )
+        DEFAULT_BOXPLOT_FONTCONF.copy().update(fonts)
+    else:
+        fonts = DEFAULT_BOXPLOT_FONTCONF.copy()
+
+    categories = set(dataframe.index.get_level_values(1))
+
+    if (data_colours is None) and (sns is not None):
+        data_colours = dict(
+            zip(
+                categories,
+                sns.color_palette("hls", len(categories))
+            )
+        )
+
+    if plot_order is None:
+        plot_order = dataframe.index
+
+    if label_map is None:
+        label_map = []
+        for label in dataframe.index.get_level_values(0):
+            if label in label_map:
+                continue
+            label_map.append(label)
+
+    plot_data = axes.boxplot(
+        [dataframe.loc[x].dropna() for x in plot_order],
+        vert=box_vert
+    )
+
+    for idx, row_id in enumerate(plot_order):
+        category = row_id[1]
+        box = plot_data['boxes'][idx]
+        box.set_color(
+            data_colours[category] if data_colours else colours['boxes']
+        )
+        if fill_box:
+            box_coord = zip(box.get_xdata(), box.get_ydata())
+            polygon = plt.Polygon(
+                box_coord,
+                facecolor=data_colours[category] if data_colours else colours['boxes']
+            )
+            axes.add_patch(polygon)
+
+        plot_data['medians'][idx].set_color(colours['medians'])
+
+    #It's got a different length (double the size of plot_order)
+    for idx, tx in enumerate(plot_data['whiskers']):
+        whisker = plot_data['whiskers'][idx]
+        whisker.set_color(
+            # data_colours[tx] if data_colours else colours['whiskers']
+            colours['whiskers']
+        )
+        plot_data['caps'][idx].set_color(colours['caps'])
+        flier = plot_data['fliers'][idx]
+        flier.set_color(
+            colours['whiskers']
+            # data_colours[tx] if data_colours else colours['fliers']
+        )
+
+    if box_vert:
+        ltick_setfunc = axes.set_xticklabels
+        vtick_getfunc = axes.get_yticklabels
+        ptick_setfunc = axes.set_xticks
+    else:
+        ltick_setfunc = axes.set_yticklabels
+        vtick_getfunc = axes.get_xticklabels
+        ptick_setfunc = axes.set_yticks
+
+    if fonts is not None:
+        ptick_setfunc(
+            numpy.arange(
+                numpy.arange(1, len(categories) + 1).mean(),
+                len(dataframe.index),
+                len(categories)
+            )
+        )
+        ltick_setfunc(
+            label_map,
+            rotation=fonts['rotation'],
+            fontsize=fonts['fontsize']
+        )
+        for label in vtick_getfunc():
+            label.set_fontsize(fonts['fontsize'])
+    else:
+        ltick_setfunc([])
+
+    return plot_data
+
+
+def add_values_to_boxplot(dataframe, axes, plot_data, plot_order,
+                          data_colours=None, alpha=0.5, s=80, marker='o',
+                          linewidth=0.0):
+    """
+    .. versionadded:: 0.1.13
+
+    Adds the values of a dataframe used in :func:`boxplot_dataframe` to the
+    plot.
+
+    Arguments:
+        dataframe: dataframe with the values to plot
+        axes: an axes instance
+        plot_data: return value from :func:`boxplot_dataframe`
+        plot_order (iterable): row order used to plot the boxes
+        data_colours (dict): colors used for the values
+        alpha (float): alpha value for the colour
+        s (int): size of the marker drawn
+        marker (str): one of the accepted matplotlib markers
+        linewidth (float): width of the line used to draw the marker
+
+    """
+    for index, row_id in enumerate(plot_order):
+        yvals = plot_data['medians'][index].get_ydata()
+        mean_y = yvals.mean()
+
+        axes.scatter(
+            dataframe.loc[row_id].dropna(),
+            [mean_y] * len(dataframe.loc[row_id].dropna()),
+            c=DEFAULT_BOXPLOT_COLOURS['boxes'] if data_colours is None else data_colours[row_id],
+            alpha=alpha,
+            s=s,
+            marker=marker,
+            linewidth=linewidth,
+            #this option put the dots below the lines of the boxplot
+            zorder=1
+        )

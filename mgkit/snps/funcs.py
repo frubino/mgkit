@@ -527,10 +527,15 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
         taxon_func = functools.partial(itertools.repeat, times=1)
 
     for sample, genes_dict in snps_data.iteritems():
-        print sample
+
+        LOG.info('Analysing SNP from sample %s', sample)
+
         for gene_syn in pipe_filters(genes_dict.itervalues(), *filters):
 
-            gene_syn.gene_id = gene_syn.gene_id.split('.')[0]
+            #in old data the gene_id was in the form K00001.UID
+            #it's now allowed anymore
+            if isinstance(gene_syn, GeneSyn):
+                gene_syn.gene_id = gene_syn.gene_id.split('.')[0]
 
             iter_func = itertools.product(
                 gene_func(gene_syn.gene_id),
@@ -551,7 +556,10 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                 try:
                     sample_dict[sample][key].add(gene_syn)
                 except KeyError:
-                    sample_dict[sample][key] = copy.copy(gene_syn)
+                    #Needed with the new GeneSNP, because copies the references
+                    #and the number of SNPs raises (the original data structure
+                    #is modified)
+                    sample_dict[sample][key] = copy.deepcopy(gene_syn)
 
                 multi_index.add(key)
 
