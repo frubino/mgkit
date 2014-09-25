@@ -2,7 +2,7 @@ import sys
 # import ez_setup
 # ez_setup.use_setuptools()
 
-__VERSION__ = "0.1.12"
+__VERSION__ = "0.1.13"
 
 from setuptools import setup, find_packages
 
@@ -12,7 +12,7 @@ install_requires = [
     'HTSeq>=0.5.4p5',
     'pandas>=0.12.0',
     'scipy>=0.13.0',
-    'matplotlib>=1.3.1',
+    #'matplotlib>=1.3.1',
     #'goatools',
     # 'networkx>=1.8.1',
 ]
