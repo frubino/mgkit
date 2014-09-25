@@ -14,6 +14,9 @@ import pickle
 import logging
 import gzip
 import cStringIO
+import itertools
+
+from ..utils import dictionary
 
 LOG = logging.getLogger(__name__)
 
@@ -254,3 +257,87 @@ def print_ko_to_cat(data_file='eggnog.pickle', descr=False):
             EGGNOG_CAT[x] if descr else x
             for x in cats)
         ))
+
+
+class NOGInfo(object):
+
+    _map_nog_func = None
+    _map_nog_gene = None
+    _map_nog_desc = None
+    _map_gene_nog = None
+
+    def load_members(self, file_handle):
+
+        map_nog_gene = {}
+
+        for line in file_handle:
+
+            if line.startswith('#'):
+                continue
+
+            nog_id, gene_id, start, end = line.strip().split()
+
+            try:
+                map_nog_gene[nog_id].append(gene_id)
+            except KeyError:
+                map_nog_gene[nog_id] = [gene_id]
+
+        self._map_nog_gene = map_nog_gene
+        self._map_gene_nog = dictionary.reverse_mapping(map_nog_gene)
+
+    def load_description(self, file_handle):
+
+        map_nog_desc = {}
+
+        for line in file_handle:
+
+            try:
+                nog_id, nog_desc = line.strip().split('\t', 1)
+            except ValueError:
+                nog_id = line.strip()
+                nog_desc = ''
+
+            map_nog_desc[nog_id] = nog_desc
+
+        self._map_nog_desc = map_nog_desc
+
+    def load_funccat(self, file_handle):
+
+        map_nog_func = {}
+
+        for line in file_handle:
+            nog_id, nog_func = line.strip().split()
+            nog_func = set(nog_func)
+
+            map_nog_func[nog_id] = nog_func
+
+        self._map_nog_func = map_nog_func
+
+    def get_nog_funccat(self, nog_id):
+        try:
+            return self._map_nog_func[nog_id].copy()
+        except KeyError:
+            return set()
+
+    def get_nogs_funccat(self, nog_ids):
+
+        iterator = (self.get_nog_funccat(nog_id) for nog_id in nog_ids)
+
+        return set(itertools.chain(*iterator))
+
+    def get_gene_nog(self, gene_id):
+        try:
+            nog_ids = self._map_gene_nog[gene_id]
+        except KeyError:
+            return None
+
+        return nog_ids
+
+    def get_gene_funccat(self, gene_id):
+
+        try:
+            nog_ids = self._map_gene_nog[gene_id]
+        except KeyError:
+            return None
+
+        return self.get_nogs_funccat(nog_ids)
