@@ -1,11 +1,6 @@
 """
 Function to plot results from the datasets.
 
-.. todo::
-
-    * add function to create a basic figure: figure, gridspec, ax
-    * add function to put some basic text: title, xlabel, ylabel
-
 """
 from __future__ import division
 
