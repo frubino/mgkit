@@ -292,7 +292,10 @@ class Annotation(GenomicRange):
     @property
     def dbq(self):
         "db quality of the annotation"
-        return self.attr.get('dbq', None)
+        try:
+            return self.get_attr('dbq', int)
+        except AttributeNotFound:
+            return None
 
     @dbq.setter
     def dbq(self, value):
