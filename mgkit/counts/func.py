@@ -126,14 +126,16 @@ def filter_counts(counts_iter, info_func, gfilters=None, tfilters=None):
         except KeyError:
             continue
 
-        if tfilters:
-            for tfilter in tfilters:
-                if tfilter(taxon_id) is False:
-                    continue
-        if gfilters:
-            for gfilter in gfilters:
-                if gfilter(gene_id) is False:
-                    continue
+        if tfilters is not None:
+            if taxon_id is None:
+                continue
+
+            if not all(tfilter(taxon_id) for tfilter in tfilters):
+                continue
+
+        if gfilters is not None:
+            if not all(gfilter(taxon_id) for gfilter in gfilters):
+                continue
 
         yield uid, count
 
@@ -204,7 +206,11 @@ def map_taxon_id_to_rank(taxonomy, rank, taxon_id, include_higher=True):
         (int, None): if the mapping is successful, the ranked taxon_id is
         returned, otherwise *None* is returned
     """
+    if taxon_id is None:
+        return None
+
     ranked = taxonomy.get_ranked_taxon(taxon_id, rank)
+
     if (include_higher is False) and (ranked.rank != rank):
         return None
     return ranked.taxon_id
@@ -219,7 +225,8 @@ def map_gene_id_to_map(gene_map, gene_id):
 
 
 def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
-                       rank=None, gene_map=None, ex_anc=None):
+                       rank=None, gene_map=None, ex_anc=None,
+                       include_higher=True):
     """
     Reads sample counts, filtering and mapping them if requested. It's an
     example of the usage of the above functions.
@@ -233,12 +240,17 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         rank (str): rank to which map the counts
         gene_map (dict): dictionary with the gene mappings
         ex_anc (int, list): ancestor taxa to exclude
+        include_higher (bool): if False, any rank different than the requested
+            one is discarded
 
     Returns:
         pandas.Series: array with MultiIndex *(gene_id, taxon_id)* with the
         filtered and mapped counts
     """
-    info_func = functools.partial(get_uid_info, info_dict)
+    if isinstance(info_dict[info_dict.keys()[0]], tuple):
+        info_func = functools.partial(get_uid_info, info_dict)
+    else:
+        info_func = functools.partial(get_uid_info_ann, info_dict)
 
     tfilters = []
 
@@ -272,7 +284,8 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         tmapper = functools.partial(
             map_taxon_id_to_rank,
             taxonomy,
-            rank
+            rank,
+            include_higher=include_higher
         )
 
     if gene_map is not None:
