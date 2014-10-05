@@ -10,6 +10,7 @@ import pandas
 import functools
 from mgkit.filter import taxon as tx_filters
 from mgkit.io import open_file
+import mgkit.simple_cache
 
 LOG = logging.getLogger(__name__)
 
@@ -226,8 +227,11 @@ def map_gene_id_to_map(gene_map, gene_id):
 
 def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
                        rank=None, gene_map=None, ex_anc=None,
-                       include_higher=True):
+                       include_higher=True, cached=False):
     """
+    .. versionchanged:: 0.1.14
+        added *cached* argument
+
     Reads sample counts, filtering and mapping them if requested. It's an
     example of the usage of the above functions.
 
@@ -242,6 +246,9 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         ex_anc (int, list): ancestor taxa to exclude
         include_higher (bool): if False, any rank different than the requested
             one is discarded
+        cached (bool): if *True*, the function will use
+            :class:`mgkit.simple_cache.memoize` to cache some of the functions
+            used
 
     Returns:
         pandas.Series: array with MultiIndex *(gene_id, taxon_id)* with the
@@ -277,6 +284,12 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
             )
         )
 
+    if cached:
+        tfilters = [
+            mgkit.simple_cache.memoize(tfilter)
+            for tfilter in tfilters
+        ]
+
     gmapper = None
     tmapper = None
 
@@ -287,12 +300,16 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
             rank,
             include_higher=include_higher
         )
+        if cached:
+            tmapper = mgkit.simple_cache.memoize(tmapper)
 
     if gene_map is not None:
         gmapper = functools.partial(
             map_gene_id_to_map,
             gene_map
         )
+        if cached:
+            gmapper = mgkit.simple_cache.memoize(gmapper)
 
     series = map_counts(
         filter_counts(
