@@ -30,8 +30,10 @@ def config_log(level=logging.DEBUG, output=sys.stderr):
 
 def config_log_to_file(level=logging.DEBUG, output=None):
     """
+    .. versionadded:: 0.1.14
+
     Minimal configuration of :mod`logging` module, default to debug level and
-    the output is printed to standard error
+    the output is printed to script name, using `sys.argv[0]`.
 
     :param int level: logging level
     :param file output: file to which write the log

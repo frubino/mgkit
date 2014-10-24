@@ -260,14 +260,34 @@ def print_ko_to_cat(data_file='eggnog.pickle', descr=False):
 
 
 class NOGInfo(object):
+    """
+    .. versionadded:: 0.1.14
 
+    ..warning::
+
+        experimental
+
+    Mappings from Uniprot to eggNOG
+
+    ..note::
+
+        load_description is optional
+    """
     _map_nog_func = None
     _map_nog_gene = None
     _map_nog_desc = None
     _map_gene_nog = None
 
-    def load_members(self, file_handle):
+    def __init__(self):
+        self._map_nog_gene = {}
+        self._map_gene_nog = {}
+        self._map_nog_desc = {}
+        self._map_nog_func = {}
 
+    def load_members(self, file_handle):
+        """
+        Loads data from NOG.members.txt.gz
+        """
         map_nog_gene = {}
 
         for line in file_handle:
@@ -282,11 +302,13 @@ class NOGInfo(object):
             except KeyError:
                 map_nog_gene[nog_id] = [gene_id]
 
-        self._map_nog_gene = map_nog_gene
-        self._map_gene_nog = dictionary.reverse_mapping(map_nog_gene)
+        self._map_nog_gene.update(map_nog_gene)
+        self._map_gene_nog.update(dictionary.reverse_mapping(map_nog_gene))
 
     def load_description(self, file_handle):
-
+        """
+        Loads data from NOG.description.txt.gz
+        """
         map_nog_desc = {}
 
         for line in file_handle:
@@ -299,10 +321,12 @@ class NOGInfo(object):
 
             map_nog_desc[nog_id] = nog_desc
 
-        self._map_nog_desc = map_nog_desc
+        self._map_nog_desc.update(map_nog_desc)
 
     def load_funccat(self, file_handle):
-
+        """
+        Loads data from NOG.funccat.txt.gz
+        """
         map_nog_func = {}
 
         for line in file_handle:
@@ -311,7 +335,7 @@ class NOGInfo(object):
 
             map_nog_func[nog_id] = nog_func
 
-        self._map_nog_func = map_nog_func
+        self._map_nog_func.update(map_nog_func)
 
     def get_nog_funccat(self, nog_id):
         try:
