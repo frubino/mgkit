@@ -324,3 +324,29 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
     )
 
     return series
+
+
+def load_deseq2_results(file_name, taxon_id=None):
+    """
+    .. versionadded:: 0.1.14
+
+    Reads a CSV file output with DESeq2 results, adding a taxon_id to the index
+    for concatenating multiple results from different taxonomic groups.
+
+    Arguments:
+        file_name (str): file name of the CSV
+    Returns:
+        pandas.DataFrame: a MultiIndex DataFrame with the results
+
+    """
+    dataframe = pandas.DataFrame.from_csv(file_name)
+
+    dataframe = dataframe.rename(
+        index=dict(
+            (gene_id, (gene_id, taxon_id))
+            for gene_id in dataframe.index
+        )
+    )
+    dataframe.index.names = ['gene_id', 'taxon_id']
+
+    return dataframe
