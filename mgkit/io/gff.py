@@ -9,6 +9,8 @@ approach.
 from __future__ import print_function
 from __future__ import division
 
+import random
+import itertools
 import logging
 import uuid
 import urllib
@@ -1191,3 +1193,55 @@ def group_annotations_by_ancestor(annotations, ancestors, taxonomy):
             unknown.append(annotation)
 
     return ann_dict, unknown
+
+
+def split_gff_file(file_handle, name_mask, num_files=2):
+    """
+    .. versionadded:: 0.1.14
+
+    Splits a GFF, or a list of them, into a number of files. It is assured that
+    annotations for the same sequence are kept in the same file, which is
+    useful for cases like filtering, even when the annotations are from
+    different GFF files.
+
+    Internally, a structure is kept to check if a sequence ID is already been
+    stored to a file, in which case the annotation is written to that file,
+    otherwise a random file handles (among the open ones) is chosen.
+
+    Arguments:
+        file_handle (str, list): a single or list of file handles (or file
+           names), from which the GFF annotations are read
+        name_mask (str): a string used as template for the output file names
+            on which the function applies :func:`string.format`
+        num_files (int): the number of files to split the records
+
+    Example:
+        >>> import glob
+        >>> files = glob.glob('*.gff')
+        >>> name_mask = 'split-file-{0}.gff'
+        >>> split_gff_file(files, name_mask, 5)
+    """
+    if isinstance(file_handle, str):
+        file_handle = [file_handle]
+
+    file_handle = itertools.chain(
+        *(mgkit.io.open_file(x, 'r') for x in file_handle)
+    )
+
+    out_handles = [
+        open(name_mask.format(filen), 'w')
+        for filen in xrange(num_files)
+    ]
+
+    seq_ids = {}
+
+    for line in file_handle:
+        seq_id = line.split('\t')[0]
+        try:
+            out_handle = out_handles[seq_ids[seq_id]]
+        except KeyError:
+            new_index = random.randint(0, num_files - 1)
+            seq_ids[seq_id] = new_index
+            out_handle = out_handles[new_index]
+
+        out_handle.write(line)
