@@ -392,3 +392,19 @@ def get_ko_to_eggnog_mappings(ko_ids, contact=None):
                     parsed_data[ko_id] = set([eggnog_id])
 
     return parsed_data
+
+
+def get_uniprot_ec_mappings(gene_ids, contact=None):
+    """
+    .. versionadded:: 0.1.14
+
+    Shortcut to download EC mapping of Uniprot IDs. Uses :func:`get_gene_info`
+    passing the correct column (*ec*).
+
+    """
+    return get_gene_info(
+        gene_ids,
+        columns=['ec'],
+        contact=contact,
+        max_req=100
+    )
