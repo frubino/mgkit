@@ -115,6 +115,9 @@ class GenomicRange(object):
 
         return None
 
+    def __or__(self, other):
+        return self.union(other)
+
     def expand_from_list(self, others):
         """
         Expand the :class:`GenomicRange` range instance with a list of
@@ -153,6 +156,9 @@ class GenomicRange(object):
                 return gen_range
 
         return None
+
+    def __and__(self, other):
+        return self.intersect(other)
 
     def get_range(self):
         """
