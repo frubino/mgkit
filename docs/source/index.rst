@@ -26,6 +26,7 @@ Contents:
 
    changes
 
+   examples/index
 
 Indices and tables
 ==================
