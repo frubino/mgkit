@@ -15,7 +15,7 @@ import logging
 import gzip
 import cStringIO
 import itertools
-
+from ..io import open_file
 from ..utils import dictionary
 
 LOG = logging.getLogger(__name__)
@@ -26,6 +26,9 @@ EGGNOG_CAT_NAMES = (
     'METABOLISM',
     'POORLY CHARACTERIZED'
 )
+"""
+Functional categories (broader)
+"""
 
 EGGNOG_CAT_KEYS = (
     ('J', 'A', 'K', 'L', 'B'),
@@ -33,11 +36,19 @@ EGGNOG_CAT_KEYS = (
     ('C', 'G', 'E', 'F', 'H', 'I', 'P', 'Q'),
     ('R', 'S')
 )
+"""
+Used to build map of broader categories (:data:`EGGNOG_CAT_NAMES`) to more
+specific ones
+"""
 
 EGGNOG_CAT_MAP = dict(
     (label, categories)
     for label, categories in zip(EGGNOG_CAT_NAMES, EGGNOG_CAT_KEYS)
 )
+"""
+Functional categories (broader, :data:`EGGNOG_CAT_NAMES`) mappings to more
+specific one (:data:`EGGNOG_CAT`).
+"""
 
 EGGNOG_CAT = {
 
@@ -74,6 +85,24 @@ EGGNOG_CAT = {
     'R': "General function prediction only",
     'S': "Function unknown"
 }
+"""
+Single letter functional categories
+"""
+
+
+def get_general_eggnog_cat(category):
+    """
+    .. versionadded:: 0.1.14
+
+    Returns the functional category (:data:`EGGNOG_CAT_NAMES` keys)
+    for the requested single letter functional category (:data:`EGGNOG_CAT`
+    keys)
+    """
+    return set(
+        gen_category
+        for gen_category, categories in EGGNOG_CAT_MAP.iteritems()
+        if category in categories
+    )
 
 
 class Kegg2NogMapper(kegg.KeggMapperBase):
@@ -147,11 +176,10 @@ class Kegg2NogMapper(kegg.KeggMapperBase):
 
     def get_cat_mapping_from_file(self, files=('COG.funccat.txt', 'NOG.funccat.txt', 'KOG.funccat.txt')):
         """
-        duplica funzionalita' in load_func_cat
+        Duplicate functionality of load_func_cat
 
-        Le categorie sono una singola lettera e le desrizioni son nel dizionario EGGNOG_CAT,
-        mentre le macro categorie si possono ricavare da EGGNOG_CAT_KEYS e EGGNOG_CAT_NAMES (con un ordine
-        corrispondente)
+        Categories are single letter and their descriptioons are in
+        :data:`EGGNOG_CAT`, while the broader categories :data:`EGGNOG_CAT_MAP`
         """
         for fname in files:
             f = open(fname, 'r')
@@ -263,10 +291,6 @@ class NOGInfo(object):
     """
     .. versionadded:: 0.1.14
 
-    ..warning::
-
-        experimental
-
     Mappings from Uniprot to eggNOG
 
     ..note::
@@ -274,9 +298,13 @@ class NOGInfo(object):
         load_description is optional
     """
     _map_nog_func = None
+    "eggNOG COG/NOG to functional category dictionary"
     _map_nog_gene = None
+    "eggNOG COG/NOG to gene id dictionary"
     _map_nog_desc = None
+    "eggNOG id to description dictionary"
     _map_gene_nog = None
+    "eggNOG gene id to COG/NOG dictionary"
 
     def __init__(self):
         self._map_nog_gene = {}
@@ -286,8 +314,13 @@ class NOGInfo(object):
 
     def load_members(self, file_handle):
         """
-        Loads data from NOG.members.txt.gz
+        Loads data from *NOG.members.txt.gz*
+
+        *file_handle* can either an open file or a path
         """
+        if isinstance(file_handle, str):
+            file_handle = open_file(file_handle, 'r')
+
         map_nog_gene = {}
 
         for line in file_handle:
@@ -307,8 +340,13 @@ class NOGInfo(object):
 
     def load_description(self, file_handle):
         """
-        Loads data from NOG.description.txt.gz
+        Loads data from *NOG.description.txt.gz*
+
+        *file_handle* can either an open file or a path
         """
+        if isinstance(file_handle, str):
+            file_handle = open_file(file_handle, 'r')
+
         map_nog_desc = {}
 
         for line in file_handle:
@@ -325,8 +363,13 @@ class NOGInfo(object):
 
     def load_funccat(self, file_handle):
         """
-        Loads data from NOG.funccat.txt.gz
+        Loads data from *NOG.funccat.txt.gz*
+
+        *file_handle* can either an open file or a path
         """
+        if isinstance(file_handle, str):
+            file_handle = open_file(file_handle, 'r')
+
         map_nog_func = {}
 
         for line in file_handle:
@@ -338,18 +381,43 @@ class NOGInfo(object):
         self._map_nog_func.update(map_nog_func)
 
     def get_nog_funccat(self, nog_id):
+        """
+        Returns the functional category (one letter, :data:`EGGNOG_CAT` keys)
+        for the requested eggNOG COG/NOG ID
+        """
         try:
             return self._map_nog_func[nog_id].copy()
         except KeyError:
             return set()
 
     def get_nogs_funccat(self, nog_ids):
+        """
+        Returns the functional categories for a list of COG/NOG IDs. Uses
+        :meth:`NOGInfo.get_nog_funccat`
+        """
 
         iterator = (self.get_nog_funccat(nog_id) for nog_id in nog_ids)
 
         return set(itertools.chain(*iterator))
 
+    def get_nog_gencat(self, nog_id):
+        """
+        Returns the functional category (:data:`EGGNOG_CAT_NAMES` keys)
+        for the requested eggNOG COG/NOG ID
+        """
+        return set(
+            itertools.chain(
+                *(
+                    get_general_eggnog_cat(funccat)
+                    for funccat in self.get_nog_funccat(nog_id)
+                )
+            )
+        )
+
     def get_gene_nog(self, gene_id):
+        """
+        Returns the COG/NOG ID of the requested eggNOG gene ID
+        """
         try:
             nog_ids = self._map_gene_nog[gene_id]
         except KeyError:
@@ -358,7 +426,10 @@ class NOGInfo(object):
         return nog_ids
 
     def get_gene_funccat(self, gene_id):
-
+        """
+        Returns the functional category (one letter, :data:`EGGNOG_CAT` keys)
+        for the requested eggNOG gene ID
+        """
         try:
             nog_ids = self._map_gene_nog[gene_id]
         except KeyError:
