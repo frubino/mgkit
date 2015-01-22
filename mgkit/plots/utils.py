@@ -6,25 +6,29 @@ Misc code
 """
 import logging
 
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 LOG = logging.getLogger(__name__)
 
 
-def get_single_figure(dpi=300, figsize=(10, 20)):
+def get_single_figure(dpi=300, figsize=(10, 20), aspect='auto'):
     """
+    .. versionchanged:: 0.1.14
+        added *aspect* parameter
+
     Simple wrapper to init a single figure
 
     Arguments:
         dpi (int): dpi used for the figure
         figsize (tuple): size of the figure in inches
+        aspect (str, float): aspect ratio to be passed to figure.add_subplot
 
     Returns:
         tuple: the figure and axes objects
     """
     fig = plt.figure(dpi=dpi, figsize=figsize)
-    ax = fig.add_subplot(111)
+    ax = fig.add_subplot(111, aspect=aspect)
     return fig, ax
 
 
