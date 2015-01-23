@@ -7,14 +7,14 @@ __VERSION__ = "0.1.14"
 from setuptools import setup, find_packages
 
 install_requires = [
-    'numpy>=1.7.1',
-    'pysam>=0.7.7',
-    'HTSeq>=0.5.4p5',
-    'pandas>=0.12.0',
-    'scipy>=0.13.0',
-    #'matplotlib>=1.3.1',
+    'numpy>=1.9.1',
+    'pysam>=0.8.1',
+    'HTSeq>=0.6.1p1',
+    'pandas>=0.15.1',
+    'scipy>=0.14.0',
+    #'matplotlib>=1.4.0',
     #'goatools',
-    # 'networkx>=1.8.1',
+    # 'networkx>=1.9',
 ]
 
 with open('README.rst') as file:
@@ -24,7 +24,8 @@ if sys.version_info < (2, 7):
     install_requires.append('argparse>=1.1')
 
 if sys.version_info < (3, 4):
-   install_requires.append('enum34') # support for enum backported from Python 3.4
+    #support for enum backported from Python 3.4
+    install_requires.append('enum34')
 
 setup(
     name="mgkit",
