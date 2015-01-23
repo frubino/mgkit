@@ -9,3 +9,5 @@ This section detailed information about the scripts included
    blast2gff
    filter-gff
    add-gff-info
+   get-gff-info
+

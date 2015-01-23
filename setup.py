@@ -51,6 +51,7 @@ setup(
             'filter_gff = mgkit.workflow.filter_gff_old:main',
             'filter-gff = mgkit.workflow.filter_gff:main',
             'add-gff-info = mgkit.workflow.add_gff_info:main',
+            'get-gff-info = mgkit.workflow.extract_gff_info:main',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'blast2gff = mgkit.workflow.blast2gff:main',
             'snp_parser = mgkit.workflow.snp_parser:main',
