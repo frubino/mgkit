@@ -6,8 +6,15 @@ import numpy
 import logging
 import itertools
 import pandas
+import pysam
 
 LOG = logging.getLogger(__name__)
+
+try:
+    from progress.bar import Bar
+except ImportError:
+    LOG.debug("Could not import progress module")
+    Bar = None
 
 
 def get_region_coverage(bam_file, seq_id, feat_from, feat_to):
@@ -42,6 +49,64 @@ def get_region_coverage(bam_file, seq_id, feat_from, feat_to):
     )
 
     return coverage
+
+
+def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
+    """
+    .. versionadded:: 0.1.14
+
+    Returns the number of base pairs covered of annotations over multiple
+    samples.
+
+    Arguments:
+        files (iterable): an iterable that returns the alignment file names
+        annotations (iterable): an iterable that returns annotations
+        min_cov (int): minumum coverage for a base to counted
+        progress (bool): if *True*, a progress bar is used
+
+    Returns:
+        dict: a dictionary whose keys are the uid and the values the number of
+        bases that are covered by reads among all samples
+
+    """
+    annotations = [
+        (annotation.uid, annotation.seq_id, annotation.start, annotation.end)
+        for annotation in annotations
+    ]
+
+    covered = {}
+
+    for file_name in files:
+        #pysam 0.8.1 changed Samfile to AlignmentFile
+        alg_file = pysam.AlignmentFile(file_name, 'rb')
+
+        if progress and (Bar is not None):
+            bar = Bar(
+                file_name,
+                max=len(annotations),
+                suffix='%(percent)d%% - %(eta_td)s'
+            )
+            bar.width = 64
+        else:
+            bar = None
+
+        for uid, seq_id, start, end in annotations:
+            cov = get_region_coverage(alg_file, seq_id, start, end)
+
+            try:
+                covered[uid] = cov.add(covered[uid], fill_value=0)
+            except KeyError:
+                covered[uid] = cov
+
+            if bar is not None:
+                bar.next()
+
+        if bar is not None:
+            bar.finish()
+
+    return dict(
+        (uid, len(cov[cov >= min_cov])) for uid, cov in covered.iteritems()
+    )
 
 
 def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):

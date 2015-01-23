@@ -88,7 +88,7 @@ copyright = u'2013, Francesco Rubino'
 #
 # The short X.Y version.
 
-__VERSION__ = '0.1.13'
+__VERSION__ = '0.1.14'
 
 version = __VERSION__
 # The full version, including alpha/beta/rc tags.
@@ -106,7 +106,7 @@ release = __VERSION__
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['**/.ipynb_checkpoints/']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

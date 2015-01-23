@@ -2,7 +2,7 @@
 Scaling functions for counts
 """
 
-import scipy
+from scipy import stats
 import numpy
 import pandas
 
@@ -30,7 +30,7 @@ def scale_factor_deseq(dataframe):
 
     """
     #calc the genes geometric mean over all samples
-    gmean = dataframe.apply(scipy.stats.gmean, axis=1)
+    gmean = dataframe.apply(stats.gmean, axis=1)
     #keeps only the genes whose geometric mean is > 0
     gmean = gmean[gmean > 0]
 
@@ -55,3 +55,22 @@ def scale_deseq(dataframe):
     scale_factors = scale_factor_deseq(dataframe)
 
     return dataframe / scale_factors
+
+
+def scale_rpkm(dataframe, gene_len):
+    """
+    .. versionadded:: 0.1.14
+
+    Perform an RPKM scaling of the pandas dataframe/series supplied using the
+    *gene_len* series containing the gene sizes for all elements of *dataframe*
+
+    .. math::
+
+        RPKM =\\frac {10^{9} \\cdot C} {N \\cdot L}
+
+    """
+
+    gene_len = gene_len[dataframe.index]
+    tot_reads = dataframe.sum().sum()
+
+    return 10**9 * dataframe.div(gene_len * tot_reads, axis='index')

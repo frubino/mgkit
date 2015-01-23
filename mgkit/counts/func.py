@@ -1,7 +1,7 @@
 """
 .. versionadded:: 0.1.13
 
-Misc function for count data
+Misc functions for count data
 """
 
 import logging
@@ -10,6 +10,7 @@ import pandas
 import functools
 from mgkit.filter import taxon as tx_filters
 from mgkit.io import open_file
+import mgkit.simple_cache
 
 LOG = logging.getLogger(__name__)
 
@@ -126,20 +127,25 @@ def filter_counts(counts_iter, info_func, gfilters=None, tfilters=None):
         except KeyError:
             continue
 
-        if tfilters:
-            for tfilter in tfilters:
-                if tfilter(taxon_id) is False:
-                    continue
-        if gfilters:
-            for gfilter in gfilters:
-                if gfilter(gene_id) is False:
-                    continue
+        if tfilters is not None:
+            if taxon_id is None:
+                continue
+
+            if not all(tfilter(taxon_id) for tfilter in tfilters):
+                continue
+
+        if gfilters is not None:
+            if not all(gfilter(taxon_id) for gfilter in gfilters):
+                continue
 
         yield uid, count
 
 
-def map_counts(counts_iter, info_func, gmapper=None, tmapper=None):
+def map_counts(counts_iter, info_func, gmapper=None, tmapper=None, index=None):
     """
+    .. versionchanged:: 0.1.14
+        added *index* parameter
+
     Maps counts according to the gmapper and tmapper functions. Each mapped
     gene ID count is the sum of all uid that have the same ID(s). The same is
     true for the taxa.
@@ -152,6 +158,9 @@ def map_counts(counts_iter, info_func, gmapper=None, tmapper=None):
             of mapped IDs
         tmapper (func): fucntion that accepts a *taxon_id* and returns a new
             *taxon_id*
+        index (None, str): if None, the index of the Series if
+            *(gene_id, taxon_id)*, if a str, it can be either *gene* or *taxon*,
+            to specify a single value
 
     Returns:
         pandas.Series: array with MultiIndex *(gene_id, taxon_id)* with the
@@ -176,7 +185,12 @@ def map_counts(counts_iter, info_func, gmapper=None, tmapper=None):
                 continue
 
         for map_id in gene_ids:
-            key = (map_id, taxon_id)
+            if index is None:
+                key = (map_id, taxon_id)
+            elif index == 'gene':
+                key = map_id
+            elif index == 'taxon':
+                key = taxon_id
 
             try:
                 mapped_counts[key] += count
@@ -204,7 +218,11 @@ def map_taxon_id_to_rank(taxonomy, rank, taxon_id, include_higher=True):
         (int, None): if the mapping is successful, the ranked taxon_id is
         returned, otherwise *None* is returned
     """
+    if taxon_id is None:
+        return None
+
     ranked = taxonomy.get_ranked_taxon(taxon_id, rank)
+
     if (include_higher is False) and (ranked.rank != rank):
         return None
     return ranked.taxon_id
@@ -219,8 +237,12 @@ def map_gene_id_to_map(gene_map, gene_id):
 
 
 def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
-                       rank=None, gene_map=None, ex_anc=None):
+                       rank=None, gene_map=None, ex_anc=None,
+                       include_higher=True, cached=False):
     """
+    .. versionchanged:: 0.1.14
+        added *cached* argument
+
     Reads sample counts, filtering and mapping them if requested. It's an
     example of the usage of the above functions.
 
@@ -233,12 +255,20 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         rank (str): rank to which map the counts
         gene_map (dict): dictionary with the gene mappings
         ex_anc (int, list): ancestor taxa to exclude
+        include_higher (bool): if False, any rank different than the requested
+            one is discarded
+        cached (bool): if *True*, the function will use
+            :class:`mgkit.simple_cache.memoize` to cache some of the functions
+            used
 
     Returns:
         pandas.Series: array with MultiIndex *(gene_id, taxon_id)* with the
         filtered and mapped counts
     """
-    info_func = functools.partial(get_uid_info, info_dict)
+    if isinstance(info_dict[info_dict.keys()[0]], tuple):
+        info_func = functools.partial(get_uid_info, info_dict)
+    else:
+        info_func = functools.partial(get_uid_info_ann, info_dict)
 
     tfilters = []
 
@@ -265,6 +295,12 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
             )
         )
 
+    if cached:
+        tfilters = [
+            mgkit.simple_cache.memoize(tfilter)
+            for tfilter in tfilters
+        ]
+
     gmapper = None
     tmapper = None
 
@@ -272,14 +308,19 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         tmapper = functools.partial(
             map_taxon_id_to_rank,
             taxonomy,
-            rank
+            rank,
+            include_higher=include_higher
         )
+        if cached:
+            tmapper = mgkit.simple_cache.memoize(tmapper)
 
     if gene_map is not None:
         gmapper = functools.partial(
             map_gene_id_to_map,
             gene_map
         )
+        if cached:
+            gmapper = mgkit.simple_cache.memoize(gmapper)
 
     series = map_counts(
         filter_counts(
@@ -294,3 +335,199 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
     )
 
     return series
+
+
+def load_sample_counts_to_taxon(info_func, counts_iter, taxonomy, inc_anc=None,
+                                rank=None, ex_anc=None, include_higher=True,
+                                cached=True):
+    """
+    .. versionadded:: 0.1.14
+
+    Reads sample counts, filtering and mapping them if requested. It's a
+    variation of :func:`load_sample_counts`, with the counts being mapped only
+    to each specific taxon. Another difference is the absence of any assumption
+    on the first parameter. It is expected to return a (gene_id, taxon_id)
+    tuple.
+
+    Arguments:
+        info_func (callable): any callable that accept an *uid* as the only
+            parameter and and returns *(gene_id, taxon_id)* as value
+        counts_iter (iterable): iterable that yields a *(uid, count)*
+        taxonomy: taxonomy instance
+        inc_anc (int, list): ancestor taxa to include
+        rank (str): rank to which map the counts
+        ex_anc (int, list): ancestor taxa to exclude
+        include_higher (bool): if False, any rank different than the requested
+            one is discarded
+        cached (bool): if *True*, the function will use
+            :class:`mgkit.simple_cache.memoize` to cache some of the functions
+            used
+
+    Returns:
+        pandas.Series: array with Index *taxon_id* with the filtered and mapped
+        counts
+    """
+    tfilters = []
+
+    if inc_anc is not None:
+        if not isinstance(inc_anc, (list, set, tuple)):
+            inc_anc = [inc_anc]
+        tfilters.append(
+            functools.partial(
+                tx_filters.filter_by_ancestor,
+                filter_list=inc_anc,
+                exclude=False,
+                taxonomy=taxonomy
+            )
+        )
+    if ex_anc is not None:
+        if not isinstance(ex_anc, (list, set, tuple)):
+            ex_anc = [ex_anc]
+        tfilters.append(
+            functools.partial(
+                tx_filters.filter_by_ancestor,
+                filter_list=ex_anc,
+                exclude=True,
+                taxonomy=taxonomy
+            )
+        )
+
+    if cached:
+        tfilters = [
+            mgkit.simple_cache.memoize(tfilter)
+            for tfilter in tfilters
+        ]
+
+    tmapper = None
+
+    if rank is not None:
+        tmapper = functools.partial(
+            map_taxon_id_to_rank,
+            taxonomy,
+            rank,
+            include_higher=include_higher
+        )
+        if cached:
+            tmapper = mgkit.simple_cache.memoize(tmapper)
+
+    series = map_counts(
+        filter_counts(
+            counts_iter,
+            info_func,
+            gfilters=None,
+            tfilters=tfilters
+        ),
+        info_func,
+        tmapper=tmapper,
+        index='taxon'
+    )
+
+    return series
+
+
+def load_sample_counts_to_genes(info_func, counts_iter, taxonomy, inc_anc=None,
+                                gene_map=None, ex_anc=None, cached=True):
+    """
+    .. versionadded:: 0.1.14
+
+    Reads sample counts, filtering and mapping them if requested. It's a
+    variation of :func:`load_sample_counts`, with the counts being mapped only
+    to each specific gene_id. Another difference is the absence of any
+    assumption on the first parameter. It is expected to return a
+    (gene_id, taxon_id) tuple.
+
+    Arguments:
+        info_func (callable): any callable that accept an *uid* as the only
+            parameter and and returns *(gene_id, taxon_id)* as value
+        counts_iter (iterable): iterable that yields a *(uid, count)*
+        taxonomy: taxonomy instance
+        inc_anc (int, list): ancestor taxa to include
+        rank (str): rank to which map the counts
+        gene_map (dict): dictionary with the gene mappings
+        ex_anc (int, list): ancestor taxa to exclude
+        cached (bool): if *True*, the function will use
+            :class:`mgkit.simple_cache.memoize` to cache some of the functions
+            used
+
+    Returns:
+        pandas.Series: array with Index *gene_id* with the filtered and mapped
+        counts
+    """
+    tfilters = []
+
+    if inc_anc is not None:
+        if not isinstance(inc_anc, (list, set, tuple)):
+            inc_anc = [inc_anc]
+        tfilters.append(
+            functools.partial(
+                tx_filters.filter_by_ancestor,
+                filter_list=inc_anc,
+                exclude=False,
+                taxonomy=taxonomy
+            )
+        )
+    if ex_anc is not None:
+        if not isinstance(ex_anc, (list, set, tuple)):
+            ex_anc = [ex_anc]
+        tfilters.append(
+            functools.partial(
+                tx_filters.filter_by_ancestor,
+                filter_list=ex_anc,
+                exclude=True,
+                taxonomy=taxonomy
+            )
+        )
+
+    if cached:
+        tfilters = [
+            mgkit.simple_cache.memoize(tfilter)
+            for tfilter in tfilters
+        ]
+
+    if gene_map is not None:
+        gmapper = functools.partial(
+            map_gene_id_to_map,
+            gene_map
+        )
+        if cached:
+            gmapper = mgkit.simple_cache.memoize(gmapper)
+
+    series = map_counts(
+        filter_counts(
+            counts_iter,
+            info_func,
+            gfilters=None,
+            tfilters=tfilters
+        ),
+        info_func,
+        gmapper=gmapper,
+        index='gene'
+    )
+
+    return series
+
+
+def load_deseq2_results(file_name, taxon_id=None):
+    """
+    .. versionadded:: 0.1.14
+
+    Reads a CSV file output with DESeq2 results, adding a taxon_id to the index
+    for concatenating multiple results from different taxonomic groups.
+
+    Arguments:
+        file_name (str): file name of the CSV
+    Returns:
+        pandas.DataFrame: a MultiIndex DataFrame with the results
+
+    """
+    dataframe = pandas.DataFrame.from_csv(file_name)
+
+    dataframe = dataframe.rename(
+        index=dict(
+            (gene_id, (gene_id, taxon_id))
+            for gene_id in dataframe.index
+        )
+    )
+    dataframe.index.names = ['gene_id', 'taxon_id']
+
+    return dataframe

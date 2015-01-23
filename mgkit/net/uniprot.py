@@ -340,3 +340,71 @@ def parse_uniprot_response(data, simple=True):
             )
 
     return parsed_data
+
+
+def get_ko_to_eggnog_mappings(ko_ids, contact=None):
+    """
+    .. versionadded:: 0.1.14
+
+    It's not possible to map in one go KO IDs to eggNOG IDs via the API in
+    Uniprot. This function uses :func:`query_uniprot` to get all Uniprot IDs
+    requested and the return a dictionary with all their eggNOG IDs they map to.
+
+    Arguments:
+        ko_ids (iterable): an iterable of KO IDs
+        contact (str): email address to be passed in the query (requested
+            Uniprot API)
+
+    Returns:
+        dict: The format of the resulting dictionary is
+        ko_id -> {eggnog_id1, ..}
+    """
+
+    data = query_uniprot(
+        "database:(type:ko AND ({}))".format(' OR '.join(list(ko_ids))),
+        columns=['database(KO)', 'database(EGGNOG)'],
+        contact=contact
+    )
+
+    data = data.splitlines()
+
+    del data[0]
+
+    parsed_data = {}
+
+    for line in data:
+        ko_ids, eggnog_ids = line.split('\t')
+        ko_ids = ko_ids.split(';')
+
+        for ko_id in ko_ids:
+            if not ko_id:
+                continue
+            if not eggnog_ids:
+                continue
+
+            for eggnog_id in eggnog_ids.split(';'):
+                if not eggnog_id:
+                    continue
+
+                try:
+                    parsed_data[ko_id].add(eggnog_id)
+                except KeyError:
+                    parsed_data[ko_id] = set([eggnog_id])
+
+    return parsed_data
+
+
+def get_uniprot_ec_mappings(gene_ids, contact=None):
+    """
+    .. versionadded:: 0.1.14
+
+    Shortcut to download EC mapping of Uniprot IDs. Uses :func:`get_gene_info`
+    passing the correct column (*ec*).
+
+    """
+    return get_gene_info(
+        gene_ids,
+        columns=['ec'],
+        contact=contact,
+        max_req=100
+    )
