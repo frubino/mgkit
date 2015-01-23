@@ -6,7 +6,7 @@ from mgkit.io import fasta
 data_dir = 'misc_data'
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
-### GFF data
+# GFF data
 gff_name = 'test.gff'
 
 try:
@@ -26,7 +26,7 @@ def setup_gff_data():
                 data_dir
             )
         )
-### HMMER data
+# HMMER data
 hmmer_name = 'test-hmmer-dom.txt'
 
 try:
@@ -47,7 +47,7 @@ def setup_hmmer_data():
             )
         )
 
-### AA sequences data
+# AA sequences data
 aa_name = 'test-seq-aa.fa'
 
 try:
@@ -69,7 +69,7 @@ def setup_aaseq_data():
             )
         )
 
-### NUC sequences data
+# NUC sequences data
 nuc_name = 'test-seq-nuc.fa'
 
 try:
@@ -91,7 +91,7 @@ def setup_nucseq_data():
             )
         )
 
-### GLIMMER3 data
+# GLIMMER3 data
 
 glimmer3 = 'glimmer3.txt'
 
@@ -113,7 +113,7 @@ def setup_glimmer3_data():
         )
 
 
-### Kegg modules
+# Kegg modules
 
 keggmod1 = 'kmod-entry1.txt'
 
@@ -126,10 +126,7 @@ except IOError:
 
 
 def setup_keggmod_data():
+    err_msg = 'No Kegg module entries file found: expecting file "{0}"'
+    err_msg += ' in dir {1}'
     if KEGGMOD_FILE is None:
-        raise SkipTest(
-            'No Kegg module entries file found: expecting file "{0}" in dir {1}'.format(
-                keggmod1,
-                data_dir
-            )
-        )
+        raise SkipTest(err_msg.format(keggmod1, data_dir))

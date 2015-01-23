@@ -29,14 +29,14 @@ def scale_factor_deseq(dataframe):
            }
 
     """
-    #calc the genes geometric mean over all samples
+    # calc the genes geometric mean over all samples
     gmean = dataframe.apply(stats.gmean, axis=1)
-    #keeps only the genes whose geometric mean is > 0
+    # keeps only the genes whose geometric mean is > 0
     gmean = gmean[gmean > 0]
 
     sample_factors = {}
 
-    #calc the scaling factor for each sample
+    # calc the scaling factor for each sample
     for sample, genes in dataframe.iterkv():
 
         scale_factor = numpy.median(genes.loc[gmean.index] / gmean)
@@ -73,4 +73,4 @@ def scale_rpkm(dataframe, gene_len):
     gene_len = gene_len[dataframe.index]
     tot_reads = dataframe.sum().sum()
 
-    return 10**9 * dataframe.div(gene_len * tot_reads, axis='index')
+    return (10 ** 9) * dataframe.div(gene_len * tot_reads, axis='index')

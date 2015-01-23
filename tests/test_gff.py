@@ -1,7 +1,5 @@
 from nose.tools import *
 
-import misc_data
-
 from mgkit.io import gff
 
 

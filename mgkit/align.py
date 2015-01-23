@@ -77,7 +77,7 @@ def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
     covered = {}
 
     for file_name in files:
-        #pysam 0.8.1 changed Samfile to AlignmentFile
+        # pysam 0.8.1 changed Samfile to AlignmentFile
         alg_file = pysam.AlignmentFile(file_name, 'rb')
 
         if progress and (Bar is not None):
@@ -113,7 +113,7 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
     """
     Adds coverage information to annotations, using BAM files.
 
-    Thee coverage information is added for each sample as a 'sample_cov' and the
+    The coverage information is added for each sample as a 'sample_cov' and the
     total coverage as as 'cov' attribute in the annotations.
 
     .. note::
@@ -139,9 +139,9 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
                 annotation.start,
                 annotation.end
             )
-            #adds the results of the coverage to the total coverage
-            #uses the add method of a Series to make sure that possible
-            #nan values are filled with 0 before the sum
+            # adds the results of the coverage to the total coverage
+            # uses the add method of a Series to make sure that possible
+            # nan values are filled with 0 before the sum
             try:
                 tot_coverage[annotation.uid] = sample_coverage.add(
                     tot_coverage[annotation.uid],

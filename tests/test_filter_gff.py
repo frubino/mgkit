@@ -6,7 +6,7 @@ from mgkit.filter.gff import *
 
 
 def test_choose_annotation_contained1():
-    #same size, better score
+    # same size, better score
     a = Annotation(start=1, end=10, bitscore=10)
     b = Annotation(start=1, end=10, bitscore=15)
     eq_(
@@ -16,7 +16,7 @@ def test_choose_annotation_contained1():
 
 
 def test_choose_annotation_contained2():
-    #same score, longer
+    # same score, longer
     a = Annotation(start=1, end=10, bitscore=10)
     b = Annotation(start=5, end=10, bitscore=10)
     eq_(
@@ -26,7 +26,7 @@ def test_choose_annotation_contained2():
 
 
 def test_choose_annotation_overlap1():
-    #overlapping, better score
+    # overlapping, better score
     a = Annotation(start=1, end=10, bitscore=10)
     b = Annotation(start=5, end=11, bitscore=15)
     eq_(
@@ -36,7 +36,7 @@ def test_choose_annotation_overlap1():
 
 
 def test_choose_annotation_overlap2():
-    #overlapping, same score, choose longer
+    # overlapping, same score, choose longer
     a = Annotation(start=1, end=11, bitscore=10)
     b = Annotation(start=5, end=11, bitscore=10)
     eq_(
@@ -46,7 +46,7 @@ def test_choose_annotation_overlap2():
 
 
 def test_choose_annotation_none1():
-    #no overlap
+    # no overlap
     a = Annotation(start=1, end=10, bitscore=10)
     b = Annotation(start=11, end=12, bitscore=10)
     eq_(
@@ -56,7 +56,7 @@ def test_choose_annotation_none1():
 
 
 def test_choose_annotation_none2():
-    #overlap lower than the limits
+    # overlap lower than the limits
     a = Annotation(start=1, end=10, bitscore=10)
     b = Annotation(start=9, end=12, bitscore=10)
     eq_(
@@ -115,7 +115,7 @@ def test_filter_base_fail2():
 
 
 def test_filter_len_ge_ok1():
-    #equal
+    # equal
     a = Annotation(start=1, end=2)
     eq_(
         filter_len(a, 2, True),
@@ -124,7 +124,7 @@ def test_filter_len_ge_ok1():
 
 
 def test_filter_len_le_ok1():
-    #equal
+    # equal
     a = Annotation(start=1, end=2)
     eq_(
         filter_len(a, 2, False),
@@ -133,7 +133,7 @@ def test_filter_len_le_ok1():
 
 
 def test_filter_len_ge_ok2():
-    #greater
+    # greater
     a = Annotation(start=1, end=3)
     eq_(
         filter_len(a, 2, True),
@@ -142,7 +142,7 @@ def test_filter_len_ge_ok2():
 
 
 def test_filter_len_le_ok2():
-    #lower
+    # lower
     a = Annotation(start=1, end=3)
     eq_(
         filter_len(a, 5, False),

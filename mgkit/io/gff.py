@@ -187,7 +187,9 @@ class Annotation(GenomicRange):
     attr = None
     "Dictionary with the key value pairs in the last column of a GFF/GTF"
 
-    def __init__(self, seq_id='None', start=1, end=1, strand='+', source='None', feat_type='None', score=0.0, phase=0, uid=None, **kwd):
+    def __init__(self, seq_id='None', start=1, end=1, strand='+',
+                 source='None', feat_type='None', score=0.0, phase=0, uid=None,
+                 **kwd):
         super(Annotation, self).__init__(
             seq_id=seq_id,
             start=start,
@@ -318,7 +320,7 @@ class Annotation(GenomicRange):
         """
         value = self.attr.get('uid', None)
         if value is None:
-            #old data where the unique id is marked as ko_idx
+            # old data where the unique id is marked as ko_idx
             value = self.attr.get('ko_idx', None)
 
         return value
@@ -333,7 +335,7 @@ class Annotation(GenomicRange):
         try:
             return float(self.attr['bitscore'])
         except KeyError:
-            #legacy for old data
+            # legacy for old data
             bitscore = self.attr.get('bit_score', None)
             return None if bitscore is None else float(bitscore)
 
@@ -347,7 +349,7 @@ class Annotation(GenomicRange):
         try:
             return self.attr['gene_id']
         except KeyError:
-            #legacy for old data
+            # legacy for old data
             return self.attr.get('ko', None)
 
     @gene_id.setter
@@ -376,7 +378,7 @@ class Annotation(GenomicRange):
             :func:`mgkit.utils.sequnce.get_seq_expected_syn_count`
 
         """
-        seq = seq[self.start-1:self.end]
+        seq = seq[self.start - 1:self.end]
 
         if self.strand == '-':
             seq = seq_utils.reverse_complement(seq)
@@ -475,7 +477,8 @@ class Annotation(GenomicRange):
         """
         .. versionadded:: 0.1.13
 
-        Generic method to get an attribute and convert it to a specific datatype
+        Generic method to get an attribute and convert it to a specific
+        datatype
         """
         try:
             value = self.attr[attr]
@@ -530,7 +533,7 @@ class Annotation(GenomicRange):
         annotation's strand is *-*, and *reverse* is True, the reverse
         complement is returned.
         """
-        ann_seq = seq[self.start-1:self.end]
+        ann_seq = seq[self.start - 1:self.end]
 
         if (self.strand == '-') and reverse:
             ann_seq = seq_utils.reverse_complement(ann_seq)
@@ -619,10 +622,10 @@ def from_gff(line):
     line = line.rstrip()
     line = line.split('\t')
 
-    #in case the last column (attributes) is empty
+    # in case the last column (attributes) is empty
     if len(line) < 9:
         values = line
-        #bug in which the phase was not written
+        # bug in which the phase was not written
         if len(line[-1]) > 1:
             line.insert(-1, 0)
     else:
@@ -632,24 +635,25 @@ def from_gff(line):
         'seq_id', 'source', 'feat_type', 'start', 'end',
         'score', 'strand', 'phase'
     )
-    #the phase sometimes can be set as unknown, using '-'. We prefer using 0
-    var_types = (str, str, str, int, int, float, str, lambda x: 0 if x == '' else int(x))
+    # the phase sometimes can be set as unknown, using '-'. We prefer using 0
+    var_types = (str, str, str, int, int, float, str,
+                 lambda x: 0 if x == '' else int(x))
 
     attr = {}
 
     for var, value, vtype in zip(var_names, values, var_types):
         attr[var] = vtype(value)
 
-    #in case the last column (attributes) is empty
+    # in case the last column (attributes) is empty
     if len(line) < 9:
         return Annotation(**attr)
 
     for pair in line[-1].split(';'):
         try:
-            #by default the key,value separator '=' is assumed to be used
+            # by default the key,value separator '=' is assumed to be used
             var, value = pair.strip().split('=', 1)
         except ValueError:
-            #in case it doesn't work, it is assumed to be a space
+            # in case it doesn't work, it is assumed to be a space
             var, value = pair.strip().split(' ', 1)
 
         if var in attr:
@@ -664,7 +668,8 @@ def from_sequence(name, seq, feat_type='CDS', **kwd):
     """
     .. versionadded:: 0.1.12
 
-    Returns an instance of :class:`Annotation` for the full length of a sequence
+    Returns an instance of :class:`Annotation` for the full length of a
+    sequence
 
     Arguments:
         name (str): name of the sequence
@@ -714,8 +719,8 @@ def from_aa_blast_frag(hit, parent_ann, aa_seqs):
         seq_id=parent_ann.seq_id,
         source='BLAST',
         feat_type='CDS',
-        start=start+parent_ann.start-1,
-        end=end+parent_ann.start-1,
+        start=start + parent_ann.start - 1,
+        end=end + parent_ann.start - 1,
         score=bitscore,
         strand=strand,
         phase=frame,
@@ -741,8 +746,8 @@ def from_nuc_blast_frag(hit, parent_ann, db='NCBI-NT'):
         seq_id=parent_ann.seq_id,
         source='BLAST',
         feat_type='CDS',
-        start=start+parent_ann.start-1,
-        end=end+parent_ann.start-1,
+        start=start + parent_ann.start - 1,
+        end=end + parent_ann.start - 1,
         score=bitscore,
         strand=strand,
         phase=0,
@@ -890,7 +895,8 @@ def diff_gff(files, key_func=None):
         return
 
     if key_func is None:
-        key_func = lambda x: (x.seq_id, x.strand, x.start, x.end, x.gene_id, x.bitscore)
+        key_func = lambda x: (x.seq_id, x.strand, x.start, x.end, x.gene_id,
+                              x.bitscore)
 
     gff_diff = {}
 
@@ -967,7 +973,8 @@ def elongate_annotations(annotations):
         if union is None:
             ranges.add((ann1.start, ann1.end))
         else:
-            annotations = sorted(set(annotations) - used, key=lambda x: x.start)
+            annotations = sorted(set(annotations) - used,
+                                 key=lambda x: x.start)
             ranges.add(union)
 
     return ranges
@@ -977,18 +984,18 @@ def annotation_coverage(annotations, seqs, strand=True):
     """
     .. versionadded:: 0.1.12
 
-    Given a list of annotations and a dictionary where the keys are the sequence
-    names referred in the annotations and the values are the sequences
-    themselves, returns a number which indicated how much the sequence length is
-    "covered" in annotations. If *strand* is True the coverage is strand
+    Given a list of annotations and a dictionary where the keys are the
+    sequence names referred in the annotations and the values are the sequences
+    themselves, returns a number which indicated how much the sequence length
+    is "covered" in annotations. If *strand* is True the coverage is strand
     specific.
 
     Arguments:
         annotations (iterable): iterable of :class:`Annotation` instances
-        seqs (dict): dictionary in which the keys are the sequence names and the
-            the values are the sequneces
-        strand (bool): if True, the values are strand specific (the annotations)
-            are grouped by (seq_id, strand) instead of seq_id
+        seqs (dict): dictionary in which the keys are the sequence names and
+            the values are the sequences
+        strand (bool): if True, the values are strand specific (the
+            annotations) are grouped by (seq_id, strand) instead of seq_id
 
     Yields:
         tuple: the first element is the key, (seq_id, strand) if *strand* is
@@ -1053,7 +1060,8 @@ def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
     return grouped
 
 
-def group_annotations_sorted(annotations, key_func=lambda x: (x.seq_id, x.strand)):
+def group_annotations_sorted(annotations,
+                             key_func=lambda x: (x.seq_id, x.strand)):
     """
     .. versionadded:: 0.1.13
 
@@ -1118,19 +1126,19 @@ def correct_old_annotations(annotations, taxonomy):
     LOG.debug('Correcting old annotations')
 
     for annotation in annotations:
-        #a taxon id from blast
-        if ('blast_taxon_idx' in annotation.attr):
+        # a taxon id from blast
+        if 'blast_taxon_idx' in annotation.attr:
             taxon_id = annotation.attr['blast_taxon_idx']
-        #a taxon id from profile
+        # a taxon id from profile
         elif 'taxon_id' in annotation.attr:
             taxon_id = annotation.taxon_id
-        #a taxon name is provided
+        # a taxon name is provided
         else:
-            #if a taxon_name contains the id
+            # if a taxon_name contains the id
             if len(annotation.attr['taxon'].split('.')) == 2:
                 taxon_id = annotation.attr['taxon'].split('.')[1]
-            #if a taxon_name DOESN'T contains the id try to reverse
-            #it using the taxonomy (if provided), using the first matching ID
+            # if a taxon_name DOESN'T contains the id try to reverse
+            # it using the taxonomy (if provided), using the first matching ID
             else:
                 taxon_name = annotation.attr['taxon'].replace('#', ' ')
 
@@ -1153,9 +1161,10 @@ def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid,
 
     Arguments:
         annotations (iterable): iterable of :class:`Annotation` instances
-        seqs (dict): dictionary with the sequences referenced in the annotations
-        name_func (func): function used to extract the sequence name to be used,
-            defaults to the uid of the annotation
+        seqs (dict): dictionary with the sequences referenced in the
+            annotations
+        name_func (func): function used to extract the sequence name to be
+            used, defaults to the uid of the annotation
         reverse (bool): if True the annotations on the *-* strand are reverse
             complemented
 

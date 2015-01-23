@@ -8,7 +8,7 @@ import collections
 from . import gff
 from . import open_file
 
-NUM_LINES = 10**6
+NUM_LINES = 10 ** 6
 
 LOG = logging.getLogger(__name__)
 
@@ -132,7 +132,7 @@ def add_blast_result_to_annotation(annotation, gi_taxa_dict, taxonomy,
         return
 
     try:
-        #skips if the ID is not in the Uniprot Taxonomy
+        # skips if the ID is not in the Uniprot Taxonomy
         annotation.attributes.blast_taxon = taxonomy[hit.taxon_id].s_name
         annotation.attributes.blast_taxon_idx = hit.taxon_id
     except KeyError:
@@ -159,8 +159,8 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
 
     Yields:
         tuple: iterator of tuples with the first element being the query id
-            after key_func is applied, if requested and the second element of the
-            tuple is a tuple with the requested columns *ret_col*
+            after key_func is applied, if requested and the second element of
+            the tuple is a tuple with the requested columns *ret_col*
 
     .. table:: BLAST+ used with `-outfmt 6`, default columns
 
@@ -261,7 +261,7 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
     if name_func is None:
         name_func = lambda x: x.split('|')[1]
 
-    #the second function extract the Uniprot ID from the sequence header
+    # the second function extract the Uniprot ID from the sequence header
     value_funcs = (
         str,
         name_func,
@@ -320,7 +320,7 @@ def parse_fragment_blast(file_handle, bitscore=40.0):
             uidmap[uid] = [hit]
 
     for uid, hits in uidmap.iteritems():
-        #returns the hit with the max bitscore and max identity
+        # returns the hit with the max bitscore and max identity
         yield uid, hits
 
 

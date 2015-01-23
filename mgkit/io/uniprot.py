@@ -9,7 +9,7 @@ from . import open_file
 
 LOG = logging.getLogger(__name__)
 
-NUM_LINES = 10**7
+NUM_LINES = 10 ** 7
 
 
 MAPPINGS = {

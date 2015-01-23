@@ -29,7 +29,7 @@ def test_genesyn_init2():
 
 
 def test_genesyn_calc_ratio1():
-    #syn and nonsyn > 0
+    # syn and nonsyn > 0
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -45,7 +45,7 @@ def test_genesyn_calc_ratio1():
 
 
 def test_genesyn_calc_ratio2():
-    #syn = nonsyn = 0, haplotypes=True
+    # syn = nonsyn = 0, haplotypes=True
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -61,8 +61,8 @@ def test_genesyn_calc_ratio2():
 
 
 def test_genesyn_calc_ratio3a():
-    #syn = nonsyn = 0
-    #enough coverage
+    # syn = nonsyn = 0
+    # enough coverage
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -79,7 +79,7 @@ def test_genesyn_calc_ratio3a():
 
 
 def test_genesyn_add1():
-    #checks if the conserved gene_id and taxon_id is from the first instance
+    # checks if the conserved gene_id and taxon_id is from the first instance
     gs1 = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -103,7 +103,7 @@ def test_genesyn_add1():
 
 
 def test_genesyn_add2():
-    #checks if the values (syn, nonsyn, exp_syn, exp_nonsyn) are added
+    # checks if the values (syn, nonsyn, exp_syn, exp_nonsyn) are added
     gs1 = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -127,8 +127,8 @@ def test_genesyn_add2():
 
 
 def test_genesyn_add3():
-    #checks if the values if coverage is correctly added
-    #coverage in gs2 is not None, in gs1 is None
+    # checks if the values if coverage is correctly added
+    # coverage in gs2 is not None, in gs1 is None
     gs1 = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -152,8 +152,8 @@ def test_genesyn_add3():
 
 
 def test_genesyn_add4():
-    #checks if the values if coverage is correctly added
-    #coverage in gs2 is not None, in gs1 is not None
+    # checks if the values if coverage is correctly added
+    # coverage in gs2 is not None, in gs1 is not None
     gs1 = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -178,8 +178,8 @@ def test_genesyn_add4():
 
 
 def test_genesyn_add5():
-    #checks if the values if coverage is correctly added
-    #coverage in gs2 is None, in gs1 is None
+    # checks if the values if coverage is correctly added
+    # coverage in gs2 is None, in gs1 is None
     gs1 = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -202,8 +202,8 @@ def test_genesyn_add5():
 
 
 def test_genesyn_calc_ratio3b():
-    #syn = nonsyn = 0
-    #coverage is None
+    # syn = nonsyn = 0
+    # coverage is None
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -216,8 +216,8 @@ def test_genesyn_calc_ratio3b():
 
 
 def test_genesyn_calc_ratio3c():
-    #syn = nonsyn = 0
-    #coverage is < min_cov
+    # syn = nonsyn = 0
+    # coverage is < min_cov
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -231,8 +231,8 @@ def test_genesyn_calc_ratio3c():
 
 
 def test_genesyn_calc_ratio4a():
-    #nonsyn != 0, syn > 0
-    #flag_value=True
+    # nonsyn != 0, syn > 0
+    # flag_value=True
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -249,8 +249,8 @@ def test_genesyn_calc_ratio4a():
 
 
 def test_genesyn_calc_ratio4b():
-    #nonsyn != 0, syn > 0
-    #flas_value=False
+    # nonsyn != 0, syn > 0
+    # flag_value=False
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -264,8 +264,8 @@ def test_genesyn_calc_ratio4b():
 
 
 def test_genesyn_calc_ratio5a():
-    #nonsyn = 0, syn != 0
-    #flag_value=True
+    # nonsyn = 0, syn != 0
+    # flag_value=True
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -282,8 +282,8 @@ def test_genesyn_calc_ratio5a():
 
 
 def test_genesyn_calc_ratio5b():
-    #nonsyn = 0, syn != 0
-    #flas_value=False
+    # nonsyn = 0, syn != 0
+    # flag_value=False
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -297,8 +297,8 @@ def test_genesyn_calc_ratio5b():
 
 
 def test_genesyn_calc_ratio6a():
-    #nonsyn = syn = 0
-    #flag_value=True
+    # nonsyn = syn = 0
+    # flag_value=True
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -315,8 +315,8 @@ def test_genesyn_calc_ratio6a():
 
 
 def test_genesyn_calc_ratio6b():
-    #nonsyn = syn = 0
-    #flas_value=False
+    # nonsyn = syn = 0
+    # flag_value=False
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -330,8 +330,8 @@ def test_genesyn_calc_ratio6b():
 
 
 def test_genesyn_calc_ratio7a():
-    #exp_nonsyn or exp_syn = 0
-    #or any other case
+    # exp_nonsyn or exp_syn = 0
+    # or any other case
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -345,8 +345,8 @@ def test_genesyn_calc_ratio7a():
 
 
 def test_genesyn_calc_ratio7b():
-    #exp_nonsyn or exp_syn = 0
-    #or any other case
+    # exp_nonsyn or exp_syn = 0
+    # or any other case
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -360,8 +360,8 @@ def test_genesyn_calc_ratio7b():
 
 
 def test_genesyn_calc_ratio7c():
-    #exp_nonsyn or exp_syn = 0
-    #or any other case
+    # exp_nonsyn or exp_syn = 0
+    # or any other case
     gs = GeneSyn(
         gene_id='A',
         taxon_id=1,
@@ -534,7 +534,7 @@ def test_flat_sample_snps2():
 
 
 def test_combine_sample_min_num1():
-    #check if min_num is working
+    # check if min_num is working
     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
     eq_(
         df.shape,
@@ -543,7 +543,7 @@ def test_combine_sample_min_num1():
 
 
 def test_combine_sample_snps_min_num2():
-    #check if min_num is working
+    # check if min_num is working
     df = combine_sample_snps(SNP_DATA, 2, [lambda x: x])
     eq_(
         df.shape,
@@ -552,7 +552,7 @@ def test_combine_sample_snps_min_num2():
 
 
 def test_combine_sample_snps_values():
-    #check if values are correct is working
+    # check if values are correct is working
     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
     eq_(
         (df.min().min(), df.max().max()),
@@ -561,7 +561,7 @@ def test_combine_sample_snps_values():
 
 
 def test_combine_sample_snps_index1():
-    #check index_type
+    # check index_type
     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
     eq_(
         df.index.tolist(),
@@ -570,7 +570,7 @@ def test_combine_sample_snps_index1():
 
 
 def test_combine_sample_snps_index2():
-    #check index_type
+    # check index_type
     df = combine_sample_snps(
         SNP_DATA,
         1,
@@ -584,7 +584,7 @@ def test_combine_sample_snps_index2():
 
 
 def test_combine_sample_snps_index3():
-    #check index_type
+    # check index_type
     df = combine_sample_snps(
         SNP_DATA,
         1,

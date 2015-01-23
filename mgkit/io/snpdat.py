@@ -85,57 +85,58 @@ class SNPDatRow(object):
             line = line.rstrip('\n').split('\t')
             self.chr_name = line[0].lower()  # The queried SNPs chromosome ID
             self.chr_pos = int(line[1])  # The queried SNPs genomic location
-            #Whether or not the queried SNP was within a feature
+            # Whether or not the queried SNP was within a feature
             self.in_feat = True if line[2] == 'Y' else False
-            #exonic - in a annotation - check overlapping genes
-            #intergenic - between two features
-            #NA - no annotation for that contig/snp
-            #Region containing the SNP; either exonic, intronic or intergenic
+            # exonic - in a annotation - check overlapping genes
+            # intergenic - between two features
+            # NA - no annotation for that contig/snp
+            # Region containing the SNP; either exonic, intronic or intergenic
             self.region = line[3].lower()
-            #Distance to nearest feature
+            # Distance to nearest feature
             if line[4] != 'NA':
                 self.feat_dist = int(line[4].replace('*^', ''))
             else:
                 self.feat_dist = 'NA'
-            #Either the closest feature to the SNP or the feature containing
-            #the SNP
+            # Either the closest feature to the SNP or the feature containing
+            # the SNP
             self.feature = line[5].lower()
-            #The number of different features that the SNP is annotated to
+            # The number of different features that the SNP is annotated to
             self.num_features = 0 if line[6] == 'NA' else int(line[6])
-            #The number of annotations of the current feature
+            # The number of annotations of the current feature
             if line[6] == 'NA':
                 self.feat_num = 0
             else:
                 tuple(int(x) for x in line[7][1:-1].split('/'))
-            #Start of feature (bp)
+            # Start of feature (bp)
             self.feat_start = 0 if line[6] == 'NA' else int(line[8])
-            #End of feature (bp)
+            # End of feature (bp)
             self.feat_end = 0 if line[6] == 'NA' else int(line[9])
             self.gene_id = line[10]  # The gene ID for the current feature
             self.gene_name = line[11]  # The gene name for the current feature
-            #The transcript ID for the current feature
+            # The transcript ID for the current feature
             self.transcript_id = line[12]
-            #The transcript name for the current feature
+            # The transcript name for the current feature
             self.transcript_name = line[13]
-            #The exon that contains the current feature and the total number of
-            #annotated exons for the gene containing the feature
+            # The exon that contains the current feature and the total number
+            # of annotated exons for the gene containing the feature
             self.exon = tuple(x for x in line[14][1:-1].split('/'))
-            #The strand sense of the feature
+            # The strand sense of the feature
             self.strand = line[15].replace('*', '')
-            #The annotated reading frame (when contained in the GTF)
+            # The annotated reading frame (when contained in the GTF)
             self.ann_frame = line[16]
-            #The reading frame estimated by SNPdat
+            # The reading frame estimated by SNPdat
             self.frame = line[17].replace('*', '')
-            #The estimated number of stop codons in the estimated reading frame
+            # The estimated number of stop codons in the estimated reading
+            # frame
             if line[6] == 'NA':
                 self.num_stops = 0
             else:
                 self.num_stops = int(line[18].replace('^', ''))
-            #The codon containing the SNP, position in the codon and reference
-            #base and mutation
+            # The codon containing the SNP, position in the codon and reference
+            # base and mutation
             codon = line[19]
             if codon.startswith('['):
-                #first base
+                # first base
                 codon = (tuple(codon[1:-3].split('/')), codon[-2], codon[-1])
                 if self.strand != '-':
                     self.nuc_change = codon[0][1]
@@ -146,7 +147,7 @@ class SNPDatRow(object):
                 else:
                     self.nuc_ref = rev_comp[codon[0][0]]
             elif codon.endswith(']'):
-                #third base
+                # third base
                 codon = (codon[0], codon[1], tuple(codon[3:-1].split('/')))
                 if self.strand != '-':
                     self.nuc_change = codon[2][1]
@@ -161,7 +162,7 @@ class SNPDatRow(object):
                 self.nuc_change = None
                 self.nuc_ref = None
             else:
-                #second base
+                # second base
                 codon = (codon[0], tuple(codon[2:-2].split('/')), codon[-1])
                 if self.strand != '-':
                     self.nuc_change = codon[1][1]
@@ -172,26 +173,26 @@ class SNPDatRow(object):
                 else:
                     self.nuc_ref = rev_comp[codon[1][0]]
             self.codon = codon
-            #The amino acid for the reference codon and new amino acid with the
-            #mutation in place
+            # The amino acid for the reference codon and new amino acid with
+            # the mutation in place
             if line[20] == 'NA':
                 self.aa_change = (None, None)
             else:
                 self.aa_change = tuple(x for x in line[20][1:-1].split('/'))
-            #Whether or not the mutation is synonymous
+            # Whether or not the mutation is synonymous
             self.synonymous = True if line[21] == 'Y' else False
             # The protein ID for the current feature
             self.protein_id = line[22]
-            #not in a result file if no dbSNP ('-d' options) specified
+            # not in a result file if no dbSNP ('-d' options) specified
             # self.rs_id = line[23] #The RS identifier for queries that map to
-            #known SNPs
+            # known SNPs
             self.messages = line[23]  # Error messages, warnings etc
 
     def __repr__(self):
         return str(self)
 
     def __str__(self):
-        if not self.codon is None:
+        if self.codon is not None:
             codon = [
                 x if isinstance(x, str) else '[{0}/{1}]'.format(*x)
                 for x in self.codon

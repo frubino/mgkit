@@ -74,7 +74,8 @@ def check_fastq_type(qualities):
 
 def convert_seqid_to_new(seq_id):
     """
-    Convert old seq_id format for Illumina reads to the new found in Casava 1.8+
+    Convert old seq_id format for Illumina reads to the new found in Casava
+    1.8+
 
     :param str seq_id: seq_id of the sequence (stripped of '@')
     :return str: the new format seq_id

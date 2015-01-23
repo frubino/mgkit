@@ -11,7 +11,7 @@ import taxon_data
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_snps_taxon1():
-    #will find it
+    # will find it
     filter_list = [
         taxon.taxon_id
         for taxon in taxon_data.TAXONOMY
@@ -33,7 +33,7 @@ def test_snps_taxon1():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_snps_taxon1_rev():
-    #will find it
+    # will find it
     filter_list = [
         taxon.taxon_id
         for taxon in taxon_data.TAXONOMY
@@ -55,7 +55,7 @@ def test_snps_taxon1_rev():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_snps_taxon2():
-    #will find it
+    # will find it
     filter_list = [
         taxon.taxon_id
         for taxon in taxon_data.TAXONOMY
@@ -77,7 +77,7 @@ def test_snps_taxon2():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_snps_taxon2_rev():
-    #will find it
+    # will find it
     filter_list = [
         taxon.taxon_id
         for taxon in taxon_data.TAXONOMY
@@ -119,14 +119,29 @@ def test_snps_gene_id1():
     gene_syn = GeneSyn(gene_id='K01201')
     gene_list = ['K01201', 'K02201', 'K01251']
 
-    eq_(filter_genesyn_by_gene_id(gene_syn, gene_list, id_func=lambda x: x.gene_id), True)
+    eq_(
+        filter_genesyn_by_gene_id(
+            gene_syn,
+            gene_list,
+            id_func=lambda x: x.gene_id
+        ),
+        True
+    )
 
 
 def test_snps_gene_id2():
     gene_syn = GeneSyn(gene_id='K01201')
     gene_list = ['K01201', 'K02201', 'K01251']
 
-    eq_(filter_genesyn_by_gene_id(gene_syn, gene_list, exclude=True, id_func=lambda x: x.gene_id), False)
+    eq_(
+        filter_genesyn_by_gene_id(
+            gene_syn,
+            gene_list,
+            exclude=True,
+            id_func=lambda x: x.gene_id
+        ),
+        False
+    )
 
 
 @raises(FilterFails)

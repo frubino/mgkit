@@ -159,8 +159,8 @@ def map_counts(counts_iter, info_func, gmapper=None, tmapper=None, index=None):
         tmapper (func): fucntion that accepts a *taxon_id* and returns a new
             *taxon_id*
         index (None, str): if None, the index of the Series if
-            *(gene_id, taxon_id)*, if a str, it can be either *gene* or *taxon*,
-            to specify a single value
+            *(gene_id, taxon_id)*, if a str, it can be either *gene* or
+            *taxon*, to specify a single value
 
     Returns:
         pandas.Series: array with MultiIndex *(gene_id, taxon_id)* with the

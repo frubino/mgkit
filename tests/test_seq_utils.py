@@ -43,7 +43,11 @@ def test_translate_sequence1():
     seq = 'TTTAAAACCGGGGTC'
     trl = 'FKTGV'
 
-    tseq = sequence.translate_sequence(seq, start=0, tbl=trans_tables.UNIVERSAL)
+    tseq = sequence.translate_sequence(
+        seq,
+        start=0,
+        tbl=trans_tables.UNIVERSAL
+    )
 
     eq_(trl, tseq)
 
@@ -52,7 +56,11 @@ def test_translate_sequence2():
     seq = 'TTTAAAACCGGGGTC'
     trl = 'FKTGV'
 
-    tseq = sequence.translate_sequence(seq, start=1, tbl=trans_tables.UNIVERSAL)
+    tseq = sequence.translate_sequence(
+        seq,
+        start=1,
+        tbl=trans_tables.UNIVERSAL
+    )
 
     ok_(trl != tseq)
 
@@ -61,7 +69,11 @@ def test_translate_sequence3():
     seq = 'TTTAAAACCGGGGTC'
     trl = 'FKTGV'
 
-    tseq = sequence.translate_sequence(seq, start=2, tbl=trans_tables.UNIVERSAL)
+    tseq = sequence.translate_sequence(
+        seq,
+        start=2,
+        tbl=trans_tables.UNIVERSAL
+    )
 
     ok_(trl != tseq)
 
@@ -95,7 +107,7 @@ def test_put_gaps_in_nuc_seq4():
 
 
 def test_put_gaps_in_nuc_seq5():
-    #trim sequence by default
+    # trim sequence by default
     seq = 'TTTAAAACCGGGGTCAA'
     trl = '-FKTG-V-'
 
@@ -103,7 +115,7 @@ def test_put_gaps_in_nuc_seq5():
 
 
 def test_put_gaps_in_nuc_seq6():
-    #don't trim sequence by default
+    # don't trim sequence by default
     seq = 'TTTAAAACCGGGGTCAA'
     trl = '-FKTG-V-'
 

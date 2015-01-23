@@ -99,7 +99,7 @@ def test_taxon_rank4():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_taxon_id_list1():
-    #at least prevotella as genus should be amog the others
+    # at least prevotella as genus should be amog the others
     taxon_id = taxon_data.TAXONOMY.find_by_name('prevotella')[0]
     filter_list = [
         taxon.taxon_id
@@ -113,7 +113,7 @@ def test_taxon_id_list1():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_taxon_id_list1_anc():
-    #at least prevotella as genus should be among the others
+    # at least prevotella as genus should be among the others
     taxon_id = random.choice(
         [
             taxon.taxon_id
@@ -134,7 +134,7 @@ def test_taxon_id_list1_anc():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_taxon_id_list2():
-    #no prevotella species will be found
+    # no prevotella species will be found
     filter_list = taxon_data.TAXONOMY.find_by_name('prevotella')
     taxon_id = random.choice(
         [
@@ -150,7 +150,7 @@ def test_taxon_id_list2():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_taxon_id_list2_anc():
-    #at least prevotella as genus should be among the others
+    # at least prevotella as genus should be among the others
     taxon_id = 839
     filter_list = taxon_data.TAXONOMY.find_by_name('prevotella')
     eq_(

@@ -45,8 +45,8 @@ def load_fasta(f_handle):
                 cur_seq = []
             # save previous name for loop's else clause
             last_name = cur_name
-            #fasta classico, prende tutti i caratteri tranne il primo ">"
-            #e il whitespace a destra
+            # classic fasta, all characters besides starting ">" and rightmost
+            # whitespace
             cur_name = line[1:].rstrip()
         else:
             cur_seq.append(line.rstrip())
@@ -78,7 +78,7 @@ def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
 
     if wrap is not None:
         seq = '\n'.join(
-            seq[pos:pos+wrap]
+            seq[pos:pos + wrap]
             for pos in xrange(0, len(seq), wrap)
         )
 

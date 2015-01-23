@@ -8,7 +8,7 @@ import taxon_data
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_is_ancestor1():
-    #prevotella ruminicola, 839
+    # prevotella ruminicola, 839
     taxon_id = 839
     anc_id = taxon_data.TAXONOMY.find_by_name('prevotella')[0]
     eq_(
@@ -19,7 +19,7 @@ def test_is_ancestor1():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_is_ancestor2():
-    #any prevotella species
+    # any prevotella species
     taxon_id = random.choice(
         [
             taxon_obj.taxon_id
