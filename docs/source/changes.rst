@@ -1,6 +1,27 @@
 Changes
 =======
 
+0.1.14
+------
+
+* added ipthon notebooks to the documentation. As of this version the included ones (in `docs/source/examples`) are for two plot modules. Also added a bash script to convert them into rst files to be included with the documentation. The *.rst* are not versioned, and they must be rebuild, meaning that one of the requirements for building the docs is to have `IPython <http://ipython.org>`_ installed with the notebook extension
+* now importing some packages automatically import the subpackages as well
+* refactored :mod:`mgkit.plots` into a package, with most of the original functions imported into it, for backward compatibility
+* added :func:`mgkit.graphs.build_weighted_graph`
+* added *box_vert* parameter in :func:`mgkit.plots.boxplot.add_values_to_boxplot`, the default will be changed in a later version (kept for compatibility with older scripts/notebooks)
+* added an heatmap module to the plots package. Examples are in the notebook
+* added :func:`mgkit.align.covered_annotation_bp` to find the number of bp covered by reads in annotations (as opposed to using the annotation length)
+* added documentation to :class:`mgkit.mappings.eggnog.NOGInfo` and an additional method
+* added :func:`mgkit.net.uniprot.get_uniprot_ec_mappings` as it was used in a few scripts already
+* added :func:`mgkit.mappings.enzyme.change_mapping_level` and other to deal with EC numbers. Also improved documentation with some examples
+* added :func:`mgkit.counts.func.load_sample_counts_to_genes` and :func:`mgkit.counts.func.load_sample_counts_to_taxon`, for mapping counts to only genes or taxa. Also added *index* parameter in :func:`mgkit.counts.func.map_counts` to accomodate the changes
+* added :func:`mgkit.net.uniprot.get_ko_to_eggnog_mappings` to get mappings of KO identifiers to eggNOG
+* added :func:`mgkit.io.gff.split_gff_file` to split a gff into several ones, assuring that all annotations for a sequence is in the same file; useful to split massive GFF files before filtering
+* added :func:`mgkit.counts.func.load_deseq2_results` to load DESeq2 results in *CSV* format
+* added :func:`mgkit.counts.scaling.scale_rpkm` for scale with rpkm a count table
+* added caching options to :func:`mgkit.counts.func.load_sample_counts` and others
+* fixes and improvements to documentation
+
 0.1.13
 ------
 
