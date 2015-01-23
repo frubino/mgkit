@@ -38,6 +38,40 @@ def build_graph(id_links, name, edge_type='', weight=0.5):
     return g
 
 
+def build_weighted_graph(id_links, name, weights, edge_type=''):
+    """
+    .. versionadded:: 0.1.14
+
+    Builds a networkx graph from a dictionary of nodes, as outputted by
+    :meth:`mgkit.kegg.KeggClientRest.get_pathway_links`. The graph is
+    undirected, and all edges weight are the same.
+
+    Arguments:
+        id_links (dict): dictionary with the links
+        name (str): name of the graph
+        edge_type (str): an optional name for the `edge_type` attribute
+            set for each edge
+        weight (float): the weight assigned to each edge in the graph
+
+    Returns:
+        graph: an instance of :class:`networkx.Graph`
+    """
+    g = nx.Graph()
+    g.name = name
+
+    for id1, id2s in id_links:
+        g.add_node(id1, id=id1)
+        for id2 in id2s:
+            g.add_node(id2, id=id2)
+            try:
+                weight = weights[(id1, id2)]
+            except KeyError:
+                weight = weights.get(id1, 0.5)
+            g.add_edge(id1, id2, edge_type=edge_type, weight=float(weight))
+
+    return g
+
+
 def copy_nodes(g, graph1):
     """
     .. versionadded:: 0.1.12
@@ -138,7 +172,7 @@ def filter_graph(graph, id_list, filter_func=lambda x: x.startswith('K')):
     used to test the id attribute of each node.
 
     A node is removed if `filter_func` returns True on a node and its id
-    attribute is in `id_list`
+    attribute is not in `id_list`
 
     Arguments:
         graph: the graph to filter
@@ -154,7 +188,7 @@ def filter_graph(graph, id_list, filter_func=lambda x: x.startswith('K')):
     nodes = [
         node
         for node, data in graph.nodes_iter(data=True)
-        if filter_func(data['id']) and data['id'] not in id_list
+        if filter_func(data['id']) and (data['id'] not in id_list)
     ]
 
     graph.remove_nodes_from(nodes)
