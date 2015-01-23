@@ -18,15 +18,15 @@ Contents:
 
    pipeline
 
-   gff
-
    scripts/index
+
+   examples/index
+
+   gff
 
    library
 
    changes
-
-   examples/index
 
 Indices and tables
 ==================
