@@ -23,7 +23,7 @@ def scale_factor_deseq(dataframe):
             {k_{ij}}
             {
                 \\left (
-                \prod_{v=1}^{m}
+                \\prod_{v=1}^{m}
                     k_{iv}
                 \\right )^{1/m}
            }
