@@ -1,3 +1,3 @@
 from .utils import *
 
-import cazy, eggnog, enzyme, go, taxon, utils, pandas_map
+import cazy, eggnog, enzyme, taxon, utils, pandas_map
