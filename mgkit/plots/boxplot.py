@@ -167,18 +167,29 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None, label_map=None
     return plot_data
 
 
-def add_values_to_boxplot(dataframe, axes, plot_data, plot_order,
+def add_values_to_boxplot(dataframe, ax, plot_data, plot_order,
                           data_colours=None, alpha=0.5, s=80, marker='o',
-                          linewidth=0.0):
+                          linewidth=0.0, box_vert=False):
     """
     .. versionadded:: 0.1.13
 
+    .. versionchanged:: 0.1.14
+        added *box_vert* parameter
+
     Adds the values of a dataframe used in :func:`boxplot_dataframe` to the
-    plot.
+    plot. *linewidth* must be higher than 0 if a marker like *|* is used.
+
+    A list of markers is available at
+    `this page <http://matplotlib.org/api/markers_api.html>`_
+
+    .. warning::
+
+        Contrary to :func:`boxplot_dataframe`, the boxplot default is
+        horizontal (*box_vert*). The default will change in a later version.
 
     Arguments:
         dataframe: dataframe with the values to plot
-        axes: an axes instance
+        ax: an axis instance
         plot_data: return value from :func:`boxplot_dataframe`
         plot_order (iterable): row order used to plot the boxes
         data_colours (dict): colors used for the values
@@ -186,15 +197,24 @@ def add_values_to_boxplot(dataframe, axes, plot_data, plot_order,
         s (int): size of the marker drawn
         marker (str): one of the accepted matplotlib markers
         linewidth (float): width of the line used to draw the marker
-
+        box_vert (bool): specify if the original boxplot is vertical or not
     """
     for index, row_id in enumerate(plot_order):
-        yvals = plot_data['medians'][index].get_ydata()
-        mean_y = yvals.mean()
 
-        axes.scatter(
-            dataframe.loc[row_id].dropna(),
-            [mean_y] * len(dataframe.loc[row_id].dropna()),
+        if box_vert:
+            xvals = plot_data['medians'][index].get_xdata()
+            mean_x = xvals.mean()
+            y = dataframe.loc[row_id].dropna()
+            x = [mean_x] * len(dataframe.loc[row_id].dropna())
+        else:
+            yvals = plot_data['medians'][index].get_ydata()
+            mean_y = yvals.mean()
+            x = dataframe.loc[row_id].dropna()
+            y = [mean_y] * len(dataframe.loc[row_id].dropna())
+
+        ax.scatter(
+            x,
+            y,
             c=DEFAULT_BOXPLOT_COLOURS['boxes'] if data_colours is None else data_colours[row_id],
             alpha=alpha,
             s=s,
@@ -205,7 +225,7 @@ def add_values_to_boxplot(dataframe, axes, plot_data, plot_order,
         )
 
 
-def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
+def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
                       fill_box=True, colours=None, data_colours=None,
                       box_vert=True):
     """
@@ -217,13 +237,13 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
 
     The function draws a series of boxplots from a DataFrame object, whose order
     is directed by the iterable plot_order. The columns of each DataFrame row
-    contains the values for each boxplot. An axes object is needed.
+    contains the values for each boxplot. An ax object is needed.
 
     :param dataframe: dataframe to plot
     :param iterable plot_order: row order used to plot the boxes
-    :param axes: an axes instance
+    :param ax: an axis instance
     :param dict label_map: a map that converts the items in plot_order to a
-        label used on the plot X axes
+        label used on the plot X ax
     :param dict fonts: dictionary with properties for x axis labels,
         :data:`DEFAULT_BOXPLOT_FONTCONF` is used by default
     :param bool fill_box: if True each box is filled with the same colour of its
@@ -243,7 +263,7 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
             (feature, colours[feature]) if feature in colours else (feature, colour)
             for feature, colour in DEFAULT_BOXPLOT_COLOURS.items()
         )
-        DEFAULT_BOXPLOT_COLOURS.copy().update(colours)
+        #DEFAULT_BOXPLOT_COLOURS.copy().update(colours)
     else:
         colours = DEFAULT_BOXPLOT_COLOURS.copy()
 
@@ -256,7 +276,7 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
     else:
         fonts = DEFAULT_BOXPLOT_FONTCONF.copy()
 
-    plot_data = axes.boxplot(
+    plot_data = ax.boxplot(
         [dataframe.loc[x].dropna() for x in plot_order],
         vert=box_vert
     )
@@ -268,9 +288,11 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
         )
         if fill_box:
             box_coord = zip(box.get_xdata(), box.get_ydata())
-            polygon = plt.Polygon(box_coord,
-                                  facecolor=data_colours[row_id] if data_colours else colours['boxes'])
-            axes.add_patch(polygon)
+            polygon = plt.Polygon(
+                box_coord,
+                facecolor=data_colours[row_id] if data_colours else colours['boxes']
+            )
+            ax.add_patch(polygon)
 
         plot_data['medians'][idx].set_color(colours['medians'])
 
@@ -290,11 +312,11 @@ def boxplot_dataframe(dataframe, plot_order, axes, label_map=None, fonts=None,
         )
 
     if box_vert:
-        ltick_setfunc = axes.set_xticklabels
-        vtick_getfunc = axes.get_yticklabels
+        ltick_setfunc = ax.set_xticklabels
+        vtick_getfunc = ax.get_yticklabels
     else:
-        ltick_setfunc = axes.set_yticklabels
-        vtick_getfunc = axes.get_xticklabels
+        ltick_setfunc = ax.set_yticklabels
+        vtick_getfunc = ax.get_xticklabels
 
     if fonts is not None:
         ltick_setfunc(
