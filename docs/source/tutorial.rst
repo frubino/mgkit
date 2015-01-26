@@ -73,7 +73,7 @@ We also need to translate the nucleotidic fasta file into aa::
 
 This script is included with the library, but you can use your own, as long as the naming convention of the fasta headers is kept. Refer to :ref:`hmmer` for more details.
 
-.. warning:: 
+.. warning::
 
     if you're going to use the script included, you'll need an optional dependency: `joblib`, which you can install with::
 
@@ -83,7 +83,7 @@ This script is included with the library, but you can use your own, as long as t
 Building HMM profiles
 ---------------------
 
-Download Data 
+Download Data
 ^^^^^^^^^^^^^^
 
 We don't need to download all data for the gene prediction, so we'll use this
@@ -105,7 +105,7 @@ You can either find the taxa IDs necessary to download the profiles by going to 
     right to *Taxon identifier*.
 
 .. note::
-    
+
     We're going to split the download into 3 parts. For the purpose of this tutorial, you don't have to download all of them. It may be better to just download the archaea-phylum profiles. For a full tutorial, refer to :ref:`full-script`
 
 Download Profiles
@@ -115,17 +115,17 @@ The IDs for the taxa whose profiles we're going to download are:
 
 .. csv-table::
    :header: Taxon, Rank, ID
-    
+
     Chloroflexi, phylum, 200795
     Actinobacteria, phylum, 201174
     Planctomycetes, phylum, 203682
 
 To dowload all the profiles for the selected taxa, we'll use this command::
-    
+
     $ download_profiles -o bacteria_profiles -i 200795 201174 203682 -m email -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
 
 along with all archaea phyla and orders::
-    
+
     $ download_profiles -o archaea_order_profiles -r order -l archaea -m email -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
     $ download_profiles -o archaea_phylum_profiles -r phylum -l archaea -m email -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
 
@@ -156,16 +156,16 @@ To build the HMM profiles we need to use `hmmbuild`, which is included with HMME
     done
 
 and then make one file with::
-    
+
     $ cat bacteria_profiles/*.hmm > profile_files.hmm
 
-and we'll have a single file with all profiles. 
+and we'll have a single file with all profiles.
 
 Gene Prediction
 ---------------
 
 We have prepared all the data we need to continue with gene prediction. We're going to use HMMER to predict the genes with following commands::
-    
+
     $ hmmsearch -o /dev/null --domtbl hmmer_dom-table.txt profile_files.hmm assembly.aa.fa
 
 The resulting file needs to be converted into a GFF file with the following command::
@@ -187,7 +187,7 @@ Alignment
 ---------
 
 The alignment of all reads to the assembly we'll be made with `bowtie2`. The first step is to build the index for the reference (out assembly) with the following command::
-    
+
     $ bowtie2-build assembly.fa assembly.fa
 
 and subsequently start the alignment, using bowtie2 and piping the output SAM file to `samtools` to convert it into BAM files with this command:
@@ -205,7 +205,7 @@ We'll have BAM files which we need to sort and index:
 
 .. code-block:: bash
 
-    for file in *.bam; do 
+    for file in *.bam; do
         samtools sort $file `basename $file .bam`-sort;
         samtools index `basename $file .bam`-sort.bam;
         #removes the unsorted file, it's not needed
@@ -227,7 +227,7 @@ SNP Calling
 -----------
 
 Before running samtools, which we'll use to do the SNP calling and GATK, to merge the vcf files, the reference `assembly.fa` must be indexed with Picard Tools and samtools::
-    
+
     $ samtools faidx assembly.fa
     $ java -jar picard-tools/CreateSequenceDictionary.jar R=assembly.fa O=assembly.dict
 
@@ -248,7 +248,7 @@ Running samtools to make the SNP calling requires a simple loop, which
 
 .. code-block:: bash
 
-    for file in *.bam; do 
+    for file in *.bam; do
         samtools mpileup -Iuf assembly.fa \
         $file |bcftools view -vcg - > `basename $file`.vcf;
     done
@@ -266,7 +266,7 @@ SNPDat
 ^^^^^^
 
 SNPdat requires a GTF file, which is specific GFF variant; our GFF can be converted using this command::
-    
+
     $ python -c "import mgkit;mgkit.logger.config_log(); import mgkit.io.gff; mgkit.io.gff.convert_gff_to_gtf('assembly.filt.gff', 'assembly.filt.gtf')"
 
 and then we can run SNPdat and a simple loop:

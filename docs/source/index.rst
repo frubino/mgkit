@@ -16,7 +16,7 @@ Contents:
 
    tutorial
 
-   pipeline
+   pipeline/index
 
    scripts/index
 

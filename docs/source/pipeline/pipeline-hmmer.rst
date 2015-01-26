@@ -10,7 +10,7 @@ This section goes into the details of one pipeline used to analyse a metagenome.
 The following image gives an overview of the pipeline, whose colours will be
 used in the section's diagrams for consistency.
 
-.. figure:: images/pipeline.png
+.. figure:: ../images/pipeline.png
    :width: 1024 px
 
    A complete metagenome analysis pipeline. Parts of the pipeline are explained

@@ -9,8 +9,8 @@ Python dictionary when an annotation is loaded into an :class:`Annotation` insta
 The 9th column is a list of **key=value** item, separated by a semicolon (;); each value is also expected to be quoted with double quotes and the values to not include a semicolon or other characters that can make the parsing difficult. MGKit uses :func:`urllib.quote` to encode those characters and also " ()/". The :func:`mgkit.io.gff.from_gff` uses :func:`urllib.unquote` to set the values.
 
 .. warning::
-	
-	As the last column translates to a dictionary, duplicate keys are not allowed. :func:`mgkit.io.gff.from_gff` raises an exception if any are found.
+
+	As the last column translates to a dictionary in the data structures, duplicate keys are not allowed. :func:`mgkit.io.gff.from_gff` raises an exception if any are found.
 
 Reserved Values
 ---------------
