@@ -3,6 +3,29 @@ The scripts downloads the data that is used by the framework for some of its
 functions. It's mostly a shortcut to call the download_data function that is
 present in every module that is in the package mappings and in the kegg module.
 
+The only option required, is the email contact for the person using the script;
+this is used to make sure that the API requirements in Uniprot are fullfilled
+and they can contact the person using the script is any problem arise.
+
+.. note::
+
+    The default behavior is to download first the taxonomy data form Uniprot,
+    Kegg and additional mapping data.
+
+Taxonomy
+********
+
+It is downloaded from Uniprot and build a data structure that is used by
+several scripts and function in the package. The download can take some time.
+
+.. warning::
+
+    if only the taxonomy is to be downloaded, both the `-x` and `-p` options
+    must be passed to the script.
+
+Kegg Onthologs
+**************
+
 The Kegg data is the only "required" data at the moment, because it's used to
 download the sequence data (via the donwload_profiles script) for the
 profiling. It is the only data that can't be saved unless it's fully
@@ -12,9 +35,22 @@ Kegg data is required by the mappers currently supported, and its download
 takes longer. The mappers handle timeouts and if exceptions are raised the data
 is saved and the download is resumed when the script is started again.
 
-The only option required, is the email contact for the person using the script;
-this is used to make sure that the API requirements in Uniprot are fullfilled
-and they can contact the person using the script is any problem arise.
+Other Mappings
+**************
+
+The other mappings (from KO) are downloaded by default and this can be excluded
+by using the `-p` option. Mappings for Gene Onthology, eggNOG and CaZy are
+downloaded.
+
+As the download of the mappings can take a lot of time, or break because of the
+number of requests to the web sites, checkpoints are saved often, so it can
+resumed at a later time.
+
+.. warning::
+
+    the Gene Onthology module has specific requirements, so if they are not
+    downloaded
+
 """
 import os
 import argparse
@@ -94,7 +130,14 @@ def set_parser():
         '--no-mappings',
         default=True,
         action='store_false',
-        help='Use to download only Kegg and Taxonomy data'
+        help='Use to not download Mapping data'
+    )
+    parser.add_argument(
+        '-x',
+        '--only-taxonomy',
+        default=True,
+        action='store_false',
+        help='Use to only download Taxonomy data, no Kegg data'
     )
     parser.add_argument(
         '-m',
@@ -127,9 +170,11 @@ def main():
         taxonomy.read_taxonomy(mgkit.net.url_open(TAXONONY_URL))
         taxonomy.save_data(taxonomy_path)
 
-    kegg_path = os.path.join(options.output_dir, options.kegg)
-    if not os.path.exists(kegg_path):
-        mgkit.kegg.download_data(fname=kegg_path, contact=options.email)
+    if options.only_taxonomy:
+        LOG.info("Downloading Kegg data")
+        kegg_path = os.path.join(options.output_dir, options.kegg)
+        if not os.path.exists(kegg_path):
+            mgkit.kegg.download_data(fname=kegg_path, contact=options.email)
 
     if options.no_mappings:
         LOG.info("Downloading additional mappings")
