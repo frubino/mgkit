@@ -1,3 +1,5 @@
+.. _blast2gff:
+
 Convert BLAST output to GFF
 ===========================
 

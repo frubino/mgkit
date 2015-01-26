@@ -1,3 +1,5 @@
+.. _get-gff-info:
+
 Extract informations to GFF annotations
 =======================================
 

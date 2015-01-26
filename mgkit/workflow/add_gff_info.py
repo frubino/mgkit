@@ -40,7 +40,9 @@ get the file can be read in the documentation of the function
 
 The fasta sequences used with BLAST must have as name the uid of the annotations
 they refer to, and one way to obtain these sequences is to use the function
-:func:`mgkit.io.gff.extract_nuc_seqs` and save them to a fasta file.
+:func:`mgkit.io.gff.extract_nuc_seqs` and save them to a fasta file. Another
+options is to use the `sequence` command of the `get-gff-info` script
+(:ref:`get-gff-info`).
 
 The command accept a minimum bitscore to accept an hit and the taxon ID is
 selected by default using top hit method, but LCA can be used, using the *-l*
@@ -59,7 +61,14 @@ Activated with the *-l* switch, it selects the lowest common ancestor of all
 taxon IDs that are from the cellular organism root in the taxonomy and are
 within a 10 bits (by default, can be customised with *-a*) from the hit with
 the highest bitscore. If a taxon ID is not found in the taxonomy, it is
-excluded.
+excluded. One of the requirements of this option is a file that contains the
+full taxonomy from Uniprot/NCBI. The file can be obtained with the following
+command::
+
+    $ download_data -x -p -m your@email
+
+The command will output a `taxonomy.pickle` file that can be passed to the `-x`
+option :ref:`download-data`.
 
 Coverage Command
 ****************

@@ -1,3 +1,5 @@
+.. _filter-gff:
+
 Filter GFF annotations
 ======================
 
