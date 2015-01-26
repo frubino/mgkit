@@ -21,7 +21,7 @@ used in the section's diagrams for consistency.
 	Steps, like quality filtering and assembly, won't be detailed as they are up
 	to the user to decide.
 
-.. _download-data:
+.. _download-data-doc:
 
 Download Data
 -------------
@@ -58,7 +58,7 @@ and GO). If downloading only the essential data, the '-p' option can be supplied
 to skip loading additional mappings that can be downloaded at a later time.
 
 Download all data with `$ download_data -m email` or only mandatory data
-with `download_data -p -m email`.
+with `download_data -p -m email`. More information at the script documentation (:ref:`download-data`)
 
 Download Profiles
 -----------------
@@ -210,7 +210,7 @@ via the '-n' option, additional information will be added to each annotation:
   (exp_nonsyn)
 
 If the '-k' option is specified, a valid kegg data file using the script 
-described in :ref:`download-data`, which will allow to add gene descriptions
+described in :ref:`download-data-doc`, which will allow to add gene descriptions
 to the annotations as a 'description' attribute.
 
 An example command to create a GFF::
@@ -383,11 +383,7 @@ used by `SNPDat <http://code.google.com/p/snpdat/>`_ along a GTF file and the
 reference genome to integrate the information in VCF files with
 synonymous/non-synonymous information.
 
-All VCF files are merged into a VCF that includes information about all the
-SNPs called among all samples. This merged VCF is passed, along with the results
-from SNPDat and the GFF file to snp_parser.py which integrates information from 
-all data sources and output files in a format that can be later used by the rest
-of the pipeline. [#]_
+All VCF files are merged into a VCF that includes information about all the SNPs called among all samples. This merged VCF is passed, along with the results from SNPDat and the GFF file to snp_parser.py which integrates information from all data sources and output files in a format that can be later used by the rest of the pipeline. [#]_
 
 .. note::
 
