@@ -17,17 +17,21 @@ and `filter_len`.
 .. blockdiag::
 
     {
+        orientation = portrait;
+
         class mgkit [color = "#e41a1c" , textcolor = 'white', width=200, fontsize=15];
         class data [color = "#4daf4a" , textcolor = 'white', width=200, fontsize=15];
         "GFF" [class = data, shape = flowchart.input];
+
         parse_gff [class = "mgkit"];
         setup_filters [class = "mgkit"];
         "Filters" [class = "mgkit", stacked, shape = flowchart.condition];
+
         "GFF" -> parse_gff -> "Filters";
         setup_filters -> Filters;
         "Filtered Annotations" [class = data, stacked];
         "Filters" -> "Filtered Annotations";
-        Filters -> "Filtered Annotations" [folded];
+
     }
 
 Overlap Filtering
@@ -69,6 +73,21 @@ the sequence name as the first key and the strand as the second key.
         "Filtered Annotations" [class = data, stacked];
         filter_annotations -> "Filtered Annotations";
     }
+
+The above digram describes the internals of the script.
+
+The annotations needs first to be grouped by seq_id and strand, forming a group
+that can be then be passed to :func:`mgkit.filter.gff.filter_annotations`.
+This function:
+
+    #. sort annotations by bit score, from the highest to the lowest
+    #. loop over all combination of N=2 annotations:
+
+        #. choose which of the two annotations to discard if they overlap for a
+           the required amount of bp
+        #. in which case, the preference is given to the db quality first, than
+           the bit score and finally the lenght of annotation, the one with the
+           highest values is kept
 
 Changes
 *******

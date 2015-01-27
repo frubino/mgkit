@@ -7,7 +7,12 @@ A pipeline is provided, for variation study of metagenomic samples.
 
 A discussion mailing list is available at `mgkit-users <https://groups.google.com/forum/#!forum/mgkit-users>`_.
 
+Citing
+------
+
+Rubino, F. and Creevey, C.J. 2014. MGkit: Metagenomic Framework For The Study Of Microbial Communities. . Available at: `figshare <http://figshare.com/articles/MGkit_Metagenomic_Framework_For_The_Study_Of_Microbial_Communities/1269288>`_ [doi:10.6084/m9.figshare.1269288].
+
 Links
 -----
 
-.. [#] `Homepage <https://bitbucket.org/frubino/mgkit>`_
+.. [#] `<https://bitbucket.org/frubino/mgkit>`_
