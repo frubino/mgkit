@@ -14,11 +14,11 @@ def scale_factor_deseq(dataframe):
     Returns the scale factor according to he deseq paper. The columns of the
     dataframe are the samples.
 
-    size factor :math:`\\hat{s}_{j}` from deseq paper
+    size factor :math:`\\hat{s}_{j}` for sample *j* (from DESeq paper).
 
     .. math::
 
-        \\hat{s}_{j} =
+        \\hat{s}_{j} = median_{i} (
         \\frac
             {k_{ij}}
             {
@@ -27,6 +27,7 @@ def scale_factor_deseq(dataframe):
                     k_{iv}
                 \\right )^{1/m}
            }
+        )
 
     """
     # calc the genes geometric mean over all samples
