@@ -1260,3 +1260,98 @@ def split_gff_file(file_handle, name_mask, num_files=2):
             out_handle = out_handles[new_index]
 
         out_handle.write(line)
+
+
+def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
+                       include_taxa=None):
+    """
+    This function is useful if the number of annotations in a GFF is high or
+    there are memory constraints on the system. It returns a dictionary that
+    can be used with functions like
+    :func:`mgkit.counts.func.load_sample_counts`.
+
+    Arguments:
+        files (iterable, str): file name or list of paths of GFF files
+        taxonomy: taxonomy pickle file, needed if include_taxa is not None
+        exclude_ids (set, list): a list of gene_id to exclude from the
+            dictionary
+        include_taxa (int, iterable): a taxon_id or list thereof to be passed
+            to :meth:`mgkit.taxon.taxonomy.is_ancestor`, so only the taxa that
+            have the those taxon_id(s) as ancestor(s) are kept
+
+    Returns:
+        dict: dictionary where the key is :attr:`Annotation.uid` and the value
+        is a tuple (:attr:`Annotation.gene_id`, :attr:`Annotation.taxon_id`)
+
+    """
+    if isinstance(files, str):
+        files = [files]
+
+    infos = {}
+
+    for fname in files:
+        for annotation in parse_gff(fname):
+            #no information on taxa - exclude
+            if annotation.taxon_id is None:
+                continue
+            #to exclude ribosomial genes or any other kind
+            if exclude_ids is not None:
+                if annotation.gene_id in exclude_ids:
+                    continue
+            if (include_taxa is not None) and (taxonomy is not None):
+                if not taxonomy.is_ancestor(annotation.taxon_id, include_taxa):
+                    continue
+
+            infos[annotation.uid] = (annotation.gene_id, annotation.taxon_id)
+
+    return infos
+
+
+def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
+                      include_taxa=None):
+    """
+    This function is useful if the number of annotations in a GFF is high or
+    there are memory constraints on the system. It returns a dictionary that
+    can be used with functions like
+    :func:`mgkit.counts.func.load_sample_counts`.
+
+    Arguments:
+        files (iterable, str): file name or list of paths of GFF files
+        map_db (str): any kind mapping in the GFF, as passed to
+            :meth:`Annotation.get_mapping`
+        taxonomy: taxonomy pickle file, needed if include_taxa is not None
+        exclude_ids (set, list): a list of gene_id to exclude from the
+            dictionary
+        include_taxa (int, iterable): a taxon_id or list thereof to be passed
+            to :meth:`mgkit.taxon.taxonomy.is_ancestor`, so only the taxa that
+            have the those taxon_id(s) as ancestor(s) are kept
+
+    Returns:
+        dict: dictionary where the key is :attr:`Annotation.gene_id` and the
+        value is a list of mappings, as returned by
+        :meth:`Annotation.get_mapping`
+
+    """
+    infos = {}
+
+    for fname in files:
+        for annotation in parse_gff(fname):
+            #skips genes that are already in the mapping
+            if annotation.gene_id in infos:
+                continue
+            #exclude genes with no taxonomic information
+            if annotation.taxon_id is None:
+                continue
+
+            if exclude_ids is not None:
+                if annotation.gene_id in exclude_ids:
+                    continue
+
+            #skips non bacterial/achaeal genes
+            if (include_taxa is not None) and (taxonomy is not None):
+                if not taxonomy.is_ancestor(annotation.taxon_id, include_taxa):
+                    continue
+
+            infos[annotation.gene_id] = annotation.get_mapping(map_db)
+
+    return infos

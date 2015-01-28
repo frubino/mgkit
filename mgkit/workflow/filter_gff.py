@@ -84,7 +84,7 @@ This function:
     #. loop over all combination of N=2 annotations:
 
         #. choose which of the two annotations to discard if they overlap for a
-           the required amount of bp
+           the required amount of bp (defaults to 100bp)
         #. in which case, the preference is given to the db quality first, than
            the bit score and finally the lenght of annotation, the one with the
            highest values is kept
