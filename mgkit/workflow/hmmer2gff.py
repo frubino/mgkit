@@ -1,6 +1,23 @@
-#!/usr/bin/env python
 """
-Script to convert HMMER results files (domain table) to a GFF file
+Script to convert HMMER results files (domain table) to a GFF file, the name of
+the profiles are expected to be now in the form
+*GENEID_TAXONID_TAXON-NAME(-nr)*, but the old one *GENEID_TAXON-NAME(-nr)* is
+accepted for compatibility with old experiments.
+
+It is tested only Kegg Orthologs, but the script only uses them if a pickle
+file for Kegg is passed to add descriptions. It is general enough to use any
+kind of gene identifier.
+
+.. note::
+
+    for GENEID, old documentation points to KOID, it is the same
+
+Changes
+*******
+
+.. versionchanged:: 0.1.15
+    adapted to new GFF module and specs
+
 """
 
 import sys
@@ -44,13 +61,6 @@ def set_parser():
         nargs='?',
         type=argparse.FileType('w'), default=sys.stdout
     )
-    group.add_argument(
-        '-n',
-        '--nuc-file',
-        type=argparse.FileType('r'),
-        required=False,
-        help="Fasta file containing contigs from assembler"
-    )
 
     group = parser.add_argument_group('Misc')
     group.add_argument('-q', '--quiet', action='store_const',
@@ -91,7 +101,7 @@ def get_aa_data(f_handle):
 
 
 def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
-                               ko_names=None, nuc_seqs=None):
+                               ko_names=None):
     """
     Parse the HMMER result file
     """
@@ -115,10 +125,9 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
         count_tot += 1
 
         try:
-            annotation = gff.GFFKegg.from_hmmer(
+            annotation = gff.from_hmmer(
                 line,
                 aa_seqs,
-                nuc_seqs=nuc_seqs,
                 ko_counts=ko_counts
             )
         except ZeroDivisionError:
@@ -133,24 +142,24 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
             count_dsc += 1
             continue
         try:
-            annotation.attributes.description = ko_names[
-                annotation.attributes.ko
+            annotation.attr['description'] = ko_names[
+                annotation.gene_id
             ]
         except (KeyError, TypeError):
-            annotation.attributes.description = ''
+            annotation.attr['description'] = ''
 
         #correct mispelled taxa: profiles4
         try:
-            annotation.attributes.taxon = MISPELLED_TAXA[
-                annotation.attributes.taxon
+            annotation.attr['taxon'] = MISPELLED_TAXA[
+                annotation.attr['taxon']
             ]
-            LOG.debug("Fixed mispelled taxon %s", annotation.attributes.taxon)
+            LOG.debug("Fixed mispelled taxon %s", annotation.attr['taxon'])
             count_mis += 1
         except KeyError:
             #not mispelled
             pass
 
-        f_out.write(str(annotation))
+        annotation.to_file(f_out)
 
     LOG.info(
         "Read %d lines, discared %d, skipped %d, mispelled %d",
@@ -168,10 +177,6 @@ def main():
     options = set_parser().parse_args()
     logger.config_log(options.quiet)
     log = logging.getLogger(__name__)
-    if options.nuc_file is not None:
-        seq_data = get_seq_data(options.nuc_file)
-    else:
-        seq_data = None
     aa_data = get_aa_data(options.aa_file)
 
     if options.ko_descriptions:
@@ -182,8 +187,13 @@ def main():
     else:
         ko_names = None
 
-    parse_domain_table_contigs(options.hmmer_file, aa_data, options.output_file,
-                               options.discard, ko_names, nuc_seqs=seq_data)
+    parse_domain_table_contigs(
+        options.hmmer_file,
+        aa_data,
+        options.output_file,
+        options.discard,
+        ko_names
+    )
 
 if __name__ == '__main__':
     main()

@@ -11,4 +11,5 @@ This section detailed information about the scripts included
    add-gff-info
    get-gff-info
    download_data
+   hmmer2gff
 

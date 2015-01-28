@@ -57,7 +57,7 @@ The following keys are added by different scripts and may be used in different s
 
 	* - Key
 	  - Value
-	  - Explanation	
+	  - Explanation
 	  - Used
 	* - taxon_name
 	  - string
