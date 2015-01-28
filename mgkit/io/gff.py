@@ -843,6 +843,122 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
     return annotation
 
 
+def from_hmmer(line, aa_seqs, ko_counts=None, feat_type='gene', source='HMMER',
+               db='CUSTOM'):
+    """
+    .. versionadded:: 0.1.15
+        first implementation to move old scripts to new GFF specs
+
+    Parse HMMER results (one line), it won't parse commented lines (starting
+    with *#*)
+
+    .. note::
+
+        use :func:`correct_old_annotations` for correcting the *taxon_id* of
+        annotations from versions **<= 0.1.14** of the framework, in the case
+        of profiles with only old profiles:
+
+            * old: KOID_TAXON(-nr)
+            * new: KOID_TAXONID_TAXON-NAME(-nr)
+
+    .. note::
+
+        *ko_counts* is retained for compatibility with old scripts, instead
+        :attr:`Annotation.uid` is to be used as unique identifier. Will be
+        deprecated in future versions
+
+    :param str line: HMMER domain table line
+    :param dict aa_seqs: dictionary with amino-acid sequences (name->seq),
+        used to get the correct nucleotide positions
+    :param dict ko_counts: dictionary with ko counts (ko->count), used to
+        index the ko ids in the GFF
+    :param str feat_type: string to be used in the 'feature type' column
+    :param str source: string to be used in the 'source' column
+
+    :return: a :class:`Annotation` instance
+    """
+    line = line.split()
+    contig, frame = line[0].rsplit('-', 1)
+
+    t_from = int(line[17])
+    t_to = int(line[18])
+    # first get coordinate if sequence is reversed
+    if frame.startswith('r'):
+        seq_len = len(aa_seqs[line[0]])
+        t_from, t_to = seq_utils.reverse_aa_coord(t_from, t_to, seq_len)
+    # converts in nucleotide coordinates
+    t_from = (t_from - 1) * 3 + 1  # gets the first base of the codon
+    t_to = (t_to - 1) * 3 + 3  # gets the third base of the codon
+    # adds the frame
+    t_from = t_from + int(frame[-1])
+    t_to = t_to + int(frame[-1])
+
+    # maintains the aa coordinates
+    aa_from = int(line[17])
+    aa_to = int(line[18])
+    profile_name = line[3]
+    score = float(line[6])
+
+    # two profile name types:
+    # old: KOID_TAXON(-nr)
+    # new: KOID_TAXONID_TAXON-NAME(-nr)
+    try:
+        #old format: KO_taxon(-nr)
+        gene_id, taxon_name = profile_name.split('_')
+        taxon_id = None
+    except ValueError:
+        #new format: KO_taxonid_taxon(-nr)
+        profile_name = profile_name.split('_')
+        gene_id, taxon_id, taxon_name = profile_name
+
+    if ko_counts is not None:
+        try:
+            ko_counts[gene_id] += 1
+        except KeyError:
+            ko_counts[gene_id] = 1
+        ko_idx = "{0}.{1}".format(
+            gene_id,
+            ko_counts[gene_id]
+        )
+
+    annotation = Annotation(
+        seq_id=contig,
+        source=source,
+        feat_type=feat_type,
+        start=t_from,
+        end=t_to,
+        score=score,
+        strand='-' if frame.startswith('r') else '+',
+        phase=int(frame[1]),
+        db=db,
+        gene_id=gene_id,
+        taxon_id=taxon_id,
+        bitscore=float(line[7]),
+
+        # custom for HMMER profiles
+        aa_from=aa_from,
+        aa_to=aa_to,
+        # stores the aa sequence
+        aa_seq=aa_seqs[line[0]][aa_from - 1:aa_to],
+        # evalue
+        evalue=score,
+
+        # maintains HMMER profile information:
+        # profile name
+        name=profile_name,
+        # both strand/phase (e.g r2)
+        frame=frame,
+        reviewed='no' if profile_name.endswith('-nr') else 'yes',
+        # old version of uid
+        ko_idx=ko_idx,
+        # used in other old profiles, where the taxon name was used instead
+        # of a taxon ID
+        taxon=taxon_name
+    )
+
+    return annotation
+
+
 def parse_gff(file_handle, gff_type=from_gff):
     """
     .. versionchanged:: 0.1.12
