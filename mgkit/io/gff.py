@@ -953,7 +953,7 @@ def from_hmmer(line, aa_seqs, ko_counts=None, feat_type='gene', source='HMMER',
         ko_idx=ko_idx,
         # used in other old profiles, where the taxon name was used instead
         # of a taxon ID
-        taxon=taxon_name
+        taxon_name=taxon_name
     )
 
     return annotation
@@ -1256,7 +1256,10 @@ def correct_old_annotations(annotations, taxonomy):
             # if a taxon_name DOESN'T contains the id try to reverse
             # it using the taxonomy (if provided), using the first matching ID
             else:
-                taxon_name = annotation.attr['taxon'].replace('#', ' ')
+                try:
+                    taxon_name = annotation.attr['taxon'].replace('#', ' ')
+                except KeyError:
+                    taxon_name = annotation.attr['taxon_name'].replace('#', ' ')
 
                 if taxon_name in taxon.MISPELLED_TAXA:
                     taxon_name = taxon.MISPELLED_TAXA[taxon_name]
