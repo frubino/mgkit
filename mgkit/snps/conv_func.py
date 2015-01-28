@@ -11,6 +11,8 @@ import mgkit.snps.mapper
 def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order',
                        index_type='taxon'):
     """
+    .. versionadded:: 0.1.11
+
     Returns a :class:`~pandas.DataFrame` with the pN/pS of the given
     SNPs data, mapping all taxa to the specified rank. Higher taxa won't
     be included.
@@ -56,6 +58,8 @@ def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order',
 def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3,
                            index_type='gene'):
     """
+    .. versionadded:: 0.1.11
+
     Returns a :class:`~pandas.DataFrame` with the pN/pS of the given
     SNPs data, mapping all taxa to the gene map.
 
@@ -97,6 +101,8 @@ def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3,
 
 def get_full_dataframe(snp_data, taxonomy, min_num=3, index_type=None):
     """
+    .. versionadded:: 0.1.12
+
     Returns a :class:`~pandas.DataFrame` with the pN/pS of the given
     SNPs data.
 
@@ -132,6 +138,8 @@ def get_full_dataframe(snp_data, taxonomy, min_num=3, index_type=None):
 def get_gene_taxon_dataframe(snp_data, taxonomy, gene_map, min_num=3,
                              rank='genus', index_type=None):
     """
+    .. versionadded:: 0.1.12
+
     .. todo::
 
         edit docstring

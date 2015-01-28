@@ -74,6 +74,7 @@ Changes
 * added :func:`mgkit.net.embl.dbfetch`
 * added :func:`mgkit.net.uniprot.get_gene_info` and :func:`mgkit.net.uniprot.query_uniprot` :func:`mgkit.net.uniprot.parse_uniprot_response`
 * added apply_func_to_values to :mod:`mgkit.utils.dictionary`
+* added :func:`mgkit.snps.conv_func.get_full_dataframe`, :func:`mgkit.snps.conv_func.get_gene_taxon_dataframe`
 * added more tests
 
 0.1.11
@@ -92,3 +93,4 @@ Changes
 * added :func:`mgkit.snps.funcs.flat_sample_snps`
 * Added method to :class:`mgkit.kegg.KeggClientRest` to get names for all ids of a certain type (more generic than the various `get_*_names`)
 * added first implementation of :class:`mgkit.kegg.KeggModule` class to parse a Kegg module entry
+* :func:`mgkit.snps.conv_func.get_rank_dataframe`, :func:`mgkit.snps.conv_func.get_gene_map_dataframe`
