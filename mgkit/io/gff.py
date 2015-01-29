@@ -429,7 +429,55 @@ class Annotation(GenomicRange):
         file_handle.write(self.to_gff())
 
     def to_gtf(self):
-        pass
+        """
+        .. versionadded:: 0.1.15
+
+        Simple conversion to a valid GTF. gene_id and transcript_id are set to
+        gene_id, unless transcript_id is present. Written for *SNPDat*.
+
+        """
+        sep = '='
+        var_names = (
+            'seq_id', 'source', 'feat_type', 'start', 'end',
+            'score', 'strand', 'phase'
+        )
+
+        values = '\t'.join(
+            str(getattr(self, var_name))
+            for var_name in var_names
+        )
+
+        attr_keys = sorted(self.attr.keys())
+
+        # eliminate gene_id (always present in new ones)
+        try:
+            attr_keys.remove('gene_id')
+        except:
+            pass
+
+        # transcript_id on't always be there
+        try:
+            attr_keys.remove('transcript_id')
+        except ValueError:
+            pass
+
+        attr_keys = ['gene_id', 'transcript_id'] + attr_keys
+
+        attr_column = ';'.join(
+            '{0}{1}"{2}"'.format(
+                key,
+                sep,
+                urllib.quote(
+                    # in case transcript_id wasn't present is substituted by
+                    # gene_id value
+                    str(self.attr.get(key, self.gene_id)),
+                    ' ()/'
+                )
+            )
+            for key in attr_keys
+        )
+
+        return "{0}\t{1}\n".format(values, attr_column)
 
     @property
     def sample_coverage(self):
@@ -902,24 +950,24 @@ def from_hmmer(line, aa_seqs, ko_counts=None, feat_type='gene', source='HMMER',
     # two profile name types:
     # old: KOID_TAXON(-nr)
     # new: KOID_TAXONID_TAXON-NAME(-nr)
+    reviewed = 'False' if profile_name.endswith('-nr') else 'True'
     try:
         #old format: KO_taxon(-nr)
         gene_id, taxon_name = profile_name.split('_')
         taxon_id = None
     except ValueError:
         #new format: KO_taxonid_taxon(-nr)
-        profile_name = profile_name.split('_')
-        gene_id, taxon_id, taxon_name = profile_name
+        gene_id, taxon_id, taxon_name = profile_name.split('_')
 
-    if ko_counts is not None:
-        try:
-            ko_counts[gene_id] += 1
-        except KeyError:
-            ko_counts[gene_id] = 1
-        ko_idx = "{0}.{1}".format(
-            gene_id,
-            ko_counts[gene_id]
-        )
+    # if ko_counts is not None:
+    #     try:
+    #         ko_counts[gene_id] += 1
+    #     except KeyError:
+    #         ko_counts[gene_id] = 1
+    #     ko_idx = "{0}.{1}".format(
+    #         gene_id,
+    #         ko_counts[gene_id]
+    #     )
 
     annotation = Annotation(
         seq_id=contig,
@@ -948,9 +996,9 @@ def from_hmmer(line, aa_seqs, ko_counts=None, feat_type='gene', source='HMMER',
         name=profile_name,
         # both strand/phase (e.g r2)
         frame=frame,
-        reviewed='no' if profile_name.endswith('-nr') else 'yes',
+        reviewed=reviewed,
         # old version of uid
-        ko_idx=ko_idx,
+        # ko_idx=ko_idx,
         # used in other old profiles, where the taxon name was used instead
         # of a taxon ID
         taxon_name=taxon_name
