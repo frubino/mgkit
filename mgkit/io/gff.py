@@ -588,6 +588,64 @@ class Annotation(GenomicRange):
 
         return ann_seq
 
+    def add_gc_content(self, seq):
+        """
+        Adds GC content information for an annotation. The formula is:
+
+        .. math::
+            :label: gc_content
+
+            \\frac {(G + C)}{(G + C + A + T)}
+
+        Modifies the instances of the annotation. gc_ratio will be added to its
+        attributes.
+
+        Arguments:
+            seq (str): nucleotide sequence referred in the GFF
+
+        """
+
+        ann_seq = self.get_nuc_seq(
+            seq,
+            reverse=True if self.strand == '-' else False
+        )
+
+        at_sum = (ann_seq.count('A') + ann_seq.count('T'))
+        gc_sum = (ann_seq.count('G') + ann_seq.count('C'))
+
+        gc_cont = gc_sum / (gc_sum + at_sum)
+
+        self.set_attr('gc_cont', gc_cont)
+
+    def add_gc_ratio(self, seq):
+        """
+        Adds GC content information for an annotation. The formula is:
+
+        .. math::
+            :label: gc_ratio
+
+            \\frac {(A + T)}{(G + C)}
+
+        Modifies the instances of the annotation. gc_ratio will be added to its
+        attributes.
+
+        Arguments:
+            seq (str): nucleotide sequence referred in the GFF
+
+        """
+
+        ann_seq = self.get_nuc_seq(
+            seq,
+            reverse=True if self.strand == '-' else False
+        )
+
+        at_sum = (ann_seq.count('A') + ann_seq.count('T'))
+        gc_sum = (ann_seq.count('G') + ann_seq.count('C'))
+
+        gc_ratio = at_sum / gc_sum
+
+        self.set_attr('gc_ratio', gc_ratio)
+
 
 def from_glimmer3(header, line, feat_type='CDS'):
     """
