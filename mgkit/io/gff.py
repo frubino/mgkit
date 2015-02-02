@@ -1580,3 +1580,20 @@ def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
             infos[annotation.gene_id] = annotation.get_mapping(map_db)
 
     return infos
+
+
+def parse_gff_files(files):
+    """
+    Function that returns an iterator of annotations from multiple GFF files.
+
+    Arguments:
+        files (iterable, str): iterable of file names of GFF files, or a single
+            file name
+
+    Yields:
+        :class:`Annotation`: iterator of annotations
+    """
+    if isinstance(files, str):
+        files = [files]
+
+    return itertools.chain(*(parse_gff(file_name) for file_name in files))
