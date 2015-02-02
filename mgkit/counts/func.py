@@ -141,10 +141,14 @@ def filter_counts(counts_iter, info_func, gfilters=None, tfilters=None):
         yield uid, count
 
 
-def map_counts(counts_iter, info_func, gmapper=None, tmapper=None, index=None):
+def map_counts(counts_iter, info_func, gmapper=None, tmapper=None, index=None,
+               uid_used=None):
     """
     .. versionchanged:: 0.1.14
         added *index* parameter
+
+    .. versionchanged:: 0.1.15
+        added *uid_used* parameter
 
     Maps counts according to the gmapper and tmapper functions. Each mapped
     gene ID count is the sum of all uid that have the same ID(s). The same is
@@ -161,6 +165,9 @@ def map_counts(counts_iter, info_func, gmapper=None, tmapper=None, index=None):
         index (None, str): if None, the index of the Series if
             *(gene_id, taxon_id)*, if a str, it can be either *gene* or
             *taxon*, to specify a single value
+        uid_used (None, dict): an empty dictionary in which to store the *uid*
+            that were assigned to each key of the returned pandas.Series. If
+            *None*, no information is saved
 
     Returns:
         pandas.Series: array with MultiIndex *(gene_id, taxon_id)* with the
@@ -194,8 +201,12 @@ def map_counts(counts_iter, info_func, gmapper=None, tmapper=None, index=None):
 
             try:
                 mapped_counts[key] += count
+                if uid_used is not None:
+                    uid_used[key].add(uid)
             except KeyError:
                 mapped_counts[key] = count
+                if uid_used is not None:
+                    uid_used[key] = set([uid])
 
     return pandas.Series(mapped_counts)
 
@@ -238,10 +249,13 @@ def map_gene_id_to_map(gene_map, gene_id):
 
 def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
                        rank=None, gene_map=None, ex_anc=None,
-                       include_higher=True, cached=False):
+                       include_higher=True, cached=False, uid_used=None):
     """
     .. versionchanged:: 0.1.14
         added *cached* argument
+
+    .. versionchanged:: 0.1.15
+        added *uid_used* parameter
 
     Reads sample counts, filtering and mapping them if requested. It's an
     example of the usage of the above functions.
@@ -260,6 +274,9 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         cached (bool): if *True*, the function will use
             :class:`mgkit.simple_cache.memoize` to cache some of the functions
             used
+        uid_used (None, dict): an empty dictionary in which to store the *uid*
+            that were assigned to each key of the returned pandas.Series. If
+            *None*, no information is saved
 
     Returns:
         pandas.Series: array with MultiIndex *(gene_id, taxon_id)* with the
@@ -331,7 +348,8 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         ),
         info_func,
         gmapper=gmapper,
-        tmapper=tmapper
+        tmapper=tmapper,
+        uid_used=uid_used
     )
 
     return series
@@ -339,9 +357,12 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
 
 def load_sample_counts_to_taxon(info_func, counts_iter, taxonomy, inc_anc=None,
                                 rank=None, ex_anc=None, include_higher=True,
-                                cached=True):
+                                cached=True, uid_used=None):
     """
     .. versionadded:: 0.1.14
+
+    .. versionchanged:: 0.1.15
+        added *uid_used* parameter
 
     Reads sample counts, filtering and mapping them if requested. It's a
     variation of :func:`load_sample_counts`, with the counts being mapped only
@@ -362,6 +383,9 @@ def load_sample_counts_to_taxon(info_func, counts_iter, taxonomy, inc_anc=None,
         cached (bool): if *True*, the function will use
             :class:`mgkit.simple_cache.memoize` to cache some of the functions
             used
+        uid_used (None, dict): an empty dictionary in which to store the *uid*
+            that were assigned to each key of the returned pandas.Series. If
+            *None*, no information is saved
 
     Returns:
         pandas.Series: array with Index *taxon_id* with the filtered and mapped
@@ -419,16 +443,21 @@ def load_sample_counts_to_taxon(info_func, counts_iter, taxonomy, inc_anc=None,
         ),
         info_func,
         tmapper=tmapper,
-        index='taxon'
+        index='taxon',
+        uid_used=uid_used
     )
 
     return series
 
 
 def load_sample_counts_to_genes(info_func, counts_iter, taxonomy, inc_anc=None,
-                                gene_map=None, ex_anc=None, cached=True):
+                                gene_map=None, ex_anc=None, cached=True,
+                                uid_used=None):
     """
     .. versionadded:: 0.1.14
+
+    .. versionchanged:: 0.1.15
+        added *uid_used* parameter
 
     Reads sample counts, filtering and mapping them if requested. It's a
     variation of :func:`load_sample_counts`, with the counts being mapped only
@@ -448,6 +477,9 @@ def load_sample_counts_to_genes(info_func, counts_iter, taxonomy, inc_anc=None,
         cached (bool): if *True*, the function will use
             :class:`mgkit.simple_cache.memoize` to cache some of the functions
             used
+        uid_used (None, dict): an empty dictionary in which to store the *uid*
+            that were assigned to each key of the returned pandas.Series. If
+            *None*, no information is saved
 
     Returns:
         pandas.Series: array with Index *gene_id* with the filtered and mapped
@@ -501,7 +533,8 @@ def load_sample_counts_to_genes(info_func, counts_iter, taxonomy, inc_anc=None,
         ),
         info_func,
         gmapper=gmapper,
-        index='gene'
+        index='gene',
+        uid_used=uid_used
     )
 
     return series
