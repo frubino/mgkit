@@ -15,4 +15,4 @@ Rubino, F. and Creevey, C.J. 2014. MGkit: Metagenomic Framework For The Study Of
 Links
 -----
 
-.. [#] `<https://bitbucket.org/frubino/mgkit>`_
+.. [#] `<https://bitbucket.org/setsuna80/mgkit>`_
