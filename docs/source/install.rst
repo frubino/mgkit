@@ -23,6 +23,7 @@ The library requires these Python packages:
 * `goatools <https://github.com/tanghaibao/goatools>`_ (required by :mod:`mgkit.mappings.go`), has package `fisher` as a dependency
 * rpy2 >= 2.3.8 (required by :mod:`mgkit.utils.r_func`)
 * argparse (if Python 2.6 is installed, part of the standard library from 2.7)
+* Shapely (if module :mod:`mgkit.plots.abund` is used)
 
 Optional:
 
@@ -70,7 +71,7 @@ Running Tests
 
 The tests requires the `nosetests` package::
 
-	$ pip install nosetests
+	$ pip install nose
 
 and the package `yanc` is used for coloring the output. If you don't want to install it you can edit the `setup.cfg` and `setup.py` files in the source distribution and delete the `with-yanc` before running the tests.
 
@@ -86,7 +87,9 @@ Building Documentation
 Needs sphinx >=1.2.2
 
 * sphinx_rtd_theme
+* actdiag
 * sphinxcontrib-actdiag
+* blockdiag
 * sphinxcontrib-blockdiag
 * sphinxcontrib-napoleon (we'll be part of sphinx 1.3, needed until then)
 * sphinx-argparse
@@ -157,12 +160,29 @@ The tricky package to install in MacOSX is actually `matplotlib <http://matplotl
 		export CPPFLAGS="-I/usr/local/opt/freetype/include -I/usr/local/opt/libpng/include -I/usr/local/opt/freetype/include/freetype2"
 
 
-Installing Scipy on Linux
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Installing Scipy from source on Linux
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In case you can't install scipy from the source, because of a compile error, you may try the solution on `stackoverflow  <http://stackoverflow.com/questions/7496547/python-scipy-needs-blas>`_
+A full description on how to install the scipy on Linux from source can be found at `this address <http://www.scipy.org/scipylib/building/linux.html>`_, be aware that the compilation of the `math-atlas` and `lapack` libraries takes a long time.
 
-Remember to add **-fPIC** to the compilation options in LAPACK to the **make.inc**.
+Installation in a virtual environment::
+
+	# create virtual environment, if needed, otherwise activate the one desired
+	virtualenv venv
+	source venv/bin/activate
+	# create temporary directory to compile math-atlas and lapack
+	mkdir dep-build; cd dep-build
+	wget http://www.netlib.org/lapack/lapack.tgz
+	wget http://sourceforge.net/projects/math-atlas/files/Stable/3.10.2/atlas3.10.2.tar.bz2/download
+	tar xfvj download
+	cd ATLAS
+	mkdir build; cd build
+	../configure -Fa alg -fPIC --with-netlib-lapack-tarfile=../../lapack.tgz --prefix=$VIRTUAL_ENV
+	make
+	cd lib; make shared; make ptshared; cd ..
+	make install
+
+This will compile math-atlas with full lapack support in the virtual environment, change the `--prefix=$VIRTUAL_ENV` to `--prefix=$HOME` if you want to install the dependencies in you home directory.
 
 Notes
 -----
