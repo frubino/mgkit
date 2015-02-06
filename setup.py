@@ -9,7 +9,6 @@ from setuptools import setup, find_packages
 install_requires = [
     'numpy>=1.9.1',
     'pysam>=0.8.1',
-    'HTSeq>=0.6.1p1',
     'pandas>=0.15.1',
     'scipy>=0.14.0',
     #'matplotlib>=1.4.0',
@@ -42,6 +41,7 @@ setup(
     ],
     tests_require=['nose>=1.3', 'yanc'],
     extras_require={
+        'htseq': ['HTSeq>=0.6.1p1'],
         'R': 'rpy2>=2.3.8',
     },
     entry_points={
@@ -54,9 +54,9 @@ setup(
             'get-gff-info = mgkit.workflow.extract_gff_info:main',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'blast2gff = mgkit.workflow.blast2gff:main',
-            'snp_parser = mgkit.workflow.snp_parser:main',
+            'snp_parser = mgkit.workflow.snp_parser:main [htseq]',
             'translate_seq = mgkit.workflow.nuc2aa:main',
-            'fastq_utils = mgkit.workflow.fastq_utils:main',
+            'fastq_utils = mgkit.workflow.fastq_utils:main [htseq]',
             'add_coverage_to_gff = mgkit.workflow.add_coverage:main',
         ],
         # 'R': ['R = mgkit.utils:r_func [R]']
