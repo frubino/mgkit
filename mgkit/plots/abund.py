@@ -8,7 +8,7 @@ from shapely import geometry
 import math
 import numpy
 
-SQRT3 = math.sqrt(3)
+SQRT3_2 = math.sqrt(3) / 2
 
 
 def draw_triangle_grid(ax, labels=['LAB', 'SAB', 'EAB'],
@@ -29,7 +29,7 @@ def draw_triangle_grid(ax, labels=['LAB', 'SAB', 'EAB'],
     """
 
     lines = geometry.LineString(
-        [(0, 0), (0.5, math.sqrt(3) / 2), (1, 0), (0, 0)]
+        [(0, 0), (0.5, SQRT3_2), (1, 0), (0, 0)]
     )
 
     if styles is None:
@@ -54,12 +54,12 @@ def draw_triangle_grid(ax, labels=['LAB', 'SAB', 'EAB'],
 
     ax.text(-0.05, -0.05, labels[0], fontdict=fontdict)
     ax.text(1.0, -0.05, labels[1], fontdict=fontdict)
-    ax.text(0.5 - 0.025, math.sqrt(3) / 2 + 0.05, labels[2], fontdict=fontdict)
+    ax.text(0.5 - 0.025, SQRT3_2 + 0.05, labels[2], fontdict=fontdict)
 
     # font size for the ticks
     fontdict = {'fontsize': fontsize * 0.75}
 
-    Xvalues = numpy.arange(0.1, math.sqrt(3) / 2, math.sqrt(3) / 2 / 10)
+    Xvalues = numpy.arange(0.1, SQRT3_2, SQRT3_2 / 10)
     Yvalues = numpy.arange(0.1, 1., 0.1)
 
     for x, y in zip(Xvalues, Yvalues):
@@ -165,7 +165,7 @@ def project_point(point):
     c = point[2]
 
     x = b + (c / 2.)
-    y = math.sqrt(3) / 2. * c
+    y = SQRT3_2 * c
 
     return (x, y)
 
