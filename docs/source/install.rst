@@ -182,7 +182,7 @@ Installation in a virtual environment::
 	cd lib; make shared; make ptshared; cd ..
 	make install
 
-This will compile math-atlas with full lapack support in the virtual environment, change the `--prefix=$VIRTUAL_ENV` to `--prefix=$HOME` if you want to install the dependencies in you home directory.
+This will compile math-atlas with full lapack support in the virtual environment; change the `--prefix=$VIRTUAL_ENV` to `--prefix=$HOME` if you want to install the dependencies in you home directory.
 
 Notes
 -----

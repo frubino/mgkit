@@ -1,7 +1,7 @@
 """
 .. versionadded:: 0.1.15
 
-Module to plot relative abundances in a 2D or 3D projection
+Module to plot relative abundances in a 1D or 3D projection
 """
 from __future__ import division
 from shapely import geometry
@@ -92,7 +92,7 @@ def draw_triangle_grid(ax, labels=['LAB', 'SAB', 'EAB'],
         ax.plot(
             *line.xy,
             color='k',
-            linestyle='-' if styles is None else styles[1],
+            linestyle=':' if styles is None else styles[1],
             linewidth=linewidth * 0.75
         )
         ax.text(
@@ -194,7 +194,7 @@ def col_func_taxon(taxon_id, taxonomy, anc_ids, colpal):
     return 'black'
 
 
-def draw_circles(ax, data, col_func=col_func_firstel, csize=200, alpha=.5,
+def draw_circles(ax, data, col_func=col_func_name, csize=200, alpha=.5,
                  sizescale=None, order=None, linewidths=0., edgecolor='none'):
     """
     Draws a scatter plot over either a planar-simplex projection, if the number
