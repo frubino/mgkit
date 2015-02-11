@@ -669,11 +669,12 @@ class NoLcaFound(Exception):
     pass
 
 
-def lowest_common_ancestor(taxonomy, taxon_id1, taxon_id2):
+def last_common_ancestor(taxonomy, taxon_id1, taxon_id2):
     """
     .. versionadded:: 0.1.13
 
-    Finds the lowest common ancestor of two taxon IDs.
+    Finds the last common ancestor of two taxon IDs. An alias to this function
+    is in the same module, called *lowest_common_ancestor* for compatibility.
 
     Arguments:
         taxonomy: :class:`UniprotTaxonomy` instance used to test
@@ -697,3 +698,5 @@ def lowest_common_ancestor(taxonomy, taxon_id1, taxon_id2):
                 raise NoLcaFound('No common ancestry')
 
     return lca_id
+
+lowest_common_ancestor = last_common_ancestor

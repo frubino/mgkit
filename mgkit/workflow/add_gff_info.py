@@ -57,7 +57,7 @@ maximum bitscore and identity, with the bitscore having the highest priority.
 LCA Taxon
 +++++++++
 
-Activated with the *-l* switch, it selects the lowest common ancestor of all
+Activated with the *-l* switch, it selects the last common ancestor of all
 taxon IDs that are from the cellular organism root in the taxonomy and are
 within a 10 bits (by default, can be customised with *-a*) from the hit with
 the highest bitscore. If a taxon ID is not found in the taxonomy, it is
@@ -348,7 +348,7 @@ def set_blast_taxonomy_parser(parser):
         '--lca',
         action='store_true',
         default=False,
-        help="Use lowest common ancestor to solve ambiguities"
+        help="Use last common ancestor to solve ambiguities"
     )
     group.add_argument(
         '-x',
@@ -428,7 +428,7 @@ def choose_by_lca(hits, taxonomy, gid_taxon_map, score=10):
         )
 
     func = functools.partial(
-        taxon.lowest_common_ancestor,
+        taxon.last_common_ancestor,
         taxonomy
     )
 

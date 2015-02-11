@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.1.15
+------
+
+* changed name of :func:`mgkit.taxon.lowest_common_ancestor` to :func:`mgkit.taxon.last_common_ancestor`, the old function name points to the new one
+
 0.1.14
 ------
 
