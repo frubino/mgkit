@@ -5,6 +5,7 @@ Changes
 ------
 
 * changed name of :func:`mgkit.taxon.lowest_common_ancestor` to :func:`mgkit.taxon.last_common_ancestor`, the old function name points to the new one
+* added :func:`mgkit.counts.func.map_counts_to_category` to remap counts from one ID to another
 
 0.1.14
 ------

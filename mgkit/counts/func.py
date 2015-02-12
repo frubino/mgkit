@@ -564,3 +564,41 @@ def load_deseq2_results(file_name, taxon_id=None):
     dataframe.index.names = ['gene_id', 'taxon_id']
 
     return dataframe
+
+
+def map_counts_to_category(counts, gene_map, nomap=False, nomap_id='NOMAP'):
+    """
+    Used to map the counts from a certain gene identifier to another. Genes
+    with no mappings are not counted, unless *nomap=True*, in which case they
+    are counted as *nomap_id*.
+
+    Arguments:
+        counts (iterator): an iterator that yield a tuple, with the first value
+            being the gene_id and the second value the count for it
+        gene_map (dictionary): a dictionary whose keys are the gene_id yield by
+            *counts* and the values are iterable of mapping identifiers
+        nomap (bool): if False, counts for genes with no mappings in *gene_map*
+            are discarded, if True, they a counted as *nomap_id*
+        nomap_id (str): name of the mapping for genes with no mappings
+
+    Returns:
+        pandas.Series: mapped counts
+    """
+
+    newcounts = {}
+    for gene_id, count in counts:
+        try:
+            map_ids = gene_map[gene_id]
+        except KeyError:
+            continue
+
+        if nomap and (not map_ids):
+            map_ids = [nomap_id]
+
+        for map_id in map_ids:
+            try:
+                newcounts[map_id] += count
+            except KeyError:
+                newcounts[map_id] = count
+
+    return pandas.Series(newcounts)
