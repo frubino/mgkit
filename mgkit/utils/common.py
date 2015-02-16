@@ -96,6 +96,23 @@ def range_substract(start1, end1, start2, end2):
 
 
 def range_intersect(start1, end1, start2, end2):
+    """
+    .. versionadded:: 0.1.13
+
+    Given two ranges in the form *(start, end)*, it returns the range
+    that is the intersection of the two.
+
+    Arguments:
+        start1 (int): start position for the first range
+        end1 (int): end position for the first range
+        start2 (int): start position for the second range
+        end2 (int): end position for the second range
+
+    Returns:
+        (None, tuple): returns a tuple with the start and end position for
+        the intersection of the two ranges, or *None* if the intersection is
+        empty
+    """
     if between(start2, start1, end1) or between(end2, start1, end1) or \
        between(start1, start2, end2) or between(end1, start2, end2):
         return max(start1, start2), min(end1, end2)
