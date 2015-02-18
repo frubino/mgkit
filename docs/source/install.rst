@@ -17,17 +17,17 @@ The library requires these Python packages:
 * numpy >= 1.9.1
 * scipy >= 0.14.0
 * pandas >= 0.15.1
-* HTSeq >= 0.6.1p1
 * matplotlib >= 1.4.0
 * pysam >= 0.8.1 (required by :mod:`mgkit.align`)
-* `goatools <https://github.com/tanghaibao/goatools>`_ (required by :mod:`mgkit.mappings.go`), has package `fisher` as a dependency
-* rpy2 >= 2.3.8 (required by :mod:`mgkit.utils.r_func`)
 * argparse (if Python 2.6 is installed, part of the standard library from 2.7)
 * Shapely (if module :mod:`mgkit.plots.abund` is used)
 
 Optional:
 
 * joblib: for script `translate_seq`, to use multiple processors
+* HTSeq >= 0.6.1p1
+* `goatools <https://github.com/tanghaibao/goatools>`_ (required by :mod:`mgkit.mappings.go`), has package `fisher` as a dependency
+* rpy2 >= 2.3.8 (required by :mod:`mgkit.utils.r_func`)
 
 Using pip
 ---------

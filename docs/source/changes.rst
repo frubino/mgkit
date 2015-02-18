@@ -6,6 +6,20 @@ Changes
 
 * changed name of :func:`mgkit.taxon.lowest_common_ancestor` to :func:`mgkit.taxon.last_common_ancestor`, the old function name points to the new one
 * added :func:`mgkit.counts.func.map_counts_to_category` to remap counts from one ID to another
+* added `get-gff-info` script to extract information from GFF files
+* script `download_data` can now download only taxonomy data
+* added more script documentation
+* added examples on gene prediction
+* added function :func:`mgkit.io.gff.from_hmmer` to parse HMMER results and return :class:`mgkit.io.gff.Annotation` instances
+* added :meth:`mgkit.io.gff.Annotation.to_gtf` to return a GTF line, :meth:`mgkit.io.gff.Annotation.add_gc_content` and :meth:`mgkit.io.gff.Annotation.add_gc_ratio` to calculate GC content and ratio respectively
+* added :func:`mgkit.io.gff.parse_gff_files` to parse multiple GFF files
+* added *uid_used* parameter to several functions in :mod:`mgkit.counts.func`
+* added :mod:`mgkit.plots.abund` to plot abundance plots
+* added example notebooks for plots
+* HTSeq is now required only by the scripts that uses it, *snp_parser* and *fastq_utils*
+* added function to convert numbers when reading from htseq count files
+* changed behavior of *-b* option in `add-gff-info` *taxonomy* command
+* added :func:`mgkit.io.gff.get_annotation_map`
 
 0.1.14
 ------
