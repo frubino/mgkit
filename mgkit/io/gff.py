@@ -1584,6 +1584,8 @@ def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
 
 def parse_gff_files(files):
     """
+    .. versionadded:: 0.1.15
+
     Function that returns an iterator of annotations from multiple GFF files.
 
     Arguments:
@@ -1597,3 +1599,26 @@ def parse_gff_files(files):
         files = [files]
 
     return itertools.chain(*(parse_gff(file_name) for file_name in files))
+
+
+def get_annotation_map(annotations, key_func, value_func):
+    """
+    .. versionadded:: 0.1.15
+
+    Applies two functions to an iterable of annotations with an iterator
+    returned with the applied functions. Useful to build a dictionary
+
+    Arguments:
+        annotations (iterable): iterable of annotations
+        key_func (func): function that accept an annotation as argument and
+            returns one value, the first of the returned tuple
+        value_func (func): function that accept an annotation as argument and
+            returns one value, the second of the returned tuple
+
+    Yields:
+        tuple: a tuple where the first value is the result of *key_func* on
+        the passed annotation and the second is the value returned by
+        *value_func* on the same annotation
+    """
+    for annotation in annotations:
+        yield key_func(annotation), value_func(annotation)
