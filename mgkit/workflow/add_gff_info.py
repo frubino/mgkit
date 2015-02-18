@@ -110,6 +110,9 @@ Changes
 * added *taxonomy* command
 * added *unipfile* command
 
+.. versionchanged:: 0.1.15
+    *taxonomy* command *-b* option changed
+
 """
 from __future__ import division
 import sys
@@ -322,8 +325,8 @@ def set_blast_taxonomy_parser(parser):
     parser.add_argument(
         '-b',
         '--blast-output',
-        action='store',
-        nargs='+',
+        action='append',
+        default=None,
         required=True,
         help="BLAST output file(s)"
     )
