@@ -25,28 +25,33 @@ SKIP = set(
 )
 
 
-def load_htseq_counts(f_handle):
+def load_htseq_counts(file_handle, conv_func=int):
     """
+    .. versionchanged:: 0.1.15
+        added *conv_func* parameter
+
     Loads an HTSeq-count result file
 
     Arguments:
 
-        f_handle (file or str): file handle or string with file name
+        file_handle (file or str): file handle or string with file name
+        conv_func (func): function to convert the number from string, defaults
+            to *int*, but *float* can be used as well
 
     Yields:
         tuple: first element is the gene_id and the second is the count
 
     """
 
-    LOG.info("Loading HTSeq-count file %s", str(f_handle))
+    LOG.info("Loading HTSeq-count file %s", str(file_handle))
 
-    for line in open_file(f_handle, 'r'):
+    for line in open_file(file_handle, 'r'):
         gene_id, count = line.rstrip().split('\t')
 
         if line.startswith('__') or (gene_id in SKIP):
             continue
 
-        yield gene_id, int(count)
+        yield gene_id, conv_func(count)
 
 
 def batch_load_htseq_counts(count_files, samples=None, cut_name=None):
