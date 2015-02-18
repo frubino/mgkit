@@ -11,6 +11,9 @@ install_requires = [
     'pysam>=0.8.1',
     'pandas>=0.15.1',
     'scipy>=0.14.0',
+    #'matplotlib>=1.4.0',
+    #'goatools',
+    # 'networkx>=1.9',
 ]
 
 with open('README.rst') as file:
