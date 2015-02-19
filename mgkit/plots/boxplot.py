@@ -169,12 +169,15 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None, label_map=None
 
 def add_values_to_boxplot(dataframe, ax, plot_data, plot_order,
                           data_colours=None, alpha=0.5, s=80, marker='o',
-                          linewidth=0.0, box_vert=False):
+                          linewidth=0.01, box_vert=False):
     """
     .. versionadded:: 0.1.13
 
     .. versionchanged:: 0.1.14
         added *box_vert* parameter
+
+    .. versionchanged:: 0.1.16
+        changed default value for *linewidth*
 
     Adds the values of a dataframe used in :func:`boxplot_dataframe` to the
     plot. *linewidth* must be higher than 0 if a marker like *|* is used.
@@ -200,7 +203,6 @@ def add_values_to_boxplot(dataframe, ax, plot_data, plot_order,
         box_vert (bool): specify if the original boxplot is vertical or not
     """
     for index, row_id in enumerate(plot_order):
-
         if box_vert:
             xvals = plot_data['medians'][index].get_xdata()
             mean_x = xvals.mean()
