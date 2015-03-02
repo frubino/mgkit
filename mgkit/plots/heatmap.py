@@ -162,8 +162,12 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
     )
 
 
-def dendrogram(data, ax, method='complete', orientation='top'):
+def dendrogram(data, ax, method='complete', orientation='top', use_dist=True,
+               dist_func=distance.pdist):
     """
+    .. versiochanged:: 0.1.16
+        added *use_dist* and *dist_func* parameters
+
     Plots a dendrogram of the clustered rows of the given matrix; if the
     columns are to be clustered, the transposed matrix needs to be passed.
 
@@ -174,13 +178,20 @@ def dendrogram(data, ax, method='complete', orientation='top'):
             :func:`scipy.cluster.hierarchy.linkage` is used.
         orientation (str): direction for the plot. *top*, *bottom*, *left* and
             *right* are accepted; *top* will draw the leaves at the bottom.
+        use_dist (bool): if True, the function *dist_func* will be applied to
+            *data* to get a distance matrix
+        dist_func (func): distance function to be used
 
     Returns:
         The dendrogram plotted, as returned by
         :func:`scipy.cluster.hierarchy.dendrogram`
 
     """
-    pairwise_dists = distance.squareform(distance.pdist(data))
+    if use_dist:
+        data = dist_func(data)
+
+    pairwise_dists = distance.squareform(data)
+
     clusters = hclust.linkage(pairwise_dists, method=method)
 
     dendrogram = hclust.dendrogram(
