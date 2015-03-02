@@ -8,6 +8,7 @@ import gzip
 import cPickle
 import itertools
 import collections
+import pandas
 from .io import open_file
 
 LOG = logging.getLogger(__name__)
@@ -19,6 +20,10 @@ ALGAE = {
     'cryptophyta': 3027,
     'rhodophyta': 2763,
 }
+
+BACTERIA = 2
+ARCHAEA = 2157
+FUNGI = 4751
 
 PROTISTS = {
     #'apicomplexa', alveolata
@@ -700,3 +705,80 @@ def last_common_ancestor(taxonomy, taxon_id1, taxon_id2):
     return lca_id
 
 lowest_common_ancestor = last_common_ancestor
+
+
+def distance_taxa_ancestor(taxonomy, taxon_id, anc_id):
+    """
+    .. versionadded:: 0.1.16
+
+    Function to calculate the distance between a taxon and the given ancestor
+
+    The distance is equal to the number of step in the taxonomy taken to arrive
+    at the ancestor.
+
+    Arguments:
+        taxonomy: :class:`UniprotTaxonomy` instance
+        taxon_id (int): taxonomic identifier
+        anc_id (int): taxonomic identifier of the ancestor
+
+    Raturns:
+        int: distance between *taxon_id* and it ancestor *anc_id*
+
+    """
+    distance = 0
+
+    while True:
+        if anc_id == taxon_id:
+            break
+        taxon_id = taxonomy[taxon_id].parent_id
+        distance += 1
+
+    return distance
+
+
+def distance_two_taxa(taxonomy, taxon_id1, taxon_id2):
+    """
+    .. versionadded:: 0.1.16
+
+    Calculate the distance between two taxa. The distance is equal to the sum
+    steps it takes to traverse the taxonomy until their last common ancestor.
+
+    Arguments:
+        taxonomy: :class:`UniprotTaxonomy` instance
+        taxon_id1 (int): taxonomic identifier of first taxon
+        taxon_id2 (int): taxonomic identifier of second taxon
+
+    Raturns:
+        int: distance between *taxon_id1* and *taxon_id2*
+    """
+    lca_id = last_common_ancestor(taxonomy, taxon_id1, taxon_id2)
+
+    return sum(
+        distance_taxa_ancestor(taxonomy, taxon_id, lca_id)
+        for taxon_id in (taxon_id1, taxon_id2)
+    )
+
+
+def taxa_distance_matrix(taxonomy, taxon_ids):
+    """
+    .. versionadded:: 0.1.16
+
+    Given a list of taxonomic identifiers, returns a distance matrix in a
+    pairwise manner by using :func:`distance_two_taxa` on all possible
+    two element combinations of *taxon_ids*.
+
+    Arguments:
+        taxonomy: :class:`UniprotTaxonomy` instance
+        taxon_ids (iterable): list taxonomic identifiers
+
+    Returns:
+        pandas.DataFrame: matrix with the pairwise distances of all *taxon_ids*
+    """
+    matrix = pandas.DataFrame(index=taxon_ids, columns=taxon_ids).fillna(0)
+
+    for taxon_id1, taxon_id2 in itertools.combinations(taxon_ids, 2):
+        distance = distance_two_taxa(taxonomy, taxon_id1, taxon_id2)
+        matrix.loc[taxon_id1, taxon_id2] = distance
+        matrix.loc[taxon_id2, taxon_id1] = distance
+
+    return matrix
