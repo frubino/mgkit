@@ -107,8 +107,8 @@ def get_default_filters(taxonomy, **kwargs):
     filter_black_list = functools.partial(
         filter_genesyn_by_taxon_id,
         taxonomy=taxonomy,
-        filter_list=filter_opts['black_list'],
-        exclude=True,
+        filter_list=filter_opts['include_only'],
+        exclude=False,
         func=filter_opts['func']
     )
     return [filter_coverage, filter_black_list]
