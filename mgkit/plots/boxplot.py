@@ -229,13 +229,16 @@ def add_values_to_boxplot(dataframe, ax, plot_data, plot_order,
 
 def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
                       fill_box=True, colours=None, data_colours=None,
-                      box_vert=True):
+                      box_vert=True, widths=0.5):
     """
     .. versionadded:: 0.1.7
         To move from an all-in-one drawing to a more modular one.
 
     .. versionchanged:: 0.1.13
         added box_vert parameter
+
+    .. versionchanged:: 0.1.16
+        added *widths* parameter
 
     The function draws a series of boxplots from a DataFrame object, whose order
     is directed by the iterable plot_order. The columns of each DataFrame row
@@ -256,6 +259,7 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
     :param dict data_colours: dictionary of colours for each boxplot, a set of
         colours can be obtained using func:`map_taxon_to_colours`
     :param bool box_vert: if False the boxplots are drawn horizontally
+    :param float widths: width (scalar or array) of the boxplots width(s)
 
     :return: the plot data; same as matplotlib boxplot function
     """
@@ -280,7 +284,8 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
 
     plot_data = ax.boxplot(
         [dataframe.loc[x].dropna() for x in plot_order],
-        vert=box_vert
+        vert=box_vert,
+        widths=widths
     )
 
     for idx, row_id in enumerate(plot_order):
@@ -427,8 +432,47 @@ def boxplot_snp_dataframe(ratios, plot_order, taxon_colours=None,
     return ax, plot
 
 
+def add_significance_to_boxplot(sign_indices, ax, pos, box_vert=True,
+                                fontsize=16):
+    """
+    .. versionadded:: 0.1.16
+
+    Add significance groups to boxplots
+
+    Arguments:
+        sign_indices (iterable): iterable in which each element is a tuple;
+            each element of the tuple is the numerical index of the position of
+            the significant boxplot
+        ax: an axis instance
+        pos (tuple): the 2 values are the coordinates for the top line, and the
+            the lowest bound for the whisker
+        box_vert (bool): if the boxplot is vertical
+        fontsize (float): size for the * (star)
+    """
+    maxval, spine = pos
+    text = maxval
+
+    for index, (sign1, sign2) in enumerate(sign_indices):
+        spacer = (index * ((maxval - spine) * 2.5))
+        factors = [spine, maxval]
+        x = numpy.array(
+            factors + factors[::-1]
+        ) - spacer
+
+        y = [sign1 + 1, sign1 + 1, sign2 + 1, sign2 + 1]
+
+        if box_vert:
+            x, y = y, x
+        ax.plot(x, y, linestyle='-', c='k', alpha=.75)
+        if box_vert:
+            xtext, ytext = numpy.mean(x), text - spacer
+        else:
+            xtext, ytext = text - spacer, numpy.mean(y)
+        ax.text(xtext, ytext, '*', fontsize=fontsize)
+
 __all__ = [
     'add_values_to_boxplot',
+    'add_significance_to_boxplot',
     'boxplot_dataframe_multindex',
     'boxplot_dataframe'
 ]
