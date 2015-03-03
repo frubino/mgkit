@@ -250,7 +250,7 @@ class KeggClientRest(object):
         """
         if isinstance(ids, str):
             ids = [ids]
-        if isinstance(ids, (set, frozenset)):
+        if isinstance(ids, (set, frozenset, dict)):
             ids = list(ids)
 
         data = []
