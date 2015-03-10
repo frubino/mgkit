@@ -748,7 +748,10 @@ def from_gff(line):
     attr = {}
 
     for var, value, vtype in zip(var_names, values, var_types):
-        attr[var] = vtype(value)
+        try:
+            attr[var] = vtype(value)
+        except ValueError:
+            attr[var] = value
 
     # in case the last column (attributes) is empty
     if len(line) < 9:
