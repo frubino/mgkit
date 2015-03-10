@@ -763,12 +763,19 @@ def from_gff(line):
             var, value = pair.strip().split('=', 1)
         except ValueError:
             # in case it doesn't work, it is assumed to be a space
-            var, value = pair.strip().split(' ', 1)
+            if ' ' in pair.strip():
+                var, value = pair.strip().split(' ', 1)
+            else:
+                # case in which there's an attribute but no value, like a bool
+                var = pair.strip()
+                value = None
 
         if var in attr:
             raise DuplicateKeyError("Duplicate attribute: {0}".format(var))
 
-        attr[var] = urllib.unquote(value.replace('"', ''))
+        if value is not None:
+            value = urllib.unquote(value.replace('"', ''))
+        attr[var] = value
 
     return Annotation(**attr)
 
