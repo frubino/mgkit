@@ -144,7 +144,7 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
     axis.set_ticks(major_ticks)
     axis.set_ticks(minor_ticks, minor=True)
     axis.set_ticks_position(spine)
-    axis.set_ticklabels(labels, minor=True)
+    axis.set_ticklabels(labels, minor=True, verticalalignment='center')
     axis.set_ticklabels([], minor=False)
     axis.set_tick_params(
         direction='in',
