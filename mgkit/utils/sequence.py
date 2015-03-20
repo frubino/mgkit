@@ -9,6 +9,7 @@ import random
 import numpy
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
+import collections
 
 LOG = logging.getLogger(__name__)
 
@@ -341,12 +342,19 @@ class Alignment(object):
         "Get the length of the alignment"
         return len(self._seqs[0])
 
-    def get_consensus(self):
+    def get_consensus(self, nucl=True):
         """
+        .. versionchanged:: 0.1.16
+            added *nucl* parameter
+
         The consensus sequence is constructed by checking the nucleotide that
         has the maximum number of counts for each position in the alignment.
 
-        :return str: consensus sequence
+        Arguments:
+            nucl (bool): specify if the alignment is nucleotidic
+
+        Returns:
+            str: consensus sequence
         """
 
         cons_seq = []
@@ -354,10 +362,14 @@ class Alignment(object):
 
         for pos in range(0, self.get_seq_len()):
             site = self.get_position(pos)
-            nuc_pos = max(
-                ((site.count(nuc), nuc) for nuc in nucs),
-                key=lambda x: x[0]
-            )[1]
+            if nucl:
+                nuc_pos = max(
+                    ((site.count(nuc), nuc) for nuc in nucs),
+                    key=lambda x: x[0]
+                )[1]
+            else:
+                nuc_pos = max(collections.Counter(x for x in site if x != '-'))
+
             cons_seq.append(nuc_pos)
         return ''.join(cons_seq)
 
