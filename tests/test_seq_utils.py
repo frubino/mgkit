@@ -6,15 +6,16 @@ from mgkit.utils import sequence
 from mgkit.utils import trans_tables
 
 
-def test_reverse_aa_coord():
+def test_reverse_aa_coord1():
     res = []
-    exp = [(1, 3), (5, 7), (4, 6), (4, 8), (1, 4)]
+    exp = [(1, 3), (5, 7), (4, 6), (4, 8), (1, 4), (71, 91)]
 
     res.append(sequence.reverse_aa_coord(6, 8, 8))
     res.append(sequence.reverse_aa_coord(2, 4, 8))
     res.append(sequence.reverse_aa_coord(3, 5, 8))
     res.append(sequence.reverse_aa_coord(1, 5, 8))
     res.append(sequence.reverse_aa_coord(5, 8, 8))
+    res.append(sequence.reverse_aa_coord(10, 30, 100))
 
     eq_(res, exp)
 
