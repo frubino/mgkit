@@ -220,6 +220,37 @@ def get_seq_expected_syn_count(seq, start=0, syn_matrix=None):
     return seq_syn, seq_nonsyn
 
 
+def get_variant_sequence(seq, *snps):
+    """
+    .. versionadded:: 0.1.16
+
+    Return a sequence changed in the positions requested.
+
+    Arguments:
+        seq (str): a sequence
+        *snps (tuple): each argument passed is a tuple with the first element
+            as a position in the sequence (1-based index) and the second
+            element is the character to substitute in the sequence
+
+    Returns:
+        str: string with the changed characters
+
+    Example:
+        >>> get_variant_sequence('ACTGATATATGCGCGCATCT', (1, 'C'))
+        'CCTGNTGTATGCGCGCATCT'
+
+    .. note::
+
+        It is used for nucleotide sequences, but it is valid to use any string
+    """
+    seq = list(seq)
+
+    for pos, change in snps:
+        seq[pos - 1] = change
+
+    return ''.join(seq)
+
+
 def convert_aa_to_nuc_coord(start, end, frame=0):
     """
     Converts aa coordinates to nucleotidic ones. The coordinates must be from

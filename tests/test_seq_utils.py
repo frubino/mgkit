@@ -20,6 +20,41 @@ def test_reverse_aa_coord1():
     eq_(res, exp)
 
 
+def test_get_variant_sequence1():
+    seq = 'ACTGATATATGCGCGCATCT'
+    snp = (1, 'C')
+
+    var = sequence.get_variant_sequence(seq, snp)
+
+    eq_(
+        var,
+        'CCTGATATATGCGCGCATCT'
+    )
+
+
+def test_get_variant_sequence2():
+    seq = 'ACTGATATATGCGCGCATCT'
+
+    var = sequence.get_variant_sequence(seq, (1, 'C'), (7, 'G'), (5, 'N'))
+
+    eq_(
+        var,
+        'CCTGNTGTATGCGCGCATCT'
+    )
+
+
+def test_get_variant_sequence3():
+    seq = 'ACTGATATATGCGCGCATCT'
+    snps = [(1, 'C'), (7, 'G'), (5, 'N')]
+
+    var = sequence.get_variant_sequence(seq, *snps)
+
+    eq_(
+        var,
+        'CCTGNTGTATGCGCGCATCT'
+    )
+
+
 def test_convert_aa_to_nuc_coord():
     res = []
     exp = [(1, 12), (2, 13), (7, 36), (6, 71)]
