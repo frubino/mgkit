@@ -573,20 +573,64 @@ class Annotation(GenomicRange):
         """
         return self.get_attr('exp_nonsyn', int)
 
-    def get_nuc_seq(self, seq, reverse=False):
+    def get_nuc_seq(self, seq, reverse=False, snp=None):
         """
         .. versionadded:: 0.1.13
+
+        .. versionchanged:: 0.1.16
+            added *snp* parameter
 
         Returns the nucleotidic sequence that the annotation covers. if the
         annotation's strand is *-*, and *reverse* is True, the reverse
         complement is returned.
+
+        Arguments:
+            seq (seq): chromosome/contig sequence
+            reverse (bool): if True and the strand is '-', a reverse complement
+                is returned
+            snp (tuple): first element is the position of the SNP and the
+                second element is the change
+
+        Returns:
+            str: nucleotide sequence with requested transformations
+
         """
         ann_seq = seq[self.start - 1:self.end]
+        if snp is not None:
+            seq_utils.get_variant_sequence(ann_seq, snp)
 
         if (self.strand == '-') and reverse:
             ann_seq = seq_utils.reverse_complement(ann_seq)
 
         return ann_seq
+
+    def get_aa_seq(self, seq, start=0, tbl=None, snp=None):
+        """
+        .. versionadded:: 0.1.16
+
+        Returns a translated aminoacid sequence of the annotation. The snp
+        parameter is passed to :meth:`Annotation.get_nuc_seq`
+
+        Arguments:
+            seq (seq): chromosome/contig sequence
+            start (int): position (0-based) from where the correct occurs
+                (frame)
+            tbl (dict): dictionary with the translation for each codon,
+                passed to :func:`mgkit.utils.sequence.translate_sequence`
+            snp (tuple): first element is the position of the SNP and the
+                second element is the change
+
+        Returns:
+            str: aminoacid sequence
+        """
+
+        nuc_seq = self.get_nuc_seq(seq, reverse=True, snp=snp)
+        return seq_utils.translate_sequence(
+            nuc_seq,
+            start=start,
+            tbl=None,
+            reverse=False
+        )
 
     def add_gc_content(self, seq):
         """
@@ -1003,11 +1047,11 @@ def from_hmmer(line, aa_seqs, ko_counts=None, feat_type='gene', source='HMMER',
         seq_len = len(aa_seqs[line[0]])
         t_from, t_to = seq_utils.reverse_aa_coord(t_from, t_to, seq_len)
     # converts in nucleotide coordinates
-    t_from = (t_from - 1) * 3 + 1  # gets the first base of the codon
-    t_to = (t_to - 1) * 3 + 3  # gets the third base of the codon
-    # adds the frame
-    t_from = t_from + int(frame[-1])
-    t_to = t_to + int(frame[-1])
+    t_from, t_to = seq_utils.convert_aa_to_nuc_coord(
+        t_from,
+        t_to,
+        frame=int(frame[-1])
+    )
 
     # maintains the aa coordinates
     aa_from = int(line[17])
