@@ -236,7 +236,7 @@ def convert_aa_to_nuc_coord(start, end, frame=0):
 
     .. note::
 
-        the coordinates a assumed to be 1-based indices
+        the coordinates are assumed to be 1-based indices
 
     """
     start = (start - 1) * 3 + 1  # gets the first base of the codon
@@ -263,14 +263,10 @@ def reverse_aa_coord(start, end, seq_len):
     .. note::
 
         * start and end are 1-based indices
-        * refer to :class:`GFFKegg.from_hmmer` code for details
 
     """
-    feat_len = end - start + 1  # length of the feature
-    tmp_start = seq_len - end + 1
-    tmp_end = tmp_start + feat_len - 1
 
-    return tmp_start, tmp_end
+    return (seq_len - end + 1, seq_len - start + 1)
 
 
 def calc_n50(seq_lengths):
@@ -522,7 +518,7 @@ def sequence_gc_content(sequence):
     Calculate GC content information for an annotation. The formula is:
 
     .. math::
-        :label: ge_content
+        :label: gc_content
 
         \\frac {(G + C)}{(G + C + A + T)}
 
