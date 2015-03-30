@@ -38,6 +38,7 @@ extensions = [
     'sphinxcontrib.napoleon',
     'sphinx.ext.mathjax',
     'sphinxarg.ext',
+    'sphinxcontrib.bibtex',
     #, 'rst2pdf.pdfbuilder'
 ]
 
