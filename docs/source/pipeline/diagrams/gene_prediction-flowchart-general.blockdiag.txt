@@ -1,0 +1,25 @@
+{
+        orientation = portrait;
+
+                class mgkit [color = "#e41a1c", textcolor = 'white', width=160, height=80, fontsize=16];
+                        class data [color = "#4daf4a", textcolor = 'white', width=160, height=80, fontsize=16];
+                                class software [color = "#377eb8", textcolor = "white", width=160, height=80, fontsize=16];
+
+                                        "Functional\n Prediction" [class = software, shape = flowchart.input, stacked];
+                                                "Taxonomic\n Prediction" [class = software, shape = flowchart.input];
+
+                                                        "Convert to\nGFF" [class = mgkit];
+                                                                "Filter\nGFF" [class = mgkit];
+                                                                        "Extract\nSequences" [class = mgkit];
+                                                                                "Add Taxonomy\nInformation" [class = mgkit];
+                                                                                        "Complete\nAnnotations" [class = mgkit];
+
+                                                                                                "Draft GFF" [class = data];
+                                                                                                        "Final GFF" [class = data];
+
+                                                                                                                "Functional\n Prediction"  -> "Convert to\nGFF" -> "Filter\nGFF" -> "Draft GFF";
+                                                                                                                        "Draft GFF" -> "Extract\nSequences" -> "Taxonomic\n Prediction" -> "Add Taxonomy\nInformation" -> "Draft GFF";
+                                                                                                                                "Draft GFF" -> "Complete\nAnnotations" -> "Final GFF";
+
+                                                                                                                                        "Filter\nGFF" -> "Draft GFF" [folded]
+                                                                                                                                            }
