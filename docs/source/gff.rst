@@ -3,7 +3,7 @@
 MGKit GFF Specifications
 ========================
 
-The GFF produced with MGKit follows the conventions of GFF/GTF files but they provide some additional fields in the 9th column which translate to a
+The GFF produced with MGKit follows the conventions of GFF/GTF files but it provides some additional fields in the 9th column which translate to a
 Python dictionary when an annotation is loaded into an :class:`Annotation` instance.
 
 The 9th column is a list of **key=value** item, separated by a semicolon (;); each value is also expected to be quoted with double quotes and the values to not include a semicolon or other characters that can make the parsing difficult. MGKit uses :func:`urllib.quote` to encode those characters and also " ()/". The :func:`mgkit.io.gff.from_gff` uses :func:`urllib.unquote` to set the values.
@@ -49,7 +49,7 @@ Any key can be added to a GFF annotation, but MGKit expects a few key to be in t
 	  - integer
 	  - used for expected number of synonymous and non-synonymous changes for the annotation
 
-The following keys are added by different scripts and may be used in different scripts or annotation methods. 
+The following keys are added by different scripts and may be used in different scripts or annotation methods.
 
 .. list-table:: Interpreted Values
 	:header-rows: 1

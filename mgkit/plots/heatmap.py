@@ -165,7 +165,7 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
 def dendrogram(data, ax, method='complete', orientation='top', use_dist=True,
                dist_func=distance.pdist):
     """
-    .. versiochanged:: 0.1.16
+    .. versionchanged:: 0.1.16
         added *use_dist* and *dist_func* parameters
 
     Plots a dendrogram of the clustered rows of the given matrix; if the

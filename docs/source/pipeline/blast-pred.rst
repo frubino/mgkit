@@ -1,9 +1,11 @@
+.. _gene-prediction-blast:
+
 Gene Prediction with BLAST+
 ===========================
 
 BLAST is another option to predict genes in a sequence and it is less difficult to set up as it only needs a FASTA file with the collection of genes to use.
 
-The examples here use Uniprot DBs to predict genes, as it enables the mapping to several DBs, including eggNOG and KEGG Orthologs. It also assumes that an assembly has been produced for the gene prediction and a DB to blast against is already setted up. Also, the BLAST+ package is expected to be installed on the system
+The examples here use Uniprot DBs to predict genes, as it enables the mapping to several DBs, including eggNOG and Kegg Orthologs. It also assumes that an assembly has been produced for the gene prediction and that a DB to use blast with is already set up. Also, the BLAST+ package is expected to be installed on the system.
 
 
 .. blockdiag::
@@ -11,9 +13,9 @@ The examples here use Uniprot DBs to predict genes, as it enables the mapping to
 	{
         orientation = portrait;
 
-        class mgkit [color = "#e41a1c" , textcolor = 'white', width=120, height=50, fontsize=15];
-        class data [color = "#4daf4a" , textcolor = 'white', width=120, height=50, fontsize=15];
-        class software [color = "#377eb8", textcolor = "white", width=120, height=50, fontsize=15];
+        class mgkit [color = "#e41a1c", textcolor = 'white', width=160, height=80, fontsize=16];
+        class data [color = "#4daf4a", textcolor = 'white', width=160, height=80, fontsize=16];
+        class software [color = "#377eb8", textcolor = "white", width=160, height=80, fontsize=16];
 
         "BLAST+\n(blastx)" [class = software, shape = flowchart.input, stacked];
         "BLAST+\n(blastn)" [class = software, shape = flowchart.input];
@@ -84,10 +86,10 @@ The ouput file `assembly.uniprot.frag.tab` is then passed to the `taxonomy` comm
 
 More information about the options used can be found at the script documentation (:ref:`get-gff-info`), with an LCA option being available for assignments.
 
-Taxonomic Assignment
+Complete Annotations
 ********************
 
-The rest of the taxonomic assignments, if not all, as  well as additional informations can be added with `uniprot` or `unipfile` commands of the `add-gff-info` :ref:`add-gff-info` script. The main difference is that the `uniprot` command takes a lot more time, as it connects to the internet and can take a long time on a large number of annotations, while `unipfile` uses a file provided by Uniprot with additional information (in particular the taxonomy).
+The rest of the taxonomic assignments, if not all, as  well as additional informations can be added with `uniprot` or `unipfile` commands of the `add-gff-info` :ref:`add-gff-info` script. The main difference is that the `uniprot` command may be slower, as it connects to the internet and on a large number of annotations it takes a long time. The `unipfile` uses a file provided by Uniprot with additional information (in particular the taxonomy).
 
 An example execution of the command is::
 
