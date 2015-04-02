@@ -98,6 +98,15 @@ file provided by Uniprot, which speeds up the process of adding mappings and
 taxonomy IDs from Uniprot gene IDs. It's not possible tough to add *EC* mappings
 with this command, as those are not included in the file.
 
+Expected Aminoacidic Changes
+****************************
+
+Some scripts, like :ref:`snp-parser`, require information about the expected
+number of synonymous and non-synonymous changes of an annotation. This can be
+done using :meth:`mgkit.io.gff.Annotation.add_exp_syn_count` by the user of the
+command `exp_syn` of this script. The attributes added to each annotation are
+explained in the :ref:`gff-specs`
+
 Changes
 *******
 
@@ -113,6 +122,9 @@ Changes
 .. versionchanged:: 0.1.15
     *taxonomy* command *-b* option changed
 
+.. versionchanged:: 0.1.16
+    added *exp_syn* command
+
 """
 from __future__ import division
 import sys
@@ -126,7 +138,7 @@ from . import utils
 from .. import align
 from .. import logger
 from .. import taxon
-from ..io import gff, blast
+from ..io import gff, blast, fasta
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
 
@@ -559,6 +571,33 @@ def coverage_command(options):
     gff.write_gff(annotations, options.output_file)
 
 
+def set_exp_syn_parser(parser):
+    """
+    .. versionadded:: 0.1.16
+    """
+    parser.add_argument(
+        '-r',
+        '--reference',
+        required=True,
+        type=argparse.FileType('r'),
+        help='reference sequence in fasta format'
+    )
+    parser.set_defaults(func=exp_syn_command)
+
+
+def exp_syn_command(options):
+    """
+    .. versionadded:: 0.1.16
+    """
+
+    seqs = dict(fasta.load_fasta(options.reference))
+
+    for annotation in gff.parse_gff(options.input_file):
+        annotation.add_exp_syn_count(seqs[annotation.seq_id])
+
+        annotation.to_file(options.output_file)
+
+
 def uniprot_offline_command(options):
 
     LOG.info("Mappings selected: %s", ', '.join(options.mapping))
@@ -671,6 +710,15 @@ def set_parser():
     set_coverage_parser(parser_c)
     set_common_options(parser_c)
     utils.add_basic_options(parser_c)
+
+    parser_e = subparsers.add_parser(
+        'exp_syn',
+        help='Adds expected synonymous and non-synonymous changes information'
+    )
+
+    set_exp_syn_parser(parser_e)
+    set_common_options(parser_e)
+    utils.add_basic_options(parser_e)
 
     parser_f = subparsers.add_parser(
         'unipfile',

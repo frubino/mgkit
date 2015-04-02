@@ -1,3 +1,5 @@
+.. _snp-parser:
+
 SNPs analysis
 =============
 
