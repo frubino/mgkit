@@ -23,7 +23,7 @@ Changes
 *******
 
 .. versionchanged:: 0.1.13
-    reworked the internals and the classes used
+    reworked the internals and the classes used, including options `-m` and `-s`
 
 """
 
