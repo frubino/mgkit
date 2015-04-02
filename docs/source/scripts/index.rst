@@ -12,4 +12,5 @@ This section detailed information about the scripts included
    get-gff-info
    download_data
    hmmer2gff
+   snp_analysis
 
