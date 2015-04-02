@@ -428,13 +428,16 @@ class Annotation(GenomicRange):
         """
         file_handle.write(self.to_gff())
 
-    def to_gtf(self):
+    def to_gtf(self, gene_id_attr='uid'):
         """
         .. versionadded:: 0.1.15
 
-        Simple conversion to a valid GTF. gene_id and transcript_id are set to
-        gene_id, unless transcript_id is present. Written for *SNPDat*.
+        .. versionchanged:: 0.1.16
+            added *gene_id_attr* parameter
 
+        Simple conversion to a valid GTF. gene_id and transcript_id are set to
+        *uid* or the attribute specified using the *gene_id_attr* parameter.
+        It's written to be used with *SNPDat*.
         """
         sep = '='
         var_names = (
@@ -447,6 +450,9 @@ class Annotation(GenomicRange):
             for var_name in var_names
         )
 
+        # Keys that needs to be at the start of the attributes
+        gtf_attr = ['gene_id', 'transcript_id']
+
         attr_keys = sorted(self.attr.keys())
 
         # eliminate gene_id (always present in new ones)
@@ -455,26 +461,25 @@ class Annotation(GenomicRange):
         except:
             pass
 
-        # transcript_id on't always be there
+        # transcript_id don't always be there
         try:
             attr_keys.remove('transcript_id')
         except ValueError:
             pass
 
-        attr_keys = ['gene_id', 'transcript_id'] + attr_keys
+        attr_values = [self.get_attr(gene_id_attr)] * 2 + [
+            self.attr[attr_key]
+            for attr_key in attr_keys
+        ]
+        attr_keys = gtf_attr + attr_keys
 
         attr_column = ';'.join(
             '{0}{1}"{2}"'.format(
                 key,
                 sep,
-                urllib.quote(
-                    # in case transcript_id wasn't present is substituted by
-                    # gene_id value
-                    str(self.attr.get(key, self.gene_id)),
-                    ' ()/'
-                )
+                urllib.quote(value, ' ()/')
             )
-            for key in attr_keys
+            for key, value in itertools.izip(attr_keys, attr_values)
         )
 
         return "{0}\t{1}\n".format(values, attr_column)
@@ -1671,8 +1676,24 @@ def get_annotation_map(annotations, key_func, value_func):
 
     Yields:
         tuple: a tuple where the first value is the result of *key_func* on
-        the passed annotation and the second is the value returned by
-        *value_func* on the same annotation
+        the passed annotation and the second is the value returned by *value_func*
+        on the same annotation
     """
     for annotation in annotations:
         yield key_func(annotation), value_func(annotation)
+
+
+def convert_gff_to_gtf(file_in, file_out, gene_id_attr='uid'):
+    """
+    .. versionadded:: 0.1.16
+
+    Function that uses :meth:`Annotation.to_gtf` to convert a GFF into GTF.
+
+    Arguments:
+        file_in (str, file): either file name or file handle of a GFF file
+        file_out (str): file name to which write the converted annotations
+    """
+    LOG.info("Writing GTF file to %s", file_out)
+    file_out = open(file_out, 'w')
+    for annotation in parse_gff(file_in):
+        file_out.write(annotation.to_gtf())

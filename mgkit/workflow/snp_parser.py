@@ -1,7 +1,4 @@
 """
-.. versionchanged:: 0.1.13
-    reworked the internals and the classes used
-
 This script parses results of SNPs analysis from any tool for SNP calling [#]_
 and `SNPDat <http://code.google.com/p/snpdat/>`_ and integrates them into a
 format that can be later used for other scripts in the pipeline.
@@ -13,15 +10,21 @@ The data written to disk is two files; each one contains a dictionary with
 instances of :class:`snps.GeneSyn` class. One file with suffix '_tot' and one
 with suffix '_set':
 
-    * '_tot': overall counts of synonymous/non-synonymous genes from the input
-        data
-    * '_set': counts specific to each sample
+    * _tot: overall counts of synonymous/non-synonymous genes from the input data
+    * _set: counts specific to each sample
 
 .. note::
 
     The script accept gzipped VCF and SNPDat result files
 
 .. [#] GATK pipeline was the one tested at this time
+
+Changes
+*******
+
+.. versionchanged:: 0.1.13
+    reworked the internals and the classes used
+
 """
 
 import HTSeq
