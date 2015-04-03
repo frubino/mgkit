@@ -15,75 +15,6 @@ from .filter import pipe_filters
 LOG = logging.getLogger(__name__)
 
 
-def get_values_partition(observed, profile, neutral=1.0):
-    "Return the partition to which an observed value belongs"
-
-    in_c_or_d = lambda obs, prof: (obs < neutral) and (prof < neutral)
-
-    funcs = {
-        'A': lambda obs, prof: (obs > neutral) and (prof < neutral),
-        'B': lambda obs, prof: (obs > neutral) and (prof > neutral),
-        'C': lambda obs, prof: in_c_or_d(obs, prof) and (obs / prof > 1.0),
-        'D': lambda obs, prof: in_c_or_d(obs, prof) and (obs / prof < 1.0),
-        'E': lambda obs, prof: (obs < neutral) and (prof > neutral)
-    }
-
-    for partition, func in funcs.iteritems():
-        if func(observed, profile):
-            return partition
-
-    return 'N'
-
-
-def group_pnps_values_dataframe(observed_data, profile_data, taxonomy):
-    """
-    :param Series rumen_dict: a :class:`pandas.Series` with the index
-        in the form (gene, taxon, root) and as values the mean pN/pS across all
-        samples
-    :param dict profile_dict: a dictionary with all the pN/pS values of the
-        profiles with the key in the form (gene, taxon)
-    :param iterable roots: list of root taxa to include, if None, all roots in
-        the DataFramce are used
-
-    :return dict: dictionary root->DataFrame
-    """
-
-    roots = set(
-        taxonomy.get_taxon_root(taxon_id).s_name
-        for taxon_id in set(observed_data.index.get_level_values('taxon'))
-    )
-
-    root_dict = dict((root, {'observed': {}, 'profile': {}}) for root in roots)
-
-    for (gene_id, taxon_id), profile_value in profile_data.iterkv():
-        gt_key = (gene_id, taxon_id)
-        if gt_key not in observed_data:
-            continue
-
-        observed_value = observed_data[gt_key]
-        #skips genes for which we have a NaN in the profile
-        if numpy.isnan(profile_value) or numpy.isnan(observed_value):
-            continue
-
-        root = taxonomy.get_taxon_root(taxon_id).s_name
-
-        root_dict[root]['observed'][gt_key] = observed_value
-        root_dict[root]['profile'][gt_key] = profile_value
-
-    root_dict = dict(
-        (
-            root, pandas.DataFrame(
-                values,
-                index=sorted(values['observed'].keys()),
-                columns=('profile', 'observed')
-            )
-        )
-        for root, values in root_dict.iteritems()
-    )
-
-    return root_dict
-
-
 def build_rank_matrix(dataframe, taxonomy=None, taxon_rank=None):
     """
     Make a rank matrix from a :class:`pandas.Series` with the pN/pS values of a
@@ -158,27 +89,6 @@ def group_rank_matrix(dataframe, gene_map):
             rank_matrix.set_value(mapping_id, taxon_id, rank)
 
     return rank_matrix
-
-
-def write_pnps_grouped_by_pathway(data, gene_list, taxa_list=None):
-    """
-    Groups a DataFrame values, where the index is a tuple (ko_id, taxon_id) and
-    the the columns are profile and observed. The function group only the gene
-    list provided (and optionally the taxa) into the partitions returned by
-    :func:`get_values_partition`.
-    """
-    part_data = {}
-    for (ko_id, taxon_id), (p_val, o_val) in data.iterrows():
-        if (taxa_list is not None) and (taxon_id not in taxa_list):
-            continue
-        if ko_id in gene_list:
-            part = get_values_partition(o_val, p_val)
-            try:
-                part_data[part].add(ko_id)
-            except KeyError:
-                part_data[part] = set([ko_id])
-
-    return part_data
 
 
 def write_sign_genes_table(out_file, dataframe, sign_genes, taxonomy,
@@ -286,7 +196,7 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
         detail usage and examples.
 
     Arguments:
-        snps_data (dict): dictionary with the `GeneSyn` instances
+        snps_data (dict): dictionary with the `GeneSNP` instances
         min_num (int): the minimum number of not NaN values necessary in a row
             to be returned
         filters (iterable): iterable containing filter functions, a list can be
