@@ -645,6 +645,9 @@ def get_ancestor_map(leaf_ids, anc_ids, taxonomy):
 
 def is_ancestor(taxonomy, taxon_id, anc_id):
     """
+    .. versionchanged:: 0.1.16
+        if a *taxon_id* raises a KeyError, False is returned
+
     Determine if the given taxon id (taxon_id) has anc_id as ancestor.
 
     :param :class:`UniprotTaxonomy` taxonomy: taxonomy used to test
@@ -657,7 +660,12 @@ def is_ancestor(taxonomy, taxon_id, anc_id):
         return True
 
     while True:
-        taxon_id = taxonomy[taxon_id].parent_id
+        # if a taxon_id is not found, ancestry is invalid anyway, so it returns
+        # False
+        try:
+            taxon_id = taxonomy[taxon_id].parent_id
+        except KeyError:
+            return False
         # print taxon_id, anc_id
         if anc_id == taxon_id:
             return True
