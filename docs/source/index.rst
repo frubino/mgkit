@@ -14,8 +14,6 @@ Contents:
 
    install
 
-   tutorial
-
    pipeline/index
 
    scripts/index
