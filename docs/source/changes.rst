@@ -1,6 +1,36 @@
 Changes
 =======
 
+0.1.16
+------
+
+* changed default parameter for :func:`mgkit.plots.boxplot.add_values_to_boxplot`
+* Added *include_only* filter option to the default snp filters :data:`mgkit.consts.DEFAULT_SNP_FILTER`
+* the default filter for SNPs now use an include only option, by default including only protozoa, archaea, fungi and bacteria in the matrix
+* added *widths* parameter to def :func:`mgkit.plots.boxplot.boxplot_dataframe` function, added function :func:`mgkit.plots.boxplot.add_significance_to_boxplot` and updated example boxplot notebook for new function example
+* *use_dist* and *dist_func* parameters to the :func:`mgkit.plots.heatmap.dendrogram` function
+* added a few constants and functions to calculate the distance matrices of taxa: :func:`mgkit.taxon.taxa_distance_matrix`, :func:`mgkit.taxon.distance_taxa_ancestor` and :func:`mgkit.taxon.distance_two_taxa`
+* :meth:`mgkit.kegg.KeggClientRest.link_ids` now accept a dictionary as list of ids
+* if the conversion of an Annotation attribute (first 8 columns) raises a ValueError in :func:`mgkit.io.gff.from_gff`, by default the parser keeps the string version (cases for phase, where is '.' instead of a number)
+* treat cases where an attribute is set with no value in :func:`mgkit.io.gff.from_gff`
+* added :func:`mgkit.plots.colors.palette_float_to_hex` to convert floating value palettes to string
+* forces vertical alignment of tick labels in heatmaps
+* added parameter to get a consensus sequence for an AA alignment, by adding the *nucl* parameter to :meth:`mgkit.utils.sequence.Alignment.get_consensus`
+* added :func:`mgkit.utils.sequence.get_variant_sequence` to get variants of a sequence, essentially changing the sequence according to the SNPs passed
+* added method to get an aminoacid sequence from Annotation in :meth:`mgkit.io.gff.Annotation.get_aa_seq` and added the possibility to pass a SNP to get the variant sequence of an Annotation in :meth:`mgkit.io.gff.Annotation.get_nuc_seq`.
+* added *exp_syn* command to `add-gff-info` script
+* changed GTF file conversion
+* changed behaviour of :func:`mgkit.taxon.is_ancestor`: if a *taxon_id* raises a KeyError, False is now returned. In other words, if the taxon_id is not found in the taxonomy, it's not an ancestor
+* added :meth:`mgkit.io.gff.GenomicRange.__contains__`. It tests if a position is inside the range
+* added :meth:`mgkit.io.gff.GenomicRange.get_relative_pos`. It returns a position relative to the GenomicRange start
+* fixed documentation and bugs (Annotation.get_nuc_seq)
+* added :meth:`mgkit.io.gff.Annotation.is_syn`. It returns True if a SNP is synonymous and False if non-synonymous
+* added *to_nuc* parameter to :func:`mgkit.io.gff.from_nuc_blast` function. It to_nuc is False, it is assumed that the hit was against an amino acidic DB, in which case the phase should always set to 0
+* reworked internal of `snp_parser` script. It doesn't use SNPDat anymore
+* updated tutorial
+* added ipython notebook as an example to explore data from the tutorial
+* cleaned deprecated code, fixed imports, added tests and documentation
+
 0.1.15
 ------
 
