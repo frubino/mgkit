@@ -11,3 +11,4 @@ docs/source/api
 docs/source/examples/plots/*_files/
 docs/source/examples/plots/*.rst
 .ipynb_checkpoints/
+docs/source/pipeline/Exploring-Metagenomic-Data_files
