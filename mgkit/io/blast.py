@@ -275,7 +275,7 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
         if hit[-1] < bitscore:
             continue
 
-        yield gff.from_nuc_blast(hit, db=db, dbq=dbq)
+        yield gff.from_nuc_blast(hit, db=db, dbq=dbq, to_nuc=False)
 
 
 def parse_fragment_blast(file_handle, bitscore=40.0):

@@ -18,6 +18,7 @@ import mgkit.io
 from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
 from ..utils.common import between, union_range, ranges_length
+from ..utils.trans_tables import UNIVERSAL
 from .. import taxon
 
 LOG = logging.getLogger(__name__)
@@ -160,6 +161,17 @@ class GenomicRange(object):
     def __and__(self, other):
         return self.intersect(other)
 
+    def __contains__(self, pos):
+        """
+        .. versionadded:: 0.1.16
+
+        Tests if the position is inside the range of the GenomicRange
+
+        Pos is 1-based as :attr:`GenomicRange.start` and
+        :attr:`GenomicRange.end`
+        """
+        return between(pos, self.start, self.end)
+
     def get_range(self):
         """
         .. versionadded:: 0.1.13
@@ -167,6 +179,17 @@ class GenomicRange(object):
         Returns the start and end position as a tuple
         """
         return (self.start, self.end)
+
+    def get_relative_pos(self, pos):
+        """
+        .. versionadded:: 0.1.16
+
+        Given an absolute position (referred to the reference), convert the
+        position to a coordinate relative to the GenomicRange
+        """
+        if pos not in self:
+            raise ValueError("Position {} not in GenomicRange".format(pos))
+        return pos - self.start + 1
 
 
 class Annotation(GenomicRange):
@@ -593,8 +616,8 @@ class Annotation(GenomicRange):
             seq (seq): chromosome/contig sequence
             reverse (bool): if True and the strand is '-', a reverse complement
                 is returned
-            snp (tuple): first element is the position of the SNP and the
-                second element is the change
+            snp (tuple): first element is the position of the SNP relative to
+                the Annotation and the second element is the change
 
         Returns:
             str: nucleotide sequence with requested transformations
@@ -602,7 +625,7 @@ class Annotation(GenomicRange):
         """
         ann_seq = seq[self.start - 1:self.end]
         if snp is not None:
-            seq_utils.get_variant_sequence(ann_seq, snp)
+            ann_seq = seq_utils.get_variant_sequence(ann_seq, snp)
 
         if (self.strand == '-') and reverse:
             ann_seq = seq_utils.reverse_complement(ann_seq)
@@ -619,7 +642,7 @@ class Annotation(GenomicRange):
         Arguments:
             seq (seq): chromosome/contig sequence
             start (int): position (0-based) from where the correct occurs
-                (frame)
+                (frame). If None, the phase attribute is used
             tbl (dict): dictionary with the translation for each codon,
                 passed to :func:`mgkit.utils.sequence.translate_sequence`
             snp (tuple): first element is the position of the SNP and the
@@ -628,6 +651,9 @@ class Annotation(GenomicRange):
         Returns:
             str: aminoacid sequence
         """
+
+        if start is None:
+            start = self.phase
 
         nuc_seq = self.get_nuc_seq(seq, reverse=True, snp=snp)
         return seq_utils.translate_sequence(
@@ -694,6 +720,58 @@ class Annotation(GenomicRange):
         gc_ratio = at_sum / gc_sum
 
         self.set_attr('gc_ratio', gc_ratio)
+
+    def is_syn(self, seq, pos, change, tbl=None, abs_pos=True, start=0):
+        """
+        .. versionadded:: 0.1.16
+
+        Return if a SNP is synonymous or non-synonymous.
+
+        Arguments:
+            seq (seq): reference sequence of the annotation
+            pos (int): position of the SNP on the reference (1-based index)
+            change (str): nucleotidic change
+            tbl (dict): dictionary with the translation table. Defaults to the
+                universal genetic code
+            abs_pos (bool): if True the *pos* is referred to the reference and
+                not a position relative to the annotation
+            start (int or None): phase to be used to get the start position of
+                the codon. if None, the Annotation phase will be used
+
+        Returns:
+            bool: True if the SNP is synonymous, false if it's non-synonymous
+        """
+        if abs_pos:
+            rel_pos = self.get_relative_pos(pos)
+        else:
+            rel_pos = pos
+
+        if start is None:
+            start = self.phase
+
+        if tbl is None:
+            tbl = UNIVERSAL
+
+        # codon number in the sequence
+        codon_index = (rel_pos - start - 1) // 3
+        # the position to slice the seq to get a codon (0-based). It takes into
+        # account the phase (start) and the codon index
+        seq_start = (self.start + start + (codon_index * 3) - 1)
+        # position in the codon using the relative position and the phase/frame
+        # the module will give 1, 2 or 0. -1 will shift the position correctly
+        codon_change = ((rel_pos - start) % 3) - 1
+
+        codon = seq[seq_start:seq_start+3]
+
+        var_codon = list(codon)
+        var_codon[codon_change] = change
+        var_codon = ''.join(var_codon)
+
+        if self.strand == '-':
+            codon = seq_utils.reverse_complement(codon)
+            var_codon = seq_utils.reverse_complement(var_codon)
+
+        return UNIVERSAL[codon] == UNIVERSAL[var_codon]
 
 
 def from_glimmer3(header, line, feat_type='CDS'):
@@ -942,9 +1020,12 @@ def annotate_sequence(name, seq, window=None):
         yield annotation
 
 
-def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
+def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.1.16
+        added *to_nuc* parameter
 
     Returns an instance of :class:`Annotation`
 
@@ -956,6 +1037,9 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
         feat_type (str): feature type in the GFF
         seq_len (int): sequence length, if supplied, the phase for strand '-'
             can be assigned, otherwise is assigned a 0
+        to_nuc (bool): if False, the it's assumed that *blastx* was used,
+            against an aminoacidic DB. In this case the frame is always set to
+            0, because the hit is a CDS
         **kwd: any additional column
 
     Returns:
@@ -967,27 +1051,22 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
     bitscore = hit[-1]
     start = hit[3]
     end = hit[4]
+    phase = 0
 
     if start > end:
         start, end = end, start
         strand = '-'
-        if seq_len is None:
-            phase = 0
-        else:
+        if to_nuc and (seq_len is not None):
             if (seq_len - end + 1) % 2 == 0:
                 phase = 1
             elif (seq_len - end + 1) % 3 == 0:
                 phase = 2
-            else:
-                phase = 0
 
-    if strand == '+':
+    if to_nuc and (strand == '+'):
         if start % 2 == 0:
             phase = 2
         elif start % 3 == 0:
             phase = 2
-        else:
-            phase = 0
 
     annotation = Annotation(
         seq_id=seq_id,
