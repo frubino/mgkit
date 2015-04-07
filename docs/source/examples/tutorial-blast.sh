@@ -60,7 +60,7 @@ mv assembly.uniprot-filt.gff assembly.uniprot.gff
 #Taxonomic refinement - requires NCBI nt DB installed and indexed
 export NCBINT_DIR=ncbi-db
 if [ -d "$NCBINT_DIR" ]; then
-	echo "Taxonomic refinement using";
+	echo "Taxonomic refinement";
 	#Extract annotations sequences
 	get-gff-info sequence -f assembly.fasta assembly.uniprot.gff \
 		assembly.uniprot.frag.fasta
@@ -158,3 +158,7 @@ wget http://eggnog.embl.de/version_3.0/data/downloads/COG.members.txt.gz
 wget http://eggnog.embl.de/version_3.0/data/downloads/NOG.members.txt.gz
 wget http://eggnog.embl.de/version_3.0/data/downloads/COG.funccat.txt.gz
 wget http://eggnog.embl.de/version_3.0/data/downloads/NOG.funccat.txt.gz
+
+########
+#EC names
+wget ftp://ftp.expasy.org/databases/enzyme/enzclass.txt
