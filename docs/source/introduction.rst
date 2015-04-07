@@ -12,9 +12,9 @@ Citing
 
 Rubino, F. and Creevey, C.J. 2014. MGkit: Metagenomic Framework For The Study Of Microbial Communities. . Available at: `figshare <http://figshare.com/articles/MGkit_Metagenomic_Framework_For_The_Study_Of_Microbial_Communities/1269288>`_ [doi:10.6084/m9.figshare.1269288].`
 
-a citation is also available using the :func:`mgkit.cite()` function or using the `--cite` option on all scripts included. This will ouput the following
+a citation is also available using the :func:`mgkit.cite()` function or using the `--cite` option on all scripts included. For example:
 
-.. program-output:: blast2gff --cite
+.. command-output:: blast2gff --cite
 
 Links
 -----

@@ -242,7 +242,7 @@ class Annotation(GenomicRange):
         """
         .. versionadded:: 0.1.13
 
-        .. versionchanged:: 0.2
+        .. versionchanged:: 0.2.0
             returns a *set* instead of a list
 
         Returns the EC values associated with the annotation, cutting them at

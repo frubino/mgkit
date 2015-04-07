@@ -39,6 +39,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinxarg.ext',
     'sphinxcontrib.bibtex',
+    'sphinxcontrib.programoutput',
     #, 'rst2pdf.pdfbuilder'
 ]
 
