@@ -94,6 +94,7 @@ bowtie2-build assembly.fasta assembly.fasta
 for file in *.fastq; do
 	BASENAME=`basename $file .fastq`
 	bowtie2 -N 1 -x assembly.fasta -U $file \
+	--very-sensitive-local \
 	--rg-id $BASENAME --rg PL:454 --rg PU:454 \
 	--rg SM:$BASENAME | samtools view -Sb - > $BASENAME.bam;
 done
@@ -120,7 +121,7 @@ unset SAMPLES
 #SNP calling using samtools
 for file in *.bam; do
 	samtools mpileup -Iuf assembly.fasta \
-	$file |bcftools view -vcg - > `basename $file`.vcf;
+	$file | bcftools view -vcg - > `basename $file`.vcf;
 done
 
 #Index fasta with Picard tools - GATK requires it
@@ -147,7 +148,7 @@ unset SAMPLES
 ########
 #Count reads
 for file in *.bam; do
-	htseq-count -f bam -r pos -s no -t CDS -i uid \
+	htseq-count -f bam -r pos -s no -t CDS -i uid -a 8 \
 	-m intersection-nonempty $file assembly.uniprot.gff \
 	> `basename $file .bam`-counts.txt
 done

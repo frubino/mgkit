@@ -1,6 +1,8 @@
 Tutorial
 ========
 
+The aim of this tutorial is to show how to build a pipeline to analyse metagenomic samples. Moreover, the SNPs calling part was made to show how diversity estimates can be calculated from metagenomic data, hence it should be changed to be more strict.
+
 We're going to use `Peru Margin Subseafloor Biosphere <https://www.ebi.ac.uk/metagenomics/project/SRP000183>`_ as an example, which can be download from the ENA website.
 
 For more information about the pipeline, you can refer to the :ref:`metagenome-pipeline` section of the documentation. This tutorial is expected to run on a
