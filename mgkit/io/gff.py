@@ -236,6 +236,9 @@ class Annotation(GenomicRange):
         """
         .. versionadded:: 0.1.13
 
+        .. versionchanged:: 0.2
+            returns a *set* instead of a list
+
         Returns the EC values associated with the annotation, cutting them at
         the desired level.
 
@@ -243,16 +246,16 @@ class Annotation(GenomicRange):
             level (int): level of classification desired (between 1 and 4)
 
         Returns:
-            list: list of all EC numbers associated, at the desired level, if
-            none are found an empty list is returned
+            set: list of all EC numbers associated, at the desired level, if
+            none are found an empty set is returned
         """
         ec = self.attr.get('EC', None)
         if ec is None:
-            return []
+            return set()
 
         ec = ec.split(',')
 
-        return ['.'.join(x.split('.')[:level]) for x in ec]
+        return set(['.'.join(x.split('.')[:level]) for x in ec])
 
     def get_mapping(self, db):
         """
