@@ -38,7 +38,7 @@ def scale_factor_deseq(dataframe):
     sample_factors = {}
 
     # calc the scaling factor for each sample
-    for sample, genes in dataframe.iterkv():
+    for sample, genes in dataframe.iteritems():
 
         scale_factor = numpy.median(genes.loc[gmean.index] / gmean)
 

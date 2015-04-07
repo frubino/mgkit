@@ -85,7 +85,7 @@ def group_rank_matrix(dataframe, gene_map):
         mapped_matrix = dataframe.loc[gene_ids]
         #we only use the minimum rank among the genes with a set function
         #min() will return only those
-        for taxon_id, rank in mapped_matrix.mean().dropna().iterkv():
+        for taxon_id, rank in mapped_matrix.mean().dropna().iteritems():
             rank_matrix.set_value(mapping_id, taxon_id, rank)
 
     return rank_matrix
