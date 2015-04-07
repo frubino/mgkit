@@ -2,7 +2,7 @@ import sys
 # import ez_setup
 # ez_setup.use_setuptools()
 
-__VERSION__ = "0.1.16"
+__VERSION__ = "0.2.0"
 
 from setuptools import setup, find_packages
 

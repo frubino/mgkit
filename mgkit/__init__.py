@@ -4,7 +4,7 @@ Metagenomics Framework
 from __future__ import print_function
 import sys
 
-__VERSION__ = "0.1.16"
+__VERSION__ = "0.2.0"
 
 __version__ = __VERSION__
 
