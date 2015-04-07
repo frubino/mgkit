@@ -12,3 +12,7 @@ docs/source/examples/plots/*_files/
 docs/source/examples/plots/*.rst
 .ipynb_checkpoints/
 docs/source/pipeline/Exploring-Metagenomic-Data_files
+docs/source/examples/plots/abund.py
+docs/source/examples/plots/boxplot.py
+docs/source/examples/plots/heatmap.py
+mgkit/_private
