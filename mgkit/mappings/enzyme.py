@@ -29,7 +29,10 @@ Used to get the description for the higher level enzyme classes from the file
 def parse_expasy_file(file_name):
     """
     Used to load enzyme descriptions from the file *enzclass.txt* on
-    `expasy <http://expasy.org>`_
+    `expasy <http://expasy.org>`_.
+
+    The FTP url for enzclass.txt is:
+    `<ftp://ftp.expasy.org/databases/enzyme/enzclass.txt>`_
     """
     labels = {}
 
