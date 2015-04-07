@@ -186,6 +186,12 @@ class GenomicRange(object):
 
         Given an absolute position (referred to the reference), convert the
         position to a coordinate relative to the GenomicRange
+
+        Returns:
+            int: the position relative to the GenomicRange
+
+        Raises:
+            ValueError: if the position is not in the range
         """
         if pos not in self:
             raise ValueError("Position {} not in GenomicRange".format(pos))
