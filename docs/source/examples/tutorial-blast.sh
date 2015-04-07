@@ -123,7 +123,7 @@ for file in *.bam; do
 	$file |bcftools view -vcg - > `basename $file`.vcf;
 done
 
-#Index fasta with Picard tools
+#Index fasta with Picard tools - GATK requires it
 java -jar picard-tools/picard.jar CreateSequenceDictionary \
 	R=assembly.fasta O=assembly.dict
 
