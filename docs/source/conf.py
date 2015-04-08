@@ -51,7 +51,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 #blockdiag extension
 blockdiag_antialias = True
 blockdiag_html_image_format = 'SVG'
-blockdiag_tex_image_format = 'PDF'
+blockdiag_latex_image_format = 'PDF'
 try:
     blockdiag_fontpath = subprocess.check_output(
         "locate FreeMonoBold.ttf", shell=True
