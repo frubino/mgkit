@@ -93,7 +93,7 @@ def test_Annotation_get_ec1():
     ann = gff.from_gff(line)
 
     eq_(
-        ann.get_ec(), ['1.1.-', '2.2.3.4']
+        ann.get_ec(), set(['1.1.-', '2.2.3.4'])
     )
 
 
@@ -104,7 +104,19 @@ def test_Annotation_get_ec2():
     ann = gff.from_gff(line)
 
     eq_(
-        ann.get_ec(level=2), ['1.1', '2.2']
+        ann.get_ec(level=2), set(['1.1', '2.2'])
+    )
+
+
+def test_Annotation_get_ec2__duplicates():
+    # a level can be specified
+    line = misc_data.GFF_FILE[1]
+
+    ann = gff.from_gff(line)
+    ann.attr['EC'] = ann.attr['EC'] + ',2.2.3.1'
+
+    eq_(
+        ann.get_ec(level=2), set(['1.1', '2.2'])
     )
 
 
@@ -115,7 +127,7 @@ def test_Annotation_get_ec3():
     ann = gff.from_gff(line)
 
     eq_(
-        ann.get_ec(), []
+        ann.get_ec(), set([])
     )
 
 

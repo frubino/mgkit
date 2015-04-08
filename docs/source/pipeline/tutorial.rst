@@ -231,7 +231,7 @@ The first line prepares part of the command line for the script and stores it in
 SNP Calling
 -----------
 
-Before running samtools, which we'll use to do the SNP calling and GATK, to merge the vcf files, the reference `assembly.fa` must be indexed with Picard Tools::
+Before running samtools, which we'll use to do the SNP calling and GATK, to merge the vcf files, the reference `assembly.fa` must be indexed with Picard Tools (tested on version 1.30)::
 
     $ java -jar picard-tools/picard.jar CreateSequenceDictionary R=assembly.fasta O=assembly.dict
 
@@ -240,16 +240,16 @@ SAMtools
 
 For calling SNPs, we're going to use SAMtools, as it's the one having lower requirements for this tutorial. The output required by SNPdat and the later part of this tutorial is a vcf, so any software that can output can be used.
 
-Running samtools to make the SNP calling requires a simple loop, which 
+Running samtools to make the SNP calling requires a simple loop, as follows:
 
 .. code-block:: bash
 
     for file in *.bam; do
         samtools mpileup -Iuf assembly.fasta \
-        $file |bcftools view -vcg - > `basename $file`.vcf;
+        $file | bcftools view -vcg - > `basename $file`.vcf;
     done
 
-After which, you need to merge all sample vcf files into one, so it can be analysed with the sample specific information, which is needed by the library. This can be done with various packages, but here we'l use GATK::
+After which, you need to merge all sample vcf files into one, so it can be analysed with the sample specific information, which is needed by the library. This can be done with various packages, but here we'l use GATK (tested on version 3.0-0-g6bad1c6)::
 
     $ export SAMPLES=$(for file in *.bam.vcf; do echo -V:`basename $file .bam.vcf` $file ;done)
     $ java -Xmx10g -jar GATK/GenomeAnalysisTK.jar \
@@ -278,7 +278,7 @@ To evaluate the abundance of taxa and functional categories  in the data we need
 .. code-block:: bash
 
     for file in *.bam; do
-        htseq-count -f bam -r pos -s no -t CDS -i uid \
+        htseq-count -f bam -r pos -s no -t CDS -i uid -a 8 \
         -m intersection-nonempty $file assembly.uniprot.gff \
         > `basename $file .bam`-counts.txt
     done
@@ -292,6 +292,10 @@ The following files needs to be downloaded to analyse the functional categories 
     $ wget http://eggnog.embl.de/version_3.0/data/downloads/NOG.members.txt.gz
     $ wget http://eggnog.embl.de/version_3.0/data/downloads/COG.funccat.txt.gz
     $ wget http://eggnog.embl.de/version_3.0/data/downloads/NOG.funccat.txt.gz
+
+and this for Enzyme Classification::
+
+    $ wget ftp://ftp.expasy.org/databases/enzyme/enzclass.txt
 
 The IPython notebook with the data analysis is in the " Exploring Metagenomic Data". A converted python script is included in :ref:`explore-data-script`
 
