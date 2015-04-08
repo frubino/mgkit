@@ -125,6 +125,6 @@ Examples
 
 .. rubric:: References
 
-.. bibliography:: ../../library.bib
+.. bibliography:: ../../zlibrary.bib
 	:style: unsrt
 	:cited:
