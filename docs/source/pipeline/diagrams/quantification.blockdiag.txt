@@ -1,0 +1,23 @@
+{
+    #orientation = 'portrait';
+
+    default_fontsize=16;
+    default_textcolor = 'white';
+
+    class mgkit [color = "#e41a1c", width=160, height=80];
+    class data [color = "#4daf4a", width=160, height=80];
+    class software [color = "#377eb8", width=160, height=80];
+    class gff [color = "#984ea3", width=160, height=80];
+
+    Alignments, "Count\nFiles", Reads [stacked, class=data];
+    Assembly [class=data];
+    "Alignment\nSoftware", "Count\nSoftware" [class=software];
+    "Analysis" [class=mgkit];
+    GFF [class=gff];
+
+    Reads -> "Alignment\nSoftware";
+    Assembly -> "Alignment\nSoftware" -> Alignments -> "Count\nSoftware" -> "Count\nFiles" -> "Analysis";
+    GFF -> "Count\nSoftware";
+    GFF -> "Analysis";
+    Alignments -> "Count\nSoftware" [folded];
+}
