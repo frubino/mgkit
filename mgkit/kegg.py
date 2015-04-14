@@ -316,6 +316,36 @@ class KeggClientRest(object):
         data = url_read(url, agent=self.contact)
         return data
 
+    def link(self, target, source, options=None):
+        """
+        .. versionadded:: 0.2.0
+
+        Implements "link" operation in Kegg REST
+
+        http://www.genome.jp/linkdb/
+        """
+        url = "http://rest.genome.jp/link/{0}/{1}/{2}".format(
+            target,
+            source,
+            '' if options is None else options
+        )
+
+        LOG.debug(url)
+
+        data = url_read(url, agent=self.contact)
+
+        mappings = {}
+        for line in data.splitlines():
+            source_id, target_id, _ = line.rstrip().split('\t')
+            source_id = source_id.split(':')[1]
+            target_id = target_id.split(':')[1]
+            try:
+                mappings[source_id].add(target_id)
+            except KeyError:
+                mappings[source_id] = set([target_id])
+
+        return mappings
+
     ####### names #######
 
     def get_ids_names(self, target='ko', strip=True):
