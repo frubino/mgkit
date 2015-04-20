@@ -4,6 +4,8 @@ Utility functions
 from __future__ import division
 import itertools
 import operator
+import functools
+import warnings
 
 
 def average_length(a1s, a1e, a2s, a2e):
@@ -140,3 +142,27 @@ def range_substract_(range1, ranges):
     for k, g in itertools.groupby(enumerate(range1), lambda (i, x): i - x):
         group = map(operator.itemgetter(1), g)
         yield min(group), max(group)
+
+
+def deprecated(func):
+    '''
+    This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emitted
+    when the function is used.
+
+    from https://wiki.python.org/moin/PythonDecoratorLibrary
+    '''
+
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.warn_explicit(
+            "Call to deprecated function {}.\n{}".format(
+                func.__name__,
+                func.__doc__
+            ),
+            category=DeprecationWarning,
+            filename=func.func_code.co_filename,
+            lineno=func.func_code.co_firstlineno + 1
+        )
+        return func(*args, **kwargs)
+    return new_func

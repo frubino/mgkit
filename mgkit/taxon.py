@@ -10,6 +10,8 @@ import itertools
 import collections
 import pandas
 from .io import open_file
+from .utils.common import deprecated
+
 
 LOG = logging.getLogger(__name__)
 
@@ -179,8 +181,11 @@ class UniprotTaxon(object):
     parent_id = None
     "Id of the parent taxon (int)"
 
+    @deprecated
     def __init__(self, line=None, **kwd):
         """
+        .. deprecated:: 0.1.2
+
         The method accept any arbitrary keyword arguments, but only accepted
         one will be used
 
@@ -605,15 +610,6 @@ def get_taxon_root(taxon, tmap, replace_space=False):
         if (taxon == root) or (taxon in taxa):
             return root
     raise ValueError("Taxon '{0}' not in mapping".format(taxon))
-
-#Deprecated, kept for compatibility until code cleanup
-
-check_root = get_taxon_root
-"""
-.. deprecated:: 0.1
-
-    Deprecated alias for :func:`get_taxon_root`
-"""
 
 
 def load_taxonomy_map(taxon_file):

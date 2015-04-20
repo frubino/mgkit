@@ -9,6 +9,7 @@ from __future__ import division
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from mpl_toolkits.mplot3d import Axes3D
+from ..utils.common import deprecated
 import numpy
 import logging
 
@@ -37,6 +38,7 @@ TAXON_COLOURS = {
 TAXON_COLORS = TAXON_COLOURS
 
 
+@deprecated
 def lineplot_values_on_second_axis(gene_num, axis, colour='c', ylabel=''):
     """
     .. deprecated:: 0.1.13

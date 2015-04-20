@@ -7,12 +7,14 @@ import logging
 import collections
 from . import gff
 from . import open_file
+from ..utils.common import deprecated
 
 NUM_LINES = 10 ** 6
 
 LOG = logging.getLogger(__name__)
 
 
+@deprecated
 def _parse_blast_tab(f_handle, gid_col=1, score_col=11, num_lines=NUM_LINES):
     """
     .. deprecated:: 0.1.12
@@ -55,6 +57,7 @@ def _parse_blast_tab(f_handle, gid_col=1, score_col=11, num_lines=NUM_LINES):
     return hits
 
 
+@deprecated
 def _parse_gi_taxa_table(f_handle, hits, num_lines=NUM_LINES):
     """
     .. deprecated:: 0.1.13

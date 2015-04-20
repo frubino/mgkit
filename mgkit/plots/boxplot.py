@@ -8,6 +8,7 @@ from __future__ import division
 import logging
 import numpy
 import matplotlib.pyplot as plt
+from ..utils.common import deprecated
 
 LOG = logging.getLogger(__name__)
 
@@ -341,6 +342,7 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
     return plot_data
 
 
+@deprecated
 def boxplot_snp_dataframe(ratios, plot_order, taxon_colours=None,
                           labelfont='small', ylim=None, label_map=None,
                           file_name=None, fig_size=None,

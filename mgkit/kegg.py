@@ -7,6 +7,7 @@ import pickle
 import re
 import itertools
 from .utils import dictionary as dict_utils
+from .utils.common import deprecated
 from .net import uniprot, url_read
 
 
@@ -367,6 +368,7 @@ class KeggClientRest(object):
             id_names[kegg_id] = name
         return id_names
 
+    @deprecated
     def get_names(self, k_type, strip=True):
         """
         .. deprecated:: 0.1.13
@@ -379,6 +381,7 @@ class KeggClientRest(object):
         """
         return self.get_ids_names(target=k_type, strip=strip)
 
+    @deprecated
     def get_compound_names(self, ids=None):
         """
         .. deprecated:: 0.1.13
@@ -389,6 +392,7 @@ class KeggClientRest(object):
 
         return self.get_ids_names('cpd')
 
+    @deprecated
     def get_kos_descriptions(self, rex=False):
         """
         .. deprecated:: 0.1.13
@@ -413,6 +417,7 @@ class KeggClientRest(object):
 
         return pathways
 
+    @deprecated
     def get_compounds_descriptions(self):
         """
         .. deprecated:: 0.1.13
@@ -422,6 +427,7 @@ class KeggClientRest(object):
         """
         return self.get_ids_names('cpd')
 
+    @deprecated
     def get_reactions_descriptions(self):
         """
         .. deprecated:: 0.1.13

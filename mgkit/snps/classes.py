@@ -8,6 +8,7 @@ import numpy
 import enum
 import json
 from ..consts import MIN_COV
+from ..utils.common import deprecated
 
 LOG = logging.getLogger(__name__)
 
@@ -171,9 +172,13 @@ class GeneSyn(RatioMixIn):
         'taxon_root',
     )
 
+    @deprecated
     def __init__(self, gene_id='', taxon_id=0, exp_syn=0, exp_nonsyn=0, syn=0,
                  nonsyn=0, coverage=None, taxon_root='', gid='', taxon=''):
-
+        """
+        .. deprecated:: 0.1.13
+            use :class:`GeneSNP` instead
+        """
         self.gene_id = gid
         self.taxon_id = taxon
         self.taxon_root = taxon_root
