@@ -30,7 +30,7 @@ Also for the rest of the tutorial we assume that the following software are inst
     * `Picard Tools <http://picard.sourceforge.net>`_ [#]_
     * `GATK <http://www.broadinstitute.org/gatk/>`_ [#]_
     * `HTSeq <http://sourceforge.net/p/htseq/code/HEAD/tree/>`_
-    * `BLAST <http://www.ncbi.nlm.nih.gov/books/NBK279690/>`_ or `RAPSeacrh <http://omics.informatics.indiana.edu/mg/RAPSearch/>`_
+    * `BLAST <http://www.ncbi.nlm.nih.gov/books/NBK279690/>`_ or `RAPSearch2 <http://omics.informatics.indiana.edu/mg/RAPSearch2/>`_
 
 Getting Sequence Data
 ---------------------
@@ -60,18 +60,14 @@ Where *email* should be replaced by your email address. The data will be saved i
 Metagenome Assembly
 -------------------
 
-We're going to use velvet to assemble the metagenomics sample, using the following commands in `bash`:
-
-.. code-block:: bash
+We're going to use velvet to assemble the metagenomics sample, using the following commands in `bash`::
 
     $ velveth velvet_work 31 -fmtAuto  *.fastq
     $ velvetg velvet_work -min_contig_lgth 50
 
-The contigs are in the `velvet_work/contigs.fa` file. We want to take out some of the informations in each sequence header, to make it easier to identify them. We decided to keep only `NODE_#`, where # is a unique number in the file (e.g. from `>NODE_27_length_157_cov_703.121033` we keep only `>NODE_27`). We used this command in bash:
+The contigs are in the `velvet_work/contigs.fa` file. We want to take out some of the informations in each sequence header, to make it easier to identify them. We decided to keep only `NODE_#`, where # is a unique number in the file (e.g. from `>NODE_27_length_157_cov_703.121033` we keep only `>NODE_27`). We used this command in bash::
 
-.. code-block:: bash
-
-    cat velvet_work/contigs.fa | sed -E 's/(>NODE_[0-9]+)_.+/\1/g' > assembly.fa
+    $ cat velvet_work/contigs.fa | sed -E 's/(>NODE_[0-9]+)_.+/\1/g' > assembly.fa
 
 Gene Prediction
 ---------------
@@ -90,11 +86,9 @@ BLAST needs the DB to be indexed using the following command::
 
     $ makeblastdb -dbtype prot -in uniprot_sprot.fasta
 
-After which BLAST can be run:
+After which BLAST can be run::
 
-.. code-block:: bash
-
-    blastx -query assembly.fasta -db uniprot_sprot.fasta -out \
+    $ blastx -query assembly.fasta -db uniprot_sprot.fasta -out \
         assembly.uniprot.tab -outfmt 6
 
 Using RAPSearch
@@ -116,22 +110,18 @@ RAPSearch will produce two files, `assembly.uniprot.tab.m8` and `assembly.unipro
 Create the GFF
 --------------
 
-After BLAST or RAPSearch are finished, we can convert all predictions to a GFF file:
+After BLAST or RAPSearch are finished, we can convert all predictions to a GFF file::
 
-.. code-block:: bash
-
-    blast2gff uniprot -b 40 -db UNIPROT-SP -dbq 10 assembly.uniprot.tab \
+    $ blast2gff uniprot -b 40 -db UNIPROT-SP -dbq 10 assembly.uniprot.tab \
         assembly.uniprot.gff
 
 And then, because the number of annotations is high, we filter them to reduce the number of overlapping annotations::
 
     $ filter-gff overlap assembly.uniprot.gff assembly.uniprot-filt.gff
 
-This will result in a smaller file. Both script supports piping, so they can be used together, for example to save a compressed file:
+This will result in a smaller file. Both script supports piping, so they can be used together, for example to save a compressed file::
 
-.. code-block:: bash
-
-    blast2gff uniprot -b 40 -db UNIPROT-SP -dbq 10 assembly.uniprot.tab | \
+    $ blast2gff uniprot -b 40 -db UNIPROT-SP -dbq 10 assembly.uniprot.tab | \
         filter-gff overlap | gzip > assembly.uniprot-filt.gff.gz
 
 .. warning::
@@ -143,24 +133,20 @@ Taxonomic Refinement
 
 This section is optional, as taxonomic identifiers are assigned using Uniprot, but it can result in a better identification. It requires the the `nt` database from NCBI to be found on the system, in the `ncbi-db` directory.
 
-To do it, first the nucleotide sequences must be extracted and then use blastn against the `nt` database:
+To do it, first the nucleotide sequences must be extracted and then use blastn against the `nt` database::
 
-.. code-block:: bash
-
-    get-gff-info sequence -f assembly.fasta assembly.uniprot.gff \
+    $ get-gff-info sequence -f assembly.fasta assembly.uniprot.gff \
         assembly.uniprot.frag.fasta
-    blastn -query assembly.uniprot.frag.fasta -db ncbi-db/nt -out \
+    $ blastn -query assembly.uniprot.frag.fasta -db ncbi-db/nt -out \
         assembly.uniprot.frag.tab -outfmt 6
 
 After BLAST completes, we need to download a supporting file to associate the results with the taxonomic information::
 
     $ wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/gi_taxid_nucl.dmp.gz
 
-and run the script to add the taxonomic information to the GFF file, also using the LCA algorithm:
+and run the script to add the taxonomic information to the GFF file, also using the LCA algorithm::
 
-.. code-block:: bash
-
-    add-gff-info taxonomy -v -t gi_taxid_nucl.dmp.gz -b \
+    $ add-gff-info taxonomy -v -t gi_taxid_nucl.dmp.gz -b \
         assembly.uniprot.frag.tab -s 40 -d NCBI-NT -l -x \
         mg_data/taxonomy.pickle \
         assembly.uniprot.gff assembly.uniprot-taxa.gff
@@ -172,11 +158,9 @@ after it completes, it is safe to rename the output GFF::
 Complete GFF
 ^^^^^^^^^^^^
 
-To add the remaining information, mapping to `KO <http://www.kegg.jp>`_ and others, including the taxonomic information, a script is provided that downloads this information into a GFF file:
+To add the remaining information, mapping to `KO <http://www.kegg.jp>`_ and others, including the taxonomic information, a script is provided that downloads this information into a GFF file::
 
-.. code-block:: bash
-
-    add-gff-info uniprot -v --buffer 500 -t -e -ec -ko \
+    $ add-gff-info uniprot -v --buffer 500 -t -e -ec -ko \
         assembly.uniprot.gff assembly.uniprot-final.gff
 
 After which we can rename the GFF file::
@@ -215,16 +199,14 @@ We'll have BAM files which we need to sort and index:
 Coverage and SNP Info
 ---------------------
 
-The coverage information is added to the GFF and needs to be added for later SNP analysis, including information about the expected number of synonymous and non-synonymous changes. The following lines can do it, using one of the scripts included with the library:
+The coverage information is added to the GFF and needs to be added for later SNP analysis, including information about the expected number of synonymous and non-synonymous changes. The following lines can do it, using one of the scripts included with the library::
 
-.. code-block:: bash
-
-    export SAMPLES=$(for file in *.bam; do echo -a `basename $file .bam`,$file ;done)
-    add-gff-info coverage $SAMPLES assembly.uniprot.gff | add-gff-info \
+    $ export SAMPLES=$(for file in *.bam; do echo -a `basename $file .bam`,$file ;done)
+    $ add-gff-info coverage $SAMPLES assembly.uniprot.gff | add-gff-info \
         exp_syn -r assembly.fasta > assembly.uniprot-update.gff
 
-    mv assembly.uniprot-update.gff assembly.uniprot.gff
-    unset SAMPLES
+    $ mv assembly.uniprot-update.gff assembly.uniprot.gff
+    $ unset SAMPLES
 
 The first line prepares part of the command line for the script and stores it into an environment variable, while the last command unsets the variable, as it's not needed anymore. The second command adds mapping and taxonomy information from Uniprot IDs to Kegg Orthologs, EC numbers and eggNOG.
 
