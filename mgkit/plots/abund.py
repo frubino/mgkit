@@ -4,16 +4,18 @@
 Module to plot relative abundances in a 1D or 3D projection
 """
 from __future__ import division
-from shapely import geometry
 import math
 import numpy
 
 SQRT3_2 = math.sqrt(3) / 2
 
 
-def draw_triangle_grid(ax, labels=['LAB', 'SAB', 'EAB'],
-                       styles=['-.', ':', '--'], linewidth=1., fontsize=16):
+def draw_triangle_grid(ax, labels=['LAM', 'SAM', 'EAM'], linewidth=1.,
+                       styles=['-', ':', '--'], fontsize=22):
     """
+    .. versionchanged:: 0.2.0
+        reworked internals and changed defaults
+
     Draws a triangle as axes, for a planar-simplex projection.
 
     Arguments:
@@ -28,125 +30,108 @@ def draw_triangle_grid(ax, labels=['LAB', 'SAB', 'EAB'],
             equal to *0.75 * fontsize*
     """
 
-    lines = geometry.LineString(
-        [(0, 0), (0.5, SQRT3_2), (1, 0), (0, 0)]
-    )
-
-    if styles is None:
-        # solid lines for the axes
-        ax.plot(*lines.xy, linewidth=linewidth, color='k')
-    else:
-        for index, style in zip(range(3), styles):
-            ax.plot(
-                lines.xy[0][index:index+2],
-                lines.xy[1][index:index+2],
-                linewidth=linewidth,
-                color='k',
-                linestyle=style
-            )
-
     ax.set_ylim((-0.1, 1.0))
     ax.set_xlim((-0.1, 1.1))
     ax.set_axis_off()
 
-    # font size for the labels
-    fontdict = {'fontsize': fontsize}
+    # SAM
+    ax.text(0, -0.05, labels[0], fontsize=fontsize, ha='right')
+    # LAM
+    ax.text(1.0, -0.05, labels[1], fontsize=fontsize, ha='left')
+    # EAB
+    ax.text(0.5, SQRT3_2 + 0.025, labels[2], fontsize=fontsize, ha='center')
 
-    ax.text(-0.05, -0.05, labels[0], fontdict=fontdict)
-    ax.text(1.0, -0.05, labels[1], fontdict=fontdict)
-    ax.text(0.5 - 0.025, SQRT3_2 + 0.05, labels[2], fontdict=fontdict)
+    values = numpy.arange(0.1, 1., 0.1)
 
-    # font size for the ticks
-    fontdict = {'fontsize': fontsize * 0.75}
+    points = []
 
-    Xvalues = numpy.arange(0.1, SQRT3_2, SQRT3_2 / 10)
-    Yvalues = numpy.arange(0.1, 1., 0.1)
+    # Bottom axis (LAM)
+    x1, y1 = project_point((1, 0, 0))
+    x2, y2 = project_point((0, 1, 0))
+    points.append((
+        [x1, x2],
+        [y1, y2]
+    ))
+    # Left axis (EAM)
+    x1, y1 = project_point((1, 0, 0))
+    x2, y2 = project_point((0, 0, 1))
+    points.append((
+        [x1, x2],
+        [y1, y2]
+    ))
+    # Right axis (SAM)
+    x1, y1 = project_point((0, 1, 0))
+    x2, y2 = project_point((0, 0, 1))
+    points.append((
+        [x1, x2],
+        [y1, y2]
+    ))
 
-    for x, y in zip(Xvalues, Yvalues):
-        line = geometry.LineString([(0, x), (1, x)])
-        points = line.intersection(lines)
-        line = geometry.LineString(points)
+    if styles is None:
+        styles = ['-'] * 3
+
+    for (X, Y), style in zip(points, styles):
+        ax.plot(X, Y, linestyle=style, linewidth=linewidth*1.5, color='k')
+
+    for index in values:
+
+        x1, y1 = project_point((index, 1 - index, 0))
+        x2, y2 = project_point((0, 1 - index, index))
+        # EAM
         ax.plot(
-            *line.xy,
+            [x1, x2],
+            [y1, y2],
+            linestyle=styles[2],
             color='k',
-            linestyle=':' if styles is None else styles[0],
-            linewidth=linewidth * 0.75
-        )
-        ax.text(
-            points.geoms[0].x - 0.05,
-            points.geoms[0].y,
-            "{0:.0f}".format(y * 100),
-            fontdict=fontdict
+            linewidth=linewidth
         )
 
-        line = geometry.LineString([points.geoms[0], (y, 0)])
+        x3, y3 = project_point((0, index, 1 - index))
+        x4, y4 = project_point((index, 0, 1 - index))
+        # SAM
         ax.plot(
-            *line.xy,
+            [x3, x4],
+            [y3, y4],
+            linestyle=styles[1],
             color='k',
-            linestyle=':' if styles is None else styles[2],
-            linewidth=linewidth * 0.75
+            linewidth=linewidth
         )
-        ax.text(y, - 0.05, "{0:.0f}".format((1 - y) * 100), fontdict=fontdict)
 
-        line = geometry.LineString([points.geoms[1], (1.-y, 0)])
+        # LAM
         ax.plot(
-            *line.xy,
+            [x4, x1],
+            [y4, y1],
+            linestyle=styles[0],
             color='k',
-            linestyle=':' if styles is None else styles[1],
-            linewidth=linewidth * 0.75
-        )
-        ax.text(
-            points.geoms[1].x + 0.025,
-            points.geoms[1].y,
-            "{0:.0f}".format((1 - y) * 100),
-            fontdict=fontdict
+            linewidth=linewidth
         )
 
-
-def draw_1d_grid(ax, labels=['LAB', 'SAB'], fontsize=16):
-    """
-    Draws a 1D axis, to display propotions.
-
-    Arguments:
-        ax: an axis instance
-        labels (iterable): list of string to be put for the axes
-        fontsize (float): font size for the labels, the tick font size is
-            equal to *0.75 * fontsize*
-    """
-
-    ax.set_ylim((-1.1, 1.1))
-    ax.set_xlim((-0.1, 1.1))
-    ax.set_axis_off()
-
-    # fontsize for labels
-    fontdict = {'fontsize': fontsize}
-
-    ax.text(-0.075, -.05, labels[0], fontdict=fontdict)
-    ax.text(1.025, -.05, labels[1], fontdict=fontdict)
-
-    # fontsize for ticks
-    fontdict = {'fontsize': fontsize * 0.75}
-
-    ty = 1.0
-    by = -1.0
-
-    lines = geometry.LineString([(0, 0), (1, 0)])
-    ax.plot(*lines.xy, linewidth=1, color='k')
-
-    for x in numpy.arange(0.1, 1., 0.1):
-        line = geometry.LineString([(x, by), (x, ty)])
-        ax.plot(*line.xy, color='k', linestyle=':')
+        # LAM labels
         ax.text(
-            x - 0.01,
-            by - .75,
-            "{0:.0f}".format(x * 100),
-            fontdict=fontdict
+            x1,
+            y1 - 0.02,
+            index,
+            va='top',
+            ha='center',
+            fontsize=int(fontsize * 0.75)
         )
+        # EAM labels
         ax.text(
-            x - 0.01,
-            ty + .25,
-            "{0:.0f}".format((1 - x) * 100),
-            fontdict=fontdict
+            x4 - 0.02,
+            y4,
+            1 - index,
+            ha='right',
+            va='center',
+            fontsize=int(fontsize * 0.75)
+        )
+        # EAM labels
+        ax.text(
+            x3 + 0.02,
+            y3,
+            index,
+            ha='left',
+            va='center',
+            fontsize=int(fontsize * 0.75)
         )
 
 
@@ -197,6 +182,9 @@ def col_func_taxon(taxon_id, taxonomy, anc_ids, colpal):
 def draw_circles(ax, data, col_func=col_func_name, csize=200, alpha=.5,
                  sizescale=None, order=None, linewidths=0., edgecolor='none'):
     """
+    .. versionchanged:: 0.2.0
+        changed internals and added return value
+
     Draws a scatter plot over either a planar-simplex projection, if the number
     of coordinates is 3, or in a 1D axis.
 
@@ -222,6 +210,9 @@ def draw_circles(ax, data, col_func=col_func_name, csize=200, alpha=.5,
         linewidths (float): width of the circle line
         edgecolor (str): color of the circle line
 
+    Returns:
+        PathCollection: the return value of matplotlib *scatter*
+
     .. note::
 
         To **not** have circle lines, *edgecolor* must be *'none'* and
@@ -231,30 +222,34 @@ def draw_circles(ax, data, col_func=col_func_name, csize=200, alpha=.5,
     #normalize data (ternary plots requires that the sum of a row is 1)
     data = data.div(data.sum(axis=1), axis=0)
 
+    def no_project(a, b):
+        if a > b:
+            x = 1 - a
+        else:
+            x = b
+        return x, 0.
+
     if order is None:
         order = data.index
 
-    for key in order:
-        coord = data.loc[key]
-        c = col_func(key)
-        #ternary plot
-        if len(coord) == 3:
-            x, y = project_point(coord)
-        #1D plot
-        else:
-            a, b = coord
-            if a > b:
-                x = 1 - a
-            else:
-                x = b
-            y = 0.
-        ax.scatter(
-            x,
-            y,
-            c=c,
-            alpha=alpha,
-            linewidths=linewidths,
-            edgecolor=edgecolor,
-            marker=u'o',
-            s=csize * (sizescale[key] if sizescale is not None else 1)
-        )
+    X = []
+    Y = []
+    for key, coord in data.loc[order].iterrows():
+        # print coord
+        x, y = project_point(coord) if len(coord) == 3 else no_project(*coord)
+        X.append(x)
+        Y.append(y)
+
+    colors = [col_func(key) for key in order]
+
+    paths = ax.scatter(
+        X,
+        Y,
+        c=colors,
+        alpha=alpha,
+        linewidths=linewidths,
+        edgecolor=edgecolor,
+        marker=u'o',
+        s=csize * (sizescale if sizescale is not None else 1)
+    )
+    return paths

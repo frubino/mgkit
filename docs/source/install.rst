@@ -9,7 +9,7 @@ Requirements
 The library is written completely in `Python <http://www.python.org>`_ and has been tested with both version 2.6.x and 2.7.x. It has not been tested with Python 3.x, but the authors are trying to write code that is potentially runnable with the use of the `2to3` tool.
 
 Most UNIX systems provide a version of Python installed. Latest versions of MacOSX provides Python 2.7.x, while most Linux variants may have different versions installed, sometimes version 3.x, but they usually provide python 2.7.x packages (`Archlinux <https://www.archlinux.org/>`_ uses version 3.x by default, but a `python2` package is provided). You can check the Python version installed with::
-	
+
 	$ python --version
 
 The library requires these Python packages:
@@ -20,7 +20,6 @@ The library requires these Python packages:
 * matplotlib >= 1.4.0
 * pysam >= 0.8.1 (required by :mod:`mgkit.align`)
 * argparse (if Python 2.6 is installed, part of the standard library from 2.7)
-* Shapely (if module :mod:`mgkit.plots.abund` is used)
 
 Optional:
 
