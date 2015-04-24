@@ -110,8 +110,7 @@ def set_parser():
         '--cov-suff',
         action='store',
         default='_cov',
-        help="Per sample coverage suffix in the GFF. (e.g. if '_cov' the " +
-             "attribute in the annotation must be 'sample_cov'"
+        help="Per sample coverage suffix in the GFF"
     )
 
     utils.add_basic_options(parser)

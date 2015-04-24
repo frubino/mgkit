@@ -19,8 +19,11 @@ and `filter_len`.
     {
         orientation = portrait;
 
-        class mgkit [color = "#e41a1c" , textcolor = 'white', width=200, fontsize=15];
-        class data [color = "#4daf4a" , textcolor = 'white', width=200, fontsize=15];
+        class mgkit [color = "#e41a1c" , textcolor = 'white', width=200,
+        fontsize=15];
+
+        class data [color = "#4daf4a" , textcolor = 'white', width=200,
+        fontsize=15];
         "GFF" [class = data, shape = flowchart.input];
 
         parse_gff [class = "mgkit"];
@@ -37,8 +40,9 @@ and `filter_len`.
 Overlap Filtering
 *****************
 
-Filters overlapping annotations using the functions :func:`mgkit.filter.gff.choose_annotation`
-and :func:`mgkit.filter.gff.filter_annotations`, after the annotations are grouped
+Filters overlapping annotations using the functions
+:func:`mgkit.filter.gff.choose_annotation` and
+:func:`mgkit.filter.gff.filter_annotations`, after the annotations are grouped
 by both sequence and strand. If the GFF is sorted by sequence name and strand,
 the `-t` can be used to make the filtering use less memory. It can be sorted in
 Unix using `sort -s -k 1,1 -k 7,7 gff_file`, which applies a stable sort using
@@ -57,15 +61,18 @@ the sequence name as the first key and the strand as the second key.
     {
         orientation = portrait;
 
-        class mgkit [color = "#e41a1c" , textcolor = 'white', width=200, fontsize=15];
-        class data [color = "#4daf4a" , textcolor = 'white', width=200, fontsize=15];
+        class mgkit [color = "#e41a1c" , textcolor = 'white', width=200,
+        fontsize=15];
+        class data [color = "#4daf4a" , textcolor = 'white', width=200,
+        fontsize=15];
         class software [color = "#377eb8", textcolor = "white", fontsize=15];
 
         sort [class = software];
         "GFF" [class = data, shape = flowchart.input];
         parse_gff [class = "mgkit"];
         group_annotations [class = "mgkit"];
-        filter_annotations [class = "mgkit", shape = flowchart.condition, fontsize=12];
+        filter_annotations [class = "mgkit", shape = flowchart.condition,
+        fontsize=12];
 
         "GFF" -> parse_gff -> sort -> filter_annotations;
         parse_gff -> group_annotations -> filter_annotations;

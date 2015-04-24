@@ -241,9 +241,9 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
     .. versionchanged:: 0.1.16
         added *widths* parameter
 
-    The function draws a series of boxplots from a DataFrame object, whose order
-    is directed by the iterable plot_order. The columns of each DataFrame row
-    contains the values for each boxplot. An ax object is needed.
+    The function draws a series of boxplots from a DataFrame object, whose
+    order is directed by the iterable plot_order. The columns of each DataFrame
+    row contains the values for each boxplot. An ax object is needed.
 
     :param dataframe: dataframe to plot
     :param iterable plot_order: row order used to plot the boxes
@@ -252,8 +252,8 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
         label used on the plot X ax
     :param dict fonts: dictionary with properties for x axis labels,
         :data:`DEFAULT_BOXPLOT_FONTCONF` is used by default
-    :param bool fill_box: if True each box is filled with the same colour of its
-        outline
+    :param bool fill_box: if True each box is filled with the same colour of
+        its outline
     :param dict colours: dictionary with properties for each boxplot if
         data_colours is None, whi overrides box, whiskers and fliers. Defaults
         to :data:`DEFAULT_BOXPLOT_COLOURS`
