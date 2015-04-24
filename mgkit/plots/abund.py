@@ -135,6 +135,66 @@ def draw_triangle_grid(ax, labels=['LAM', 'SAM', 'EAM'], linewidth=1.,
         )
 
 
+def draw_1d_grid(ax, labels=['LAM', 'SAM'], fontsize=22):
+    """
+    .. versionchanged:: 0.2.0
+        reworked internals and changed defaults
+
+    Draws a 1D axis, to display propotions.
+
+    Arguments:
+        ax: an axis instance
+        labels (iterable): list of string to be put for the axes
+        fontsize (float): font size for the labels, the tick font size is
+            equal to *0.75 * fontsize*
+    """
+
+    ax.set_ylim((-1.1, 1.1))
+    ax.set_xlim((-0.1, 1.1))
+    ax.set_axis_off()
+
+    ax.text(
+        -0.025,
+        0,
+        labels[0],
+        fontsize=fontsize,
+        va='center',
+        ha='right'
+    )
+    ax.text(
+        1.025,
+        0,
+        labels[1],
+        fontsize=fontsize,
+        va='center',
+        ha='left'
+    )
+
+    ty = 1.0
+    by = -1.0
+
+    ax.plot([0, 1], [0, 0], linewidth=1, color='k')
+
+    for x in numpy.arange(0.1, 1., 0.1):
+        ax.plot([x, x], [by, ty], color='k', linestyle=':')
+        ax.text(
+            x,
+            by - .1,
+            x,
+            fontsize=fontsize * 0.75,
+            ha='center',
+            va='top'
+        )
+        ax.text(
+            x,
+            ty + .1,
+            1 - x,
+            fontsize=fontsize * 0.75,
+            ha='center',
+            va='bottom'
+        )
+
+
 def project_point(point):
     """
     Project a tuple containing coordinates (i.e. x, y, z) to planar-simplex.
