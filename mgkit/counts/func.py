@@ -262,12 +262,16 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
     .. versionchanged:: 0.1.15
         added *uid_used* parameter
 
+    .. versionchanged:: 0.2.0
+        info_dict can be a function
+
     Reads sample counts, filtering and mapping them if requested. It's an
     example of the usage of the above functions.
 
     Arguments:
         info_dict (dict): dictionary that has *uid* as key and
-            *(gene_id, taxon_id)* as value
+            *(gene_id, taxon_id)* as value. In alternative a function that
+            accepts a *uid* as sole argument and returns *(gene_id, taxon_id)*
         counts_iter (iterable): iterable that yields a *(uid, count)*
         taxonomy: taxonomy instance
         inc_anc (int, list): ancestor taxa to include
@@ -287,10 +291,11 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         pandas.Series: array with MultiIndex *(gene_id, taxon_id)* with the
         filtered and mapped counts
     """
-    if isinstance(info_dict[info_dict.keys()[0]], tuple):
-        info_func = functools.partial(get_uid_info, info_dict)
-    else:
-        info_func = functools.partial(get_uid_info_ann, info_dict)
+    if isinstance(info_dict, dict):
+        if isinstance(info_dict[info_dict.keys()[0]], tuple):
+            info_func = functools.partial(get_uid_info, info_dict)
+        else:
+            info_func = functools.partial(get_uid_info_ann, info_dict)
 
     tfilters = []
 

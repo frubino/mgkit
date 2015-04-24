@@ -5,42 +5,40 @@ Gene prediction is an essential portion of a metagenomic pipeline, because there
 
 There different ways to predict genes, with some relying on general function domains like the ones from PFam :cite:`Punta2012` or others. This type of collections is very useful in identifying proteins in an unknown sequence. The main drawback for the examined datasets is that it's not possible to identify the organism but only the general function of a sequence.
 
-A second approach is to use orthologs genes. These are genes that have the same associated function across multiple organisms and this makes them a good choice when dealing with environment with multiple organisms. Two collections, eggNOG :cite:`Powell2012` and Kegg Ortholog :cite:`Kanehisa2012`, are highly curated.
+A second approach is to use orthologs, genes derived from the same ancestral sequence with their separation originated from a speciation process :cite:`Fitch1970`. As functionality is preserved among them, they are a good choice when approaching samples where multiple organisms are present. Two collections, eggNOG :cite:`Powell2012` and Kegg Ortholog :cite:`Kanehisa2012`, are highly curated. A single ortholog gene identifier maps to several genes from different organisms, so the characterisation of an ortholog gene propagate to all its associated genes. This includes links to pathways in the case of Kegg and to functional categories in the case of eggNOG.
 
 These genes are shared between organisms, so a single ortholog gene corresponds to several genes in different organisms. In some cases this is a preferred approach, as it allows a good resolution in the function, especially because this collections are linked to pathways in the case of Kegg and to functional categories in the case of eggNOG. The downside is that the collection of gene is not extensive and it is not connected to a taxonomic identification.
 
-Another approach is to use genes from general public databases, like Uniprot :cite:`Consortium2012`. While more general a collection, compared to Kegg Orthologs or eggNOG, it offers mappings to these two collections, as well as others. It does contain when available taxonomic information of its genes and it contains a manually curated portion (SwissProt) and an automated one (TrEMBL). This separation allows to have mixing annotations from both portions while preferentially use the ones from SwissProt.
+Another approach is to use genes from general public databases, like Uniprot :cite:`Consortium2012`. While more general a collection, compared to Kegg Orthologs or eggNOG, it offers mappings to these two collections, as well as others. It does contain when available taxonomic information of its genes and it is divided into a manually curated portion (SwissProt) and an automated one (TrEMBL). This separation allows to have mixing annotations from both portions while preferentially use the ones from SwissProt.
 
 In general the framework does not enforce one collection over another and in fact ortholog genes were used in one study, while Uniprot genes were used in others.
 
 Prediction Software
 -------------------
 
-There are two classes of software that can be used for gene prediction: one is profile based and the second uses similarity search.
+The prediction of genes requires both a collection and specific softwares to find homologous sequneces. There are two classes of software that can be used for gene prediction: one is profile based and the second uses similarity search.
 
-An example of software using profile search is HMMER :cite:`Eddy2011`. This approach uses an alignment of similar sequences to create an hidden markov model (HMM) profile that is used to identify sequences that are similar to said profile. Curated profiles can be created from the eggNOG collection or other collection, but is also possible to automate the process of creating profiles.
+An example of software using profile search is HMMER :cite:`Eddy2011`. This approach uses an alignment of similar sequences to create an hidden Markov model (HMM) profile that is used to identify sequences that are similar to said profile. Curated profiles can be created from the eggNOG collection or other collection, but is also possible to automate the process of creating custom profiles.
 
-The similarity search approach, with variation in algorithm, is used in BLAST :cite:`Altschul1990`, where a collection of sequences is first indexed using a fixed word length. All words in the index are searched in the query sequence and the most similar ones are investigated further to elongate the search.
+The similarity search approach, is used in BLAST :cite:`Altschul1990`, where a collection of sequences is first indexed and then all words in the index are searched against the query sequence and the most similar ones are investigated further to report a region of similarity.
 
 General Procedure
 -----------------
 
 .. blockdiag:: diagrams/gene_prediction-flowchart-general.blockdiag.txt
 
-The diagram shows a flowchart for gene prediction model of metagenomic data.
-
-The end result of the full process is a GFF file :cite:`Stein` including *gene_id* *taxon_id* and *uid* attributes. This attributes are need to identify univocally the annotation (uid), the gene that was functionally predicted (gene_id) and the organism it belongs to (taxon_id). A more detailed explanation of these attributes and others is in :ref:`gff-specs`.
+The end result of the full process is a GFF file :cite:`Stein` including *gene_id* *taxon_id* and *uid* attributes. This attributes are need to identify univocally the annotation (*uid*), the gene that was functionally predicted (*gene_id*) and the organism it belongs to (*taxon_id*). A more detailed explanation of these attributes and others is in :ref:`gff-specs`.
 
 The choice of the format is based on the fact that it is to manipulate without ad-hoc tools, as it is a text file, and it is accepted as input file by several bioinformatics tools.
 
 Functional Prediction
 ---------------------
 
-The first step of the pipeline is to generate functional prediction information of the metagenomic sequences. This can be achieved using any tool of choice, with HMMER and BLAST+ preferred. While BLAST+ is being extensively tested, any program that outputs prediction data in the same format as BLAST+ can be used; one such alternative is USEARCH :cite:`Edgar2010a`.
+The first step of the pipeline is to generate functional prediction information of the metagenomic sequences. This can be achieved using any tool of choice, with HMMER and BLAST+ preferred among others. While BLAST+ is being extensively tested, any program that outputs prediction data in the same tab separated format as BLAST+ can be used, including USEARCH :cite:`Edgar2010` and RAPSearch2 :cite:`Zhao2012`.
 
-The framework provides two script, one for HMMER output :ref:`hmmer2gff` and one for BLAST+ (or USEARCH) :ref:`blast2gff` to convert predictions to GFF annotations.
+The framework provides two script, one for HMMER output :ref:`hmmer2gff` and one for BLAST+ tab separated format :ref:`blast2gff`, to convert predictions to GFF annotations.
 
-Usually a filter on the quality of the prediction is used, with 40 bit as a minimum indication of good omology and 60 being a preferred one. If more than one gene collection is used, for example both SwissProt and TrEMBL, it is advised to use keep track of which collection the annotation comes from and giving the chosen collection a quality score (dbq attribute in the GFF).
+Usually a filter on the quality of the prediction is used, with 40 bit as a minimum indication of homology and 60 being a better one. If more than one gene collection is used, for example both SwissProt and TrEMBL, it is advised to keep track of which collection the annotation comes from and giving the chosen collection a quality index (*dbq* attribute in the GFF), with higher values assigned to preferred collections.
 
 Generate Profiles
 *****************
@@ -64,9 +62,7 @@ The number of predictions generated by the chosen prediction software can be ver
 
 However, when multiple genes are predicted on roughly the same region of a sequence, the choice of the annotation to keep is more difficult. Overlapping annotations can be either a weaker prediction, or the result of a chimeric sequence, as it can happen in metagenomic assemblies.
 
-To solve this problem a script was written that filters annotations when an overlap occurs. The implementation scans the list of annotations on a sequence, sorted by their bit score, trying to find annotations that overlap. When two annotations overlap for at least 100bp, by default, the annotation to keep is chosen with a function that maximise three parameters, in order of priority: db quality, bit score and annotation length.
-
-This greatly reduces the number of annotations remaining and keeps the best possible annotations.
+To solve this problem a script (filter-gff) was written that filters annotations when an overlap occurs. The algorithm scans the list of all annotations in a single sequence, sorted by their bit score, trying to find annotations that overlap. The filter is triggered when two annotations overlap, for at least 100bp by default, and the annotation to keep is chosen using a function that maximise three parameters: db quality (dbq), bit score (bitscore) and annotation length, in order of priority. This greatly reduces the number of annotations remaining and keeps the best possible annotations.
 
 The choice of the 100 bp, as default value for an overlap to trigger filtering between two annotations, is based on the comparison of 36 prokaryotic genomes retrieved from UCSC :cite:`Schneider2006` gene overlaps.
 
@@ -93,7 +89,7 @@ The choice of the 100 bp, as default value for an overlap to trigger filtering b
 Taxonomic Prediction
 --------------------
 
-When using Uniprot to functionally predict genes in a sequence, the metadata available for the gene may contain taxonomic information. However, while a gene from one species may have been predicted in the data, it may actually belong to another organism.
+When using Uniprot to functionally predict genes in a sequence, the metadata available for the gene may contain taxonomic information. However, while a gene from one species may have been predicted in the data, this prediction may be incorrect. There are various reasons, closely related organisms, lack of specific genes for a class of organisms or annotations, among others.
 
 In this cases the approach taken in the framework is to extract the predicted nucleotide sequences using the tool of choice, provieded that it names the sequences using the *uid* attribute of an annotation, or the provided script (:ref:`get-gff-info`). The sequences included in the file can be used with a similarity search program as BLAST to find the closest related sequences.
 
