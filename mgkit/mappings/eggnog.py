@@ -321,6 +321,8 @@ class NOGInfo(object):
         if isinstance(file_handle, str):
             file_handle = open_file(file_handle, 'r')
 
+        LOG.info("Reading Members from %s", file_handle.name)
+
         map_nog_gene = {}
 
         for line in file_handle:
@@ -347,6 +349,8 @@ class NOGInfo(object):
         if isinstance(file_handle, str):
             file_handle = open_file(file_handle, 'r')
 
+        LOG.info("Reading Descriptions from %s", file_handle.name)
+
         map_nog_desc = {}
 
         for line in file_handle:
@@ -369,6 +373,8 @@ class NOGInfo(object):
         """
         if isinstance(file_handle, str):
             file_handle = open_file(file_handle, 'r')
+
+        LOG.info("Reading Functional Categories from %s", file_handle.name)
 
         map_nog_func = {}
 
