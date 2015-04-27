@@ -245,7 +245,7 @@ def draw_circles(ax, data, col_func=col_func_name, csize=200, alpha=.5,
     paths = ax.scatter(
         X,
         Y,
-        c=colors,
+        color=colors,
         alpha=alpha,
         linewidths=linewidths,
         edgecolor=edgecolor,

@@ -296,6 +296,8 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
             info_func = functools.partial(get_uid_info, info_dict)
         else:
             info_func = functools.partial(get_uid_info_ann, info_dict)
+    else:
+        info_func = info_dict
 
     tfilters = []
 
