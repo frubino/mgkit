@@ -254,7 +254,7 @@ def map_gene_id_to_map(gene_map, gene_id):
 
 def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
                        rank=None, gene_map=None, ex_anc=None,
-                       include_higher=True, cached=False, uid_used=None):
+                       include_higher=True, cached=True, uid_used=None):
     """
     .. versionchanged:: 0.1.14
         added *cached* argument
