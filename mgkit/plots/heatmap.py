@@ -86,6 +86,9 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
 def grouped_spine(groups, labels, ax, which='y', spine='right',
                   spine_opts=None):
     """
+    .. versionchanged:: 0.2.0
+        added *va*, *ha* keys to *spine_opts*, changed the label positioning
+
     Changes the spine of an heatmap axis given the groups of labels.
 
     .. note::
@@ -111,7 +114,9 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
         group_lw=1.5,
         in_length=13,
         out_length=15,
-        fontsize=18
+        fontsize=18,
+        va='center',
+        ha='left'
     )
 
     if spine_opts is not None:
@@ -128,7 +133,7 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
 
         group_half = len(group) // 2
         minor_ticks.append(
-            group_half + major_ticks[-2] + (0.5 if group_half % 2 == 0 else 0)
+            group_half + major_ticks[-2] + 0.5
         )
 
     ax.spines[spine].set_visible(True)
@@ -144,7 +149,8 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
     axis.set_ticks(major_ticks)
     axis.set_ticks(minor_ticks, minor=True)
     axis.set_ticks_position(spine)
-    axis.set_ticklabels(labels, minor=True, verticalalignment='center')
+    axis.set_ticklabels(labels, minor=True, va=spine_args['va'],
+                        ha=spine_args['ha'])
     axis.set_ticklabels([], minor=False)
     axis.set_tick_params(
         direction='in',
