@@ -96,6 +96,32 @@ This function:
            the bit score and finally the lenght of annotation, the one with the
            highest values is kept
 
+While the default behaviour is the same, now it is posible to decided the
+function used to discard one the two annotations. It is possible to use the
+`-c` argument to pass a string that defines the funtion. The string passed must
+start with either a **-** or **+**. This translate into the builtin function
+*max* for *+* and to *min* for *-*. from the second character on, any number of
+attributes can be used, separated by commas. The attributes, however, must be
+one of the properties defined in :class:`mgkit.io.gff.Annotation`, *bitscore*
+that returns the value converted in a *float*. Internally the attributes are
+stored as strings, so for attributes that have no properties in the class, such
+as *evalue*, the `float` builtin is applied.
+
+The tuples built for both annotations are then passed to the comparison
+function to be selected and the value returned by it is **discarded**. The
+order of the elements in the string is important to define the priority
+given to each element in the comparison and the leftmost one has the
+highesst priority.
+
+Examples of function strings:
+
+* `-dbq,bitscore,length` becomes max((ann1.dbq, ann1.bitscore, ann1.length),
+  (ann2.dbq, ann2.bitscore, ann2.length) - This is default and previously
+  only choice
+* `-bitscore,length,dbq` uses the same elements but gives lowest priority
+  to *dbq*
+* `+evalue`: will discard the annotation with the highest *evalue*
+
 Changes
 *******
 
@@ -103,6 +129,9 @@ Changes
 
 .. versionchanged:: 0.1.13
     added *--sorted* option
+
+.. versionchanged:: 0.2.0
+    changed option *-c* to accept a string to filter overlap
 
 """
 
@@ -327,10 +356,9 @@ def set_overlap_parser(parser):
         '-c',
         '--choose-func',
         action='store',
-        type=str,
+        type=make_choose_func,
         help='Function to choose between two overlapping annotations',
-        choices=['bitscore'],
-        default='bitscore'
+        default='-dbq,bitscore,length'
     )
 
     common_options(parser)
@@ -511,6 +539,33 @@ def filter_values(options):
             annotation.to_file(options.output_file)
 
 
+def make_choose_func(argument):
+    """Builds the function used to choose between two annotations."""
+    argument = argument.strip()
+
+    if argument.startswith('+'):
+        function = max
+    elif argument.startswith('-'):
+        function = min
+    else:
+        raise argparse.ArgumentTypeError(
+            "Only + and - are accepted as function for '%s'" % argument
+        )
+
+    attributes = argument[1:].split(',')
+
+    choose_func = lambda a1, a2: function(
+        a1,
+        a2,
+        key=lambda el: tuple(
+            getattr(el, attribute, None) if hasattr(el, attribute) else el.get_attr(attribute, float)
+            for attribute in attributes
+        )
+    )
+
+    return choose_func
+
+
 def filter_overlaps(options):
 
     file_iterator = gff.parse_gff(options.input_file, gff_type=gff.from_gff)
@@ -521,11 +576,10 @@ def filter_overlaps(options):
     else:
         grouped = gff.group_annotations(file_iterator).itervalues()
 
-    #right now there's only one possible way to choose between the annotations
     choose_func = functools.partial(
         filter_gff.choose_annotation,
         overlap=options.size,
-        choose_func=None
+        choose_func=options.choose_func
     )
 
     for annotations in grouped:
