@@ -389,6 +389,15 @@ class Annotation(GenomicRange):
         self.attr['gene_id'] = value
 
     @property
+    def length(self):
+        """
+        .. versionchanged:: 0.2.0
+
+        Length of the annotation, uses `len(self)`
+        """
+        return len(self)
+
+    @property
     def region(self):
         """
         .. versionadded:: 0.1.13
