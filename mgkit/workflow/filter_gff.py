@@ -99,13 +99,13 @@ This function:
 While the default behaviour is the same, now it is posible to decided the
 function used to discard one the two annotations. It is possible to use the
 `-c` argument to pass a string that defines the funtion. The string passed must
-start with either a **-** or **+**. This translate into the builtin function
-*max* for *+* and to *min* for *-*. from the second character on, any number of
-attributes can be used, separated by commas. The attributes, however, must be
-one of the properties defined in :class:`mgkit.io.gff.Annotation`, *bitscore*
-that returns the value converted in a *float*. Internally the attributes are
-stored as strings, so for attributes that have no properties in the class, such
-as *evalue*, the `float` builtin is applied.
+start with or without a **+**. Using **+** translates into the builtin function
+*max* while no **+** translates into *min* from the second character on, any
+number of attributes can be used, separated by commas. The attributes, however,
+must be one of the properties defined in :class:`mgkit.io.gff.Annotation`,
+*bitscore* that returns the value converted in a *float*. Internally the
+attributes are stored as strings, so for attributes that have no properties in
+the class, such as *evalue*, the `float` builtin is applied.
 
 The tuples built for both annotations are then passed to the comparison
 function to be selected and the value returned by it is **discarded**. The
@@ -358,7 +358,7 @@ def set_overlap_parser(parser):
         action='store',
         type=make_choose_func,
         help='Function to choose between two overlapping annotations',
-        default='-dbq,bitscore,length'
+        default='dbq,bitscore,length'
     )
 
     common_options(parser)
@@ -543,14 +543,12 @@ def make_choose_func(argument):
     """Builds the function used to choose between two annotations."""
     argument = argument.strip()
 
+    LOG.info("Filter function used for overlaps %s", argument)
+
     if argument.startswith('+'):
         function = max
-    elif argument.startswith('-'):
-        function = min
     else:
-        raise argparse.ArgumentTypeError(
-            "Only + and - are accepted as function for '%s'" % argument
-        )
+        function = min
 
     attributes = argument[1:].split(',')
 
