@@ -132,8 +132,12 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
         major_ticks.append(major_ticks[-1] + len(group))
 
         group_half = len(group) // 2
+        addendum = 0.5
+
+        if len(group) % 2 == 0:
+            addendum = 0.
         minor_ticks.append(
-            group_half + major_ticks[-2] + 0.5
+            group_half + major_ticks[-2] + addendum
         )
 
     ax.spines[spine].set_visible(True)
