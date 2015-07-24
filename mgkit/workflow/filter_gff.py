@@ -547,10 +547,11 @@ def make_choose_func(argument):
 
     if argument.startswith('+'):
         function = max
+        argument = argument[1:]
     else:
         function = min
 
-    attributes = argument[1:].split(',')
+    attributes = argument.split(',')
 
     choose_func = lambda a1, a2: function(
         a1,
