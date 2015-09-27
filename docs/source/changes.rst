@@ -1,6 +1,24 @@
 Changes
 =======
 
+0.2.0
+-----
+
+* added creation of wheel distribution
+* changes to ensure compatibility with alter pandas versions
+* :meth:`mgkit.io.gff.Annotation.get_ec` now returns a set, reflected changes in tests
+* added a `--cite` option to scripts
+* fixes to tutorial
+* updated documentation for sphinx 1.3
+* changes to diagrams
+* added decoration to raise warnings for deprecated functions
+* added possibility for :func:`mgkit.counts.func.load_sample_counts` info_dict to be a function instead of a dictionary
+* consolidation of some eggNOG structures
+* added more spine options in :func:`mgkit.plots.heatmap.grouped_spine`
+* added a `length` property to :class:`mgkit.io.gff.Annotation`
+* changed `filter-gff` script to customise the filtering function, from the default one, also updated the relative documentation
+* fixed a few plot functions
+
 0.1.16
 ------
 
@@ -80,7 +98,7 @@ Changes
 * deprecated functions in :mod:`mgkit.io.blast` module, added more to parse blast outputs (some specific)
 * :func:`mgkit.io.fasta.load_fasta` returns uppercase sequences, added a function (:func:`mgkit.io.fasta.split_fasta_file`) to split fasta files
 * added more methods to :mod:`mgkit.io.gff.Annotation` to complete API from old annotations
-* fixed :attr:`mgkit.io.gff.Annotation.dbq` propterty to return an **int** (bug in filtering with filter-gff)
+* fixed :attr:`mgkit.io.gff.Annotation.dbq` property to return an **int** (bug in filtering with filter-gff)
 * added function to extract the sequences covered by annotations, using the :meth:`mgkit.io.gff.Annotation.get_nuc_seq` method
 * added :func:`mgkit.io.gff.correct_old_annotations` to update old annotated GFF to new conventions
 * added :func:`mgkit.io.gff.group_annotations_by_ancestor` and :func:`mgkit.io.gff.group_annotations_sorted`
