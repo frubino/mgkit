@@ -7,13 +7,13 @@ __VERSION__ = "0.2.0"
 from setuptools import setup, find_packages
 
 install_requires = [
-    'numpy>=1.9.1',
-    'pysam>=0.8.1',
-    'pandas>=0.15.1',
-    'scipy>=0.14.0',
-    #'matplotlib>=1.4.0',
+    'numpy>=1.9.2',
+    'pysam>=0.8.2.1',
+    'pandas>=0.16.2',
+    'scipy>=0.15.1',
+    #'matplotlib>=1.4.3',
     #'goatools',
-    # 'networkx>=1.9',
+    # 'networkx>=1.9.1',
 ]
 
 with open('README.rst') as file:
@@ -39,7 +39,7 @@ setup(
     scripts=[
         'bin/snp_analysis.py',
     ],
-    tests_require=['nose>=1.3', 'yanc'],
+    tests_require=['nose>=1.3.4', 'yanc'],
     extras_require={
         'htseq': ['HTSeq>=0.6.1p1'],
         'R': 'rpy2>=2.3.8',
