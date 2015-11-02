@@ -13,7 +13,9 @@ import random
 import itertools
 import logging
 import uuid
+import json
 import urllib
+import semidbm
 import mgkit.io
 from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
@@ -61,15 +63,21 @@ def write_gff(annotations, file_handle, verbose=True):
 class GenomicRange(object):
     """
     Defines a genomic range
+
+    .. versionchanged:: 0.2.1
+        using __slots__ for better memory usage
     """
-    seq_id = 'None'
-    "Sequence ID"
-    strand = '+'
-    "Strand"
-    start = None
-    "Start of the range, 1-based"
-    end = None
-    "End of the range 1-based"
+
+    __slots__ = ('seq_id', 'strand', 'start', 'end')
+
+    # seq_id = 'None'
+    # "Sequence ID"
+    # strand = '+'
+    # "Strand"
+    # start = None
+    # "Start of the range, 1-based"
+    # end = None
+    # "End of the range 1-based"
 
     def __init__(self, seq_id='None', start=1, end=1, strand='+'):
         self.seq_id = seq_id
@@ -202,19 +210,25 @@ class Annotation(GenomicRange):
     """
     .. versionadded:: 0.1.12
 
+    .. versionchanged:: 0.2.1
+        using __slots__ for better memory usage
+
     Alternative implementation for an Annotation. When initialised, If *uid* is
     None, a unique id is added using `uuid.uuid4`.
     """
-    source = 'None'
-    "Annotation source"
-    feat_type = 'None'
-    "Annotation type (e.g. CDS, gene, exon, etc.)"
-    score = 0.0
-    "Score associated to the annotation"
-    phase = 0
-    "Annotation phase, (0, 1, 2)"
-    attr = None
-    "Dictionary with the key value pairs in the last column of a GFF/GTF"
+
+    __slots__ = ('source', 'feat_type', 'score', 'phase', 'attr')
+
+    # source = 'None'
+    # "Annotation source"
+    # feat_type = 'None'
+    # "Annotation type (e.g. CDS, gene, exon, etc.)"
+    # score = 0.0
+    # "Score associated to the annotation"
+    # phase = 0
+    # "Annotation phase, (0, 1, 2)"
+    # attr = None
+    # "Dictionary with the key value pairs in the last column of a GFF/GTF"
 
     def __init__(self, seq_id='None', start=1, end=1, strand='+',
                  source='None', feat_type='None', score=0.0, phase=0, uid=None,
@@ -462,6 +476,26 @@ class Annotation(GenomicRange):
         )
 
         return "{0}\t{1}\n".format(values, attr_column)
+
+    def to_json(self):
+        """
+        .. versionadded:: 0.2.1
+
+        Returns a json representation of the Annotation
+        """
+        var_names = (
+            'seq_id', 'source', 'feat_type', 'start', 'end',
+            'score', 'strand', 'phase'
+        )
+
+        dictionary = {}
+
+        for var_name in var_names:
+            dictionary[var_name] = getattr(self, var_name)
+
+        dictionary.update(self.attr)
+
+        return json.dumps(dictionary, separators=(',', ':'))
 
     def to_file(self, file_handle):
         """
@@ -1103,6 +1137,15 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
     )
 
     return annotation
+
+
+def from_json(line):
+    """
+        .. versionadded:: 0.2.1
+
+        Returns an Annotation from a json representation
+    """
+    return Annotation(**json.loads(line))
 
 
 def from_hmmer(line, aa_seqs, ko_counts=None, feat_type='gene', source='HMMER',
@@ -1794,3 +1837,58 @@ def convert_gff_to_gtf(file_in, file_out, gene_id_attr='uid'):
     file_out = open(file_out, 'w')
     for annotation in parse_gff(file_in):
         file_out.write(annotation.to_gtf())
+
+
+def create_gff_dbm(annotations, file_name):
+    """
+    .. versionadded:: 0.2.1
+
+    Creates a semidbm database, using an annotation `uid` as key and the gff
+    line as value. The object is synced before being returned.
+
+    .. note::
+
+        A GFF line is used instead of a json representation because it was
+        more compact when semidbm was tested.
+
+    Arguments:
+        annotations (iterable): iterable of annotations
+        file_name (str): database file name, opened with the `c` flag.
+
+    Returns:
+        object: a semidbm database object
+    """
+
+    database = semidbm.open(file_name, 'c')
+
+    LOG.info('DB "%s" opened/created', file_name)
+
+    for annotation in annotations:
+        database[annotation.uid] = annotation.to_gff()
+
+    database.sync()
+
+    return database
+
+
+class GFFDB(object):
+    """
+    .. versionadded:: 0.2.1
+
+    A wrapper for a semidbm instance, used to convert the GFF line stored in
+    the DB into an class:`Annotation` instance. If a string is passed to the
+    init method, a DB will be opened with the `c` flag.
+    """
+    db = None
+
+    def __init__(self, db=None):
+        if isinstance(db, str):
+            self.db = semidbm.open(db, 'c')
+        else:
+            self.db = db
+
+    def __getitem__(self, key):
+        return from_gff(self.db[key])
+
+    def __del__(self):
+        self.db.close()
