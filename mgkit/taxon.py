@@ -218,7 +218,7 @@ class UniprotTaxonomy(object):
         """
 
         if isinstance(file_handle, str):
-            file_handle = open_file(file_handle)
+            file_handle = open_file(file_handle, 'rb')
 
         LOG.info("Loading taxonomy from file %s", file_handle.name)
 
@@ -233,9 +233,9 @@ class UniprotTaxonomy(object):
         """
         LOG.info("Saving taxonomy to file %s", fname)
         if fname.endswith('.gz'):
-            f_handle = gzip.open(fname, 'w', compresslevel=4)
+            f_handle = gzip.open(fname, 'bw', compresslevel=4)
         else:
-            f_handle = open(fname, 'w')
+            f_handle = open(fname, 'bw')
         cPickle.dump(self._taxa, f_handle, -1)
 
     def find_by_name(self, s_name):
