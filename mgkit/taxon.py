@@ -10,7 +10,7 @@ import itertools
 import collections
 import pandas
 from .io import open_file
-from .utils.common import deprecated
+# from .utils.common import deprecated
 
 
 LOG = logging.getLogger(__name__)
@@ -94,13 +94,17 @@ A substitute for UniprotTaxon, to be tested
 """
 
 
-def parse_uniprot_taxon(line):
+def parse_uniprot_taxon(line, light=True):
     """
     .. versionchanged:: 0.1.13
         now accepts empty scientific names, for root taxa
 
+    .. versionchanged:: 0.2.1
+        added *light* parameter
+
     Parses a Uniprot taxonomy file (tab delimited) line and returns a
-    UniprotTaxonTuple instance
+    UniprotTaxonTuple instance. If *light* is True, lineage is not stored to
+    decrease the memory usage. This is now the default.
     """
     line = line.rstrip().split('\t')
     taxon_id = int(line[0])
@@ -117,6 +121,8 @@ def parse_uniprot_taxon(line):
     except IndexError:
         rank = None
     try:
+        if light:
+            raise IndexError
         lineage = tuple(x.lower() for x in line[8].split('; '))
     except IndexError:
         lineage = (None,)
@@ -132,138 +138,6 @@ def parse_uniprot_taxon(line):
         lineage,
         parent_id
     )
-
-
-class UniprotTaxon(object):
-    """
-    .. deprecated:: 0.1.2
-
-    Class that defines a taxon in Uniprot
-
-    Uses slots to save memory, so no attribute can be attached at instances at
-    runtime. To be pickled, __getstate__ and __setstate__ are defined
-
-    At the moment the attributes of a Taxon are:
-
-    * taxon_id (int): id used in Uniprot
-    * s_name (string): scientific name
-    * c_name (string): common name
-    * rank (string): taxon rank (e.g. genus, phylum, etc.)
-    * lineage (tuple of strings): the entire lineage that bring to the taxon;
-      it's a tuple of strings in the same order as appears in Uniprot
-    * parent_id (int): id of the parent taxon
-
-    .. todo::
-
-        get rid of __getstate__ and __setstate__ and test with already pickled
-        data
-
-    """
-
-    taxon_id = None
-    "Id used in Uniprot (int)"
-
-    s_name = None
-    "Scientific name (str)"
-
-    c_name = None
-    "Common name (str)"
-
-    rank = None
-    "Taxon rank (str)"
-
-    lineage = None
-    """
-    The entire lineage that bring to the taxon; it's a tuple of strings in the
-    same order as appears in Uniprot (tuple of strings)
-    """
-
-    parent_id = None
-    "Id of the parent taxon (int)"
-
-    @deprecated
-    def __init__(self, line=None, **kwd):
-        """
-        .. deprecated:: 0.1.2
-
-        The method accept any arbitrary keyword arguments, but only accepted
-        one will be used
-
-        >>> a="7898\\t9ACTI\\tActinopterygii\\t\\t\\tOsteichthyes; bony fishes; fish; fishes; ray-finned fishes\\t\\tClass\\tEukaryota    ; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi\\t117571"
-        >>> tmp1=UniprotTaxon(a)
-        >>> tmp1.lineage
-        ('eukaryota    ', 'metazoa', 'chordata', 'craniata', 'vertebrata', 'euteleostomi')
-        >>> tmp1.taxon_id
-        7898
-        >>> tmp1.parent_id
-        117571
-        >>> tmp1.rank
-        'class'
-        >>> tmp2=UniprotTaxon(**{'lineage': ('eukaryota    ', 'metazoa', 'chordata', 'craniata', 'vertebrata', 'euteleostomi'), 'c_name': '', 'rank': 'class', 'parent_id': 117571, 's_name': 'actinopterygii', 'taxon_id': 7898})
-        >>> tmp1.rank == tmp2.rank
-        True
-        >>> tmp1.lineage == tmp2.lineage
-        True
-        >>> tmp1.parent_id == tmp2.parent_id
-        True
-        >>> tmp1.taxon_id == tmp2.taxon_id
-        True
-        """
-        if line is None:
-            for name, value in kwd.iteritems():
-                setattr(self, name, value)
-        else:
-            line = line.rstrip().split('\t')
-            # if len(line) < 10:
-            #     LOG.debug(len(line))
-            #     print line
-            self.taxon_id = int(line[0])
-            self.s_name = line[2].lower()
-            try:
-                self.c_name = line[3].lower() if line[3] else ''
-            except IndexError:
-                self.c_name = ''
-            try:
-                self.rank = line[7].lower()
-            except IndexError:
-                self.rank = None
-            try:
-                self.lineage = tuple(x.lower() for x in line[8].split('; '))
-            except IndexError:
-                self.lineage = (None,)
-            try:
-                self.parent_id = int(line[9])
-            except (ValueError, IndexError):
-                self.parent_id = None
-
-    def __getstate__(self):
-        """
-        Used by pickle.dump
-
-        >>> tmp1=UniprotTaxon(**{'lineage': ('eukaryota    ', 'metazoa', 'chordata', 'craniata', 'vertebrata', 'euteleostomi'), 'c_name': '', 'rank': 'class', 'parent_id': 117571, 's_name': 'actinopterygii', 'taxon_id': 7898})
-        >>> tmp1.__getstate__()
-        {'lineage': ('eukaryota    ', 'metazoa', 'chordata', 'craniata', 'vertebrata', 'euteleostomi'), 'c_name': '', 'rank': 'class', 'parent_id': 117571, 's_name': 'actinopterygii', 'taxon_id': 7898}
-        """
-        return dict((x, getattr(self, x)) for x in self.__dict__)
-
-    def __setstate__(self, state):
-        """
-        Used by pickle.load
-        """
-        for name, value, in state.iteritems():
-            setattr(self, name, value)
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        """
-        String representation for the class instance
-
-        >>> UniprotTaxon(**{'lineage': ('eukaryota    ', 'metazoa', 'chordata', 'craniata', 'vertebrata', 'euteleostomi'), 'c_name': '', 'rank': 'class', 'parent_id': 117571, 's_name': 'actinopterygii', 'taxon_id': 7898})
-        actinopterygii (7898) - class
-        """
-        return "{0} ({1}) - {2}".format(self.s_name, self.taxon_id, self.rank)
 
 
 class UniprotTaxonomy(object):
@@ -287,11 +161,15 @@ class UniprotTaxonomy(object):
         if fname:
             self.load_data(fname)
 
-    def read_taxonomy(self, f_handle):
+    def read_taxonomy(self, f_handle, light=True):
         """
+        .. versionchanged:: 0.2.1
+            added *light* parameter
+
         Reads taxonomy from a file handle.
         The file needs to be a tab separated format return by a query on
-        Uniprot.
+        Uniprot.  If *light* is True, lineage is not stored to decrease the
+        memory usage. This is now the default.
 
         New taxa will be added, duplicated taxa will be skipped.
 
@@ -307,7 +185,7 @@ class UniprotTaxonomy(object):
         for line in f_handle:
             try:
                 # taxon = UniprotTaxon(line=line)
-                taxon = parse_uniprot_taxon(line)
+                taxon = parse_uniprot_taxon(line, light=light)
             except Exception:
                 # print line.strip().split('\t')
                 LOG.debug("skipped line: %s", line)
@@ -419,8 +297,6 @@ class UniprotTaxonomy(object):
 
         if isinstance(taxon_id, int):
             ranked = self[taxon_id]
-        elif isinstance(taxon_id, UniprotTaxon):
-            ranked = taxon_id
         else:
             raise ValueError("Not a valid taxon_id: {0}".format(taxon_id))
 
@@ -464,8 +340,6 @@ class UniprotTaxonomy(object):
 
         if isinstance(taxon_id, int):
             taxon = self[taxon_id]
-        elif isinstance(taxon_id, UniprotTaxon):
-            taxon = taxon_id
         else:
             raise ValueError("Not a valid taxon_id: {0}".format(taxon_id))
 
@@ -506,8 +380,6 @@ class UniprotTaxonomy(object):
 
         Accepts an int (check for taxon_id) or an instance of UniprotTaxon
         """
-        if isinstance(taxon, UniprotTaxon):
-            return taxon in self._taxa.itervalues()
         if isinstance(taxon, int):
             return taxon in self._taxa
         return False
