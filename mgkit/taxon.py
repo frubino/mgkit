@@ -90,7 +90,7 @@ UniprotTaxonTuple = collections.namedtuple(
     ('taxon_id', 's_name', 'c_name', 'rank', 'lineage', 'parent_id')
 )
 """
-A substitute for UniprotTaxon, to be tested
+A representation of a Uniprot Taxon
 """
 
 
