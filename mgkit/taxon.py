@@ -78,13 +78,6 @@ TAXON_RANKS = (
 )
 "Taxonomy ranks included in the pickled data"
 
-MISPELLED_TAXA = {
-    'bacterioidetes': 'bacteroidetes',
-    'bacteriodales': 'bacteroidales'
-}
-"A few mispelled taxa were present"
-
-
 UniprotTaxonTuple = collections.namedtuple(
     'UniprotTaxonTuple',
     ('taxon_id', 's_name', 'c_name', 'rank', 'lineage', 'parent_id')
@@ -420,68 +413,6 @@ def group_by_root(taxa, roots=TAXON_ROOTS, only_names=False, replace_space='#'):
                 break
 
     return groups
-
-
-def reorder_iterable_by_root_taxon(taxa_list, tmap, aggr=None):
-    """
-    Reorders iterable based on a root taxa map.
-
-    :param iterable taxa_list: any iterable with taxa names
-    :param dict tmap: dictionary returned by :func:`group_by_root` with
-        only_names=True
-    :param func aggr: callable to aggregate results. (e.g. list, pandas.Index,
-        ecc.)
-
-    :return: a generator with the ordered taxa or the data that aggr returns
-
-    .. todo::
-
-        * option to output each taxa list for a root taxon sorted
-    """
-
-    ord_index = {}
-
-    for taxon in taxa_list:
-        try:
-            ord_index[get_taxon_root(taxon, tmap)].append(taxon)
-        except KeyError:
-            ord_index[get_taxon_root(taxon, tmap)] = [taxon]
-
-    if aggr is None:
-        return itertools.chain(*ord_index.values())
-    else:
-        return aggr(itertools.chain(*ord_index.values()))
-
-
-def get_taxon_root(taxon, tmap, replace_space=False):
-    """
-    Returns a taxon root, given a taxon name and a taxa map
-
-    :param str taxon: taxon name
-    :param tmap: dictionary returned by :func:`group_by_root` with
-        only_names=True
-    :param bool replace_space: if True replaces '#' with a space before the
-        check
-
-    :return: root taxon name
-
-    .. todo::
-
-        make sure that the mispelled taxa are fixed (in hmmr2gff) and that the
-        other fix (subclass rank included in the pickled data) is done
-    """
-    #mispelled, change gff file?
-    if taxon in ['bacterioidetes', 'bacteriodales']:
-        return 'bacteria'
-
-    #makes sure taxon names with spaces can be used
-    if replace_space:
-        taxon = taxon.replace('#', ' ')
-
-    for root, taxa in tmap.iteritems():
-        if (taxon == root) or (taxon in taxa):
-            return root
-    raise ValueError("Taxon '{0}' not in mapping".format(taxon))
 
 
 def load_taxonomy_map(taxon_file):

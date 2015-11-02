@@ -21,7 +21,6 @@ from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
 from ..utils.common import between, union_range, ranges_length
 from ..utils.trans_tables import UNIVERSAL
-from .. import taxon
 
 LOG = logging.getLogger(__name__)
 
@@ -1518,61 +1517,6 @@ def group_annotations_sorted(annotations,
                 curr_ann = [annotation]
     else:
         yield curr_ann
-
-
-def correct_old_annotations(annotations, taxonomy):
-    """
-    .. versionadded:: 0.1.13
-
-    Corrects old annotations containing a mix of taxonomic annotations (or none
-    at all), plus some misspelled taxa.
-
-    * BLAST assigned ID from `blast_taxon_idx` (a number)
-    * Profile assigned ID from `taxon_id` which can be in the forms:
-
-        * `id`
-        * `name.id`
-
-    * A taxon *name* in which case uses the provided  taxonomy to find its
-      ID and returns the first one matching or `None` if no taxonomy is
-      passed.
-
-    The taxon_id attribute is set to the correct one, prefferring the
-    blast_taxon_idx, then taxon_id, which can be attached to the taxon name and
-    as last resort tries to reverse lookup the taxon name.
-
-    :param taxonomy: taxonomy used to resolve the taxon name
-    """
-
-    LOG.debug('Correcting old annotations')
-
-    for annotation in annotations:
-        # a taxon id from blast
-        if 'blast_taxon_idx' in annotation.attr:
-            taxon_id = annotation.attr['blast_taxon_idx']
-        # a taxon id from profile
-        elif 'taxon_id' in annotation.attr:
-            taxon_id = annotation.taxon_id
-        # a taxon name is provided
-        else:
-            # if a taxon_name contains the id
-            if len(annotation.attr['taxon'].split('.')) == 2:
-                taxon_id = annotation.attr['taxon'].split('.')[1]
-            # if a taxon_name DOESN'T contains the id try to reverse
-            # it using the taxonomy (if provided), using the first matching ID
-            else:
-                try:
-                    taxon_name = annotation.attr['taxon'].replace('#', ' ')
-                except KeyError:
-                    taxon_name = annotation.attr['taxon_name'].replace('#', ' ')
-
-                if taxon_name in taxon.MISPELLED_TAXA:
-                    taxon_name = taxon.MISPELLED_TAXA[taxon_name]
-
-                taxon_id = taxonomy.find_by_name(taxon_name)[0]
-
-        if taxon_id is not None:
-            annotation.taxon_id = int(taxon_id)
 
 
 def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid,
