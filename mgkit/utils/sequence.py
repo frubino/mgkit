@@ -10,6 +10,7 @@ import numpy
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
 import collections
+from ..io import fasta
 
 LOG = logging.getLogger(__name__)
 
@@ -284,7 +285,7 @@ def reverse_aa_coord(start, end, seq_len):
     Arguments:
         start (int): start of the annotation
         end (int): end of the annotation
-        seq_len (int): aa sequence lenght
+        seq_len (int): aa sequence length
 
     Returns:
         tuple: reversed (from strand - to strand +) coordinates. The first
@@ -587,3 +588,33 @@ def sequence_composition(sequence, chars=tuple(REV_COMP)):
 
     for nuc in chars:
         yield nuc, sequence.count(nuc)
+
+
+def get_contigs_info(file_name):
+    """
+    .. versionadded:: 0.2.1
+
+    Given a file name for a fasta with sequences, returns the following
+    information in a tuple:
+
+    - number of sequences
+    - total base pairs
+    - max length
+    - min length
+    - average length
+    - N50 statistic
+
+    """
+    seqs = list(seq for name, seq in fasta.load_fasta(file_name))
+
+    lengths = numpy.array([len(x) for x in seqs])
+    info = (
+        len(seqs),
+        lengths.sum(),
+        lengths.max(),
+        lengths.min(),
+        lengths.mean(),
+        calc_n50(lengths),
+    )
+
+    return info
