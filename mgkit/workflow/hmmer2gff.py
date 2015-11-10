@@ -27,7 +27,6 @@ from mgkit import logger
 from mgkit.io import gff
 from mgkit.io import fasta
 from mgkit import kegg
-from mgkit.taxon import MISPELLED_TAXA
 from . import utils
 
 LOG = logging.getLogger(__name__)
@@ -110,7 +109,6 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
 
     count_dsc = 0
     count_tot = 0
-    count_mis = 0
     count_skp = 0
 
     ko_counts = {}
@@ -148,25 +146,13 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
         except (KeyError, TypeError):
             annotation.attr['description'] = ''
 
-        #correct mispelled taxa: profiles4
-        try:
-            annotation.attr['taxon'] = MISPELLED_TAXA[
-                annotation.attr['taxon']
-            ]
-            LOG.debug("Fixed mispelled taxon %s", annotation.attr['taxon'])
-            count_mis += 1
-        except KeyError:
-            #not mispelled
-            pass
-
         annotation.to_file(f_out)
 
     LOG.info(
         "Read %d lines, discared %d, skipped %d, mispelled %d",
         count_tot,
         count_dsc,
-        count_skp,
-        count_mis
+        count_skp
     )
 
 
