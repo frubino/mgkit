@@ -1147,39 +1147,36 @@ def from_json(line):
     return Annotation(**json.loads(line))
 
 
-def from_hmmer(line, aa_seqs, ko_counts=None, feat_type='gene', source='HMMER',
-               db='CUSTOM'):
+def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
+               db='CUSTOM', custom_profiles=True):
     """
     .. versionadded:: 0.1.15
         first implementation to move old scripts to new GFF specs
 
+    .. versionchanged:: 0.2.1
+        removed compatibility with old scripts
+
     Parse HMMER results (one line), it won't parse commented lines (starting
     with *#*)
 
+    Arguments:
+        line (str): HMMER domain table line
+        aa_seqs (dict): dictionary with amino-acid sequences (name->seq),
+            used to get the correct nucleotide positions
+        feat_type (str): string to be used in the 'feature type' column
+        source (str): string to be used in the 'source' column
+        custom_profiles (bool): if True, the profile name contains gene,
+            taxonomy and reviewed information in the form
+            KOID_TAXONID_TAXON-NAME(-nr)
+
+    Returns:
+        A :class:`Annotation` instance
+
     .. note::
 
-        use :func:`correct_old_annotations` for correcting the *taxon_id* of
-        annotations from versions **<= 0.1.14** of the framework, in the case
-        of profiles with only old profiles:
+        if `custom_profiles` is False, gene_id, taxon_id and taxon_name will
+        be equal to the profile name
 
-            * old: KOID_TAXON(-nr)
-            * new: KOID_TAXONID_TAXON-NAME(-nr)
-
-    .. note::
-
-        *ko_counts* is retained for compatibility with old scripts, instead
-        :attr:`Annotation.uid` is to be used as unique identifier. Will be
-        deprecated in future versions
-
-    :param str line: HMMER domain table line
-    :param dict aa_seqs: dictionary with amino-acid sequences (name->seq),
-        used to get the correct nucleotide positions
-    :param dict ko_counts: dictionary with ko counts (ko->count), used to
-        index the ko ids in the GFF
-    :param str feat_type: string to be used in the 'feature type' column
-    :param str source: string to be used in the 'source' column
-
-    :return: a :class:`Annotation` instance
     """
     line = line.split()
     contig, frame = line[0].rsplit('-', 1)
@@ -1203,27 +1200,12 @@ def from_hmmer(line, aa_seqs, ko_counts=None, feat_type='gene', source='HMMER',
     profile_name = line[3]
     score = float(line[6])
 
-    # two profile name types:
-    # old: KOID_TAXON(-nr)
-    # new: KOID_TAXONID_TAXON-NAME(-nr)
-    reviewed = 'False' if profile_name.endswith('-nr') else 'True'
-    try:
-        #old format: KO_taxon(-nr)
-        gene_id, taxon_name = profile_name.split('_')
-        taxon_id = None
-    except ValueError:
-        #new format: KO_taxonid_taxon(-nr)
+    if custom_profiles:
+        # KOID_TAXONID_TAXON-NAME(-nr)
+        reviewed = 'False' if profile_name.endswith('-nr') else 'True'
         gene_id, taxon_id, taxon_name = profile_name.split('_')
-
-    # if ko_counts is not None:
-    #     try:
-    #         ko_counts[gene_id] += 1
-    #     except KeyError:
-    #         ko_counts[gene_id] = 1
-    #     ko_idx = "{0}.{1}".format(
-    #         gene_id,
-    #         ko_counts[gene_id]
-    #     )
+    else:
+        gene_id = taxon_id = taxon_name = profile_name
 
     annotation = Annotation(
         seq_id=contig,

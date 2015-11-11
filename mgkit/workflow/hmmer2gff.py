@@ -26,7 +26,6 @@ import argparse
 from mgkit import logger
 from mgkit.io import gff
 from mgkit.io import fasta
-from mgkit import kegg
 from . import utils
 
 LOG = logging.getLogger(__name__)
@@ -39,8 +38,6 @@ def set_parser():
     parser = argparse.ArgumentParser(
         description='Convert HMMER data to GFF file',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    utils.add_basic_options(parser)
 
     group = parser.add_argument_group('File options')
     group.add_argument(
@@ -61,31 +58,37 @@ def set_parser():
         type=argparse.FileType('w'), default=sys.stdout
     )
 
+    group = parser.add_argument_group('Filters')
+    group.add_argument('-t', '--discard', action='store', type=float,
+                       default=0.05,
+                       help='Evalue over which an hit will be discarded')
+    group.add_argument('-d', '--disable-evalue',
+                       action='store_true',
+                       default=False,
+                       help='Disable Evalue filter')
+
+    group = parser.add_argument_group('GFF')
+    group.add_argument('-c', '--no-custom-profiles',
+                       action='store_false',
+                       default=True,
+                       help='Profiles names are not in the custom format')
+    group.add_argument('-db', '--database',
+                       action='store',
+                       default='CUSTOM',
+                       help='Database from which the profiles are generated (e.g. PFAM)')
+    group.add_argument('-f', '--feature-type',
+                       action='store',
+                       default='gene',
+                       help='Type of feature (e.g. gene)')
+
     group = parser.add_argument_group('Misc')
     group.add_argument('-q', '--quiet', action='store_const',
                        const=logging.WARNING, default=logging.DEBUG,
                        help='only show warnings or errors')
 
-    group.add_argument('-t', '--discard', action='store', type=float,
-                       default=0.05,
-                       help='Evalue over which an hit will be discarded')
-    group.add_argument('-k', '--ko-descriptions',
-                       help='pickle file containing KO descriptions')
+    utils.add_basic_options(parser)
 
     return parser
-
-
-def get_seq_data(f_handle):
-    """
-    Load reference sequences.
-    """
-    # LOG.info('Loading contigs data from file %s', f_handle.name)
-
-    seq_data = dict(
-        (name, seq) for name, seq in fasta.load_fasta(f_handle)
-    )
-
-    return seq_data
 
 
 def get_aa_data(f_handle):
@@ -99,21 +102,20 @@ def get_aa_data(f_handle):
     return aa_seqs
 
 
-def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
-                               ko_names=None):
+def parse_domain_table_contigs(options):
     """
     Parse the HMMER result file
     """
-    LOG.info('Parsing HMMER data from file %s', f_handle.name)
-    LOG.info('Writing GFF data to file %s', f_out.name)
+    aa_seqs = get_aa_data(options.aa_file)
+
+    LOG.info('Parsing HMMER data from file %s', options.hmmer_file.name)
+    LOG.info('Writing GFF data to file %s', options.output_file.name)
 
     count_dsc = 0
     count_tot = 0
     count_skp = 0
 
-    ko_counts = {}
-
-    for idx, line in enumerate(f_handle):
+    for idx, line in enumerate(options.hmmer_file):
 
         if line.startswith('#'):
             continue
@@ -126,7 +128,9 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
             annotation = gff.from_hmmer(
                 line,
                 aa_seqs,
-                ko_counts=ko_counts
+                feature_type=options.feature_type,
+                db=options.database,
+                custom_profiles=options.no_custom_profiles
             )
         except ZeroDivisionError:
             LOG.error(
@@ -136,20 +140,16 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
             count_skp += 1
             continue
 
-        if annotation.score > discard:
-            count_dsc += 1
-            continue
-        try:
-            annotation.attr['description'] = ko_names[
-                annotation.gene_id
-            ]
-        except (KeyError, TypeError):
-            annotation.attr['description'] = ''
+        # if disable_evalue is True, skips filter
+        if not options.disable_evalue:
+            if annotation.score > options.discard:
+                count_dsc += 1
+                continue
 
-        annotation.to_file(f_out)
+        annotation.to_file(options.output_file)
 
     LOG.info(
-        "Read %d lines, discared %d, skipped %d, mispelled %d",
+        "Read %d lines, discarded %d, skipped %d, mispelled %d",
         count_tot,
         count_dsc,
         count_skp
@@ -162,23 +162,9 @@ def main():
     """
     options = set_parser().parse_args()
     logger.config_log(options.quiet)
-    log = logging.getLogger(__name__)
-    aa_data = get_aa_data(options.aa_file)
-
-    if options.ko_descriptions:
-        log.info("Loading KO descriptions from file %s",
-                 options.ko_descriptions)
-        kegg_data = kegg.KeggData(options.ko_descriptions)
-        ko_names = kegg_data.get_ko_names()
-    else:
-        ko_names = None
 
     parse_domain_table_contigs(
-        options.hmmer_file,
-        aa_data,
-        options.output_file,
-        options.discard,
-        ko_names
+        options
     )
 
 if __name__ == '__main__':
