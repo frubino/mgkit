@@ -43,6 +43,10 @@ Usually a filter on the quality of the prediction is used, with 40 bit as a mini
 Generate Profiles
 *****************
 
+.. note::
+
+	More detailed information is in :ref:`script-download-profiles`
+
 The framework provides, via a script and the following guidelines, a way to generate profiles for Kegg Orthologs genes, using Uniprot as repository of sequnece data.
 
 The process of building the profiles to be used with HMMER is a step that involves several tasks:
