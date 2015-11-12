@@ -1,22 +1,33 @@
 """
 Script to convert HMMER results files (domain table) to a GFF file, the name of
 the profiles are expected to be now in the form
-*GENEID_TAXONID_TAXON-NAME(-nr)*, but the old one *GENEID_TAXON-NAME(-nr)* is
-accepted for compatibility with old experiments.
+*GENEID_TAXONID_TAXON-NAME(-nr)* by default, but any other profile name is
+accepted.
 
-It is tested only Kegg Orthologs, but the script only uses them if a pickle
-file for Kegg is passed to add descriptions. It is general enough to use any
-kind of gene identifier.
+The profiles tested are those made from Kegg Orthologs, from the
+download_profiles script. If the `no_custom_profiles` options is used,
+the script can be used with any profile name. The profile name will be used
+for `gene_id`, `taxon_id` and `taxon_name` in the GFF file.
 
 .. note::
 
     for GENEID, old documentation points to KOID, it is the same
+
+.. warning::
+
+    The compatibility with old data has been **removed**, meaning that old
+    experiments must use the scripts from those versions. It is possible to use
+    multiple environments, with `virtualenv` for this purpose. An examples is
+    given in :ref:`install-ref`.
 
 Changes
 *******
 
 .. versionchanged:: 0.1.15
     adapted to new GFF module and specs
+
+.. versionchanged:: 0.2.1
+    added options to customise output and filters and old restrictions
 
 """
 
