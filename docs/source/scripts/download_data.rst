@@ -3,11 +3,7 @@
 Download Required Data
 ======================
 
-Overview
---------
-
 .. automodule:: mgkit.workflow.download_data
-
 
 Options
 -------
