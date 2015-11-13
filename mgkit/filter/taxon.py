@@ -11,6 +11,8 @@ import functools
 
 def filter_taxonomy_by_lineage(taxa, lineage):
     """
+    .. deprecated:: 0.2.1
+
     Filters iterable based on UniprotTaxon lineage attribute, returns only taxa
     that have the specified value in tha lineage list
 
@@ -27,6 +29,8 @@ def filter_taxonomy_by_lineage(taxa, lineage):
 
 def filter_taxonomy_by_rank(taxa, rank):
     """
+    .. deprecated:: 0.2.1
+
     Filters iterable based on UniprotTaxon rank attribute, returns only taxa
     that belong to that taxon level
 
