@@ -87,6 +87,14 @@ operation.
 Usage
 -----
 
+The default behaviour is to download all Kegg Orthologs for all taxa in the
+given taxonomy. Taxa can be filtered by both lineage (e.g. archaea, carnivora,
+etc.) and rank (e.g. genus, family, etc.). Another option is to specify the KO
+and taxa IDs to download.
+
+Taxa Filters
+************
+
 The way a taxon is specified is through a few different rules:
 
 * specific **taxon ids** in uniprot
@@ -96,10 +104,10 @@ The way a taxon is specified is through a few different rules:
 
 As an example, if the rank chosen is genus, and the lineage option is
 set to archaea, only the taxa whose rank is genus and that belong to the archaea
-subtree will be downloaded:
+subtree will be downloaded::
 
-`download_profiles -m email -r genus -l archaea mg_data/kegg.pickle
-mg_data/taxonomy.pickle`
+    download_profiles -m EMAIL -r genus -l archaea mg_data/kegg.pickle \\
+    -t mg_data/taxonomy.pickle
 
 This allows to customise the level of specificity that we want in profiling and
 make the process of downloading faster.
@@ -110,11 +118,28 @@ Because each profile is indipendent from each other, it's useful to start the
 download with a certain rank and then run the profiling. During the profiling
 a new download can be started and so on.
 
+Specific Genes and Taxa
+***********************
+
+It is possible to download only specific taxa and KO and can be done using the
+`-i` and `-ko` respectively. When `-ko` is used, loading Kegg Data with `-k` is
+not required and it is up to the user to ensure the correct genes or taxa.
+
+An example to download only KO from 3 different taxa::
+
+    download_profiles -v -m EMAIL -ko K00016 -i 9611 9645 9682 \\
+    -t mg_data/taxonomy.pickle
+
+The same example using taxa filtering, instead (at the time of writing)::
+
+    download_profiles -v -m EMAIL -ko K00016 -r genus -l carnivora \\
+    -t mg_data/taxonomy.pickle
+
 Changes
 -------
 
 .. versionchanged:: 0.2.1
-    added `-ko` option, resolved issues caused by change in libraries
+    added `-ko` option, resolved issues caused by changes in library
 
 """
 
