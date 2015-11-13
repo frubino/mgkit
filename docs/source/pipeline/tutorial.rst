@@ -53,9 +53,9 @@ Taxonomy Data
 
 We only need the taxonomy for an optional part of the gene prediction for the analysis. It can be downloaded using the command::
 
-    $ download_data -x -p -m email
+    $ download_data -x -p -m EMAIL
 
-Where *email* should be replaced by your email address. The data will be saved in the directory `mg_data` to which we'll refer from now on.
+Where *EMAIL* should be replaced by your email address. The data will be saved in the directory `mg_data` to which we'll refer from now on.
 
 Metagenome Assembly
 -------------------

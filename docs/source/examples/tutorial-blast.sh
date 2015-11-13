@@ -22,7 +22,7 @@ cat velvet_work/contigs.fa | sed -E 's/(>NODE_[0-9]+)_.+/\1/g' > assembly.fasta
 rm -R velvet_work
 
 #To use the LCA option and other analysis we need a taxonomy file
-download_data -x -p -m your@email
+download_data -x -p -m YOUR@EMAIL
 
 #Uniprot SwissProt DB
 wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz

@@ -23,13 +23,13 @@ cat velvet_work/contigs.fa | sed -E 's/(>NODE_[0-9]+)_.+/\1/g' > assembly.fa
 translate_seq assembly.fa assembly.aa.fa
 
 #download offline data
-download_data -p -m email
+download_data -p -m EMAIL
 
 #download profile for the three taxa
-download_profiles -o bacteria_profiles -i 200795 201174 203682 -m email -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
+download_profiles -o bacteria_profiles -i 200795 201174 203682 -m EMAIL -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
 #and archaea
-download_profiles -o archaea_order_profiles -r order -l archaea -m email -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
-download_profiles -o archaea_phylum_profiles -r phylum -l archaea -m email -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
+download_profiles -o archaea_order_profiles -r order -l archaea -m EMAIL -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
+download_profiles -o archaea_phylum_profiles -r phylum -l archaea -m EMAIL -k mg_data/kegg.pickle -t mg_data/taxonomy.pickle
 
 #Profile alignments and build
 for file in bacteria_profiles/*.fa; do
