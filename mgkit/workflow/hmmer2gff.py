@@ -139,7 +139,7 @@ def parse_domain_table_contigs(options):
             annotation = gff.from_hmmer(
                 line,
                 aa_seqs,
-                feature_type=options.feature_type,
+                feat_type=options.feature_type,
                 db=options.database,
                 custom_profiles=options.no_custom_profiles
             )
@@ -160,7 +160,7 @@ def parse_domain_table_contigs(options):
         annotation.to_file(options.output_file)
 
     LOG.info(
-        "Read %d lines, discarded %d, skipped %d, mispelled %d",
+        "Read %d lines, discarded %d, skipped %d",
         count_tot,
         count_dsc,
         count_skp
