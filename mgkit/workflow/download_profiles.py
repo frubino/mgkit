@@ -106,7 +106,7 @@ As an example, if the rank chosen is genus, and the lineage option is
 set to archaea, only the taxa whose rank is genus and that belong to the archaea
 subtree will be downloaded::
 
-    download_profiles -m EMAIL -r genus -l archaea mg_data/kegg.pickle \\
+    $ download_profiles -m EMAIL -r genus -l archaea mg_data/kegg.pickle \\
     -t mg_data/taxonomy.pickle
 
 This allows to customise the level of specificity that we want in profiling and
@@ -127,12 +127,12 @@ not required and it is up to the user to ensure the correct genes or taxa.
 
 An example to download only KO from 3 different taxa::
 
-    download_profiles -v -m EMAIL -ko K00016 -i 9611 9645 9682 \\
+    $ download_profiles -v -m EMAIL -ko K00016 -i 9611 9645 9682 \\
     -t mg_data/taxonomy.pickle
 
 The same example using taxa filtering, instead (at the time of writing)::
 
-    download_profiles -v -m EMAIL -ko K00016 -r genus -l carnivora \\
+    $ download_profiles -v -m EMAIL -ko K00016 -r genus -l carnivora \\
     -t mg_data/taxonomy.pickle
 
 Changes
@@ -257,9 +257,10 @@ def filter_taxonomy_by_lineage(taxonomy, taxon_ids, lineage):
 
     if len(lineage_id) > 1:
         LOG.warning(
-            'More than one taxon has the "%s" (%s) name, "%s" will be used',
+            'More than one taxon has the "%s" (%s) name, %d (%s) will be used',
             lineage,
-            ", ".join(taxonomy[taxon_id].s_name for taxon_id in lineage_id),
+            ", ".join(str(taxon_id) for taxon_id in lineage_id),
+            lineage_id[0],
             taxonomy[lineage_id[0]].s_name
         )
 
@@ -400,7 +401,11 @@ def download_ko_sequences(ko_id, taxon_ids, reviewed, contact):
             reviewed
         )
         if seqs.count('>') <= 1:
-            LOG.warning('Not enough Sequences (%d)', seqs.count('>'))
+            LOG.warning(
+                'Not enough Sequences (%d) for taxon %d',
+                seqs.count('>'),
+                taxon_id
+            )
             continue
 
         LOG.debug(

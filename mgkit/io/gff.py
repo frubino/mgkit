@@ -427,9 +427,9 @@ class Annotation(GenomicRange):
 
         Arguments:
             seq (str): sequence corresponding to the annotation seq_id
-            syn_matrix (None, dict): matrix that determines the return values.
-            Defaults to the one defined in the called function
-            :func:`mgkit.utils.sequnce.get_seq_expected_syn_count`
+                syn_matrix (None, dict): matrix that determines the return
+                values. Defaults to the one defined in the called function
+                :func:`mgkit.utils.sequnce.get_seq_expected_syn_count`.
 
         """
         seq = seq[self.start - 1:self.end]
