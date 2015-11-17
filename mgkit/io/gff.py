@@ -1234,13 +1234,16 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
         name=profile_name,
         # both strand/phase (e.g r2)
         frame=frame,
-        reviewed=reviewed,
         # old version of uid
         # ko_idx=ko_idx,
         # used in other old profiles, where the taxon name was used instead
         # of a taxon ID
         taxon_name=taxon_name
     )
+    try:
+        annotation.attr['reviewed'] = reviewed
+    except UnboundLocalError:
+        pass
 
     return annotation
 
