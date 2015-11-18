@@ -98,6 +98,14 @@ file provided by Uniprot, which speeds up the process of adding mappings and
 taxonomy IDs from Uniprot gene IDs. It's not possible tough to add *EC* mappings
 with this command, as those are not included in the file.
 
+Kegg Information
+****************
+
+The *kegg* command allows to add information to each annotation. Right now the
+information that can be added is restricted to the pathway(s) (reference KO) a
+KO is part of and both the KO and pathway(s) descriptions. This information is
+stored in keys starting with **ko_**.
+
 Expected Aminoacidic Changes
 ****************************
 
@@ -126,7 +134,7 @@ Changes
     added *exp_syn* command
 
 .. versionchanged:: 0.2.1
-    added *-d* to *uniprot* command
+    added *-d* to *uniprot* command, added *kegg* command
 
 """
 from __future__ import division
@@ -141,6 +149,7 @@ from . import utils
 from .. import align
 from .. import logger
 from .. import taxon
+from .. import kegg
 from ..io import gff, blast, fasta
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
@@ -165,6 +174,93 @@ def set_common_options(parser):
     )
 
 
+def set_kegg_parser(parser):
+    parser.add_argument(
+        '-c',
+        '--email',
+        action='store',
+        type=str,
+        help='Contact email',
+        default=None
+    )
+    group = parser.add_argument_group('Requires Internet connection')
+    group.add_argument(
+        '-d',
+        '--description',
+        action='store_true',
+        default=False,
+        help='Add Kegg description'
+    )
+    group.add_argument(
+        '-p',
+        '--pathways',
+        action='store_true',
+        default=False,
+        help='Add pathways ID involved'
+    )
+    group.add_argument(
+        '-m',
+        '--kegg-id',
+        action='store',
+        default='gene_id',
+        help="""
+        In which attribute the Kegg ID is stored (defaults to *gene_id*)"""
+    )
+    parser.set_defaults(func=kegg_command)
+
+
+def kegg_command(options):
+    kegg_client = kegg.KeggClientRest()
+
+    ko_names = kegg_client.get_names('ko')
+
+    if options.pathways:
+        # Changes the names of the keys to *ko* instead of *map*
+        path_names = dict(
+            (path_id.replace('map', 'ko'), name)
+            for path_id, name in kegg_client.get_names('path').iteritems()
+        )
+
+    ko_cache = {}
+
+    for annotation in gff.parse_gff(options.input_file, gff_type=gff.from_gff):
+        try:
+            ko_id = annotation.attr[options.kegg_id]
+        except KeyError:
+            continue
+        # if more than one KO is defined
+        if ',' in ko_id:
+            LOG.warning(
+                'More than one KO assigned, skipping annotation: %s',
+                annotation.uid
+            )
+            continue
+        try:
+            ko_info = ko_cache[ko_id]
+        except KeyError:
+            ko_info = {}
+            if options.pathways:
+                ko_info['pathway'] = kegg_client.link_ids('path', ko_id)
+                # If left empty, no pathway will be saved
+                if ko_info['pathway']:
+                    ko_info['pathway'] = list(
+                        path_id
+                        for path_id in ko_info['pathway'][ko_id]
+                        if path_id.startswith('ko')
+                    )
+            ko_cache[ko_id] = ko_info
+        if options.description:
+            annotation.attr['ko_description'] = ko_names.get(ko_id, ko_id)
+        if options.pathways and ko_info['pathway']:
+            annotation.attr['ko_pathway'] = ','.join(ko_info['pathway'])
+            annotation.attr['ko_pathway_names'] = ','.join(
+                path_names[path_id]
+                for path_id in ko_info['pathway']
+            )
+
+        annotation.to_file(options.output_file)
+
+
 def set_uniprot_parser(parser):
     parser.add_argument(
         '-c',
@@ -181,7 +277,7 @@ def set_uniprot_parser(parser):
         help='Number of annotations to keep in memory',
         default=50
     )
-    group = parser.add_argument_group('Require Internet connection')
+    group = parser.add_argument_group('Requires Internet connection')
     group.add_argument(
         '-f',
         '--force-taxon-id',
@@ -744,6 +840,15 @@ def set_parser():
     set_uniprot_offline_parser(parser_f)
     set_common_options(parser_f)
     utils.add_basic_options(parser_f)
+
+    parser_k = subparsers.add_parser(
+        'kegg',
+        help='Adds information and mapping from Kegg'
+    )
+
+    set_kegg_parser(parser_k)
+    set_common_options(parser_k)
+    utils.add_basic_options(parser_k)
 
     utils.add_basic_options(parser)
 
