@@ -125,6 +125,9 @@ Changes
 .. versionchanged:: 0.1.16
     added *exp_syn* command
 
+.. versionchanged:: 0.2.1
+    added *-d* to *uniprot* command
+
 """
 from __future__ import division
 import sys
@@ -223,6 +226,13 @@ def set_uniprot_parser(parser):
         help='Add KO mappings to annotations'
     )
     group.add_argument(
+        '-d',
+        '--protein-names',
+        action='store_true',
+        default=False,
+        help='Add Uniprot description'
+    )
+    group.add_argument(
         '-m',
         '--mapping',
         action='append',
@@ -235,6 +245,7 @@ def set_uniprot_parser(parser):
 
 def add_uniprot_info(annotations, options):
     columns = []
+
     if options.taxon_id:
         columns.append('organism')
         columns.append('organism-id')
@@ -249,6 +260,8 @@ def add_uniprot_info(annotations, options):
     if options.mapping is not None:
         for db in options.mapping:
             columns.append('database({0})'.format(db))
+    if options.protein_names:
+        columns.append('protein names')
 
     if not columns:
         return
@@ -272,6 +285,7 @@ def add_uniprot_info(annotations, options):
             #nothing found
             if not values:
                 continue
+            # print column
 
             if column == 'organism-id':
                 if (annotation.taxon_id and options.force_taxon_id) or \
@@ -297,6 +311,8 @@ def add_uniprot_info(annotations, options):
                     )
                 else:
                     annotation.attr['EC'] = values
+            elif column == 'protein names':
+                annotation.attr['uniprot_description'] = values
 
 
 def uniprot_command(options):
