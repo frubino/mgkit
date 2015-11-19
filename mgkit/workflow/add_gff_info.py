@@ -370,13 +370,17 @@ def add_uniprot_info(annotations, options, info_cache):
 
     LOG.info("Retrieving gene information from Uniprot")
 
-    gene_ids = [x.gene_id for x in annotations if x.gene_id not in info_cache]
+    gene_ids = set(
+        x.gene_id
+        for x in annotations
+        if x.gene_id not in info_cache
+    )
 
     # It may be that all gene_ids are already cached. In which case there's no
     # point querying Uniprot (it will probably give an error)
     if gene_ids:
         data = uniprot_net.get_gene_info(
-            ,
+            gene_ids,
             columns=columns,
             contact=options.email
         )
