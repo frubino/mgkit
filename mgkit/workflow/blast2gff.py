@@ -84,7 +84,7 @@ def set_common_options(parser):
                 in the form attr:value''',
         default=None
     )
-    group.add_argument(
+    parser.add_argument(
         '-ft',
         '--feat-type',
         action='store',
