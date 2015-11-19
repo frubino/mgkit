@@ -38,7 +38,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinxarg.ext',
-    'sphinxcontrib.bibtex',
+    #'sphinxcontrib.bibtex',
     'sphinxcontrib.programoutput',
 ]
 
