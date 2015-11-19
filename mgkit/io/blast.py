@@ -234,12 +234,15 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
 
 
 def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
-                        name_func=None):
+                        name_func=None, feat_type='CDS'):
     """
     .. versionadded:: 0.1.12
 
     .. versionchanged:: 0.1.13
         added *name_func* argument
+
+    .. versionchanged:: 0.2.1
+        added *feat_type*
 
     Parses BLAST results in tabular format using :func:`parse_blast_tab`,
     applying a basic bitscore filter. Returns the annotations associated with
@@ -255,6 +258,7 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
         name_func (func): function to convert the name of the database
             sequences. Defaults to `lambda x: x.split('|')[1]`, which can be
             be used with fasta files provided by Uniprot
+        feat_type (str): feature type in the GFF
 
     Yields:
         Annotation: instances of :class:`mgkit.io.gff.Annotation` instance of
@@ -278,7 +282,8 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
         if hit[-1] < bitscore:
             continue
 
-        yield gff.from_nuc_blast(hit, db=db, dbq=dbq, to_nuc=False)
+        yield gff.from_nuc_blast(hit, db=db, dbq=dbq, to_nuc=False, 
+                                 feat_type=feat_type)
 
 
 def parse_fragment_blast(file_handle, bitscore=40.0):

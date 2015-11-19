@@ -32,6 +32,10 @@ Changes
 * added *-n* parameter to *uniprot* command
 * added *-k* option to *uniprot* command
 
+.. versionchanged:: 0.2.1
+
+    added *-ft* option
+
 """
 import sys
 import argparse
@@ -79,6 +83,13 @@ def set_common_options(parser):
         help='''Additional attribute and value to add to each annotation,
                 in the form attr:value''',
         default=None
+    )
+    group.add_argument(
+        '-ft',
+        '--feat-type',
+        action='store',
+        default='CDS',
+        help='Feature type to use in the GFF'
     )
     parser.add_argument(
         'input_file',
@@ -129,7 +140,8 @@ def convert_from_uniprot(options):
         bitscore=options.bitscore,
         db=options.db_used,
         dbq=options.db_quality,
-        name_func=name_func
+        name_func=name_func,
+        feat_type=options.feat_type
     )
 
     for annotation in iterator:
