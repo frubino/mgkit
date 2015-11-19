@@ -27,6 +27,8 @@ used.
     As the script needs to query Uniprot a lot, it is reccommended to split
     the GFF in several files, so an error in the connection doesn't waste time.
 
+    However, a cache is kept to reduce the number of connections
+
 Taxonomy Command
 ****************
 
@@ -118,7 +120,17 @@ explained in the :ref:`gff-specs`
 Changes
 *******
 
-.. versionadded:: 0.1.12
+.. versionchanged:: 0.2.1
+
+* added *-d* to *uniprot* command
+* added cache to *uniprot* command
+* added *kegg* command (cached)
+
+.. versionchanged:: 0.1.16
+    added *exp_syn* command
+
+.. versionchanged:: 0.1.15
+    *taxonomy* command *-b* option changed
 
 .. versionchanged:: 0.1.13
 
@@ -127,15 +139,7 @@ Changes
 * added *taxonomy* command
 * added *unipfile* command
 
-.. versionchanged:: 0.1.15
-    *taxonomy* command *-b* option changed
-
-.. versionchanged:: 0.1.16
-    added *exp_syn* command
-
-.. versionchanged:: 0.2.1
-    added *-d* to *uniprot* command, added *kegg* command
-
+.. versionadded:: 0.1.12
 """
 from __future__ import division
 import sys
@@ -212,9 +216,11 @@ def set_kegg_parser(parser):
 def kegg_command(options):
     kegg_client = kegg.KeggClientRest()
 
+    LOG.info('Retrieving KO names')
     ko_names = kegg_client.get_names('ko')
 
     if options.pathways:
+        LOG.info('Retrieving Pathways names')
         # Changes the names of the keys to *ko* instead of *map*
         path_names = dict(
             (path_id.replace('map', 'ko'), name)
@@ -364,13 +370,18 @@ def add_uniprot_info(annotations, options, info_cache):
 
     LOG.info("Retrieving gene information from Uniprot")
 
-    data = uniprot_net.get_gene_info(
-        [x.gene_id for x in annotations if x.gene_id not in info_cache],
-        columns=columns,
-        contact=options.email
-    )
+    gene_ids = [x.gene_id for x in annotations if x.gene_id not in info_cache]
 
-    info_cache.update(data)
+    # It may be that all gene_ids are already cached. In which case there's no
+    # point querying Uniprot (it will probably give an error)
+    if gene_ids:
+        data = uniprot_net.get_gene_info(
+            ,
+            columns=columns,
+            contact=options.email
+        )
+
+        info_cache.update(data)
 
     for annotation in annotations:
         try:
