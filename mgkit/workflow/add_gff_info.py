@@ -339,7 +339,7 @@ def set_uniprot_parser(parser):
     parser.set_defaults(func=uniprot_command)
 
 
-def add_uniprot_info(annotations, options):
+def add_uniprot_info(annotations, options, info_cache):
     columns = []
 
     if options.taxon_id:
@@ -365,14 +365,16 @@ def add_uniprot_info(annotations, options):
     LOG.info("Retrieving gene information from Uniprot")
 
     data = uniprot_net.get_gene_info(
-        [x.gene_id for x in annotations],
+        [x.gene_id for x in annotations if x.gene_id not in info_cache],
         columns=columns,
         contact=options.email
     )
 
+    info_cache.update(data)
+
     for annotation in annotations:
         try:
-            gene_info = data[annotation.gene_id]
+            gene_info = info_cache[annotation.gene_id]
         except KeyError:
             #no data was found
             continue
@@ -418,13 +420,15 @@ def uniprot_command(options):
 
     ann_buffer = []
 
+    info_cache = {}
+
     for annotation in gff.parse_gff(options.input_file, gff_type=gff.from_gff):
 
         ann_buffer.append(annotation)
 
         if len(ann_buffer) == options.buffer:
 
-            add_uniprot_info(ann_buffer, options)
+            add_uniprot_info(ann_buffer, options, info_cache)
 
             for annotation in ann_buffer:
                 annotation.to_file(options.output_file)
