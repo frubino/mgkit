@@ -240,6 +240,7 @@ def kegg_command(options):
                 'More than one KO assigned, skipping annotation: %s',
                 annotation.uid
             )
+            annotation.to_file(options.output_file)
             continue
         try:
             ko_info = ko_cache[ko_id]
@@ -450,7 +451,7 @@ def uniprot_command(options):
 
             ann_buffer = []
     else:
-        add_uniprot_info(ann_buffer, options)
+        add_uniprot_info(ann_buffer, options, info_cache)
 
         for annotation in ann_buffer:
             annotation.to_file(options.output_file)
