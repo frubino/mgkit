@@ -69,7 +69,25 @@ END
 normalize-by-median.py -k 24 -p -o normalised.fq.gz --gzip -M 6e9 all-interleaved.fq.gz
 # rm all-interleaved.fq.gz
 
-megahit --presets meta --verbose -t 2 --min-contig-len 50 --12 normalised.fq.gz -o megahit-out
+# megahit manages to assemble the data
+megahit --presets meta --verbose -t 4 --min-contig-len 100 --12 normalised.fq.gz -o megahit-out
+# megahit used spaces in the sequence headers so it may create problems later
+# one solution is to assign to each contig a new random sequence and then
+# keep track of those in a json dictionary for later (if needed)
+python - <<END
+from mgkit.io import fasta
+from uuid import uuid4
+import json
+
+seq_dict = {}
+with open('final-contigs.fa', 'w') as f:
+    for name, seq in fasta.load_fasta('megahit-out/final-contigs.fa')
+        uid = str(uuid4())
+        seq_dict[uid] = name
+        fasta.write_fasta_sequence(f, uid, seq)
+
+json.dump(open('seq-dict.json', 'w'), seq_dict)
+END
 
 cd ..
 
