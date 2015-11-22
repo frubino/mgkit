@@ -3,6 +3,22 @@
 Installation
 ============
 
+Preconfigured Virtual Machine
+-----------------------------
+
+A preconfigured virtual machine instance (user: user, pass: user) has been configured using the instructions in :ref:`install-ubuntu` and the home directory contains the following directories:
+
+	* mgkit-repo
+	* mgkit-docs
+	* mgkit-venv
+	* mgkit-tutorial
+
+**mgkit-repo** contains the repository cloned to the latest version. **mgkit-docs** contains the documentation, in both html and PDF, *docs-html* for the former and **mgkit-docs.pdf** for the latter. The installed and configured virtual environment is in **mgkit-venv** and can be activated using this command::
+
+	$ source $HOME/mgkit-venv/bin/activate
+
+The last directory, **mgkit-tutorial**, contains the scripts to run the tutorial.
+
 Requirements
 ------------
 
@@ -28,6 +44,20 @@ Optional:
 * `goatools <https://github.com/tanghaibao/goatools>`_ (required by :mod:`mgkit.mappings.go`), has package `fisher` as a dependency
 * rpy2 >= 2.3.8 (required by :mod:`mgkit.utils.r_func`)
 
+.. _install-ubuntu:
+
+Installing on Ubuntu Server 10.04.3
+-----------------------------------
+
+You'll need to install the following packages with `apt-get`::
+
+	$ apt-get install velvet bowtie2 python-pip python \
+	  virtualenv python-dev zlib1g-dev libblas-dev \
+	  liblapack-dev gfortran libfreetype6-dev libpng-dev \
+	  fontconfig pkg-config
+
+Create a virtual environment to ensure that the correct library versions are installed as explained in :ref:`install-virtualenv`
+
 Using pip
 ---------
 
@@ -43,10 +73,12 @@ while a user install is done with::
 
 all requirements will be downloaded/installed.
 
+.. _install-virtualenv:
+
 Using virtualenv
 ^^^^^^^^^^^^^^^^
 
-`virtualenv <http://www.virtualenv.org/>`_ is a system that is used to isolate a Python installation, to make sure no conflicts arise with multiple packages. It's handy if you're developing or testing an application/library, as it provides a clean environment. 
+`virtualenv <http://www.virtualenv.org/>`_ is a system that is used to isolate a Python installation, to make sure no conflicts arise with multiple packages. It's handy if you're developing or testing an application/library, as it provides a clean environment.
 
 Assuming you've already installed `virtualenv`, a virtual environment can be created with::
 
@@ -56,9 +88,17 @@ which creates a virtual environment in `mgkit-env`, with the interpreter used be
 
 	$ source mgkit-env/bin/activate
 
-assuming you're in the same directory where you created the environment. The pip packager is installed by default with it, so we're going to use it to install the library::
-	
+assuming you're in the same directory where you created the environment. The pip packager is installed by default with it, so we're going to use it to install the library if you have downloaded it already::
+
 	$ pip install path/to/library
+
+or getting the last version from `PyPI <https://pypi.python.org/pypi>`_::
+
+	$ pip install mgkit
+
+You can also install a specific version::
+
+	$ pip install mgkit==0.2.0
 
 Using the repository
 ^^^^^^^^^^^^^^^^^^^^
@@ -125,8 +165,8 @@ The version of MacOSX is 10.9 that comes with Python 2.7 installed. To install e
 
 If you want to use Xcode, you need to install the gfortran compiler, with the package provided `here <http://gcc.gnu.org/wiki/GFortranBinariesMacOS>`_. This should be enough to install most packages from source.
 
-.. warning:: 
-	
+.. warning::
+
 	There seems to be a problem with `pandas` version 0.13.1 on MacOSX, with a segmentation fault happening when using DataFrames. The 0.14.1 version is the one tested.
 
 .. note::
