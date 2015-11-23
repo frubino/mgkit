@@ -13,15 +13,16 @@ export EMAIL=your@email
 # khmer 	- 2.0
 # hmmer 	- 3.1b2 / 3.1b1
 # clustalo 	- 1.2.1
+# megahit	- 1.0.3
 
-# Requirements specific for Mac OS X (El Capitan, 10.11): wget
-# brew install wget velvet bowtie2 samtools pyenv-virtualenv hmmer clustal-omega
+# Requirements specific for Mac OS X (El Capitan, 10.11), uncomment these lines
+# brew install wget homebrew/science/velvet homebrew/science/bowtie2 \
+# homebrew/science/samtools pyenv-virtualenv homebrew/science/hmmer \
+# homebrew/science/clustal-omega
 
 # Memory ~6 GB for khmer normalisation
-# ~9 GB for patitioning
-# ~3 GB for velveth
-# ~1.5 GB for velvetg
 # ~3.5 GB for megahit
+# ~0.5 GB for bowtie2
 
 # Using data from the following project:
 # http://www.ebi.ac.uk/ena/data/view/PRJEB6461
@@ -40,7 +41,7 @@ wget ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/B_R1.fastq.gz ftp://ftp
 # Khmer when using paired reads works best when are interleaved
 # Moreover, it requires the older Casava type of header
 # The sequences are trimmed by 20 bp and fed to the khmer
-# script interleave-reads.py
+# script interleave-reads.py (the quality is not good in the last 20 bp)
 interleave-reads.py --gzip -o all-interleaved.fq.gz \
 <(
 python - <<END
@@ -70,7 +71,8 @@ normalize-by-median.py -k 24 -p -o normalised.fq.gz --gzip -M 6e9 all-interleave
 # rm all-interleaved.fq.gz
 
 # megahit manages to assemble the data
-megahit --presets meta --verbose -t 4 --min-contig-len 100 --12 normalised.fq.gz -o megahit-out
+# add -t N to use more processors
+megahit --presets meta --verbose --min-contig-len 100 --12 normalised.fq.gz -o megahit-out
 # megahit used spaces in the sequence headers so it may create problems later
 # one solution is to assign to each contig a new random sequence and then
 # keep track of those in a json dictionary for later (if needed)
@@ -81,14 +83,14 @@ import json
 
 seq_dict = {}
 with open('final-contigs.fa', 'w') as f:
-    for name, seq in fasta.load_fasta('megahit-out/final-contigs.fa')
+    for name, seq in fasta.load_fasta('megahit-out/final.contigs.fa'):
         uid = str(uuid4())
         seq_dict[uid] = name
         fasta.write_fasta_sequence(f, uid, seq)
 
-json.dump(open('seq-dict.json', 'w'), seq_dict)
+json.dump(seq_dict, open('seq-dict.json', 'w'))
 END
-
+rm -R megahit-out
 cd ..
 
 # Get the nitrogen metabolism KOs
@@ -115,35 +117,43 @@ done
 cat profiles/*.hmm > profiles.hmm
 
 #translation of the assembly in AA
-translate_seq assembly.fa assembly.aa.fa
+translate_seq seqs/final-contigs.fa final-contigs.aa.fa
 
 #HMMER command line
-hmmsearch -o /dev/null --domtbl hmmer_dom-table.txt profiles.hmm assembly.aa.fa
+# add --cpu N to use more processors
+hmmsearch -o /dev/null --domtbl hmmer_dom-table.txt profiles.hmm final-contigs.aa.fa
 #convert into annotations
-hmmer2gff -d -o assembly.gff assembly.aa.fa hmmer_dom-table.txt
-#Filter annotations
-filter-gff overlap -s 100 assembly.gff assembly.filt.gff
+hmmer2gff -d -o assembly.gff final-contigs.aa.fa hmmer_dom-table.txt
+# Filter annotations and add information from Kegg
+# most scripts working on GFF files allow to pipe their input/output
+# First remove annotations with a bit score less than 40, then filter
+# overlapping annoations and finally add gene descriptions and pathways for
+# for each annotations. `cat` is not necessary, since the input/output can
+# specified with a `-` (dash), which is standard
+cat assembly.gff | filter-gff values -b 40 | filter-gff overlap -s 100 | \
+add-gff-info kegg -c $EMAIL -v -d -p > assembly.filt.gff
 
 #bowtie2
-bowtie2-build assembly.fa assembly.fa
-for file in R1.fastq.gz; do
+bowtie2-build seqs/final-contigs.fa final-contigs
+for file in seqs/*R1.fastq.gz; do
 	BASENAME=`basename $file _R1.fastq.gz`
-	bowtie2 -N 1 -x assembly.fa -1 $file -2 $file_R2.fastq.gz \
+	# echo $file $BASENAME seqs/"$BASENAME"_R2.fastq.gz
+	bowtie2 -N 1 -x final-contigs --local --sensitive-local \
+	-1 $file -2 seqs/"$BASENAME"_R2.fastq.gz \
 	--rg-id $BASENAME --rg PL:Illumina --rg PU:Illumina-MiSeq \
 	--rg SM:$BASENAME | samtools view -Sb - > $BASENAME.bam;
 done
 
 #samtools
 for file in *.bam; do
-	samtools sort $file `basename $file .bam`-sort;
-	samtools index `basename $file .bam`-sort.bam;
-	#removes the unsorted file, it's not needed
-	rm $file;
+	samtools sort -o `basename $file .bam`-sort.bam $file;
+	mv `basename $file .bam`-sort.bam $file;
+	samtools index $file;
 done
 
 #index for the assembly (required by GATK and samtools)
 #.fai index
-samtools faidx assembly.fa
+samtools faidx seqs/final-contigs.fa
 
 #add coverage data
 export SAMPLES=$(for file in *.bam; do echo -a `basename $file -sort.bam`,$file ;done)
