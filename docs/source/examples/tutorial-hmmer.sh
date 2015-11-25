@@ -137,11 +137,11 @@ add-gff-info kegg -c $EMAIL -v -d -p > assembly.filt.gff
 bowtie2-build seqs/final-contigs.fa final-contigs
 for file in seqs/*R1.fastq.gz; do
 	BASENAME=`basename $file _R1.fastq.gz`
-	# echo $file $BASENAME seqs/"$BASENAME"_R2.fastq.gz
+	echo $file $BASENAME seqs/"$BASENAME"_R2.fastq.gz
 	bowtie2 -N 1 -x final-contigs --local --sensitive-local \
 	-1 $file -2 seqs/"$BASENAME"_R2.fastq.gz \
 	--rg-id $BASENAME --rg PL:Illumina --rg PU:Illumina-MiSeq \
-	--rg SM:$BASENAME | samtools view -Sb - > $BASENAME.bam;
+	--rg SM:$BASENAME 2> $BASENAME.log | samtools view -Sb - > $BASENAME.bam;
 done
 
 #samtools
