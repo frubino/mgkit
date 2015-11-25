@@ -5,7 +5,7 @@ the profiles are expected to be now in the form
 accepted.
 
 The profiles tested are those made from Kegg Orthologs, from the
-download_profiles script. If the `no_custom_profiles` options is used,
+`download_profiles` script. If the `--no-custom-profiles` options is used,
 the script can be used with any profile name. The profile name will be used
 for `gene_id`, `taxon_id` and `taxon_name` in the GFF file.
 

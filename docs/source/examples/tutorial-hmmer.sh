@@ -146,7 +146,8 @@ done
 
 #samtools
 for file in *.bam; do
-	samtools sort -o `basename $file .bam`-sort.bam $file;
+	# samtools 1.2 (at least) needs to specify the format and temp file prefix
+	samtools sort -T tmp.$file -O bam -o `basename $file .bam`-sort.bam $file;
 	mv `basename $file .bam`-sort.bam $file;
 	samtools index $file;
 done
@@ -156,7 +157,7 @@ done
 samtools faidx seqs/final-contigs.fa
 
 #add coverage data
-export SAMPLES=$(for file in *.bam; do echo -a `basename $file -sort.bam`,$file ;done)
+export SAMPLES=$(for file in *.bam; do echo -a `basename $file .bam`,$file ;done)
 add_coverage_to_gff -v $SAMPLES assembly.filt.gff assembly.filt.cov.gff
 
 #SNP calling using samtools
