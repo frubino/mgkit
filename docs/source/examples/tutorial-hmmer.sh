@@ -133,18 +133,24 @@ hmmer2gff -d -o assembly.gff final-contigs.aa.fa hmmer_dom-table.txt
 cat assembly.gff | filter-gff values -b 40 | filter-gff overlap -s 100 | \
 add-gff-info kegg -c $EMAIL -v -d -p > assembly.filt.gff
 
-#bowtie2
+# bowtie2
+# index
 bowtie2-build seqs/final-contigs.fa final-contigs
+# alignments, read groups are added, using a sensitive approach for alignment
+# the reads that are not aligned are not included in the BAM files (--no-unal
+# option)
 for file in seqs/*R1.fastq.gz; do
 	BASENAME=`basename $file _R1.fastq.gz`
 	echo $file $BASENAME seqs/"$BASENAME"_R2.fastq.gz
 	bowtie2 -N 1 -x final-contigs --local --sensitive-local \
 	-1 $file -2 seqs/"$BASENAME"_R2.fastq.gz \
 	--rg-id $BASENAME --rg PL:Illumina --rg PU:Illumina-MiSeq \
-	--rg SM:$BASENAME 2> $BASENAME.log | samtools view -Sb - > $BASENAME.bam;
+	--rg SM:$BASENAME --no-unal \
+	2> $BASENAME.log | samtools view -Sb - > $BASENAME.bam;
 done
 
-#samtools
+# samtools
+# sorting (by position) the BAM files and indexing them
 for file in *.bam; do
 	# samtools 1.2 (at least) needs to specify the format and temp file prefix
 	samtools sort -T tmp.$file -O bam -o `basename $file .bam`-sort.bam $file;
@@ -162,10 +168,10 @@ add_coverage_to_gff -v $SAMPLES assembly.filt.gff assembly.filt.cov.gff
 
 #SNP calling using samtools
 for file in *.bam; do
-	samtools mpileup -Iuvf assembly.fa $file > `basename $file`.vcf;
+	samtools mpileup -Iuvf seqs/final-contigs.fa $file > `basename $file .bam`.vcf;
 done
 
-samtools mpileup -t DP,DV -s -q 10 -Iuvf assembly.fa *.bam
+samtools mpileup -t DP,DV -s -q 10 -Iuvf seqs/final-contigs.fa *.bam
 
 #fasta .dict file, needed for GATK
 wget https://github.com/broadinstitute/picard/releases/download/1.140/picard-tools-1.140.zip
