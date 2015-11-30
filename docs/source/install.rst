@@ -195,8 +195,9 @@ The tricky package to install in MacOSX is actually `matplotlib <http://matplotl
 
 	Or use::
 
-		export LDFLAGS="-L/usr/local/opt/freetype/lib -L/usr/local/opt/libpng/lib"
-		export CPPFLAGS="-I/usr/local/opt/freetype/include -I/usr/local/opt/libpng/include -I/usr/local/opt/freetype/include/freetype2"
+		export PKG_CONFIG_PATH=/usr/local/Cellar/freetype/2.6_1/lib/pkgconfig/:/usr/local/Cellar/libpng/1.6.19/lib/pkgconfig/
+
+	Note that the versions may be different.
 
 
 Installing Scipy from source on Linux

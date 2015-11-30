@@ -168,21 +168,34 @@ add_coverage_to_gff -v $SAMPLES assembly.filt.gff assembly.filt.cov.gff
 
 #SNP calling using samtools
 for file in *.bam; do
-	samtools mpileup -Iuvf seqs/final-contigs.fa $file > `basename $file .bam`.vcf;
+	samtools mpileup -ugf seqs/final-contigs.fa $file \
+	| bcftools call -vmO v > `basename $file .bam`.vcf;
+	#samtools mpileup -Iuvf seqs/final-contigs.fa $file > `basename $file .bam`.vcf;
 done
 
-samtools mpileup -t DP,DV -s -q 10 -Iuvf seqs/final-contigs.fa *.bam
+# samtools
+# -u uncompressed
+# -g binary BCF (it's piped to bcftools)
+# -f reference fasta
+# -t several important per sample information
+# bcftools
+# call - new command (instead of view)
+# -v - vcf output
+# -m - type of calling
+# -O v - uncompressed vcf
+samtools mpileup -t DP,SP,DPR,DV -ugf seqs/final-contigs.fa *.bam \
+| bcftools call -vmO v > assembly.vcf
 
 #fasta .dict file, needed for GATK
 wget https://github.com/broadinstitute/picard/releases/download/1.140/picard-tools-1.140.zip
 unzip picard-tools-1.140.zip
 java -jar picard-tools-1.140/picard.jar CreateSequenceDictionary \
-	R=assembly.fa O=assembly.dict
+	R=seqs/final-contigs.fa O=seqs/final-contigs.dict
 
 #merge vcf
-export SAMPLES=$(for file in *-sort.bam.vcf; do echo -V:`basename $file -sort.bam.vcf` $file ;done)
-java -Xmx1g -jar GATK/GenomeAnalysisTK.jar \
-	  -R assembly.fa -T CombineVariants -o assembly.vcf \
+export SAMPLES=$(for file in *.vcf; do echo -V:`basename $file .vcf` $file ;done)
+java -Xmx5g -jar GATK/GenomeAnalysisTK.jar \
+	  -R seqs/final-contigs.fa -T CombineVariants -o assembly.vcf \
 	  -genotypeMergeOptions UNIQUIFY \
 	  $SAMPLES
 unset SAMPLES

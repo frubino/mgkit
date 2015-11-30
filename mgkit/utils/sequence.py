@@ -625,7 +625,7 @@ def get_contigs_info(file_name, pp=False):
     )
 
     if pp:
-        info = '{}: {} contigs, {} bp, max {}, min {}, avg {}, n50 {:.2f}'.format(
+        info = '{}: {} contigs, {} bp, max {}, min {}, avg {:.2f}, n50 {}'.format(
             file_name, *info
         )
 

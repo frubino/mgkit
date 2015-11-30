@@ -15,7 +15,10 @@ import logging
 import uuid
 import json
 import urllib
-import semidbm
+# python 2.7 includes OrderedDict, the following recipe will be
+# used on older (2.6 versions)
+# http://code.activestate.com/recipes/576693/
+from collections import OrderedDict
 import mgkit.io
 from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
@@ -313,6 +316,22 @@ class Annotation(GenomicRange):
             ','.join(values)
         )
 
+    def get_mappings(self):
+        """
+        .. versionadded:: 0.2.1
+
+        Return a dictionary where the keys are the mapping DBs (lowercase) and
+        and the values are the mapping IDs for that DB
+        """
+        mappings = {}
+
+        for key in self.attr:
+            if key.startswith('map_'):
+                db = key.replace('map_', '').lower()
+                mappings[db] = self.get_mapping(db)
+
+        return mappings
+
     @property
     def taxon_id(self):
         """
@@ -495,6 +514,54 @@ class Annotation(GenomicRange):
         dictionary.update(self.attr)
 
         return json.dumps(dictionary, separators=(',', ':'))
+
+    def to_mongodb(self):
+        """
+        .. versionadded:: 0.2.1
+
+        Returns a MongoDB document that represent the Annotation.
+        """
+
+        # OrderedDict is necessary to keep the order of the keys
+        dictionary = OrderedDict()
+
+        # _id must be the first element
+        dictionary['_id'] = self.uid
+
+        var_names = (
+            'seq_id', 'source', 'feat_type', 'start', 'end', 'score', 'strand',
+            'phase', 'gene_id', 'taxon_id', 'bitscore', 'exp_nonsyn', 'exp_syn',
+            'length', 'dbq', 'coverage'
+        )
+
+        for var_name in var_names:
+            try:
+                dictionary[var_name] = getattr(self, var_name)
+            except AttributeNotFound:
+                pass
+
+        ec_ids = self.get_ec()
+        mappings = self.get_mappings()
+
+        # if one at least has values
+        if ec_ids:
+            mappings['ec'] = list(ec_ids)
+
+        dictionary['map'] = mappings
+
+        # the rest of the dictionary should be put, excluding special keys:
+        # uid is used as _id in the document
+        # EC is put as a array, as is any mapping like map_KO
+        dictionary.update(
+            dict(
+                (key, value)
+                for key, value in self.attr.iteritems()
+                if (key not in var_names) and (key not in ('uid', 'EC')) and
+                (not key.startswith('map_'))
+            )
+        )
+
+        return json.dumps(dictionary, indent=4, separators=(',', ': '))
 
     def to_file(self, file_handle):
         """
@@ -1768,56 +1835,33 @@ def convert_gff_to_gtf(file_in, file_out, gene_id_attr='uid'):
         file_out.write(annotation.to_gtf())
 
 
-def create_gff_dbm(annotations, file_name):
+def from_mongodb(record):
     """
     .. versionadded:: 0.2.1
 
-    Creates a semidbm database, using an annotation `uid` as key and the gff
-    line as value. The object is synced before being returned.
-
-    .. note::
-
-        A GFF line is used instead of a json representation because it was
-        more compact when semidbm was tested.
+    Returns a :class:`Annotation` instance from a MongoDB record (created)
+    using :meth:`Annotation.to_mongodb`. The actual record returned by pymongo
+    is a dictionary that is copied, manipulated and passed to the
+    :meth:`Annotation.__init__.
 
     Arguments:
-        annotations (iterable): iterable of annotations
-        file_name (str): database file name, opened with the `c` flag.
+        record (dict): a dictionary with the full record from a MongoDB query
 
     Returns:
-        object: a semidbm database object
+        Annotation: instance of :class:`Annotation` object
     """
+    record = record.copy()
 
-    database = semidbm.open(file_name, 'c')
+    record['uid'] = record['_id']
+    del record['_id']
 
-    LOG.info('DB "%s" opened/created', file_name)
+    mappings = record['map'].copy()
+    del record['map']
 
-    for annotation in annotations:
-        database[annotation.uid] = annotation.to_gff()
+    record['EC'] = ','.join(mappings['ec'])
+    del mappings['ec']
 
-    database.sync()
+    for key in mappings:
+        record['map_{}'.format(key.upper())] = ','.join(mappings[key])
 
-    return database
-
-
-class GFFDB(object):
-    """
-    .. versionadded:: 0.2.1
-
-    A wrapper for a semidbm instance, used to convert the GFF line stored in
-    the DB into an class:`Annotation` instance. If a string is passed to the
-    init method, a DB will be opened with the `c` flag.
-    """
-    db = None
-
-    def __init__(self, db=None):
-        if isinstance(db, str):
-            self.db = semidbm.open(db, 'c')
-        else:
-            self.db = db
-
-    def __getitem__(self, key):
-        return from_gff(self.db[key])
-
-    def __del__(self):
-        self.db.close()
+    return Annotation(**record)
