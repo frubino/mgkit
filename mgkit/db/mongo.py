@@ -55,11 +55,36 @@ of mappings, and the values the list of IDs the annoation maps to.
 """
 import logging
 from pymongo import MongoClient
+from ..io import gff
 
 LOG = logging.getLogger(__name__)
 
 
 class GFFDB(object):
+    """
+    Wrapper to a MongoDB connection/db. It is used to automate the convertion
+    of MongoDB records into :class:`mgkit.io.gff.Annotation` instances.
+    """
+    conn = None
+    db = None
 
-    def __init__(self, ):
-        pass
+    def __init__(self, db, collection, uri=None):
+        self.conn = MongoClient(uri)
+        self.db = self.conn[db][collection]
+
+    def cursor(self, query=None):
+        "Returns a cursor for the query"
+        return self.db.find(query)
+
+    def convert_record(self, record):
+        "Converts the record (a dictionary instance) to an Annotation"
+        return gff.from_mongodb(record)
+
+    def find_annotation(self, query=None):
+        """
+        Iterate over a cursor created using *query* and yields each record
+        after converting it to a :class:`mgkit.io.gff.Annotation` instance,
+        using :meth:`mgkit.db.mongo.GFFDB.convert_record`.
+        """
+        for record in self.cursor(query):
+            yield self.convert_record(record)
