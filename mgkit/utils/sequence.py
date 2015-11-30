@@ -590,7 +590,7 @@ def sequence_composition(sequence, chars=tuple(REV_COMP)):
         yield nuc, sequence.count(nuc)
 
 
-def get_contigs_info(file_name):
+def get_contigs_info(file_name, pp=False):
     """
     .. versionadded:: 0.2.1
 
@@ -604,6 +604,13 @@ def get_contigs_info(file_name):
     - average length
     - N50 statistic
 
+    Arguments:
+        file_name (str): fasta file to open
+        pp (bool): if True, a formatted string is returned
+
+    Returns:
+        str, tuple: the returned value depends on the value of *pp*, if True a
+        formatted string is returned, otherwise the tuple with all values is.
     """
     seqs = list(seq for name, seq in fasta.load_fasta(file_name))
 
@@ -616,5 +623,10 @@ def get_contigs_info(file_name):
         lengths.mean(),
         calc_n50(lengths),
     )
+
+    if pp:
+        info = '{}: {} contigs, {} bp, max {}, min {}, avg {}, n50 {.2f}'.format(
+            file_name, *info
+        )
 
     return info
