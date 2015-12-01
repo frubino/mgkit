@@ -1852,7 +1852,7 @@ def from_mongodb(record):
     Returns a :class:`Annotation` instance from a MongoDB record (created)
     using :meth:`Annotation.to_mongodb`. The actual record returned by pymongo
     is a dictionary that is copied, manipulated and passed to the
-    :meth:`Annotation.__init__.
+    :meth:`Annotation.__init__`.
 
     Arguments:
         record (dict): a dictionary with the full record from a MongoDB query

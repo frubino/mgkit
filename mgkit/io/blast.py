@@ -162,8 +162,8 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
 
     Yields:
         tuple: iterator of tuples with the first element being the query id
-            after key_func is applied, if requested and the second element of
-            the tuple is a tuple with the requested columns *ret_col*
+        after key_func is applied, if requested and the second element of
+        the tuple is a tuple with the requested columns *ret_col*
 
     .. table:: BLAST+ used with `-outfmt 6`, default columns
 
@@ -282,7 +282,7 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
         if hit[-1] < bitscore:
             continue
 
-        yield gff.from_nuc_blast(hit, db=db, dbq=dbq, to_nuc=False, 
+        yield gff.from_nuc_blast(hit, db=db, dbq=dbq, to_nuc=False,
                                  feat_type=feat_type)
 
 

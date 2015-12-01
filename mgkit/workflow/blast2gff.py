@@ -25,16 +25,16 @@ is CDS.
 Changes
 *******
 
-.. versionadded:: 0.1.12
+.. versionchanged:: 0.2.1
+
+    added *-ft* option
 
 .. versionchanged:: 0.1.13
 
 * added *-n* parameter to *uniprot* command
 * added *-k* option to *uniprot* command
 
-.. versionchanged:: 0.2.1
-
-    added *-ft* option
+.. versionadded:: 0.1.12
 
 """
 import sys

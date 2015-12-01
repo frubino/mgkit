@@ -1,6 +1,48 @@
 Changes
 =======
 
+0.2.1
+-----
+
+Added
+*****
+
+* added :mod:`mgkit.db.mongo`
+* added :mod:`mgkit.db.dbm`
+* added :meth:`mgkit.io.gff.Annotation.get_mappings`
+* added :meth:`mgkit.io.gff.Annotation.to_json`
+* added :meth:`mgkit.io.gff.Annotation.to_mongodb`
+* added :func:`mgkit.io.gff.from_json`
+* added :func:`mgkit.io.gff.from_mongodb`
+* added :func:`mgkit.taxon.get_lineage`
+* added :func:`mgkit.utils.sequence.get_contigs_info`
+* added `mongodb` and `dbm` commands to script `get-gff-info`
+* added `kegg` command to `add-gff-info` script, caching results and `-d` option to `uniprot` command
+* added `-ft` option to `blast2gff` script
+* added `-ko` option to `download_profiles`
+
+Changed
+*******
+
+* :func:`mgkit.io.blast.parse_uniprot_blast`
+* :class:`mgkit.io.gff.Annotation`
+* :class:`mgkit.io.gff.GenomicRange`
+* :func:`mgkit.io.gff.from_hmmer`
+* :meth:`mgkit.taxon.UniprotTaxonomy.read_taxonomy`
+* :func:`mgkit.taxon.parse_uniprot_taxon`
+* changed behaviour of `hmmer2gff` script
+
+Deprecated
+**********
+
+* :func:`mgkit.filter.taxon.filter_taxonomy_by_lineage`
+* :func:`mgkit.filter.taxon.filter_taxonomy_by_rank`
+
+Removed
+*******
+
+* removed old `filter_gff` script
+
 0.2.0
 -----
 

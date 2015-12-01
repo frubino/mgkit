@@ -215,7 +215,7 @@ def set_parser():
 
     parser_m = subparsers.add_parser(
         'mongodb',
-        help='Extract annotations from a GFF file and output for MongoDB'
+        help='Extract annotations from a GFF file and makes output for MongoDB'
     )
 
     set_mongodb_parser(parser_m)
