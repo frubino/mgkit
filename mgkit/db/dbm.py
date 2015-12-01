@@ -31,7 +31,7 @@ def create_gff_dbm(annotations, file_name):
     Returns:
         object: a semidbm database object
     """
-
+    print file_name
     database = semidbm.open(file_name, 'c')
 
     LOG.info('DB "%s" opened/created', file_name)
@@ -69,3 +69,7 @@ class GFFDB(object):
 
     def __del__(self):
         self.db.close()
+
+    def __iter__(self):
+        for uid in self.db:
+            yield self[uid]
