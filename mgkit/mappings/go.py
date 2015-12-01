@@ -7,9 +7,14 @@ import urllib2
 import logging
 from .. import kegg
 from ..utils import dictionary as dict_utils
-from goatools.obo_parser import OBOReader
 
 LOG = logging.getLogger(__name__)
+
+# needed to complete the documentation without raising an exception
+try:
+    from goatools.obo_parser import OBOReader
+except ImportError:
+    LOG.critical("Cannot import OBOReader")
 
 
 class Kegg2GOMapper(kegg.KeggMapperBase):

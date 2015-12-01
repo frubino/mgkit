@@ -163,8 +163,13 @@ done
 samtools faidx seqs/final-contigs.fa
 
 #add coverage data
+########
+#Add coverage and expected changes to GFF file
 export SAMPLES=$(for file in *.bam; do echo -a `basename $file .bam`,$file ;done)
-add_coverage_to_gff -v $SAMPLES assembly.filt.gff assembly.filt.cov.gff
+#Coverage info
+add-gff-info coverage $SAMPLES assembly.filt.gff | add-gff-info \
+	exp_syn -r seqs/final-contigs.fa > assembly.filt.cov.gff
+unset SAMPLES
 
 #SNP calling using samtools
 for file in *.bam; do
