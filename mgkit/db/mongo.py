@@ -16,6 +16,11 @@ These are defined because they have values that are not strings (defined as
 properties in :class:`mgkit.io.gff.Annotation`. The rest of the attributes
 defined are kept as well, but no ckeck for the data type is made.
 
+.. note::
+
+    lineage is added as a key, whose values are taxon_id, if a function has been
+    passed to :meth:`mgkit.io.gff.Annotation.to_mongodb`
+
 The exception is the **map** key in the document. It store both the EC mappings
 (EC attribute in the GFF), as well as all mappings whose attribute starts with
 *map_*. The former is usually accessed from

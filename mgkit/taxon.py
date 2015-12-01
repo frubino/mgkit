@@ -589,3 +589,33 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
         matrix.loc[taxon_id2, taxon_id1] = distance
 
     return matrix
+
+
+def get_lineage(taxonomy, taxon_id, names=False):
+    """
+    .. versionadded:: 0.2.1
+
+    Returns the lineage of a taxon_id, as a list of taxon_id or taxa names
+
+    Arguments:
+        taxonomy: a :class:`UniprotTaxonomy` instance
+        taxon_id (int): taxon_id whose lineage to return
+        names (bool): if True, the returned list contains the names of the taxa
+            instead of the taxon_id
+
+    Returns:
+        list: lineage of the taxon_id, the elements are `int` if names is False,
+        and `str` when names is True
+    """
+    lineage = []
+
+    while True:
+        taxon_id = taxonomy[taxon_id].parent_id
+        if taxon_id is None:
+            break
+        lineage.append(taxon_id)
+
+    if names:
+        lineage = [taxonomy[x].s_name for x in lineage]
+
+    return list(reversed(lineage))

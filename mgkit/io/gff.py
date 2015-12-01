@@ -515,11 +515,18 @@ class Annotation(GenomicRange):
 
         return json.dumps(dictionary, separators=(',', ':'))
 
-    def to_mongodb(self):
+    def to_mongodb(self, lineage_func=None):
         """
         .. versionadded:: 0.2.1
 
         Returns a MongoDB document that represent the Annotation.
+
+        Arguments:
+            lineage: function used to populate the lineage key, returns a list
+              of taxon_id
+
+        Returns:
+            str: the MongoDB document, with Annotation.uid as _id
         """
 
         # OrderedDict is necessary to keep the order of the keys
@@ -546,6 +553,9 @@ class Annotation(GenomicRange):
         # if one at least has values
         if ec_ids:
             mappings['ec'] = list(ec_ids)
+
+        if lineage_func is not None:
+            dictionary['lineage'] = lineage_func(self.taxon_id)
 
         dictionary['map'] = mappings
 
@@ -1858,10 +1868,16 @@ def from_mongodb(record):
     mappings = record['map'].copy()
     del record['map']
 
-    record['EC'] = ','.join(mappings['ec'])
-    del mappings['ec']
+    try:
+        record['EC'] = ','.join(mappings['ec'])
+        del mappings['ec']
+    except KeyError:
+        pass
 
-    for key in mappings:
-        record['map_{}'.format(key.upper())] = ','.join(mappings[key])
+    try:
+        for key in mappings:
+            record['map_{}'.format(key.upper())] = ','.join(mappings[key])
+    except KeyError:
+        pass
 
     return Annotation(**record)
