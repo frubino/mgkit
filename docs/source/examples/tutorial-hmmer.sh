@@ -102,15 +102,15 @@ END
 rm -R megahit-out
 cd ..
 
+#download offline data (only taxonomy)
+download_data -p -x -m $EMAIL
+
 # Get the nitrogen metabolism KOs
 export GENES=`python - <<END
 from mgkit import kegg
 k = kegg.KeggClientRest()
 print " ".join(k.link_ids('ko', 'ko00910')['ko00910'])
 END`
-
-#download offline data (only taxonomy)
-download_data -p -x -m $EMAIL
 
 download_profiles -o profiles -ko $GENES -r order -l bacteria -m $EMAIL -t mg_data/taxonomy.pickle
 
@@ -140,7 +140,7 @@ hmmer2gff -d -o assembly.gff final-contigs.aa.fa hmmer_dom-table.txt
 # for each annotations. `cat` is not necessary, since the input/output can
 # specified with a `-` (dash), which is standard
 cat assembly.gff | filter-gff values -b 40 | filter-gff overlap -s 100 | \
-add-gff-info kegg -c $EMAIL -v -d -p > assembly.filt.gff
+add-gff-info kegg -c $EMAIL -v -d > assembly.filt.gff
 
 # bowtie2
 # index
@@ -180,13 +180,6 @@ add-gff-info coverage $SAMPLES assembly.filt.gff | add-gff-info \
 	exp_syn -r seqs/final-contigs.fa > assembly.filt.cov.gff
 unset SAMPLES
 
-#SNP calling using samtools
-for file in *.bam; do
-	samtools mpileup -ugf seqs/final-contigs.fa $file \
-	| bcftools call -vmO v > `basename $file .bam`.vcf;
-	#samtools mpileup -Iuvf seqs/final-contigs.fa $file > `basename $file .bam`.vcf;
-done
-
 # samtools
 # -u uncompressed
 # -g binary BCF (it's piped to bcftools)
@@ -200,24 +193,8 @@ done
 samtools mpileup -t DP,SP,DPR,DV -ugf seqs/final-contigs.fa *.bam \
 | bcftools call -vmO v > assembly.vcf
 
-#fasta .dict file, needed for GATK
-wget https://github.com/broadinstitute/picard/releases/download/1.140/picard-tools-1.140.zip
-unzip picard-tools-1.140.zip
-java -jar picard-tools-1.140/picard.jar CreateSequenceDictionary \
-	R=seqs/final-contigs.fa O=seqs/final-contigs.dict
-
-#merge vcf
-export SAMPLES=$(for file in *.vcf; do echo -V:`basename $file .vcf` $file ;done)
-java -Xmx5g -jar GATK/GenomeAnalysisTK.jar \
-	  -R seqs/final-contigs.fa -T CombineVariants -o assembly.vcf \
-	  -genotypeMergeOptions UNIQUIFY \
-	  $SAMPLES
-unset SAMPLES
-
 #snp_parser
 export SAMPLES=$(for file in *.bam; do echo -m `basename $file .bam`;done)
-snp_parser -v -g assembly.uniprot.gff \
-	-p assembly.vcf \
-	-a assembly.fasta \
- 	$SAMPLES
+snp_parser -v -g assembly.filt.cov.gff -p assembly.vcf \
+-a seqs/final-contigs.fa -s $SAMPLES
 unset SAMPLES

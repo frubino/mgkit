@@ -1,413 +1,345 @@
-.. _metagenome-pipeline:
+.. _hmmer-tutorial:
 
-Metagenome Pipeline
-===================
+HMMER Tutorial
+==============
 
-.. highlight:: python
+.. highlight:: bash
    :linenothreshold: 5
 
-This section goes into the details of one pipeline used to analyse a metagenome.
-The following image gives an overview of the pipeline, whose colours will be
-used in the section's diagrams for consistency.
+This example pipeline explore three different aspects from the :ref:`simple-tutorial`):
 
-.. figure:: ../images/pipeline.png
-   :width: 1024 px
+	#. normalisation of metagenomic data using `khmer <http://khmer.readthedocs.org/>`_
+	#. the use of another assembler, `MEGAHIT <https://github.com/voutcn/megahit>`_
+	#. Using Kegg to identify the ortholog genes from the nitrogen metabolism
+	#. making custom HMMER profiles
+	#. the use of samtools/bcftools for SNP calling
 
-   A complete metagenome analysis pipeline. Parts of the pipeline are explained
-   in this section.
+Requirements
+------------
 
-.. note:: 
-	
-	Steps, like quality filtering and assembly, won't be detailed as they are up
-	to the user to decide.
+.. warning::
 
-.. _download-data-doc:
+	The requirements for assembly/normalisation are high for a desktop computer, with the khmer normalisation step using ~6GB of RAM to complete with a reasonable low false positive rate. The computer tested was running Mac OS X v10.11, with 16GB of RAM.
+
+.. csv-table:: Software Tested
+	:header: Software,Version
+
+	wget,any
+	velvet,1.2.10
+	bowtie2,2.2.6/2.1.0
+	khmer,2.0
+	hmmer,3.1b2/3.1b1
+	clustalo,1.2.1
+	megahit,1.0.3
+	samtools,1.2.0
+	bcftools,1.0
+
+.. csv-table:: Python Packages
+	:header: Package,Version
+
+	mgkit,0.2.1
+	HTSeq,0.6.1
+	pandas,0.17.1
+	pysam,0.8.4
+	scipy,0.16.1
+	semidbm,0.5.1
+	matplotlib,1.5
+	seaborn,0.6
+
+On Mac OS X, some of the software requirements can be installed using `Homebrew <brew.sh>`_, with this command::
+
+	$ brew install wget homebrew/science/velvet homebrew/science/bowtie2 \
+	homebrew/science/samtools pyenv-virtualenv homebrew/science/hmmer \
+	homebrew/science/clustal-omega
+
+.. note::
+
+	a lot of the shell code is possible in Bash, so you need to make sure the correct shell is loaded.
+
+Metagenomic Data
+----------------
+
+The data that will be used is from the `Analysis of metagenome in a full scale tannery wastewater treatment <http://www.ebi.ac.uk/ena/data/view/PRJEB6461>`_ project on `ENA <http://www.ebi.ac.uk/ena/>`_. It has 5 samples, from waste water management:
+
+	* I (Influent)
+	* B (Buffering)
+	* SA (Secondary aeration)
+	* PA (Primary aeration)
+	* SD (Sludge digestion)
+
+As it involves waste water management, it's interesting to understang the diversity of the genes involved in the nitrogen metabolism.
+
+The raw reads files can be downloaded with the following command::
+
+	$ wget ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/B_R1.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/B_R2.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/I_R1.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/I_R2.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/PA_R1.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/PA_R2.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/SA_R1.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/SA_R2.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/SD_R1.fastq.gz \
+	ftp://ftp.sra.ebi.ac.uk/vol1/ERA315/ERA315794/fastq/SD_R2.fastq.gz
+
+
+Digital Normalisation and QC
+----------------------------
+
+One aspect that makes the assembly of metagenomic particularly complex is the different coverage of the different organisms that are found in a sample. One solution is the use of a kmer counting such as **khmer**, as it allows to reduce the differences. This also reduces the memory requirements of the assembly.
+
+The first step is to interleave the paired end reads into one file, which can be done using the *interleave-reads.py* script from the *khmer* package. As the quality, observer using `FastQC <http://www.bioinformatics.babraham.ac.uk/projects/fastqc/>`_ is poor in the last 20 bp, the following bash code uses Python and HTSeq to cut the last 20 bp from both reads files, using IO streams. This avoids the use of temporary files, but it's not mandatory.
+
+.. code-block:: bash
+
+	$ interleave-reads.py --gzip -o all-interleaved.fq.gz \
+	<(
+	python - <<END
+	import HTSeq, sys, glob
+	files = glob.glob('*R1.fastq.gz')
+	for fname in files:
+	    for record in HTSeq.FastqReader(fname):
+	        record = record[:-20] # cut 20 bp
+	        # HTSeq adds '[part]' to the header, the next line cut it
+	        record.name = record.name[:-6]
+	        record.write_to_fastq_file(sys.stdout)
+	END
+	) \
+	<(
+	python - <<END
+	import HTSeq, sys, glob
+	files = glob.glob('*R2.fastq.gz')
+	for fname in files:
+	    for record in HTSeq.FastqReader(fname):
+	        record = record[:-20]
+	        record.name = record.name[:-6]
+	        record.write_to_fastq_file(sys.stdout)
+	END
+	)
+
+.. note::
+
+	The interleave passage is especially important since some khmer scripts had problems parsing the new Casava header of Fastq files.
+
+The file *all-interleaved.fq.gz* will be created, containing the trimmed sequences, interleaved.
+
+The digital normalisation can be done using the *normalize-by-median.py*, part of the *khmer* package. In this dataset, with the parameters used, around 7% of data can be excluded from the assembly::
+
+	$ normalize-by-median.py -k 24 -p -o normalised.fq.gz \
+	  --gzip -M 6e9 all-interleaved.fq.gz
+
+Producing a *normalised.fq.gz* file that can be used with an assembler.
+
+Assembly
+--------
+
+The assembly, as usual can be done with any assembler, as long as its output is a FASTA file. MEGAHIT can be used to assembler this data using the following command::
+
+	$ megahit --presets meta --verbose --min-contig-len 100 \
+	  --12 normalised.fq.gz -o megahit-out
+
+One things that can create problems in software such as samtools, is the presence of spaces in the sequence headers. The following python code (executed in a BASH shell) can be used to give unique names to each sequence and keep in a file the names assigned by the assembler for any future reference::
+
+	$ python - <<END
+	from mgkit.io import fasta
+	from uuid import uuid4
+	import json
+
+	seq_dict = {}
+	with open('final-contigs.fa', 'w') as f:
+	    for name, seq in fasta.load_fasta('megahit-out/final.contigs.fa'):
+	        uid = str(uuid4())
+	        seq_dict[uid] = name
+	        fasta.write_fasta_sequence(f, uid, seq)
+
+	json.dump(seq_dict, open('seq-dict.json', 'w'))
+	END
+
+This small script will read all sequences from the output of MEGAHIT, the *final.contigs.fa* file and replaces the original sequence headers with new ones, using the *uuid4* function. This function generate random unique identifiers without spaces. A dictionary with the original sequence headers is saved as a JSON file.
 
 Download Data
 -------------
 
-.. blockdiag::
+It is necessary to download the taxonomy to download the genes from Kegg (for this tutorial). Moreover the taxonomy will be used in later steps and to download it, the MGKit script *download_data* can be used::
 
-	{
-		download_data [color = "#AA99FF" , textcolor = 'black'];
-		download_data -> "Kegg";
-		download_data -> "Uniprot Taxonomy";
-		Kegg -> CaZy;
-		Kegg -> eggNOG;
-		Kegg -> GO;
+	$ download_data -p -x -m EMAIL
 
-		default_group_color = "#66FF99";
-		
-		Kegg [shape = "flowchart.database"];
-		"Uniprot Taxonomy" [shape = "flowchart.database"];
-		CaZy [shape = "flowchart.database"];
-		eggNOG [shape = "flowchart.database"];
-		GO [shape = "flowchart.database"];
-		
-		group{
-			CaZy; eggNOG; GO; Kegg; "Uniprot Taxonomy"
-		}
+This will save a *taxonomy.pickle* file in the subdirectory *mg_data*. More information at the script documentation (:ref:`download-data`)
 
-	}
+Create Profiles
+---------------
 
-.. automodule:: mgkit.workflow.download_data
+To download only a portion of Kegg, in this case the genes from the nitrogen metabolism, it's needed to use the Kegg REST API to retrieve the gene IDs. MGKit include a client class for this in the :mod:`mgkit.kegg` module, called *KeggClientRest*. Its method *link_ids* returns a data structure that contains the list of genes in the Nitrogen Metabolism (ID: ko00910).
 
-The script is installed as `download_data` and by default downloads both 
-mandatory data (Kegg and Uniprot Taxonomy) and optional data (eggNOG, CaZy
-and GO). If downloading only the essential data, the '-p' option can be supplied
-to skip loading additional mappings that can be downloaded at a later time.
+The script can be executed on a bash shell with the following command::
+	$ export GENES=`python - <<END
+	from mgkit import kegg
+	k = kegg.KeggClientRest()
+	print " ".join(k.link_ids('ko', 'ko00910')['ko00910'])
+	END`
 
-Download all data with `$ download_data -m email` or only mandatory data
-with `download_data -p -m email`. More information at the script documentation (:ref:`download-data`)
+The command will export an environment variable called *GENES* that can be passed to the *download_profiles* script::
 
-Download Profiles
------------------
+	$ download_profiles -o profiles -ko $GENES -r order -l bacteria \
+	-m EMAIL -t mg_data/taxonomy.pickle
 
-.. blockdiag::
+The script will retrieve all the sequences in the *profiles* directory, for the genes in the *GENES* environment variable. The genes will be download as one for file for each order of bacteria AND gene. Each file will contain, all sequences for that ortholog, found in `Uniprot <uniprot.org>`_ for a particular order of bacteria. Orders with just one sequence will be skipped.
 
-	{
-		default_group_color = "#66FF99";
+After the script finish its execution, the *GENES* variable can be unset::
 
-		download_profiles [color = "#AA99FF" , textcolor = 'black'];
-		"ClustalO/Muscle" [color = "#FFCC66" , textcolor = 'black'];
-		hmmbuild [color = "#FFCC66" , textcolor = 'black'];
-		"AA sequences" [color = "#66FF99", stacked];
-		"AA aligments" [color = "#66FF99", stacked];
-		"AA profiles" [color = "#66FF99", stacked];
-		"Uniprot" [color = "#FFFF66"];
+	$ unset GENES
 
-		"Uniprot Taxonomy" -> download_profiles;
-		Uniprot -> download_profiles;
-		"Kegg" -> download_profiles;
-		download_profiles -> "AA sequences";
-		"AA sequences" -> "ClustalO/Muscle" -> "AA aligments";
-		"AA aligments" -> hmmbuild -> "AA profiles";
+More information about the script is in :ref:`script-download-profiles`.
 
-		"AA sequences" -> "ClustalO/Muscle" [folded];
 
-		Kegg [shape = "flowchart.database"];
-		"Uniprot Taxonomy" [shape = "flowchart.database"];
-		Uniprot [shape = "flowchart.database"];
+Alignment and HMM profiles
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-		group{
-			Kegg; "Uniprot Taxonomy"
-		}
+The files created must be aligned using Clustal Omega or another similar software and for each alignment a HMM profile can be built using the *hmmbuild* from the HMMER package. An example, using a BASH loop::
 
-	}
-
-.. automodule:: mgkit.workflow.download_profiles
-
-Sequence Alignment
-^^^^^^^^^^^^^^^^^^
-
-The :term:`aa` sequences download needs to be aligned using a software like
-clustalo or muscle and the resulting alignments run with hmmbuild in the HMMER
-package to produce the HMM profiles. The `download_profiles` script will also
-write a file with the average length of each profile that can be used when
-filtering.
-
-Examples
-""""""""
-
-Bash
-++++
-
-Another example is using a simple bash loop like this:
-
-.. code-block:: bash
-
-	for file_name in profile_files/*.fa; do
-		out_file = profiles_alg/$(basename $file_name .fa).afa;
-		clustalo -v -i $file_name -o $out_file;
+	$ for file in profiles/*.fa; do
+		echo $file `basename $file .fa`
+	    clustalo -i $file -o profiles/`basename $file .fa`.afa ;
+	    hmmbuild profiles/`basename $file .afa`.hmm profiles/`basename $file .fa`.afa;
 	done
 
-Assuming that the directory that contains the fasta files to align is `profile_fasta`
-and the output directory is `profiles_alg`. Note that `profile_alg` needs to be
-created in advance.
+Each single profile can then concatenated using *cat*::
+
+	$ cat profiles/*.hmm > profiles.hmm
 
 Gene Prediction
 ---------------
 
-.. blockdiag::
-	
-	{
- 		orientation = portrait
-		
-		hmmer2gff [color = "#AA99FF" , textcolor = 'black'];
-		hmmscan [color = "#FFCC66" , textcolor = 'black'];
-		"HMMER output" [color = "#66FF99", stacked];
-		"Taxonomy/Kegg" [color = "#66FF99"];
-		"Taxonomy/Kegg" [shape = "flowchart.database"];
-		"GFF(s)" [color = "#66FF99", stacked];
-		"AA profiles" [color = "#66FF99", stacked];
-		"Assembly"  [color = "#66FF99"];
-		"AA translation"  [color = "#FFCC66" , textcolor = 'black'];
+With the HMM profiles in one file, *hmmsearch* can be used to searc for similarity in the assembly. Before that, *hmmsearch* can only work on aminoacid sequences, so the assembly must be translated in the possible frames. The recommended way to do this is to use the *translate_seq* script included with MGKit::
 
-		"Taxonomy/Kegg" -> hmmer2gff;
-		"AA profiles" -> hmmscan -> "HMMER output" -> hmmer2gff -> "GFF(s)";
-		Assembly -> "AA translation" -> hmmscan;
+	$ translate_seq final-contigs.fa final-contigs.aa.fa
 
-	}
+.. warning::
 
-.. _hmmer:
+	The problem with other software to translate the assembly is that the script that convert the result of *hmmsearch* into a GFF file needs the information about the frame and strand. *translate_seq* append a suffix to the sequence header to indicate it. As an example, for a sequence named *contig0001*, the following sequences headers will be found: *contig0001-f0*, *contig0001-f1*, *contig0001-f2*, *contig0001-r0*, *contig0001-r1*, *contig0001-r2*. The *f* stands for the forward (*+* strand), *r* for the reverse (*-* strand), the number indicates the frame, from 1 to 2.
 
-HMMER
-^^^^^
+*hmmsearch* can then be launched using the following command::
 
-Gene prediction is made by translating the sequences of the assembled metagenome
-into :term:`aa` in the 6 frames and use HMMER to predict the possbile genes.
+	$ hmmsearch -o /dev/null --domtbl hmmer_dom-table.txt profiles.hmm final-contigs.aa.fa
 
-Any software can be used to translate the nucleotidic sequences, as long as the
-header of each :term:`aa` sequence conforms to this: `>nuc_header-r0`, where
-*nuc_header* is the original header and `-r0` is appended in the aa header, with
-`r` indicating the strand (reverse `r` of forward `f`) and `0` indicates the
-frame, which is a number between 0 and 2 (:term:`0-based`). This is necessary
-to keep the translation information in converting HMMER results to GFF.
-
-One script to translate into aa sequences is included and named `translate_seq`,
-which can be run like this::
-
- $ translate_seq nuc_seq aa_seqs
-
-After which HMMER can be run with::
-
- $ hmmsearch -o /dev/null --domtbl hmmer_dom-table.txt profile_files.hmm assembly.aa.fa
+The only file needed by MGKit is the domain table, stored in the file *hmmer_dom-table.txt*.
 
 GFF Creation
 ^^^^^^^^^^^^
 
-The output of HMMER domain table is the input of the script `hmmer2gff`, which
-converts the HMMER results in a GFF files. It adds a series of information to
-for each annotation as well:
+The output of *hmmsearch* can then be supplied to the *hmmer2gff* script included in MGKit, which converts it to a GFF file::
 
-* aa annotated (aa_seq)
-* start position of the annotation on the aa sequence (:term:`1-based`)
-* end position of the annotation on the aa sequence (:term:`1-based`)
-* HMMER bit score for the annotation
-* HMMER evalue for the annotation
-* frame for the translated sequence (e.g. r0, first frame, reverse strand - 
-  :term:`0-based`)
-* annotation length (gene_len)
-* gene ID that matched (ko)
-* unique ID of the annotation (ko_idx)
-* profile name, as per alignment filename (name)
-* if the sequences of the profile come from only reviewed entries (reviewed)
-* taxon scientific name (taxon)
-* taxon ID (taxon_id)
-* taxon name and taxon ID (e.g. prevotella.838) (taxon_idx)
+	$ hmmer2gff -d -o assembly.gff final-contigs.aa.fa hmmer_dom-table.txt
 
-The minimum options to set are the translated :term:`aa` file (fasta format) on 
-which the prediction was made and the domain table ouputtted by HMMER. 
-By default the output is set to the screen (stdout) and can be put to a file 
-using the '-o' option.
-
-If the original assembled metagenome file (nucleic fasta format) is supplied 
-via the '-n' option, additional information will be added to each annotation:
-
-* GC content (gc_cont)
-* GC ratio (gc_ratio)
-* expected number of synonymous (exp_syn) and non-synonymous changes 
-  (exp_nonsyn)
-
-If the '-k' option is specified, a valid kegg data file using the script 
-described in :ref:`download-data-doc`, which will allow to add gene descriptions
-to the annotations as a 'description' attribute.
-
-An example command to create a GFF::
-
- $ hmmer2gff -o output.gff -k mg_data/kegg.pickle assembly.aa.fa hmmer_output
+The command will create a *assembly.gff* file from all hits in the domain table. In this case the e-value filter was disabled (*-d* option), because the collection of files may be too small.
 
 GFF Filtering
 -------------
 
-.. blockdiag::
+The GFF filtering works in the same way as explained in :ref:`simple-tutorial` and more informations can be found in the script manual (:ref:`filter-gff`).
+One thing to point out is that most scripts and commands in MGKit (and other software) allow the use of pipes, concatenating multiple commands in one line to avoid the use of temporary files. The following command can be run on a BAST shell::
 
-	{
-		
-		filter_gff [color = "#AA99FF" , textcolor = 'black'];
-		"GFF(s)" [color = "#66FF99", stacked];
-		"GFF" [color = "#66FF99"];
-		"AA profiles" [color = "#66FF99", stacked];
-		
-		"GFF(s)" -> filter_gff -> GFF;
-		"AA profiles" -> filter_gff;
+	$ cat assembly.gff | filter-gff values -b 40 | filter-gff \
+	overlap -s 100 | \ add-gff-info kegg -c EMAIL \
+	-v -d > assembly.filt.gff
 
-	}
+The commands do the following, in sequence (between *|*):
 
-All the files produced by HMMER can be converted to gff in one go and then
-filtered. There are several filtering options, based on information of the 
-annotations being filtered or multiple overlapping annotations can be filtered.
+	#. output to the standard output the content of *assembly.gff*
+	#. only keeps annotations that have a bit score of at least 40
+	#. filters overlapping annotations (for at least 100 bp), keeping the one with the highest bit score
+	#. add the names of the genes getting them from Kegg
 
-.. note::
-	
-	All per-annotation filtering is performed **before** the per-sequence 
-	filtering if both options type are specified.
-
-Per-Annotation Options
-^^^^^^^^^^^^^^^^^^^^^^
-
-The filters that are annotation based are:
-
-* `-q` only annotation on specified sequence(s) pass
-* `-s` HMMER evalue
-* `-b` HMMER bit score
-* `-f` and `-p` requires that the annotation length is at least a set
-  percentage of the average length of the profile; `-f` specifies the file with the profile data (outputted by `download_profiles`) and `-p` the minimum percentage
-* `-t` only annotation belonging to the specified taxa pass
-* `-k` only annotation whose gene predicted is specified pass
-* `-r` only predictions based on reviewed profiles pass
-* `-e` only annotation whose description includes the specified string pass
-
-Example
-"""""""
-
-To filter a GFF based on the profile lengths stored in `profile_files-length.pickle`
-with a minimum size of at least 60% of the average size::
-
- $ filter_gff -f profile_files-length.pickle -p 0.6 -i input.gff -o output.gff
-
-Per-Sequence Options
-^^^^^^^^^^^^^^^^^^^^
-
-The additional filter is sequence-based, as it keep only the annoations on a sequence that don't overlap or if they do, keeps only the ones with the lowest evalue. It's activated by the `-l` option and the following modifiers can be specified:
-
-* `-z` threshold used to choose between overlapping regions (percentange of average length)
-* `-g` specify that the overlaps apply only if it's the same gene
-* `-n` to apply the filter regardless of the strand the annotation is on
-
-Example
-"""""""
-
-To filter a GFF using the overlapping filter (`-l` option), requiring to filter
-annotations that overlap for at least 60% of their average length::
-
-	$ filter_gff -l -z 0.6 -i input.gff -o output.gff
-
-.. warning::
-
-	filtering overlapping annotation requires a lot of memory. It is adviced to 
-	divide the filtering into multiple steps.
-
-.. todo::
-
-	* add real numbers for memory requirements (10x the size of the file?)
-	* try a few strategies
+The result is then outputted into the *assembly.filt.gff* (after the *>*). This is not enforced, but can be used to speed up some commands, as nothing is written to disk, and avoid confusion when managing multiple temporary files.
 
 GFF Additions
 -------------
 
-At this point, we have most of the information we need to continue with the analysis, but there is one mandatory and one optional step which can be done. The GFF after filtering can is not enough to continue with the diversity analysis, as we need coverage information about each predicted gene. We can also refine the taxonomic assignment, which is detailed later.
+At this point, we have most of the information we need to continue with the analysis, but there is one mandatory and one optional step which can be done. The GFF after filtering can is not enough to continue with the diversity analysis, as we need coverage information about each predicted gene. We can also refine the taxonomic assignment, which is detailed in :ref:`simple-tutorial`.
 
 Computing the gene coverage can be done before filtering, but the number of annotations would be too high, so it's preferred to add coverage information after filtering the GFF. Also, because we needs alignment files for each sample to compute the gene coverage, it is advised to makes the alignment files in parallel with the GFF filtering, to speed up the pipeline.
 
-Coverage information
-^^^^^^^^^^^^^^^^^^^^
+Alignments
+^^^^^^^^^^
 
-.. blockdiag::
-	
-	{
-		GFF [color = "#66FF99"];
-		"Script" [color = "#AA99FF"];
-		"Alignment files" [color = "#66FF99", stacked];
-		"Alignment files" -> "Script" -> GFF;
-	}
+To create alignments for each sample, the assembly file must first be indexed, with the folowing command::
 
-The above diagram shows an example on how to add coverage information for the samples using the provided script, but it can be done in any other way, provided that the following convention are respected, for later analysis:
+	$ bowtie2-build final-contigs.fa final-contigs
 
-* total coverage is stored as a integer value as an attribute name 'cov'
-* sample coverage follows the same rule, but the attribute is 'sample_cov', adding a suffix '_cov' after the sample name. When referring to the sample, in later parts, we only use the 'sample' part of the attribute.
+The following BASH loop creates the BAM file for each sample::
 
-Taxonomic Refinement
-^^^^^^^^^^^^^^^^^^^^
+	$ for file in *R1.fastq.gz; do
+		BASENAME=`basename $file _R1.fastq.gz`
+		echo $file $BASENAME "$BASENAME"_R2.fastq.gz
+		bowtie2 -N 1 -x final-contigs --local --sensitive-local \
+		-1 $file -2 "$BASENAME"_R2.fastq.gz \
+		--rg-id $BASENAME --rg PL:Illumina --rg PU:Illumina-MiSeq \
+		--rg SM:$BASENAME --no-unal \
+		2> $BASENAME.log | samtools view -Sb - > $BASENAME.bam;
+	done
 
-.. blockdiag::
+The loop uses the list of reads file from the first element of the pairs (R1.fastq.gz files) to automate the process, resulting in files that are in the form *SAMPLE.bam* (e.g. B.bam). A log file is also kept, using the same file name and *log* extension.
 
-	{
-		orientation = portrait;
-		"aa nr" [color = "#FFFF66", shape = "flowchart.database"];
-	  	"Script" [color = "#AA99FF" , textcolor = 'black'];
-	  	"Uniprot Taxonomy" [color = "#66FF99", shape = "flowchart.database"];
-	  	GFF [color = "#66FF99"];
-	  	BLAST [color = "#FFCC66"];
-  		"aa nr" -> BLAST -> "Script" -> GFF;
-  		"Uniprot Taxonomy" -> "Script";
-    }
+The alignments made need to be sorted, and the following BASH loop give an example of this::
 
-While the functional/taxonomic assignment with this pipeline is useful, it is limited by the number of sequences available for each taxonomic level [#]_. This is a loss of information, which can be mitigated by using `BLAST <http://blast.ncbi.nlm.nih.gov/>`_. The strategy is to use only the :term:`aa` sequences predicted by HMMER and searching the aa nr database and use the taxonomic information to refine the assignment made with HMMER.
+	$ for file in *.bam; do
+		samtools sort -T tmp.$file -O bam -o `basename $file .bam`-sort.bam $file;
+		mv `basename $file .bam`-sort.bam $file;
+		samtools index $file;
+	done
 
-BLASTP 2.2.25+, tab output
+.. note::
+
+	samtools 1.2 (at least) needs to specify the format and temp file prefix. Later version may not require it.
+
+The result is BAM files with the sample names, as before.
+
+Coverage and Expected SNPs
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The alignments can now be used also to add coverage information to the GFF file, which is needed for another script in the pipeline. Because sample names are needed, as the per sample coverage information is store as *sample_cov*, adding a suffix *_cov* after the sample name, the following command infers the sample names from the BAM files::
+
+	$ export SAMPLES=$(for file in *.bam; do echo -a `basename $file .bam`,$file ;done)
+
+The *SAMPLES* environment variable is used for the script *add-gff-info*, in particular its *coverage* command::
+
+	$ add-gff-info coverage $SAMPLES assembly.filt.gff | \
+	add-gff-info exp_syn -r final-contigs.fa > assembly.filt.cov.gff
+
+To also add the information about the expected number of synonymous and non-synonymous changes for each annotation, the *exp_syn* command for the *add-gff-info* was used. The file is then saved as *assembly.filt.cov.gff*.
+
+The *SAMPLES* variable can now be unset::
+
+	$ unset SAMPLES
 
 SNP Calling
 -----------
 
-Preparing Data
-^^^^^^^^^^^^^^
+In this tutorial, it was decided to use samtools/bcftools to call SNPs, as GATK can require too much memory and time. The following command calls SNPs for all samples, writing a *assembly.vcf* file to disk::
 
-
-
-SNP analysis
-------------
-
-Overview
-^^^^^^^^
-
-.. blockdiag::
-
-	{
-		"Data preparation" [color = "#AA99FF" , textcolor = 'white'];
-		"Data preparation"  -> snp_parser.py;
-	}
-
-Data preparation steps
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. blockdiag::
-	
-	{
-		group
-		{
-			"Alignments", "VCF files", SNPDat, "VCF Merge";
-			color = "#AA99FF";
-		}
-
-		"Alignments" [stacked];
-		"VCF files" [stacked];
-		SNPDat [stacked];
-		"Alignments" -> "VCF files" -> SNPDat -> snp_parser.py;
-		"VCF files" -> "VCF Merge" -> snp_parser.py;
-	}
-
-The workflow starts with a number of alignments passed to the SNP calling
-software, which produces one VCF file per alignment/sample. These VCF files are
-used by `SNPDat <http://code.google.com/p/snpdat/>`_ along a GTF file and the
-reference genome to integrate the information in VCF files with
-synonymous/non-synonymous information.
-
-All VCF files are merged into a VCF that includes information about all the SNPs called among all samples. This merged VCF is passed, along with the results from SNPDat and the GFF file to snp_parser.py which integrates information from all data sources and output files in a format that can be later used by the rest of the pipeline. [#]_
+	$ samtools mpileup -t DP,SP,DPR,DV -ugf final-contigs.fa *.bam \
+	| bcftools call -vmO v > assembly.vcf
 
 .. note::
 
-	The GFF file passed to the parser must have per sample coverage information.
+	samtools version 1.2 and bcftools version 1.0 were tested
 
-.. glossary::
-	:sorted:
+Using the VCF file created, the *snp_parser* script included in MGKit can be used:
 
-	aa
-	AA
-	  short for aminoacid (sequence)
+.. code-block:: bash
 
-	1-based
-	  meaning that the first element of a sequence start with 1
+	export SAMPLES=$(for file in *.bam; do echo -m `basename $file .bam`;done)
 
-	0-based
-	  meaning that the first element of a sequence start with 0
+	snp_parser -s -v -g assembly.filt.cov.gff -p assembly.vcf \
+	-a seqs/final-contigs.fa $SAMPLES
 
+	unset SAMPLES
 
-.. rubric:: Footnotes
+The *SAMPLES* variable is dynamically created to help write the command line for *snp_parser* and after its execution can be unset. The command line is different compared to :ref:`simple-tutorial`, as *-s* was added to distinguish the type of sample information in the VCF, as outputted by *bcftools*, compared to one created using GATK (the default type for *snp_parser*).
 
-.. [#] HMMER needs an alignment to work correctly, so at least two genes are
-	needed for each assignment. In fact the  `download_profiles` script will
-	skip those gene-taxon profiles that have only one gene.
+Full Bash Script
+----------------
 
-.. [#] This step is done separately because it's both time consuming and can
-	helps to paralellise later steps.
+.. literalinclude:: ../examples/tutorial-hmmer.sh
+   :language: bash
+   :linenos:
