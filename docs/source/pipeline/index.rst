@@ -8,4 +8,5 @@ This section detailed information about example pipelines made using the framewo
 
    gene_prediction
    tutorial
-   Exploring-Metagenomic-Data
+   simple-tutorial-notebook
+   pipeline-hmmer

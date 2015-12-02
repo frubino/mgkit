@@ -1,3 +1,5 @@
+.. _simple-tutorial:
+
 Tutorial
 ========
 
@@ -5,7 +7,7 @@ The aim of this tutorial is to show how to build a pipeline to analyse metagenom
 
 We're going to use `Peru Margin Subseafloor Biosphere <https://www.ebi.ac.uk/metagenomics/project/SRP000183>`_ as an example, which can be download from the ENA website.
 
-For more information about the pipeline, you can refer to the :ref:`metagenome-pipeline` section of the documentation. This tutorial is expected to run on a
+For a pipeline using another approach, you can refer to the :ref:`hmmer-tutorial` section of the documentation. This tutorial is expected to run on a
 UNIX (Linux/MacOSX/Solaris), with the bash shell running, because of some of
 the loops (not tested with other shells).
 
@@ -279,7 +281,7 @@ and this for Enzyme Classification::
 
     $ wget ftp://ftp.expasy.org/databases/enzyme/enzclass.txt
 
-The IPython notebook with the data analysis is in the " Exploring Metagenomic Data". A converted python script is included in :ref:`explore-data-script`
+The IPython notebook with the data analysis is in the :ref:`Explore Data <simple-tutorial-notebook>`. A converted python script is included in :ref:`explore-data-script`
 
 .. _full-script:
 
