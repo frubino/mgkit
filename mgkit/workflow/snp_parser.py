@@ -10,18 +10,24 @@ from a GFF file, SNP data from a VCF file.
 
     The script accept gzipped VCF files
 
-.. [#] GATK pipeline was the one tested at this time
+.. [#] GATK pipeline was tested, but it is possible to use samtools and bcftools
 
 Changes
 *******
 
-.. versionchanged:: 0.1.13
-    reworked the internals and the classes used, including options `-m` and `-s`
+.. versionchanged:: 0.2.1
+    added *-s* option for VCF files generated using bcftools
 
 .. versionchanged:: 0.1.16
     reworkked internals and removed SNPDat, syn/nonsyn evaluation is internal
 
+.. versionchanged:: 0.1.13
+    reworked the internals and the classes used, including options `-m` and `-s`
+
+
 """
+
+from __future__ import division
 
 import HTSeq
 import logging
@@ -112,6 +118,13 @@ def set_parser():
         default='_cov',
         help="Per sample coverage suffix in the GFF"
     )
+    parser.add_argument(
+        '-s',
+        '--bcftools-vcf',
+        action='store_true',
+        default=False,
+        help="bcftools call was used to produce the VCF file"
+    )
 
     utils.add_basic_options(parser)
 
@@ -150,7 +163,7 @@ def init_count_set(annotations):
 
 def check_snp_in_set(samples, snp_data, pos, change, annotations, seq):
     """
-    Used by :func:`parse_vcf` to check if a SNP is in a SNPDat result file
+    Used by :func:`parse_vcf` to check if a SNP
 
     :param iterable samples: list of samples that contain the SNP
     :param dict snp_data: dictionary from :func:`init_count_set` with per
@@ -174,7 +187,7 @@ def check_snp_in_set(samples, snp_data, pos, change, annotations, seq):
 
 
 def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
-              seqs, line_num=100000):
+              seqs, options, line_num=100000):
     """
     Parse VCF file counts synonymous and non-synonymous SNPs
 
@@ -202,6 +215,8 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
     skip_af = 0
     #number of SNPs skipped for low quality
     skip_qual = 0
+    # indels
+    skip_indels = 0
 
     for vcf_record in vcf_handle:
         # the SNP is a sequence with no annotations
@@ -216,6 +231,10 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
         #unpack info records (needed for vcf_record.info to be a dictionary)
         vcf_record.unpack_info(vcf_handle.infodict)
 
+        if vcf_record.info['INDEL']:
+            skip_indels += 1
+            continue
+
         #controllare perche' questo controllo e' qui
         if not isinstance(vcf_record.info['DP'], int):
             LOG.warning(vcf_record.info['DP'])
@@ -225,7 +244,19 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
             skip_dp += 1
             continue
 
-        allele_freqs = vcf_record.info['AF']
+        # Samtools mpileup -> bcftools call doesn't output the allele freq.
+        # it can be calculated with AC/AN for eac ALT nucleotide
+        # checked on bfctools (roh command) manual
+        # https://samtools.github.io/bcftools/bcftools.html
+        try:
+            allele_freqs = vcf_record.info['AF']
+        except KeyError:
+            if isinstance(vcf_record.info['AC'], list):
+                allele_freqs = [
+                    AC / vcf_record.info['AN'] for AC in vcf_record.info['AC']
+                ]
+            else:
+                allele_freqs = vcf_record.info['AC'] / vcf_record.info['AN']
 
         #if the allele frequency is a single value, make it a list, so
         #the iteration below works anyway
@@ -233,18 +264,31 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
             allele_freqs = [allele_freqs]
 
         # alt is the nucleotidic change
-        for allele_freq, change in zip(allele_freqs, vcf_record.alt):
+        iter_data = zip(allele_freqs, vcf_record.alt)
+        for alt_index, (allele_freq, change) in enumerate(iter_data):
             if allele_freq < min_af:
                 #the allele frequency for the SNP is too low, it'll be
                 #skipped
                 skip_af += 1
                 continue
 
-            #the samples that contain the SNP is a string separated by '-'
-            samples = [
-                sample
-                for sample in vcf_record.info['set'].split('-')
-            ]
+            # the samples that contain the SNP is a string separated by '-'
+            if options.bcftools_vcf:
+                samples = set()
+                for sample_id, sample_info in vcf_record.samples.iteritems():
+                    # prepare the genotype list, to make the comparison easier
+                    # the genotype separator to '/' only, to use only one
+                    # type of split
+                    for genotype in sample_info['GT'].replace('|', '/').split('/'):
+                        if genotype == '.':
+                            continue
+                        if int(genotype) == (alt_index + 1):
+                            samples.add(sample_id)
+            else:
+                samples = [
+                    sample
+                    for sample in vcf_record.info['set'].split('-')
+                ]
             check_snp_in_set(
                 samples,
                 snp_data,
@@ -259,8 +303,9 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
         if vcf_handle.line_no % line_num == 0:
             LOG.info(
                 "Line %d, SNPs passed %d; skipped for: qual %d, " +
-                "depth %d, freq %d",
-                vcf_handle.line_no, count_tot, skip_qual, skip_dp, skip_af
+                "depth %d, freq %d, indels %d",
+                vcf_handle.line_no, count_tot, skip_qual, skip_dp, skip_af,
+                skip_indels
             )
 
 
@@ -311,7 +356,8 @@ def main():
         options.min_freq,
         options.min_qual,
         annotations,
-        seqs
+        seqs,
+        options
     )
 
     save_data(options.output_file, snp_data)
