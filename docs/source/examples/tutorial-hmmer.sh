@@ -15,6 +15,15 @@ export EMAIL=your@email
 # clustalo 	- 1.2.1
 # megahit	- 1.0.3
 
+# python packages
+# HTSeq>=0.6.1
+# pandas>=0.17.1
+# pysam>=0.8.4
+# scipy>=0.16.1
+# semidbm>=0.5.1
+# matplotlib>=1.5
+# seaborn>=0.6
+
 # Requirements specific for Mac OS X (El Capitan, 10.11), uncomment these lines
 # brew install wget homebrew/science/velvet homebrew/science/bowtie2 \
 # homebrew/science/samtools pyenv-virtualenv homebrew/science/hmmer \

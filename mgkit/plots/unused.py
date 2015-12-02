@@ -8,7 +8,6 @@ from __future__ import division
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from mpl_toolkits.mplot3d import Axes3D
 from ..utils.common import deprecated
 import numpy
 import logging

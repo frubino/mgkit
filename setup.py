@@ -42,7 +42,7 @@ setup(
     ],
     tests_require=['nose>=1.3.4', 'yanc'],
     extras_require={
-        'htseq': ['HTSeq>=0.6.1p1'],
+        'htseq': ['HTSeq>=0.6.0'],
         'R': 'rpy2>=2.3.8',
     },
     entry_points={
