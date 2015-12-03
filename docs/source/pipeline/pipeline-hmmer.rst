@@ -14,6 +14,10 @@ This example pipeline explore three different aspects from the :ref:`simple-tuto
 	#. making custom HMMER profiles
 	#. the use of samtools/bcftools for SNP calling
 
+.. hint::
+
+	The normalisation assembly and profile building steps take a long time, with high relatively high memory requirements. Moreover, the profile building requires an active network connection. The complete assembly is available in this tutorial data, as well as the built HMM profile. These can be used if you are stuck on one of those steps.
+
 Requirements
 ------------
 

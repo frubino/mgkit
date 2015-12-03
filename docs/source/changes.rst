@@ -21,6 +21,8 @@ Added
 * added `-ft` option to `blast2gff` script
 * added `-ko` option to `download_profiles`
 * added new HMMER tutorial
+* added another notebook to the plot examples, for misc. tips
+* added a script that downloads from figshare the tutorial data]
 
 Changed
 *******
@@ -32,6 +34,7 @@ Changed
 * :meth:`mgkit.taxon.UniprotTaxonomy.read_taxonomy`
 * :func:`mgkit.taxon.parse_uniprot_taxon`
 * changed behaviour of `hmmer2gff` script
+* changed tutorial notebook to specify the directory where the data is
 
 Deprecated
 **********
