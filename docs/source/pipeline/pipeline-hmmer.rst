@@ -67,7 +67,7 @@ The data that will be used is from the `Analysis of metagenome in a full scale t
 	* PA (Primary aeration)
 	* SD (Sludge digestion)
 
-As it involves waste water management, it's interesting to understang the diversity of the genes involved in the nitrogen metabolism.
+As it involves waste water management, it's interesting to understand the diversity of the genes involved in the nitrogen metabolism.
 
 The raw reads files can be downloaded with the following command::
 

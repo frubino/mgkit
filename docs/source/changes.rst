@@ -20,6 +20,7 @@ Added
 * added `kegg` command to `add-gff-info` script, caching results and `-d` option to `uniprot` command
 * added `-ft` option to `blast2gff` script
 * added `-ko` option to `download_profiles`
+* added new HMMER tutorial
 
 Changed
 *******
