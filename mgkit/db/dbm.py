@@ -72,4 +72,11 @@ class GFFDB(object):
 
     def __iter__(self):
         for uid in self.db:
-            yield self[uid]
+            yield uid
+
+    def items(self):
+        for uid in self:
+            yield uid, self[uid]
+
+    def iteritems(self):
+        return self.items()
