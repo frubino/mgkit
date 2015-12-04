@@ -8,3 +8,4 @@ Example notebooks are included about using the library
    :glob:
 
    plots/*
+   db/example-annotation-db-package
