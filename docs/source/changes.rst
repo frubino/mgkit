@@ -23,6 +23,7 @@ Added
 * added new HMMER tutorial
 * added another notebook to the plot examples, for misc. tips
 * added a script that downloads from figshare the tutorial data]
+* Added function to get an enzyme full name (:func:`mgkit.mappings.enzyme.get_enzyme_full_name`)
 
 Changed
 *******
