@@ -281,6 +281,9 @@ and this for Enzyme Classification::
 
     $ wget ftp://ftp.expasy.org/databases/enzyme/enzclass.txt
 
+IPython Notebook
+----------------
+
 The IPython notebook with the data analysis is in the :ref:`Explore Data <simple-tutorial-notebook>`. A converted python script is included in :ref:`explore-data-script`
 
 .. _full-script:

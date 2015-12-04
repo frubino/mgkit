@@ -10,3 +10,4 @@ This section detailed information about example pipelines made using the framewo
    tutorial
    simple-tutorial-notebook
    pipeline-hmmer
+   hmmer-tutorial-notebook

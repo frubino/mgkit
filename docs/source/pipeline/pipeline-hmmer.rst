@@ -341,9 +341,23 @@ Using the VCF file created, the *snp_parser* script included in MGKit can be use
 
 The *SAMPLES* variable is dynamically created to help write the command line for *snp_parser* and after its execution can be unset. The command line is different compared to :ref:`simple-tutorial`, as *-s* was added to distinguish the type of sample information in the VCF, as outputted by *bcftools*, compared to one created using GATK (the default type for *snp_parser*).
 
+IPython Notebook
+----------------
+
+The IPython notebook with the data analysis is in the :ref:`Explore Data <hmmer-tutorial-notebook>`. A converted python script is included in :ref:`explore-data-hmmer-script`
+
 Full Bash Script
 ----------------
 
 .. literalinclude:: ../examples/tutorial-hmmer.sh
    :language: bash
+   :linenos:
+
+.. _explore-data-hmmer-script:
+
+Explore Data Python Script
+--------------------------
+
+.. literalinclude:: hmmer-tutorial-explore-data.py
+   :language: python
    :linenos:
