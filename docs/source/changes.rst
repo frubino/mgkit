@@ -23,7 +23,8 @@ Added
 * added new HMMER tutorial
 * added another notebook to the plot examples, for misc. tips
 * added a script that downloads from figshare the tutorial data]
-* Added function to get an enzyme full name (:func:`mgkit.mappings.enzyme.get_enzyme_full_name`)
+* added function to get an enzyme full name (:func:`mgkit.mappings.enzyme.get_enzyme_full_name`)
+* added example notebook for using GFF annotations and the :mod:`mgkit.db.dbm`, :mod:`mgkit.db.mongo` modules
 
 Changed
 *******
