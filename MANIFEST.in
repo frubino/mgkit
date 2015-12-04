@@ -4,4 +4,7 @@ recursive-include tests *.fa
 recursive-include tests *.py
 recursive-include tests *.gff
 recursive-exclude tests/mg_data *
+recursive-exclude docs/source/examples/db *.gz asse* gff-dbm
 recursive-exclude docs .DS_Store
+recursive-exclude . __MACOSX
+recursive-exclude docs/source/pipeline/ tutorial-*data*
