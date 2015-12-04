@@ -118,3 +118,38 @@ def change_mapping_level(ec_map, level=3):
         yield gene_id, set(
             get_enzyme_level(ec_id, level=level) for ec_id in ec_list
         )
+
+
+def get_enzyme_full_name(ec_id, ec_names, sep=', '):
+    """
+    .. versionadded:: 0.2.1
+
+    From a EC identifiers and a dictionary of names builds a comma separated
+    name (by default) that identifies the function of the enzyme.
+
+    Arguments:
+        ec_id (str): EC identifier
+        ec_names (dict): a dictionary of names that can be produced using
+            :func:`parse_expasy_file`
+        sep (str): string used to join the names
+
+    Returns:
+        str: the enzyme classification name
+    """
+
+    name_list = []
+
+    while True:
+        try:
+            name_list.append(
+                ec_names[ec_id]
+            )
+        except KeyError:
+            pass
+
+        ec_id = '.'.join(ec_id.split('.')[:-1])
+
+        if not ec_id:
+            break
+
+    return sep.join(reversed(name_list))
