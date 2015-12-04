@@ -80,3 +80,10 @@ class GFFDB(object):
 
     def iteritems(self):
         return self.items()
+
+    def values(self):
+        for uid in self:
+            yield self[uid]
+
+    def itervalues(self):
+        return self.values()
