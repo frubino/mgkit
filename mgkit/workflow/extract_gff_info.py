@@ -31,13 +31,21 @@ mongodb command
 Outputs annotations in a format supported by MongoDB. More information about it
 can be found in :mod:`mgkit.db.mongo`
 
+gtf command
+***********
+
+Outputs annotations in the GTF format
+
 Changes
 *******
 
-.. versionadded:: 0.1.15
+.. versionadded:: 0.2.2
+    added *gtf* command
 
 .. versionadded:: 0.2.1
     *dbm* and *mongodb* commands
+
+.. versionadded:: 0.1.15
 
 """
 
@@ -168,6 +176,16 @@ def mongodb_command(options):
         )
 
 
+def gtf_command(options):
+
+    for annotation in gff.parse_gff(options.input_file):
+        options.output_file.write(annotation.to_gtf(gene_id_attr='gene_id'))
+
+
+def set_gtf_parser(parser):
+    parser.set_defaults(func=gtf_command)
+
+
 def set_common_options(parser):
     parser.add_argument(
         'input_file',
@@ -221,6 +239,15 @@ def set_parser():
     set_mongodb_parser(parser_m)
     set_common_options(parser_m)
     utils.add_basic_options(parser_m)
+
+    parser_gtf = subparsers.add_parser(
+        'gtf',
+        help='Extract annotations from a GFF file to a GTF file'
+    )
+
+    set_gtf_parser(parser_gtf)
+    set_common_options(parser_gtf)
+    utils.add_basic_options(parser_gtf)
 
     utils.add_basic_options(parser)
 
