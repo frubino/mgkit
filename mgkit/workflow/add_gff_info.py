@@ -123,11 +123,26 @@ Adding Information from eggNOG
 The *eggnog* command allows to add information from the *annotations* file
 available for profiles in eggNOG.
 
+Adding Count Data
+*****************
+
+Count data on a per-sample basis can be added with the *counts* command. The
+accepted inputs are from HTSeq-count and featureCount. The ouput produced by
+featureCount, is the one from using its **-f** option must be used.
+
+This script accept by default a tab separated file, with a uid in the first
+column and the other columns are the counts for each sample, in the same order
+as they are passed to the **-s** option. To use the featureCount file format,
+this script **-e** option must be used.
+
+The sample names must be provided in the same order as the columns in the input
+files. If the counts are FPKMS the *-f* option can be used.
+
 Changes
 *******
 
 .. versionchanged:: 0.2.2
-    added *eggnog* command
+    added *eggnog* and *counts* command
 
 .. versionchanged:: 0.2.1
 
@@ -822,7 +837,8 @@ def read_lines_from_files(file_handles):
         for file_handle in file_handles
     ]
     for line in itertools.chain(*(x for x in file_handles)):
-        if line.startswith('#'):
+        # the __ is for HTSeq-count files, # for featureCount
+        if line.startswith('#') or line.startswith('__'):
             continue
         yield line.strip()
 
@@ -859,6 +875,94 @@ def set_eggnog_parser(parser):
         help="Annotations file"
     )
     parser.set_defaults(func=eggnog_command)
+
+
+def load_counts(count_files, samples, featureCount):
+    counts = {}
+
+    index = 6 if featureCount else 1
+
+    for line in read_lines_from_files(count_files):
+        # featureCount puts the header on the second line
+        # the first is skipped by read_lines_from_files
+        # as it starts with a #
+        if featureCount and line.startswith('Geneid'):
+            continue
+        line = line.split('\t')
+        uid = line[0]
+        if len(line[index:]) != len(samples):
+            utils.exit_script(
+                "The number of samples is not the same as the columns in the count file",
+                2
+            )
+        counts[uid] = {}
+        for sample, count in zip(samples, line[index:]):
+            count = float(count)
+            # to save some memory
+            if count == 0:
+                continue
+            counts[uid][sample] = count
+
+    LOG.info("Loaded counts for %s annotations", len(counts))
+
+    return counts
+
+
+def counts_command(options):
+    counts = load_counts(
+        options.count_files,
+        options.samples,
+        options.featureCount
+    )
+
+    key = "fpkms_{}" if options.fpkms else "counts_{}"
+
+    for annotation in gff.parse_gff(options.input_file):
+        try:
+            ann_counts = counts[annotation.uid]
+        except KeyError:
+            LOG.warning("No counts found for annotation %s", annotation.uid)
+            annotation.to_file(options.output_file)
+            continue
+
+        for sample in options.samples:
+            annotation.attr[key.format(sample)] = ann_counts.get(sample, 0)
+
+        annotation.to_file(options.output_file)
+
+
+def set_counts_parser(parser):
+    parser.add_argument(
+        '-s',
+        '--samples',
+        action='store',
+        required=True,
+        type=lambda x: x.split(','),
+        help="Comma separated sample names, in the same order as the count file"
+    )
+    parser.add_argument(
+        '-c',
+        '--count-files',
+        action='append',
+        required=True,
+        type=argparse.FileType('r'),
+        help="Count file(s)"
+    )
+    parser.add_argument(
+        '-f',
+        '--fpkms',
+        action='store_true',
+        default=False,
+        help="If the counts are FPKMS"
+    )
+    parser.add_argument(
+        '-e',
+        '--featureCount',
+        action='store_true',
+        default=False,
+        help="If the counts files are from featureCount (using the -f option)"
+    )
+    parser.set_defaults(func=counts_command)
 
 
 def set_parser():
@@ -935,6 +1039,15 @@ def set_parser():
     set_eggnog_parser(parser_eggnog)
     set_common_options(parser_eggnog)
     utils.add_basic_options(parser_eggnog)
+
+    parser_counts = subparsers.add_parser(
+        'counts',
+        help='Adds counts data to the GFF'
+    )
+
+    set_counts_parser(parser_counts)
+    set_common_options(parser_counts)
+    utils.add_basic_options(parser_counts)
 
     # top parser
     utils.add_basic_options(parser)
