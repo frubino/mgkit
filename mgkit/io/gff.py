@@ -1233,6 +1233,9 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
     .. versionchanged:: 0.2.1
         removed compatibility with old scripts
 
+    .. versionchanged:: 0.2.2
+        taxon_id and taxon_name are not saved for non-custom profiles
+
     Parse HMMER results (one line), it won't parse commented lines (starting
     with *#*)
 
@@ -1282,7 +1285,8 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
         reviewed = 'False' if profile_name.endswith('-nr') else 'True'
         gene_id, taxon_id, taxon_name = profile_name.split('_')
     else:
-        gene_id = taxon_id = taxon_name = profile_name
+        gene_id = profile_name
+        taxon_id = taxon_name = None
 
     annotation = Annotation(
         seq_id=contig,
@@ -1321,6 +1325,13 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
         annotation.attr['reviewed'] = reviewed
     except UnboundLocalError:
         pass
+
+    # removes the None values from non-custom profiles
+    if taxon_id is None:
+        del annotation.attr['taxon_id']
+
+    if taxon_name is None:
+        del annotation.attr['taxon_name']
 
     return annotation
 
