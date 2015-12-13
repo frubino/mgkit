@@ -75,3 +75,9 @@ The following keys are added by different scripts and may be used in different s
 	  - comma separated values
 	  - list of mapping to a specific db (e.g. eggNOG -> map_EGGNOG)
 	  - used by :meth:`mgkit.io.gff.Annotation.get_mapping`
+	* - counts_{any}
+	  - float
+	  - Stores the count data for a sample (e.g. counts_Sample1)
+	* - fpkms_{any}
+	  - float
+	  - Stores the count data for a sample (e.g. fpkms_Sample1)

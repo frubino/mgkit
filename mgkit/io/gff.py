@@ -438,6 +438,64 @@ class Annotation(GenomicRange):
         """
         return "{0}:{1}:{2}".format(self.seq_id, self.start, self.end)
 
+    @property
+    def counts(self):
+        """
+        .. versionadded:: 0.2.2
+
+        Returns the sample counts for the annotation
+        """
+        counts = {}
+
+        for key, value in self.attr.iteritems():
+            if key.startswith('counts_'):
+                key = key.replace('counts_', '')
+                counts[key] = float(value)
+
+        return counts
+
+    @counts.setter
+    def counts(self, counts):
+        """
+        .. versionadded:: 0.2.2
+
+        Sets the sample counts for the annotation
+
+        Arguments:
+            counts (dict): key is the sample name and the count for it
+        """
+        for key, value in counts.iteritems():
+            self.attr["counts_{}".format(key)] = value
+
+    @property
+    def fpkms(self):
+        """
+        .. versionadded:: 0.2.2
+
+        Returns the sample fpkms for the annotation
+        """
+        fpkms = {}
+
+        for key, value in self.attr.iteritems():
+            if key.startswith('fpkms_'):
+                key = key.replace('fpkms_', '')
+                fpkms[key] = float(value)
+
+        return fpkms
+
+    @fpkms.setter
+    def fpkms(self, fpkms):
+        """
+        .. versionadded:: 0.2.2
+
+        Sets the sample fpkms for the annotation
+
+        Arguments:
+            fpkms (dict): key is the sample name and the fpmk for it
+        """
+        for key, value in fpkms.iteritems():
+            self.attr["fpkms_{}".format(key)] = value
+
     def add_exp_syn_count(self, seq, syn_matrix=None):
         """
         .. versionadded:: 0.1.13
@@ -519,6 +577,9 @@ class Annotation(GenomicRange):
         """
         .. versionadded:: 0.2.1
 
+        .. versionchanged:: 0.2.2
+            added handling of *counts_* and *fpkms_*
+
         Returns a MongoDB document that represent the Annotation.
 
         Arguments:
@@ -559,6 +620,14 @@ class Annotation(GenomicRange):
 
         dictionary['map'] = mappings
 
+        counts = self.counts
+        if counts:
+            dictionary['counts'] = counts
+
+        fpkms = self.fpkms
+        if fpkms:
+            dictionary['fpkms'] = fpkms
+
         # the rest of the dictionary should be put, excluding special keys:
         # uid is used as _id in the document
         # EC is put as a array, as is any mapping like map_KO
@@ -567,7 +636,9 @@ class Annotation(GenomicRange):
                 (key, value)
                 for key, value in self.attr.iteritems()
                 if (key not in var_names) and (key not in ('uid', 'EC')) and
-                (not key.startswith('map_'))
+                (not key.startswith('map_')) and
+                (not key.startswith('counts_')) and
+                (not key.startswith('fpkms_'))
             )
         )
 
@@ -579,18 +650,20 @@ class Annotation(GenomicRange):
         """
         file_handle.write(self.to_gff())
 
-    def to_gtf(self, gene_id_attr='uid'):
+    def to_gtf(self, gene_id_attr='uid', sep=' '):
         """
         .. versionadded:: 0.1.15
 
         .. versionchanged:: 0.1.16
             added *gene_id_attr* parameter
 
+        .. versionchanged:: 0.2.2
+            added *sep* argument, default to a space, now
+
         Simple conversion to a valid GTF. gene_id and transcript_id are set to
         *uid* or the attribute specified using the *gene_id_attr* parameter.
         It's written to be used with *SNPDat*.
         """
-        sep = '='
         var_names = (
             'seq_id', 'source', 'feat_type', 'start', 'end',
             'score', 'strand', 'phase'
@@ -624,7 +697,7 @@ class Annotation(GenomicRange):
         ]
         attr_keys = gtf_attr + attr_keys
 
-        attr_column = ';'.join(
+        attr_column = '; '.join(
             '{0}{1}"{2}"'.format(
                 key,
                 sep,
@@ -1860,6 +1933,9 @@ def from_mongodb(record):
     """
     .. versionadded:: 0.2.1
 
+    .. versionchanged:: 0.2.2
+        added handling of *counts_* and *fpkms_*
+
     Returns a :class:`Annotation` instance from a MongoDB record (created)
     using :meth:`Annotation.to_mongodb`. The actual record returned by pymongo
     is a dictionary that is copied, manipulated and passed to the
@@ -1879,6 +1955,12 @@ def from_mongodb(record):
     mappings = record['map'].copy()
     del record['map']
 
+    counts = record['counts'].copy()
+    del record['counts']
+
+    fpkms = record['fpkms'].copy()
+    del record['fpkms']
+
     try:
         record['EC'] = ','.join(mappings['ec'])
         del mappings['ec']
@@ -1888,6 +1970,18 @@ def from_mongodb(record):
     try:
         for key in mappings:
             record['map_{}'.format(key.upper())] = ','.join(mappings[key])
+    except KeyError:
+        pass
+
+    try:
+        for key in counts:
+            record['counts_{}'.format(key)] = counts[key]
+    except KeyError:
+        pass
+
+    try:
+        for key in fpkms:
+            record['fpkms_{}'.format(key)] = fpkms[key]
     except KeyError:
         pass
 
