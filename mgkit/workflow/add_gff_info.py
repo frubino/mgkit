@@ -117,8 +117,17 @@ done using :meth:`mgkit.io.gff.Annotation.add_exp_syn_count` by the user of the
 command `exp_syn` of this script. The attributes added to each annotation are
 explained in the :ref:`gff-specs`
 
+Adding Information from eggNOG
+******************************
+
+The *eggnog* command allows to add information from the *annotations* file
+available for profiles in eggNOG.
+
 Changes
 *******
+
+.. versionchanged:: 0.2.2
+    added *eggnog* command
 
 .. versionchanged:: 0.2.1
 
@@ -154,7 +163,7 @@ from .. import align
 from .. import logger
 from .. import taxon
 from .. import kegg
-from ..io import gff, blast, fasta
+from ..io import gff, blast, fasta, compressed_handle
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
 
@@ -804,6 +813,54 @@ def set_uniprot_offline_parser(parser):
     parser.set_defaults(func=uniprot_offline_command)
 
 
+def read_lines_from_files(file_handles):
+    file_handles = [
+        compressed_handle(file_handle)
+        if file_handle.name.endswith('gz')
+        else file_handle
+
+        for file_handle in file_handles
+    ]
+    for line in itertools.chain(*(x for x in file_handles)):
+        if line.startswith('#'):
+            continue
+        yield line.strip()
+
+
+def eggnog_command(options):
+    base_info = {}
+    for line in read_lines_from_files(options.annotations_file):
+        level, gene_id, description, source = line.split('\t')
+        base_info[gene_id] = dict(
+            level=level,
+            description=description,
+            source=source
+        )
+    for annotation in gff.parse_gff(options.input_file):
+        try:
+            ann_info = base_info[annotation.gene_id]
+            for key, value in ann_info.iteritems():
+                annotation.set_attr(
+                    'eggnog_{}'.format(key),
+                    value
+                )
+        except KeyError:
+            LOG.warning('No annotation for gene_id %s', annotation.gene_id)
+        annotation.to_file(options.output_file)
+
+
+def set_eggnog_parser(parser):
+    parser.add_argument(
+        '-a',
+        '--annotations-file',
+        action='append',
+        required=True,
+        type=argparse.FileType('r'),
+        help="Annotations file"
+    )
+    parser.set_defaults(func=eggnog_command)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -870,6 +927,16 @@ def set_parser():
     set_common_options(parser_k)
     utils.add_basic_options(parser_k)
 
+    parser_eggnog = subparsers.add_parser(
+        'eggnog',
+        help='Adds information from eggNOG'
+    )
+
+    set_eggnog_parser(parser_eggnog)
+    set_common_options(parser_eggnog)
+    utils.add_basic_options(parser_eggnog)
+
+    # top parser
     utils.add_basic_options(parser)
 
     return parser
