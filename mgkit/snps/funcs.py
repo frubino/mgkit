@@ -183,8 +183,11 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
 
 
 def combine_sample_snps(snps_data, min_num, filters, index_type=None,
-                        gene_func=None, taxon_func=None):
+                        gene_func=None, taxon_func=None, use_uid=False):
     """
+    .. versionchanged:: 0.2.2
+        added *use_uid* argument
+
     Combine a dictionary sample->gene_index->GeneSyn into a
     :class:`pandas.DataFrame`. The dictionary is first filtered with the
     functions in `filters`, mapped to different taxa and genes using
@@ -210,6 +213,8 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
         taxon_func (func): a function to map a taxon_id to a list of IDs. See
             :mod:`.mapper.map_taxon_id_to_rank` or
             :mod:`.mapper.map_taxon_id_to_ancestor` for examples
+        use_uid (bool): if True, uses the `GeneSNP.uid` instead of
+            `GeneSNP.gene_id`
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` with the pN/pS values for the input
@@ -230,13 +235,13 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
 
         for gene_syn in pipe_filters(genes_dict.itervalues(), *filters):
 
-            #in old data the gene_id was in the form K00001.UID
-            #it's now allowed anymore
+            # in old data the gene_id was in the form K00001.UID
+            # it's now allowed anymore
             if isinstance(gene_syn, GeneSyn):
                 gene_syn.gene_id = gene_syn.gene_id.split('.')[0]
 
             iter_func = itertools.product(
-                gene_func(gene_syn.gene_id),
+                gene_func(gene_syn.uid if use_uid else gene_syn.gene_id),
                 taxon_func(gene_syn.taxon_id)
             )
 
@@ -249,14 +254,14 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                 else:
                     key = (gene_id, taxon_id)
 
-                #we don't care about info about ids and so on, only syn/nonsyn
-                #and coverage, to use the calc_ratio method
+                # we don't care about info about ids and so on, only syn/nonsyn
+                # and coverage, to use the calc_ratio method
                 try:
                     sample_dict[sample][key].add(gene_syn)
                 except KeyError:
-                    #Needed with the new GeneSNP, because copies the references
-                    #and the number of SNPs raises (the original data structure
-                    #is modified)
+                    # Needed with the new GeneSNP, because copies the references
+                    # and the number of SNPs raises (the original data structure
+                    # is modified)
                     sample_dict[sample][key] = copy.deepcopy(gene_syn)
 
                 multi_index.add(key)
@@ -269,9 +274,9 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
     else:
         multi_index = pandas.Index(multi_index)
 
-    #we already satisfied a minimum coverage filter or at least if doesn't
-    #matter in the calculation anymore, using haplotypes=True, the special
-    #case where syn=nonsyn=0 will result in a 0 as pN/pS for a GeneSyn instance
+    # we already satisfied a minimum coverage filter or at least if doesn't
+    # matter in the calculation anymore, using haplotypes=True, the special
+    # case where syn=nonsyn=0 will result in a 0 as pN/pS for a GeneSyn instance
     sample_dict = dict(
         (
             sample,
