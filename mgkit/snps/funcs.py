@@ -9,7 +9,6 @@ import pandas
 import scipy.stats
 import csv
 import copy
-from .classes import GeneSyn
 from .filter import pipe_filters
 
 LOG = logging.getLogger(__name__)
@@ -234,11 +233,6 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
         LOG.info('Analysing SNP from sample %s', sample)
 
         for gene_syn in pipe_filters(genes_dict.itervalues(), *filters):
-
-            # in old data the gene_id was in the form K00001.UID
-            # it's now allowed anymore
-            if isinstance(gene_syn, GeneSyn):
-                gene_syn.gene_id = gene_syn.gene_id.split('.')[0]
 
             iter_func = itertools.product(
                 gene_func(gene_syn.uid if use_uid else gene_syn.gene_id),
