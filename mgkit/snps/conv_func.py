@@ -9,9 +9,12 @@ import mgkit.snps.mapper
 
 
 def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order',
-                       index_type='taxon'):
+                       index_type='taxon', filters=None):
     """
     .. versionadded:: 0.1.11
+
+    .. versionchanged:: 0.2.2
+        added *filters* argument
 
     Returns a :class:`~pandas.DataFrame` with the pN/pS of the given
     SNPs data, mapping all taxa to the specified rank. Higher taxa won't
@@ -30,6 +33,8 @@ def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order',
         rank (str): taxon rank to map. Valid ranks are found in
             :data:`mgkit.taxon.TAXON_RANKS`
         index_type (str, None): type of index to return
+        filters (iterable): list of filters to apply, otherwise uses the
+            default filters
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
@@ -41,7 +46,8 @@ def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order',
         rank=rank
     )
 
-    filters = mgkit.snps.filter.get_default_filters(taxonomy)
+    if filters is None:
+        filters = mgkit.snps.filter.get_default_filters(taxonomy)
 
     dataframe = mgkit.snps.funcs.combine_sample_snps(
         snp_data,
@@ -56,9 +62,12 @@ def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order',
 
 
 def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3,
-                           index_type='gene'):
+                           index_type='gene', filters=None):
     """
     .. versionadded:: 0.1.11
+
+    .. versionchanged:: 0.2.2
+        added *filters* argument
 
     Returns a :class:`~pandas.DataFrame` with the pN/pS of the given
     SNPs data, mapping all taxa to the gene map.
@@ -75,6 +84,8 @@ def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3,
         gene_map (dict): dictionary of mapping for the gene_ids in in SNPs
             data
         index_type (str, None): type of index to return
+        filters (iterable): list of filters to apply, otherwise uses the
+            default filters
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
@@ -85,7 +96,8 @@ def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3,
         gene_map=gene_map
     )
 
-    filters = mgkit.snps.filter.get_default_filters(taxonomy)
+    if filters is None:
+        filters = mgkit.snps.filter.get_default_filters(taxonomy)
 
     dataframe = mgkit.snps.funcs.combine_sample_snps(
         snp_data,
@@ -99,9 +111,13 @@ def get_gene_map_dataframe(snp_data, taxonomy, gene_map, min_num=3,
     return dataframe
 
 
-def get_full_dataframe(snp_data, taxonomy, min_num=3, index_type=None):
+def get_full_dataframe(snp_data, taxonomy, min_num=3, index_type=None,
+                       filters=None):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.2.2
+        added *filters* argument
 
     Returns a :class:`~pandas.DataFrame` with the pN/pS of the given
     SNPs data.
@@ -115,13 +131,16 @@ def get_full_dataframe(snp_data, taxonomy, min_num=3, index_type=None):
         min_num (int): minimum number of samples in which a valid pN/pS
             is found
         index_type (str, None): type of index to return
+        filters (iterable): list of filters to apply, otherwise uses the
+            default filters
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
         is None (gene-taxon)
     """
 
-    filters = mgkit.snps.filter.get_default_filters(taxonomy)
+    if filters is None:
+        filters = mgkit.snps.filter.get_default_filters(taxonomy)
 
     dataframe = mgkit.snps.funcs.combine_sample_snps(
         snp_data,
@@ -136,9 +155,12 @@ def get_full_dataframe(snp_data, taxonomy, min_num=3, index_type=None):
 
 
 def get_gene_taxon_dataframe(snp_data, taxonomy, gene_map, min_num=3,
-                             rank='genus', index_type=None):
+                             rank='genus', index_type=None, filters=None):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.2.2
+        added *filters* argument
 
     .. todo::
 
@@ -159,6 +181,8 @@ def get_gene_taxon_dataframe(snp_data, taxonomy, gene_map, min_num=3,
         gene_map (dict): dictionary of mapping for the gene_ids in in SNPs
             data
         index_type (str, None): type of index to return
+        filters (iterable): list of filters to apply, otherwise uses the
+            default filters
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
@@ -178,7 +202,8 @@ def get_gene_taxon_dataframe(snp_data, taxonomy, gene_map, min_num=3,
             rank=rank
         )
 
-    filters = mgkit.snps.filter.get_default_filters(taxonomy)
+    if filters is None:
+        filters = mgkit.snps.filter.get_default_filters(taxonomy)
 
     dataframe = mgkit.snps.funcs.combine_sample_snps(
         snp_data,
