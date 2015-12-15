@@ -7,15 +7,16 @@ import logging
 import numpy
 import enum
 import json
-from ..consts import MIN_COV
-from ..utils.common import deprecated
 
 LOG = logging.getLogger(__name__)
 
 
 class RatioMixIn(object):
-    def calc_ratio(self, flag_value=False, min_cov=None, haplotypes=False):
+    def calc_ratio(self, haplotypes=False):
         """
+        .. versionchanged:: 0.2.2
+            split the function to handle *flag_value* in another method
+
         Calculate :math:`\\frac {pN}{pS}` for the gene.
 
         .. math::
@@ -85,9 +86,6 @@ class RatioMixIn(object):
             +------------+------------+------------+----------+--------------+
 
         """
-        #set the minimum coverage value if not specified
-        if min_cov is None:
-            min_cov = MIN_COV
 
         #Both values are non-zero
         if (self.nonsyn != 0) and (self.syn != 0):
@@ -99,36 +97,37 @@ class RatioMixIn(object):
         elif (self.nonsyn == 0) and (self.syn == 0) and haplotypes:
             return 0
 
-        #case in which a coverage attribute is specified, in this case we don't
-        #need to flag the return value
-        #getattr is used in case the value was not initialized, in cases like
-        #a deserialized instance had no coverage value
-        if getattr(self, 'coverage', None) is not None:
-            if (self.nonsyn == 0) and (self.syn == 0):
-                if self.coverage >= min_cov:
-                    # LOG.debug("Coverage (%d) OK", min_cov)
-                    return 0
-                # LOG.debug("Coverage (%d) KO", min_cov)
-
-        if flag_value:
-            if self.nonsyn != 0:
-                #there's at least non-synonymous count but no synonymous one
-                #this will be converted in the max value for the matrix or
-                #to some other value (-1 flag this case)
-                if self.syn == 0:
-                    return -1
-            else:
-                #there's at least a synonymous count but no non-synonymous one
-                #this will be converted in the max value for the matrix or
-                #to some other value (-2 flag this case)
-                if self.syn != 0:
-                    return -2
-                else:
-                    #There's no changes in the gene at at all. It should be
-                    #checked if that gene has coverage.
-                    return -3
-
         return numpy.nan
+
+    def calc_ratio_flag(self):
+        """
+        .. versionadded:: 0.2.2
+
+        Handles cases where it's important to flag the returned value, as
+        explained in :meth:`GeneSNP.calc_ratio`
+        """
+        # Both values are non-zero
+        if (self.nonsyn != 0) and (self.syn != 0):
+            pn_value = self.nonsyn / self.exp_nonsyn
+            ps_value = self.syn / self.exp_syn
+            return pn_value / ps_value
+
+        if self.nonsyn != 0:
+            #there's at least non-synonymous count but no synonymous one
+            #this will be converted in the max value for the matrix or
+            #to some other value (-1 flag this case)
+            if self.syn == 0:
+                return -1
+        else:
+            #there's at least a synonymous count but no non-synonymous one
+            #this will be converted in the max value for the matrix or
+            #to some other value (-2 flag this case)
+            if self.syn != 0:
+                return -2
+            else:
+                #There's no changes in the gene at at all. It should be
+                #checked if that gene has coverage.
+                return -3
 
 
 class SNPType(enum.Enum):

@@ -182,7 +182,8 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
 
 
 def combine_sample_snps(snps_data, min_num, filters, index_type=None,
-                        gene_func=None, taxon_func=None, use_uid=False):
+                        gene_func=None, taxon_func=None, use_uid=False,
+                        flag_values=False):
     """
     .. versionchanged:: 0.2.2
         added *use_uid* argument
@@ -214,6 +215,8 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
             :mod:`.mapper.map_taxon_id_to_ancestor` for examples
         use_uid (bool): if True, uses the `GeneSNP.uid` instead of
             `GeneSNP.gene_id`
+        flag_values (bool): if True, :meth:`mgkit.snps.classes.GeneSNP.calc_ratio_flag`
+            will be used, instead of :meth:`mgkit.snps.classes.GeneSNP.calc_ratio`
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` with the pN/pS values for the input
@@ -275,7 +278,7 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
         (
             sample,
             dict(
-                (key, gene.calc_ratio(haplotypes=True))
+                (key, gene.calc_ratio_flag() if flag_values else gene.calc_ratio(haplotypes=True))
                 for key, gene in row_dict.iteritems()
             )
         )
