@@ -988,12 +988,28 @@ def gitaxa_command(options):
             gids=gids)
     )
 
+    if options.taxonomy is not None:
+        taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+
     for annotation in annotations:
         try:
             taxon_id = gids[annotation.attr[options.gi_attr]]
             annotation.taxon_id = taxon_id
         except KeyError:
             pass
+
+        if options.taxonomy is not None:
+            try:
+                annotation.attr['taxon_name'] = taxonomy[taxon_id].s_name
+                annotation.attr['lineage'] = ','.join(
+                    taxon.get_lineage(
+                        taxonomy,
+                        taxon_id,
+                        names=True
+                    )
+                )
+            except KeyError:
+                LOG.warning("Taxon ID %d not found in the Taxonomy", taxon_id)
 
         annotation.to_file(options.output_file)
 
@@ -1014,6 +1030,17 @@ def set_gitaxa_parser(parser):
         default='gene_id',
         help="""
         In which attribute the GI is stored (defaults to *gene_id*)"""
+    )
+    parser.add_argument(
+        '-x',
+        '--taxonomy',
+        action='store',
+        type=argparse.FileType('r'),
+        default=None,
+        help="""
+        Taxonomy file - If given, both *taxon_name* and *lineage* attributes
+        will be set
+        """
     )
     parser.set_defaults(func=gitaxa_command)
 
