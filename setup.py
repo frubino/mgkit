@@ -11,7 +11,8 @@ install_requires = [
     'pysam>=0.8.2.1',
     'pandas>=0.16.2',
     'scipy>=0.15.1',
-    'semidbm>=0.5.1'
+    'semidbm>=0.5.1',
+    # 'cachetools>=1.1.5'
     #'matplotlib>=1.4.3',
     #'goatools',
     # 'networkx>=1.9.1',

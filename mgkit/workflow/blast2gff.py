@@ -22,8 +22,17 @@ is CDS.
         "BLAST+"  -> "parse_uniprot_blast" -> GFF;
     }
 
+BlastDB
+*******
+
+If a BlastDB, such as *nt* or *nr* was used, the **blastdb** command offers
+some quick defaults to parse BLAST results.
+
 Changes
 *******
+
+.. versionadded:: 0.2.2
+    added *blastdb* command
 
 .. versionchanged:: 0.2.1
 
@@ -128,6 +137,43 @@ def set_uniprot_parser(parser):
     parser.set_defaults(func=convert_from_uniprot)
 
 
+def set_blastdb_parser(parser):
+    """
+    .. versionadded:: 0.2.2
+    """
+    parser.add_argument(
+        '-db',
+        '--db-used',
+        action='store',
+        type=str,
+        default='NCBI-NT',
+        help='blastdb used'
+    )
+
+    parser.set_defaults(func=convert_from_blastdb)
+
+
+def convert_from_blastdb(options):
+    """
+    .. versionadded:: 0.2.2
+    """
+    iterator = blast.parse_uniprot_blast(
+        options.input_file,
+        bitscore=options.bitscore,
+        db=options.db_used,
+        dbq=options.db_quality,
+        name_func=None,
+        feat_type=options.feat_type
+    )
+
+    for annotation in iterator:
+        if options.attr_value is not None:
+            for key, value in options.attr_value:
+                annotation.set_attr(key, value)
+
+        annotation.to_file(options.output_file)
+
+
 def convert_from_uniprot(options):
 
     if options.no_split is True:
@@ -154,6 +200,9 @@ def convert_from_uniprot(options):
 
 def set_parser():
     """
+    .. versionchanged:: 0.2.2
+        added *blastdb* command
+
     Sets command line arguments parser
     """
     parser = argparse.ArgumentParser(
@@ -169,6 +218,14 @@ def set_parser():
 
     set_uniprot_parser(parser_u)
     set_common_options(parser_u)
+
+    parser_blastdb = subparsers.add_parser(
+        'blastdb',
+        help='Blast results from a NCBI database, like *nt*'
+    )
+
+    set_blastdb_parser(parser_blastdb)
+    set_common_options(parser_blastdb)
 
     utils.add_basic_options(parser)
 

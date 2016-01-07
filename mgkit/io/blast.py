@@ -5,6 +5,7 @@ Blast routines and parsers
 
 import logging
 import collections
+
 from . import gff
 from . import open_file
 from ..utils.common import deprecated

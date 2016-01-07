@@ -127,22 +127,30 @@ Adding Count Data
 *****************
 
 Count data on a per-sample basis can be added with the *counts* command. The
-accepted inputs are from HTSeq-count and featureCount. The ouput produced by
-featureCount, is the one from using its **-f** option must be used.
+accepted inputs are from HTSeq-count and featureCounts. The ouput produced by
+featureCounts, is the one from using its **-f** option must be used.
 
 This script accept by default a tab separated file, with a uid in the first
 column and the other columns are the counts for each sample, in the same order
-as they are passed to the **-s** option. To use the featureCount file format,
+as they are passed to the **-s** option. To use the featureCounts file format,
 this script **-e** option must be used.
 
 The sample names must be provided in the same order as the columns in the input
 files. If the counts are FPKMS the *-f* option can be used.
 
+Adding Taxonomy from GI-Taxa Table
+**********************************
+
+There are cases where it may needed or preferred to add the taxonomy from a *GI*
+number already provided in the GFF file. For such cases the *gitaxa* command can
+be used. It works in a similar way to the *taxonomy* command, only it expect the
+*GI* number from NCBI to be in a GFF attribute (by default *gene_id*).
+
 Changes
 *******
 
 .. versionchanged:: 0.2.2
-    added *eggnog* and *counts* command
+    added *eggnog*, *gitaxa* and *counts* command
 
 .. versionchanged:: 0.2.1
 
@@ -837,7 +845,7 @@ def read_lines_from_files(file_handles):
         for file_handle in file_handles
     ]
     for line in itertools.chain(*(x for x in file_handles)):
-        # the __ is for HTSeq-count files, # for featureCount
+        # the __ is for HTSeq-count files, # for featureCounts
         if line.startswith('#') or line.startswith('__'):
             continue
         yield line.strip()
@@ -877,16 +885,16 @@ def set_eggnog_parser(parser):
     parser.set_defaults(func=eggnog_command)
 
 
-def load_counts(count_files, samples, featureCount):
+def load_counts(count_files, samples, featureCounts):
     counts = {}
 
-    index = 6 if featureCount else 1
+    index = 6 if featureCounts else 1
 
     for line in read_lines_from_files(count_files):
-        # featureCount puts the header on the second line
+        # featureCounts puts the header on the second line
         # the first is skipped by read_lines_from_files
         # as it starts with a #
-        if featureCount and line.startswith('Geneid'):
+        if featureCounts and line.startswith('Geneid'):
             continue
         line = line.split('\t')
         uid = line[0]
@@ -912,7 +920,7 @@ def counts_command(options):
     counts = load_counts(
         options.count_files,
         options.samples,
-        options.featureCount
+        options.featureCounts
     )
 
     key = "fpkms_{}" if options.fpkms else "counts_{}"
@@ -957,12 +965,57 @@ def set_counts_parser(parser):
     )
     parser.add_argument(
         '-e',
-        '--featureCount',
+        '--featureCounts',
         action='store_true',
         default=False,
-        help="If the counts files are from featureCount (using the -f option)"
+        help="If the counts files are from featureCounts (using the -f option)"
     )
     parser.set_defaults(func=counts_command)
+
+
+def gitaxa_command(options):
+
+    annotations = []
+    gids = set()
+
+    for annotation in gff.parse_gff(options.input_file):
+        annotations.append(annotation)
+        gids.add(annotation.attr[options.gi_attr])
+
+    gids = dict(
+        blast.parse_gi_taxa_table(
+            options.gi_taxa_table,
+            gids=gids)
+    )
+
+    for annotation in annotations:
+        try:
+            taxon_id = gids[annotation.attr[options.gi_attr]]
+            annotation.taxon_id = taxon_id
+        except KeyError:
+            pass
+
+        annotation.to_file(options.output_file)
+
+
+def set_gitaxa_parser(parser):
+    parser.add_argument(
+        '-t',
+        '--gi-taxa-table',
+        action='store',
+        default=None,
+        required=True,
+        help="GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz)"
+    )
+    parser.add_argument(
+        '-a',
+        '--gi-attr',
+        action='store',
+        default='gene_id',
+        help="""
+        In which attribute the GI is stored (defaults to *gene_id*)"""
+    )
+    parser.set_defaults(func=gitaxa_command)
 
 
 def set_parser():
@@ -1048,6 +1101,15 @@ def set_parser():
     set_counts_parser(parser_counts)
     set_common_options(parser_counts)
     utils.add_basic_options(parser_counts)
+
+    parser_gitaxa = subparsers.add_parser(
+        'gitaxa',
+        help='Adds taxonomy information from a GI-Taxa table'
+    )
+
+    set_gitaxa_parser(parser_gitaxa)
+    set_common_options(parser_gitaxa)
+    utils.add_basic_options(parser_gitaxa)
 
     # top parser
     utils.add_basic_options(parser)
