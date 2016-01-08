@@ -1,6 +1,35 @@
 Changes
 =======
 
+0.2.2
+-----
+
+Added
+*****
+
+* new commands for the **add-gff-info** script (:ref:`add-gff-info`):
+
+	* *eggnog* to add information from eggNOG HMMs (at the moment the 4.5 Viral)
+	* *counts* and *fpkms* to add count data (correctly exported to mongodb)
+	* *gitaxa* to add taxonomy information directly from GI identifiers from NCBI
+
+* added *blastdb* command to **blast2gff** script (:ref:`blast2gff`)
+* updated :ref:`gff-specs`
+* added *gtf* command to **get-gff-info** script (:ref:`get-gff-info`) to convert a GFF to GTF, that is accepted by `featureCounts <http://bioinf.wehi.edu.au/featureCounts/>`_, in conjunction with the *counts* command of **add-gff-info**
+* added method to :class:`mgkit.snps.classes.RatioMixIn.calc_ratio_flag` to calculate special cases of pN/pS
+
+Changed
+*******
+
+* added argument in functions of the :mod:`mgkit.snps.conv_func` to bypass the default filters
+* added *use_uid* argument to :func:`mgkit.snps.funcs.combine_sample_snps` to use the *uid* instead of the *gene_id* when calculating pN/pS
+* added *flag_values* argument to :func:`mgkit.snps.funcs.combine_sample_snps` to use :class:`mgkit.snps.classes.RatioMixIn.calc_ratio_flag` instead of :class:`mgkit.snps.classes.RatioMixIn.calc_ratio`
+
+Removed
+*******
+
+* deprecated code from the **snps** package
+
 0.2.1
 -----
 

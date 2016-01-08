@@ -78,6 +78,8 @@ The following keys are added by different scripts and may be used in different s
 	* - counts_{any}
 	  - float
 	  - Stores the count data for a sample (e.g. counts_Sample1)
+	  - used by script `add-gff-info`
 	* - fpkms_{any}
 	  - float
 	  - Stores the count data for a sample (e.g. fpkms_Sample1)
+	  - used by script `add-gff-info`
