@@ -31,6 +31,9 @@ some quick defaults to parse BLAST results.
 Changes
 *******
 
+.. versionadded:: 0.2.3
+    added *--fasta-file* option
+
 .. versionadded:: 0.2.2
     added *blastdb* command
 
@@ -51,7 +54,7 @@ import argparse
 import logging
 from .. import logger
 from . import utils
-from ..io import blast
+from ..io import blast, fasta
 
 
 LOG = logging.getLogger(__name__)
@@ -99,6 +102,16 @@ def set_common_options(parser):
         action='store',
         default='CDS',
         help='Feature type to use in the GFF'
+    )
+    parser.add_argument(
+        '-a',
+        '--fasta-file',
+        type=argparse.FileType('r'),
+        default=None,
+        help="""
+        Fasta file with nucleotide sequences, used to calculate the frame, if
+        not used, the frame on the '-' strand will always be 0
+        """
     )
     parser.add_argument(
         'input_file',
@@ -153,17 +166,31 @@ def set_blastdb_parser(parser):
     parser.set_defaults(func=convert_from_blastdb)
 
 
+def load_fasta_file(file_name):
+    if file_name is None:
+        return None
+
+    return dict(
+        (name, len(seq))
+        for name, seq in fasta.load_fasta(file_name)
+    )
+
+
 def convert_from_blastdb(options):
     """
     .. versionadded:: 0.2.2
     """
+
+    seqs = load_fasta_file(options.fasta_file)
+
     iterator = blast.parse_uniprot_blast(
         options.input_file,
         bitscore=options.bitscore,
         db=options.db_used,
         dbq=options.db_quality,
         name_func=None,
-        feat_type=options.feat_type
+        feat_type=options.feat_type,
+        seq_lengths=seqs
     )
 
     for annotation in iterator:
@@ -176,6 +203,8 @@ def convert_from_blastdb(options):
 
 def convert_from_uniprot(options):
 
+    seqs = load_fasta_file(options.fasta_file)
+
     if options.no_split is True:
         name_func = lambda x: x
     else:
@@ -187,7 +216,8 @@ def convert_from_uniprot(options):
         db=options.db_used,
         dbq=options.db_quality,
         name_func=name_func,
-        feat_type=options.feat_type
+        feat_type=options.feat_type,
+        seq_lengths=seqs
     )
 
     for annotation in iterator:

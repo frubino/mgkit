@@ -24,7 +24,7 @@ used.
 
 .. note::
 
-    As the script needs to query Uniprot a lot, it is reccommended to split
+    As the script needs to query Uniprot a lot, it is recommended to split
     the GFF in several files, so an error in the connection doesn't waste time.
 
     However, a cache is kept to reduce the number of connections

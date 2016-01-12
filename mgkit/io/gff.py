@@ -1228,6 +1228,9 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
     .. versionchanged:: 0.1.16
         added *to_nuc* parameter
 
+    .. versionchanged:: 0.2.3
+        removed *to_nuc*
+
     Returns an instance of :class:`Annotation`
 
     Arguments:
@@ -1238,9 +1241,6 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
         feat_type (str): feature type in the GFF
         seq_len (int): sequence length, if supplied, the phase for strand '-'
             can be assigned, otherwise is assigned a 0
-        to_nuc (bool): if False, the it's assumed that *blastx* was used,
-            against an aminoacidic DB. In this case the frame is always set to
-            0, because the hit is a CDS
         **kwd: any additional column
 
     Returns:
@@ -1257,17 +1257,11 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
     if start > end:
         start, end = end, start
         strand = '-'
-        if to_nuc and (seq_len is not None):
-            if (seq_len - end + 1) % 2 == 0:
-                phase = 1
-            elif (seq_len - end + 1) % 3 == 0:
-                phase = 2
+        if seq_len is not None:
+            phase = (seq_len - end + 1) % 3
 
-    if to_nuc and (strand == '+'):
-        if start % 2 == 0:
-            phase = 2
-        elif start % 3 == 0:
-            phase = 2
+    if strand == '+':
+        phase = start % 3
 
     annotation = Annotation(
         seq_id=seq_id,
@@ -1282,6 +1276,7 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
         gene_id=hit[1],
         identity=identity,
         bitscore=bitscore,
+        frame="{}{}".format('f' if strand == '+' else 'r', phase),
         **kwd
     )
 
