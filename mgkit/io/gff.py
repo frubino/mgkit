@@ -1229,7 +1229,7 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
         added *to_nuc* parameter
 
     .. versionchanged:: 0.2.3
-        removed *to_nuc*
+        removed *to_nuc*, the hit can include the subject end/start and evalue
 
     Returns an instance of :class:`Annotation`
 
@@ -1247,6 +1247,7 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
         Annotation: instance of :class:`Annotation`
     """
     seq_id = hit[0]
+    gene_id = hit[1]
     strand = '+'
     identity = hit[2]
     bitscore = hit[-1]
@@ -1273,12 +1274,19 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
         strand=strand,
         phase=phase,
         db=db,
-        gene_id=hit[1],
+        gene_id=gene_id,
         identity=identity,
         bitscore=bitscore,
         frame="{}{}".format('f' if strand == '+' else 'r', phase),
         **kwd
     )
+
+    # the hit includes subject end/start and evalue, as per new version of
+    # mgkit.io.blast.parse_uniprot_blast
+    if len(hit) == 9:
+        annotation.attr['evalue'] = hit[-2]
+        annotation.attr['subject_end'] = hit[-3]
+        annotation.attr['subject_start'] = hit[-4]
 
     return annotation
 

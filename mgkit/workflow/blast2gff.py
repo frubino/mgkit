@@ -32,7 +32,7 @@ Changes
 *******
 
 .. versionadded:: 0.2.3
-    added *--fasta-file* option
+    added *--fasta-file* option, added more data from a blsat hit
 
 .. versionadded:: 0.2.2
     added *blastdb* command

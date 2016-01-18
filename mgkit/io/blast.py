@@ -246,7 +246,7 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
         added *feat_type*
 
     .. versionchanged:: 0.2.3
-        added *sequences*
+        added *seq_lengths* and added subject *start* and *end* and *e-value*
 
     Parses BLAST results in tabular format using :func:`parse_blast_tab`,
     applying a basic bitscore filter. Returns the annotations associated with
@@ -274,6 +274,8 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
     if name_func is None:
         name_func = lambda x: x.split('|')[1]
 
+    ret_col = (0, 1, 2, 6, 7, 8, 9, 10, 11)
+
     # the second function extract the Uniprot ID from the sequence header
     value_funcs = (
         str,
@@ -281,10 +283,14 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
         float,
         int,
         int,
+        int,
+        int,
+        float,
         float
     )
 
-    for seq_id, hit in parse_blast_tab(file_handle, value_funcs=value_funcs):
+    for seq_id, hit in parse_blast_tab(file_handle, ret_col=ret_col,
+                                       value_funcs=value_funcs):
         if hit[-1] < bitscore:
             continue
 
