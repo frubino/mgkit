@@ -855,7 +855,7 @@ def eggnog_command(options):
     base_info = {}
     LOG.info(
         "Reading eggNOG annotations from files: %s",
-        ', '.join(options.annotations_file)
+        ', '.join(x.name for x in options.annotations_file)
     )
     for line in read_lines_from_files(options.annotations_file):
         level, gene_id, description, source = line.split('\t')
