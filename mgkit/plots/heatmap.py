@@ -13,8 +13,12 @@ LOG = logging.getLogger(__name__)
 
 
 def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
-                fontsize=18, meshopts=None):
+                fontsize=18, meshopts=None, annot=False, annotopts=None):
     """
+
+    .. versionchanged:: 0.2.3
+        added *annot* and *annot_args* arguments
+
     A basic heatmap using :func:`matplotlib.pyplot.pcolormesh`. It expect a
     :class:`pandas.DataFrame`.
 
@@ -37,6 +41,10 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
         fontsize (int): font size to use for the labels
         meshopts (None, dict): additional options to pass to
             :func:`matplotlib.pyplot.pcolormesh`
+        annot (bool): if True the values of the matrix will be added
+        annot_args (None, dict): dictionary with the options for the
+            annotations. The option *format* is a function that returns the
+            formatted number, defaults to a number with no decimal part
 
     Returns:
         matplotlib.collections.QuadMesh: the return value of
@@ -53,6 +61,11 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
         'pos': 'right',
         'rotation': 'horizontal'
     }
+    annot_args = {
+        'fontsize': fontsize * 0.75,
+        'color': 'k',
+        'format': lambda x: "%.0f" % x
+    }
 
     if meshopts is not None:
         mesh_args.update(meshopts)
@@ -62,6 +75,9 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
 
     if yticks is not None:
         yticks_args.update(yticks)
+
+    if annotopts is not None:
+        annot_args.update(annotopts)
 
     mesh = ax.pcolormesh(data.values, cmap=cmap, norm=norm, **mesh_args)
 
@@ -79,6 +95,19 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
 
     ax.set_ylim(top=len(data))
     ax.set_xlim(right=len(data.columns))
+
+    if annot:
+        for y in range(data.shape[0]):
+            for x in range(data.shape[1]):
+                ax.text(
+                    x + 0.5,
+                    y + 0.5,
+                    annot_args['format'](data.iloc[y, x]),
+                    ha='center',
+                    va='center',
+                    fontsize=annot_args['fontsize'],
+                    color=annot_args['color']
+                )
 
     return mesh
 
