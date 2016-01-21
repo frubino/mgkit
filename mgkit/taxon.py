@@ -133,6 +133,110 @@ def parse_uniprot_taxon(line, light=True):
     )
 
 
+def parse_ncbi_taxonomy_merged_file(file_handle):
+    """
+    .. versionadded:: 0.2.3
+
+    Parses the *merged.dmp* file where the merged taxon_id are stored. Available
+    at `ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/`_
+
+    Arguments:
+        file_handle (str, file): file name or handle to the file
+
+    Returns:
+        dict: dictionary with merged_id -> taxon_id
+    """
+    file_handle = open_file(file_handle)
+    merged_taxa = {}
+
+    for line in file_handle:
+
+        merged_id, taxon_id = [col for col in line.strip().split('\t') if col != '|']
+        merged_taxa[int(merged_id)] = int(taxon_id)
+
+    return merged_taxa
+
+
+def parse_ncbi_taxonomy_names_file(file_handle, name_classes=('scientific name', 'common name')):
+    """
+    .. versionadded:: 0.2.3
+
+    Parses the *names.dmp* file where the names associated to a taxon_id are
+    stored. Available at `ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/`_
+
+    Arguments:
+        file_handle (str, file): file name or handle to the file
+        name_classes (tuple): name classes to save, only the scientific and
+            common name are stored
+
+    Returns:
+        dict: dictionary with merged_id -> taxon_id
+    """
+
+    file_handle = open_file(file_handle)
+    taxa_names = {}
+
+    for line in file_handle:
+        taxon_id, taxon_name, uniq_name, name_class = [col for col in line.strip().split('\t') if col != '|']
+
+        if name_class not in name_classes:
+            continue
+        if taxon_id not in taxa_names:
+            taxa_names[int(taxon_id)] = {}
+
+        taxa_names[int(taxon_id)][name_class] = taxon_name
+
+    return taxa_names
+
+
+def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
+    """
+    .. versionadded:: 0.2.3
+
+    Parses the *nodes.dmp* file where the nodes of the taxonomy are stored.
+    Available at `ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/`_.
+
+    Arguments:
+        file_handle (str, file): file name or handle to the file
+        taxa_names (dict): dictionary with the taxa names (returned from
+            :func:`parse_ncbi_taxonomy_names_file`)
+
+    Yields:
+        UniprotTaxonTuple: UniprotTaxonTuple instance
+    """
+
+    file_handle = open_file(file_handle)
+
+    for line in file_handle:
+        line = [col for col in line.strip().split('\t') if col != '|']
+        taxon_id = int(line[0])
+        parent_id = int(line[1])
+        if parent_id == 1:
+            # NCBI uses 1 as the root, but the rest of the functions expect None
+            parent_id = None
+        rank = line[2].lower()
+
+        s_name = ''
+        c_name = ''
+
+        if taxa_names is not None:
+            try:
+                names = taxa_names[taxon_id]
+            except KeyError:
+                names = {}
+            s_name = names.get('scientific name', '')
+            c_name = names.get('common name', '')
+
+        yield UniprotTaxonTuple(
+            taxon_id,
+            s_name,
+            c_name,
+            rank,
+            (None,),  # lineage is not found in the NCBI taxonomy dump
+            parent_id
+        )
+
+
 class UniprotTaxonomy(object):
     """
     Class that contains the whole Uniprot taxonomy. Defines some methods to
@@ -153,6 +257,36 @@ class UniprotTaxonomy(object):
         self._name_map = {}
         if fname:
             self.load_data(fname)
+
+    def read_from_ncbi_dump(self, nodes_file, names_file=None, merged_file=None):
+        """
+            .. versionadded:: 0.2.3
+
+            Uses the *nodes.dmp* and optionally *names.dmp*, *merged.dmp* files
+            from `ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/`_ to populate the
+            taxonomy.
+
+            Arguments:
+                nodes_file (str, file): file name or handle to the file
+                names_file (str, file, None): file name or handle to the file,
+                    if None, names won't be added to the taxa
+                merged_file (str, file, None): file name or handle to the file,
+                    if None, pointers to merged taxa won't be added
+            """
+
+        if names_file is not None:
+            taxa_names = parse_ncbi_taxonomy_names_file(names_file)
+        else:
+            taxa_names = None
+
+        for taxon in parse_ncbi_taxonomy_nodes_file(nodes_file, taxa_names):
+            self[taxon.taxon_id] = taxon
+
+        if merged_file is not None:
+            merged_taxa = parse_ncbi_taxonomy_merged_file(merged_file)
+
+            for merged_id, taxon_id in merged_taxa.iteritems():
+                self[merged_id] = self[taxon_id]
 
     def read_taxonomy(self, f_handle, light=True):
         """
@@ -189,16 +323,20 @@ class UniprotTaxonomy(object):
 
     def gen_name_map(self):
         """
+        .. versionchanged:: 0.2.3
+            names are stored in the mapping as lowercase
+
         Generate a name map, where to each scientific name in the taxonomy an
         id is associated.
         """
         LOG.debug('Generate name map')
         self._name_map = {}
         for taxon_obj in self:
+            s_name = taxon_obj.s_name.lower()
             try:
-                self._name_map[taxon_obj.s_name].append(taxon_obj.taxon_id)
+                self._name_map[s_name].append(taxon_obj.taxon_id)
             except KeyError:
-                self._name_map[taxon_obj.s_name] = [taxon_obj.taxon_id]
+                self._name_map[s_name] = [taxon_obj.taxon_id]
 
     def load_data(self, file_handle):
         """
@@ -233,6 +371,9 @@ class UniprotTaxonomy(object):
 
     def find_by_name(self, s_name):
         """
+        .. versionchanged:: 0.2.3
+            the search is now case insensitive
+
         Returns the taxon IDs associated with the scientific name provided
 
         :param str s_name: the scientific name
@@ -241,7 +382,7 @@ class UniprotTaxonomy(object):
         """
         if not self._name_map:
             self.gen_name_map()
-        return self._name_map[s_name]
+        return self._name_map[s_name.lower()]
 
     def is_ancestor(self, leaf_id, anc_ids):
         """
