@@ -315,7 +315,7 @@ def calc_n50(seq_lengths):
     :return int: the N50 statistics value
     """
     LOG.info("Calculating N50 for assembly")
-    seq_lengths.sort()
+    seq_lengths.sort_values(inplace=True)
 
     bp_half = seq_lengths.sum() / 2.0
     bp_sum = 0
