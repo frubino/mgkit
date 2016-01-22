@@ -1000,9 +1000,13 @@ def gitaxa_command(options):
             taxon_id = gids[annotation.attr[options.gi_attr]]
             annotation.taxon_id = taxon_id
         except KeyError:
-            pass
+            LOG.error(
+                "No Taxon ID for GI - %s",
+                annotation.attr[options.gi_attr]
+            )
+            taxon_id = None
 
-        if options.taxonomy is not None:
+        if (options.taxonomy is not None) and (taxon_id is not None):
             try:
                 annotation.attr['taxon_name'] = taxonomy[taxon_id].s_name
                 annotation.attr['lineage'] = ','.join(
