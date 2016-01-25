@@ -209,8 +209,11 @@ def dbfetch(embl_ids, db='embl', contact=None, out_format='seqxml', num_req=10):
 
 def datawarehouse_search(query, domain='sequence', result='sequence_release',
                          display='fasta', offset=0, length=100000, contact=None,
-                         download='gzip', url=URL_DATAWAREHOUSE):
+                         download='gzip', url=URL_DATAWAREHOUSE, fields=None):
     """
+    .. versionchanged:: 0.2.3
+        added *fields* parameter to retrieve tab separated information
+
     .. versionadded:: 0.1.13
 
     Perform a datawarehouse search on EMBL dbs. Instructions on the query
@@ -226,10 +229,13 @@ def datawarehouse_search(query, domain='sequence', result='sequence_release',
         display (str): display option (format to retrieve the entries)
         offset (int): the offset of the search results, defaults to the first
         length (int): number of results to retrieve at the specified offset
+            and the limit is automatically set a 100,000 records for query
         contact (str): email of the user
         download (str): type of response. Gzip responses are automatically
             decompressed
         url (str): base URL for the resource
+        fields (None, iterable): must be an iterable of fields to be returned
+            if display is set to *report*
 
     Returns:
         str: the raw request
@@ -245,18 +251,43 @@ def datawarehouse_search(query, domain='sequence', result='sequence_release',
         >>> len(data)
         35919
 
+        Each entry taxon_id from the same data can be retrieved using *report*
+        as the *display* option and *fields* an iterable of fields to just
+        ('accession', tax_id'):
+
+        >>> query = 'tax_tree(1485) AND mol_type="rRNA"'
+        >>> result = 'sequence_release'
+        >>> display = 'report'
+        >>> fields = ('accession', tax_id')
+        >>> data = embl.datawarehouse_search(query, result=result,
+            display=display, fields=fields)
+
     """
 
+    params = {
+        'query': query,
+        'domain': domain,
+        'result': result,
+        'display': display,
+        'offset': offset,
+        'length': length,
+        'download': download
+    }
+
+    # if display='report', fields can be used to display, but download needs to
+    # be 'txt'
+    if display == 'report':
+        params['download'] = download = 'txt'
+        try:
+            params['fields'] = ','.join(fields)
+        except TypeError:
+            raise ValueError(
+                "the 'fields' parameter must be an iteratble if display is "
+                "equal to 'report'"
+                )
+
     params = urllib.urlencode(
-        {
-            'query': query,
-            'domain': domain,
-            'result': result,
-            'display': display,
-            'offset': offset,
-            'length': length,
-            'download': download
-        }
+        params
     )
 
     data = cStringIO.StringIO(url_read(url, params, agent=contact))
@@ -265,5 +296,3 @@ def datawarehouse_search(query, domain='sequence', result='sequence_release',
         data = gzip.GzipFile(fileobj=data)
 
     return data.read()
-
-#query: 'tax_tree({0}) AND mol_type="rRNA"'
