@@ -147,6 +147,9 @@ def parse_ncbi_taxonomy_merged_file(file_handle):
         dict: dictionary with merged_id -> taxon_id
     """
     file_handle = open_file(file_handle)
+
+    LOG.info("Reading NCBI taxonomy merged file %s", file_handle.name)
+
     merged_taxa = {}
 
     for line in file_handle:
@@ -174,6 +177,9 @@ def parse_ncbi_taxonomy_names_file(file_handle, name_classes=('scientific name',
     """
 
     file_handle = open_file(file_handle)
+
+    LOG.info("Reading NCBI taxonomy names file %s", file_handle.name)
+
     taxa_names = {}
 
     for line in file_handle:
@@ -206,6 +212,8 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
     """
 
     file_handle = open_file(file_handle)
+
+    LOG.info("Reading NCBI taxonomy nodes file %s", file_handle.name)
 
     for line in file_handle:
         line = [col for col in line.strip().split('\t') if col != '|']
@@ -273,6 +281,8 @@ class UniprotTaxonomy(object):
                 merged_file (str, file, None): file name or handle to the file,
                     if None, pointers to merged taxa won't be added
             """
+
+        LOG.info("Reading NCBI taxonomy from file")
 
         if names_file is not None:
             taxa_names = parse_ncbi_taxonomy_names_file(names_file)

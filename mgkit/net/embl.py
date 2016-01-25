@@ -258,7 +258,7 @@ def datawarehouse_search(query, domain='sequence', result='sequence_release',
         >>> query = 'tax_tree(1485) AND mol_type="rRNA"'
         >>> result = 'sequence_release'
         >>> display = 'report'
-        >>> fields = ('accession', tax_id')
+        >>> fields = ('accession', 'tax_id')
         >>> data = embl.datawarehouse_search(query, result=result,
             display=display, fields=fields)
 

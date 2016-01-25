@@ -40,6 +40,7 @@ setup(
     install_requires=install_requires,
     scripts=[
         'bin/snp_analysis.py',
+        'scripts/download-taxonomy.sh'
     ],
     tests_require=['nose>=1.3.4', 'yanc'],
     extras_require={
