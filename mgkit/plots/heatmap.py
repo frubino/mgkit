@@ -145,7 +145,8 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
         out_length=15,
         fontsize=18,
         va='center',
-        ha='left'
+        ha='left',
+        rotation='horizontal'
     )
 
     if spine_opts is not None:
@@ -183,7 +184,7 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
     axis.set_ticks(minor_ticks, minor=True)
     axis.set_ticks_position(spine)
     axis.set_ticklabels(labels, minor=True, va=spine_args['va'],
-                        ha=spine_args['ha'])
+                        ha=spine_args['ha'], rotation=spine_args['rotation'])
     axis.set_ticklabels([], minor=False)
     axis.set_tick_params(
         direction='in',
