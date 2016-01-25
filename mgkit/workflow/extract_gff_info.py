@@ -39,6 +39,9 @@ Outputs annotations in the GTF format
 Changes
 *******
 
+.. versionchanged:: 0.2.3
+    added *--gene-id* option to *gtf* command
+
 .. versionadded:: 0.2.2
     added *gtf* command
 
@@ -179,10 +182,21 @@ def mongodb_command(options):
 def gtf_command(options):
 
     for annotation in gff.parse_gff(options.input_file):
-        options.output_file.write(annotation.to_gtf(gene_id_attr='gene_id'))
+        options.output_file.write(
+            annotation.to_gtf(
+                gene_id_attr=options.gene_id
+            )
+        )
 
 
 def set_gtf_parser(parser):
+    parser.add_argument(
+        '-g',
+        '--gene-id',
+        type=str,
+        default='gene_id',
+        help='GFF attribute to use for the GTF gene_id attribute'
+    )
     parser.set_defaults(func=gtf_command)
 
 
