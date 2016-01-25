@@ -3,10 +3,13 @@ Metagenomics Framework
 """
 from __future__ import print_function
 import sys
+import logging
 
 __VERSION__ = "0.2.2"
 
 __version__ = __VERSION__
+
+LOG = logging.getLogger(__name__)
 
 DEBUG = False
 "Debug switch for a few functions"
@@ -31,6 +34,8 @@ Available at: http://figshare.com/articles/MGkit_Metagenomic_Framework_For_The_S
 [doi:10.6084/m9.figshare.1269288]
 """
 
+PKG_NAME = 'MGKit'
+
 
 def cite(file=sys.stderr):
     """
@@ -43,3 +48,8 @@ def cite(file=sys.stderr):
         sep='\n',
         file=file
     )
+
+
+def check_version(version):
+    if __version__ != version:
+        LOG.warning("This was tested with %s version %s", PKG_NAME, version)
