@@ -236,8 +236,8 @@ class GeneSNP(RatioMixIn):
 
         self.snps.extend(other.snps)
 
-        self.exp_syn += self.syn
-        self.exp_nonsyn += self.nonsyn
+        self.exp_syn += other.exp_syn
+        self.exp_nonsyn += other.exp_nonsyn
 
         if other.coverage is not None:
             if self.coverage is None:
@@ -287,12 +287,21 @@ class GeneSNP(RatioMixIn):
             for pos, change, snptype in data['snps']
         ]
 
+    def _cache_values(self):
+        self._syn = sum(1 for x in self.snps if x[2] is SNPType.syn)
+        self._nonsyn = sum(1 for x in self.snps if x[2] is SNPType.nonsyn)
+
+    def _get_cached(self, attr):
+        if (getattr(self, '_nsnps', None) is None) or (self._nsnps != len(self.snps)):
+            self._cache_values()
+        return getattr(self, attr)
+
     @property
     def syn(self):
         "Returns the expected synonymous changes"
-        return sum(1 for x in self.snps if x[2] is SNPType.syn)
+        return self._get_cached('_syn')
 
     @property
     def nonsyn(self):
         "Returns the expected non-synonymous changes"
-        return sum(1 for x in self.snps if x[2] is SNPType.nonsyn)
+        return self._get_cached('_nonsyn')
