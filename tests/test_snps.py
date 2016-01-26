@@ -187,340 +187,298 @@ def test_genesyn_calc_ratio3b():
     ok_(numpy.isnan(gs.calc_ratio()))
 
 
-# def test_genesyn_calc_ratio3c():
-#     # syn = nonsyn = 0
-#     # coverage is < min_cov
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=0,
-#         exp_syn=4,
-#         nonsyn=0,
-#         exp_nonsyn=6,
-#         coverage=2
-#     )
-#     ok_(numpy.isnan(gs.calc_ratio(min_cov=4)))
+def test_genesyn_calc_ratio3c():
+    # syn = nonsyn = 0
+    gs = GeneSNP(
+        gene_id='A',
+        taxon_id=1,
+        exp_syn=4,
+        exp_nonsyn=6,
+    )
+    ok_(numpy.isnan(gs.calc_ratio()))
 
 
-# def test_genesyn_calc_ratio4a():
-#     # nonsyn != 0, syn > 0
-#     # flag_value=True
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=0,
-#         exp_syn=4,
-#         nonsyn=1,
-#         exp_nonsyn=6,
-#         coverage=2
-#     )
-#     eq_(
-#         gs.calc_ratio(flag_value=True),
-#         -1
-#     )
+def test_genesyn_calc_ratio3d():
+    # syn = nonsyn = 0, haplotypes = True
+    gs = GeneSNP(
+        gene_id='A',
+        taxon_id=1,
+        exp_syn=4,
+        exp_nonsyn=6,
+    )
+    eq_(0, gs.calc_ratio(haplotypes=True))
 
 
-# def test_genesyn_calc_ratio4b():
-#     # nonsyn != 0, syn > 0
-#     # flag_value=False
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=0,
-#         exp_syn=4,
-#         nonsyn=1,
-#         exp_nonsyn=6,
-#         coverage=2
-#     )
-#     ok_(numpy.isnan(gs.calc_ratio()))
+def test_genesyn_calc_ratio4a():
+    # nonsyn > 0, syn = 0
+    # flag_value=True
+    gs = GeneSNP(
+        gene_id='A',
+        taxon_id=1,
+        exp_syn=4,
+        exp_nonsyn=6,
+    )
+    gs.add_snp(1, 'A', SNPType.nonsyn)
+    eq_(
+        gs.calc_ratio_flag(),
+        -1
+    )
 
 
-# def test_genesyn_calc_ratio5a():
-#     # nonsyn = 0, syn != 0
-#     # flag_value=True
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=1,
-#         exp_syn=4,
-#         nonsyn=0,
-#         exp_nonsyn=6,
-#         coverage=2
-#     )
-#     eq_(
-#         gs.calc_ratio(flag_value=True),
-#         -2
-#     )
+def test_genesyn_calc_ratio4b():
+    # nonsyn = 0, syn > 0
+    # flag_value=True
+    gs = GeneSNP(
+        gene_id='A',
+        taxon_id=1,
+        exp_syn=4,
+        exp_nonsyn=6,
+    )
+    gs.add_snp(1, 'A', SNPType.syn)
+    eq_(
+        gs.calc_ratio_flag(),
+        -2
+    )
 
 
-# def test_genesyn_calc_ratio5b():
-#     # nonsyn = 0, syn != 0
-#     # flag_value=False
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=1,
-#         exp_syn=4,
-#         nonsyn=0,
-#         exp_nonsyn=6,
-#         coverage=2
-#     )
-#     ok_(numpy.isnan(gs.calc_ratio()))
+def test_genesyn_calc_ratio4c():
+    # nonsyn = 0, syn > 0
+    # flag_value=True
+    gs = GeneSNP(
+        gene_id='A',
+        taxon_id=1,
+        exp_syn=4,
+        exp_nonsyn=6,
+    )
+    eq_(
+        gs.calc_ratio_flag(),
+        -3
+    )
 
 
-# def test_genesyn_calc_ratio6a():
-#     # nonsyn = syn = 0
-#     # flag_value=True
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=0,
-#         exp_syn=4,
-#         nonsyn=0,
-#         exp_nonsyn=6,
-#         coverage=2
-#     )
-#     eq_(
-#         gs.calc_ratio(flag_value=True),
-#         -3
-#     )
+SNP_DATA = {
+    'sample1': {
+        'gene1': GeneSNP(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=6,
+            exp_nonsyn=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        ),  # pN/pS = 1.0
+        'gene2': GeneSNP(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=3,
+            exp_nonsyn=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        )  # pN/pS = 2.0
+    },
+    'sample2': {
+        'gene1': GeneSNP(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=3,
+            exp_nonsyn=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        ),  # pN/pS = 1.0
+        'gene2': GeneSNP(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=6,
+            exp_nonsyn=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        ),  # pN/pS = 2.0
+        'gene3': GeneSNP(
+            gene_id='gene3',
+            taxon_id=838,  # prevotella genus
+            exp_syn=3,
+            exp_nonsyn=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        )  # pN/pS = 2.0
+    }
+
+}
 
 
-# def test_genesyn_calc_ratio6b():
-#     # nonsyn = syn = 0
-#     # flag_value=False
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=0,
-#         exp_syn=4,
-#         nonsyn=0,
-#         exp_nonsyn=6,
-#         coverage=2
-#     )
-#     ok_(numpy.isnan(gs.calc_ratio()))
+SNP_DATA2 = {
+    'sample1': {
+        'gene1': GeneSNP(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=6,
+            exp_nonsyn=4,
+            coverage=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        ),  # pN/pS = 1.0
+        'gene2': GeneSNP(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=3,
+            exp_nonsyn=4,
+            coverage=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        )  # pN/pS = 2.0
+    },
+    'sample2': {
+        'gene1': GeneSNP(
+            gene_id='gene1',
+            taxon_id=839,  # prevotella ruminicola
+            exp_syn=3,
+            exp_nonsyn=4,
+            coverage=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        ),  # pN/pS = 1.0
+        'gene2': GeneSNP(
+            gene_id='gene2',
+            taxon_id=838,  # prevotella genus
+            exp_syn=6,
+            exp_nonsyn=4,
+            coverage=3,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
+        )  # pN/pS = 2.0
+    }
+
+}
 
 
-# def test_genesyn_calc_ratio7a():
-#     # exp_nonsyn or exp_syn = 0
-#     # or any other case
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=0,
-#         exp_syn=4,
-#         nonsyn=0,
-#         exp_nonsyn=0,
-#         coverage=2
-#     )
-#     ok_(numpy.isnan(gs.calc_ratio()))
+def test_flat_sample_snps1():
+    data = flat_sample_snps(SNP_DATA2, 4)
+    eq_(
+        (
+            data['all_samples']['gene1'].syn,
+            data['all_samples']['gene2'].syn
+        ),
+        (7, 3)
+    )
 
 
-# def test_genesyn_calc_ratio7b():
-#     # exp_nonsyn or exp_syn = 0
-#     # or any other case
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=0,
-#         exp_syn=0,
-#         nonsyn=0,
-#         exp_nonsyn=6,
-#         coverage=2
-#     )
-#     ok_(numpy.isnan(gs.calc_ratio()))
+def test_flat_sample_snps2():
+    data = flat_sample_snps(SNP_DATA2, 3)
+    eq_(
+        (
+            data['all_samples']['gene1'].syn,
+            data['all_samples']['gene2'].syn
+        ),
+        (7, 8)
+    )
 
 
-# def test_genesyn_calc_ratio7c():
-#     # exp_nonsyn or exp_syn = 0
-#     # or any other case
-#     gs = GeneSNP(
-#         gene_id='A',
-#         taxon_id=1,
-#         syn=0,
-#         exp_syn=0,
-#         nonsyn=0,
-#         exp_nonsyn=0,
-#         coverage=2
-#     )
-#     ok_(numpy.isnan(gs.calc_ratio()))
+def test_combine_sample_min_num1():
+    # check if min_num is working
+    df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
+    eq_(
+        df.shape,
+        (3, 2)
+    )
 
 
-# SNP_DATA = {
-#     'sample1': {
-#         'gene1': GeneSNP(
-#             gene_id='gene1',
-#             taxon_id=839,  # prevotella ruminicola
-#             exp_syn=6,
-#             exp_nonsyn=4,
-#             syn=3,
-#             nonsyn=2
-#         ),  # pN/pS = 1.0
-#         'gene2': GeneSNP(
-#             gene_id='gene2',
-#             taxon_id=838,  # prevotella genus
-#             exp_syn=3,
-#             exp_nonsyn=4,
-#             syn=3,
-#             nonsyn=2
-#         )  # pN/pS = 2.0
-#     },
-#     'sample2': {
-#         'gene1': GeneSNP(
-#             gene_id='gene1',
-#             taxon_id=839,  # prevotella ruminicola
-#             exp_syn=3,
-#             exp_nonsyn=4,
-#             syn=3,
-#             nonsyn=2
-#         ),  # pN/pS = 1.0
-#         'gene2': GeneSNP(
-#             gene_id='gene2',
-#             taxon_id=838,  # prevotella genus
-#             exp_syn=6,
-#             exp_nonsyn=4,
-#             syn=3,
-#             nonsyn=2
-#         ),  # pN/pS = 2.0
-#         'gene3': GeneSNP(
-#             gene_id='gene3',
-#             taxon_id=838,  # prevotella genus
-#             exp_syn=3,
-#             exp_nonsyn=4,
-#             syn=3,
-#             nonsyn=2
-#         )  # pN/pS = 2.0
-#     }
-
-# }
+def test_combine_sample_snps_min_num2():
+    # check if min_num is working
+    df = combine_sample_snps(SNP_DATA, 2, [lambda x: x])
+    eq_(
+        df.shape,
+        (2, 2)
+    )
 
 
-# SNP_DATA2 = {
-#     'sample1': {
-#         'gene1': GeneSNP(
-#             gene_id='gene1',
-#             taxon_id=839,  # prevotella ruminicola
-#             exp_syn=6,
-#             exp_nonsyn=4,
-#             syn=3,
-#             nonsyn=2,
-#             coverage=4
-#         ),  # pN/pS = 1.0
-#         'gene2': GeneSNP(
-#             gene_id='gene2',
-#             taxon_id=838,  # prevotella genus
-#             exp_syn=3,
-#             exp_nonsyn=4,
-#             syn=3,
-#             nonsyn=2,
-#             coverage=4
-#         )  # pN/pS = 2.0
-#     },
-#     'sample2': {
-#         'gene1': GeneSNP(
-#             gene_id='gene1',
-#             taxon_id=839,  # prevotella ruminicola
-#             exp_syn=3,
-#             exp_nonsyn=4,
-#             syn=4,
-#             nonsyn=2,
-#             coverage=4
-#         ),  # pN/pS = 1.0
-#         'gene2': GeneSNP(
-#             gene_id='gene2',
-#             taxon_id=838,  # prevotella genus
-#             exp_syn=6,
-#             exp_nonsyn=4,
-#             syn=5,
-#             nonsyn=2,
-#             coverage=3
-#         )  # pN/pS = 2.0
-#     }
-
-# }
+def test_combine_sample_snps_values():
+    # check if values are correct is working
+    df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
+    eq_(
+        (df.min().min(), df.max().max()),
+        (0.5, 1.)
+    )
 
 
-# def test_flat_sample_snps1():
-#     data = flat_sample_snps(SNP_DATA2, 4)
-#     eq_(
-#         (
-#             data['all_samples']['gene1'].syn,
-#             data['all_samples']['gene2'].syn
-#         ),
-#         (7, 3)
-#     )
+def test_combine_sample_snps_index1():
+    # check index_type
+    df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
+    eq_(
+        df.index.tolist(),
+        [('gene1', 839), ('gene2', 838), ('gene3', 838)]
+    )
 
 
-# def test_flat_sample_snps2():
-#     data = flat_sample_snps(SNP_DATA2, 3)
-#     eq_(
-#         (
-#             data['all_samples']['gene1'].syn,
-#             data['all_samples']['gene2'].syn
-#         ),
-#         (7, 8)
-#     )
+def test_combine_sample_snps_index2():
+    # check index_type
+    df = combine_sample_snps(
+        SNP_DATA,
+        1,
+        [lambda x: x],
+        index_type='gene'
+    )
+    eq_(
+        df.index.tolist(),
+        ['gene1', 'gene2', 'gene3']
+    )
 
 
-# def test_combine_sample_min_num1():
-#     # check if min_num is working
-#     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
-#     eq_(
-#         df.shape,
-#         (3, 2)
-#     )
-
-
-# def test_combine_sample_snps_min_num2():
-#     # check if min_num is working
-#     df = combine_sample_snps(SNP_DATA, 2, [lambda x: x])
-#     eq_(
-#         df.shape,
-#         (2, 2)
-#     )
-
-
-# def test_combine_sample_snps_values():
-#     # check if values are correct is working
-#     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
-#     eq_(
-#         (df.min().min(), df.max().max()),
-#         (0.5, 1.)
-#     )
-
-
-# def test_combine_sample_snps_index1():
-#     # check index_type
-#     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
-#     eq_(
-#         df.index.tolist(),
-#         [('gene1', 839), ('gene2', 838), ('gene3', 838)]
-#     )
-
-
-# def test_combine_sample_snps_index2():
-#     # check index_type
-#     df = combine_sample_snps(
-#         SNP_DATA,
-#         1,
-#         [lambda x: x],
-#         index_type='gene'
-#     )
-#     eq_(
-#         df.index.tolist(),
-#         ['gene1', 'gene2', 'gene3']
-#     )
-
-
-# def test_combine_sample_snps_index3():
-#     # check index_type
-#     df = combine_sample_snps(
-#         SNP_DATA,
-#         1,
-#         [lambda x: x],
-#         index_type='taxon'
-#     )
-#     eq_(
-#         df.index.tolist(),
-#         [838, 839]
-#     )
+def test_combine_sample_snps_index3():
+    # check index_type
+    df = combine_sample_snps(
+        SNP_DATA,
+        1,
+        [lambda x: x],
+        index_type='taxon'
+    )
+    eq_(
+        df.index.tolist(),
+        [838, 839]
+    )

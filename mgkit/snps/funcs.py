@@ -340,11 +340,11 @@ def flat_sample_snps(snps_data, min_cov):
     .. versionadded:: 0.1.11
 
     Adds all the values of a gene across all samples into one instance of
-    :class:`classes.GeneSyn`, giving the average gene among all samples.
+    :class:`classes.GeneSNP`, giving the average gene among all samples.
 
     Arguments:
         snps_data (dict): dictionary with the instances of
-            :class:`classes.GeneSyn`
+            :class:`classes.GeneSNP`
         min_cov (int): minimum coverage required for the each instance to be
             added
 
@@ -366,6 +366,6 @@ def flat_sample_snps(snps_data, min_cov):
             try:
                 new_data['all_samples'][gene_id].add(gene_syn)
             except KeyError:
-                new_data['all_samples'][gene_id] = copy.copy(gene_syn)
+                new_data['all_samples'][gene_id] = copy.deepcopy(gene_syn)
 
     return new_data

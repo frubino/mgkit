@@ -35,8 +35,6 @@ class RatioMixIn(object):
             flag_value (bool): when there's no way to calculate the ratio, the
                 possible cases will be flagged with a negative number. This
                 allows to make substitutions for these values
-            min_cov (int, None): minimum coverage require for some special
-            cases. if is None, it's set to the global variable :data:`MIN_COV`.
             haplotypes (bool): if true, coverage information is not used,
                 because the SNPs are assumed to come from an alignment that has
                 sequences having haplotypes
@@ -54,36 +52,14 @@ class RatioMixIn(object):
 
                 * if both the syn and nonsyn attributes are 0 but there's
                   coverage for this gene, we return a 0, as there's no evolution
-                  in this gene. The attribute coverage must be equal or greater
-                  than the min_cov parameter, which is by default assigned from
-                  the :data:`MIN_COV` global variable (if left at *None*): this
-                  means that it can be configured at runtime, if we want a
-                  different default value without passing it to the method for
-                  each call
-                * In case the **coverage** attribute is **None** and the
-                  **flag_value** parameter is True, the return value is **-3**
+                  in this gene. Before, the coverage was checked by this method
+                  against either the passed *min_cov* parameter that was equal
+                  to :data:`MIN_COV`. Now the case is for the user to check the
+                  coverage and functions in :mod:`mgkit.snps.conv_func` do that.
+                  If enough coverage was achieved, the *haplotypes* parameter
+                  can be used to return a 0
 
-            * The number of non-synonymous is greater than 0 but the number of
-              synonymous is 0:
-
-                * if **flag_value** is **True**, the returned value is **-1**
-
-            * The number of synonymous is greater than 0 but the number of
-              non-synonymous is 0:
-
-                * if **flag_value** is **True**, the returned value is **-2**
-
-            +------------+------------+------------+----------+--------------+
-            | :math:`oS` | :math:`oN` | flag_value | coverage | return value |
-            +============+============+============+==========+==============+
-            | 0          | 0          | Not Used   | `int`    | **0**        |
-            +------------+------------+------------+----------+--------------+
-            | 0          | 0          | True       | Not Used | **-3**       |
-            +------------+------------+------------+----------+--------------+
-            | >0         | 0          | True       | Not Used | **-1**       |
-            +------------+------------+------------+----------+--------------+
-            | 0          | >0         | True       | Not Used | **-2**       |
-            +------------+------------+------------+----------+--------------+
+            All other cases return a NaN value
 
         """
 
@@ -104,7 +80,32 @@ class RatioMixIn(object):
         .. versionadded:: 0.2.2
 
         Handles cases where it's important to flag the returned value, as
-        explained in :meth:`GeneSNP.calc_ratio`
+        explained in :meth:`GeneSNP.calc_ratio`, and when the both the number
+        of synonymous and non-synonymous is greater than 0, the pN/pS value is
+        returned.
+
+        * The number of non-synonymous is greater than 0 but the number of
+              synonymous is 0:
+
+                * if **flag_value** is **True**, the returned value is **-1**
+
+            * The number of synonymous is greater than 0 but the number of
+              non-synonymous is 0:
+
+                * if **flag_value** is **True**, the returned value is **-2**
+
+        +------------+------------+--------------+
+        | :math:`oS` | :math:`oN` | return value |
+        +============+============+==============+
+        | >0         | >0         | **pN/pS**    |
+        +------------+------------+--------------+
+        | 0          | 0          | **-3**       |
+        +------------+------------+--------------+
+        | >0         | 0          | **-1**       |
+        +------------+------------+--------------+
+        | 0          | >0         | **-2**       |
+        +------------+------------+--------------+
+
         """
         # Both values are non-zero
         if (self.nonsyn != 0) and (self.syn != 0):
