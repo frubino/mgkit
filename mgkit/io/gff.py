@@ -1414,6 +1414,9 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
 
 def parse_gff(file_handle, gff_type=from_gff):
     """
+    .. versionchanged:: 0.2.3
+        correctly handling of GFF with comments of appended sequences
+
     .. versionchanged:: 0.1.12
         added *gff_type* parameter
 
@@ -1437,6 +1440,10 @@ def parse_gff(file_handle, gff_type=from_gff):
     )
 
     for line in file_handle:
+        # the first is for GFF with comments and the second for
+        # GFF with the fasta file attached
+        if line.startswith('#') or line.startswith('>'):
+            continue
         annotation = gff_type(line)
         yield annotation
 
