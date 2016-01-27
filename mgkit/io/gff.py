@@ -1442,8 +1442,11 @@ def parse_gff(file_handle, gff_type=from_gff):
     for line in file_handle:
         # the first is for GFF with comments and the second for
         # GFF with the fasta file attached
-        if line.startswith('#') or line.startswith('>'):
+        if line.startswith('#'):
             continue
+        if line.startswith('>'):
+            break
+
         annotation = gff_type(line)
         yield annotation
 
