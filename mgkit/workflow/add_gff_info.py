@@ -146,8 +146,21 @@ number already provided in the GFF file. For such cases the *gitaxa* command can
 be used. It works in a similar way to the *taxonomy* command, only it expect the
 *GI* number from NCBI to be in a GFF attribute (by default *gene_id*).
 
+Adding information from Pfam
+****************************
+
+Adds the Pfam description for the annotation, by downloading the list from Pfam.
+
+The options allow to specify in which attribute the ID/ACCESSION is stored
+(defaults to *gene_id*) and which one between ID/ACCESSION is the value of that
+attribute (defaults to *ID*). if no description is found for the family, a
+warning message is logged.
+
 Changes
 *******
+
+.. versionchanged:: 0.2.3
+    added *pfam* command
 
 .. versionchanged:: 0.2.2
     added *eggnog*, *gitaxa* and *counts* command
@@ -189,6 +202,7 @@ from .. import kegg
 from ..io import gff, blast, fasta, compressed_handle
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
+from ..net import pfam
 
 LOG = logging.getLogger(__name__)
 
@@ -1053,6 +1067,43 @@ def set_gitaxa_parser(parser):
     parser.set_defaults(func=gitaxa_command)
 
 
+def pfam_command(options):
+    LOG.info("Downloading Pfam Information")
+
+    pfam_families = pfam.get_pfam_families(
+        'acc' if options.use_accession else 'id'
+    )
+
+    for annotation in gff.parse_gff(options.input_file):
+        pfam_id = annotation.attr[options.id_attr]
+        try:
+            annotation.attr['pfam_description'] = pfam_families[pfam_id][1]
+        except KeyError:
+            LOG.warning("No description found for family %s", pfam_id)
+        annotation.to_file(options.output_file)
+
+
+def set_pfam_parser(parser):
+    parser.add_argument(
+        '-i',
+        '--id-attr',
+        action='store',
+        default='gene_id',
+        help="""
+        In which attribute the Pfam ID/ACCESSION is stored (defaults to
+        *gene_id*)"""
+    )
+    parser.add_argument(
+        '-a',
+        '--use-accession',
+        action='store_true',
+        default=False,
+        help="""If used, the attribute value is the Pfam ACCESSION
+        (e.g. PF06894), not ID (e.g. Phage_TAC_2)"""
+    )
+    parser.set_defaults(func=pfam_command)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -1145,6 +1196,15 @@ def set_parser():
     set_gitaxa_parser(parser_gitaxa)
     set_common_options(parser_gitaxa)
     utils.add_basic_options(parser_gitaxa)
+
+    parser_pfam = subparsers.add_parser(
+        'pfam',
+        help='Adds information from Pfam'
+    )
+
+    set_pfam_parser(parser_pfam)
+    set_common_options(parser_pfam)
+    utils.add_basic_options(parser_pfam)
 
     # top parser
     utils.add_basic_options(parser)
