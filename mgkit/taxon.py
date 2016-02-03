@@ -4,12 +4,12 @@ to filter, order and group data by taxa
 """
 
 import logging
-import gzip
 import cPickle
 import itertools
 import collections
 import pandas
 from .io import open_file
+from . import DependencyError
 # from .utils.common import deprecated
 
 
@@ -350,12 +350,24 @@ class UniprotTaxonomy(object):
 
     def load_data(self, file_handle):
         """
+        .. versionchanged:: 0.2.3
+            now can use read *msgpack* serialised files
+
         .. versionchanged:: 0.1.13
             now accepts file handles and compressed files (if file names)
 
-        Loads pickled data from file name "file_handle", accept gzipped data
+        Loads serialised data from file name "file_handle" and accepts
+        compressed files.
 
-        :param str file_handle: file name (or file handle) of the pickled data
+        if the *.msgpack* string is found in the file name, the *msgpack*
+        package is used instead of pickle
+
+        Arguments:
+            file_handle (str, file): file name to which save the instance data
+
+        Raises:
+            DependencyError: if the file name contains *.msgpack* and the
+            package is not installed
         """
 
         if isinstance(file_handle, str):
@@ -363,21 +375,50 @@ class UniprotTaxonomy(object):
 
         LOG.info("Loading taxonomy from file %s", file_handle.name)
 
-        self._taxa = cPickle.load(file_handle)
-
-    def save_data(self, fname):
-        """
-        Saves taxonomy data to file name "fname", can write gzipped data if
-        fname ends with ".gz"
-
-        :param str fname: file name to which save the instance data
-        """
-        LOG.info("Saving taxonomy to file %s", fname)
-        if fname.endswith('.gz'):
-            f_handle = gzip.open(fname, 'w', compresslevel=4)
+        if '.msgpack' in file_handle.name:
+            try:
+                import msgpack
+            except ImportError:
+                raise DependencyError('msgpack')
+            for taxon in msgpack.Unpacker(file_handle, use_list=False):
+                taxon = UniprotTaxonTuple(*taxon)
+                self[taxon.taxon_id] = taxon
         else:
-            f_handle = open(fname, 'w')
-        cPickle.dump(self._taxa, f_handle, -1)
+            self._taxa = cPickle.load(file_handle)
+
+    def save_data(self, file_handle):
+        """
+        .. versionchanged:: 0.2.3
+            now can use *msgpack* to serialise
+
+        Saves taxonomy data to a file handle or file name, can write compressed
+        data if the file ends with ".gz", ".bz2"
+
+        if the *.msgpack* string is found in the file name, the *msgpack*
+        package is used instead of pickle
+
+        Arguments:
+            file_handle (str, file): file name to which save the instance data
+
+        Raises:
+            DependencyError: if the file name contains *.msgpack* and the
+            package is not installed
+        """
+
+        if isinstance(file_handle, str):
+            file_handle = open_file(file_handle, 'w')
+
+        LOG.info("Saving taxonomy to file %s", file_handle.name)
+
+        if '.msgpack' in file_handle.name:
+            try:
+                import msgpack
+            except ImportError:
+                raise DependencyError('msgpack')
+            for taxon in self:
+                file_handle.write(msgpack.packb(taxon))
+        else:
+            cPickle.dump(self._taxa, file_handle, -1)
 
     def find_by_name(self, s_name):
         """
