@@ -173,6 +173,10 @@ class GenomicRange(object):
 
     def __contains__(self, pos):
         """
+
+        .. versionchanged:: 0.2.3
+            a range or a subclass are accepted
+
         .. versionadded:: 0.1.16
 
         Tests if the position is inside the range of the GenomicRange
@@ -180,7 +184,12 @@ class GenomicRange(object):
         Pos is 1-based as :attr:`GenomicRange.start` and
         :attr:`GenomicRange.end`
         """
-        return between(pos, self.start, self.end)
+        if isinstance(pos, int):
+            return between(pos, self.start, self.end)
+        elif isinstance(pos, GenomicRange):
+            pos = (pos.start, pos.end)
+        return (between(pos[0], self.start, self.end)) and \
+            (between(pos[1], self.start, self.end))
 
     def get_range(self):
         """

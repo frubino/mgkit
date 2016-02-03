@@ -697,6 +697,114 @@ def test_genomicrange_contains4():
     )
 
 
+def test_genomicrange_contains_tuple1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        (25, 30) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_tuple2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        (25, 31) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_tuple3():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        (19, 30) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_tuple4():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        (30, 25) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_genomicrange1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.GenomicRange(start=25, end=30) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_genomicrange2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.GenomicRange(start=30, end=25) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_genomicrange3():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.GenomicRange(start=19, end=30) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_genomicrange4():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.GenomicRange(start=25, end=31) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_annotation1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.Annotation(start=25, end=30) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_annotation2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.Annotation(start=30, end=25) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_annotation3():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.Annotation(start=19, end=30) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_annotation4():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.Annotation(start=25, end=31) in gen_range1,
+        False
+    )
+
+
 def test_genomicrange_get_relative_pos1():
     gen_range1 = gff.GenomicRange(start=20, end=30)
 
