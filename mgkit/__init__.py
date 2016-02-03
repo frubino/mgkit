@@ -53,3 +53,11 @@ def cite(file=sys.stderr):
 def check_version(version):
     if __version__ != version:
         LOG.warning("This was tested with %s version %s", PKG_NAME, version)
+
+
+class DependencyError(Exception):
+    "Raised if an optional requirement is needed"
+    def __init__(self, package):
+        super(DependencyError, self).__init__(
+            "The '{}' package is required".format(package)
+        )
