@@ -194,6 +194,7 @@ import itertools
 import functools
 import pysam
 import json
+import pickle
 import mgkit
 from . import utils
 from .. import align
@@ -203,6 +204,7 @@ from .. import kegg
 from ..io import gff, blast, fasta, compressed_handle, open_file
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
+from .. import DependencyError
 from ..net import pfam
 
 LOG = logging.getLogger(__name__)
@@ -1015,7 +1017,13 @@ def addtaxa_command(options):
         if '.json' in options.dictionary:
             gene_ids.update(json.load(dict_file))
         elif '.msgpack':
-            pass
+            try:
+                import msgpack
+            except ImportError:
+                raise DependencyError('msgpack')
+            gene_ids.update(msgpack.load(dict_file))
+        else:
+            gene_ids.update(pickle.load(dict_file))
 
     if options.taxonomy is not None:
         taxonomy = taxon.UniprotTaxonomy(options.taxonomy)

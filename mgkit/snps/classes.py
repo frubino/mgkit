@@ -4,9 +4,15 @@ Manage SNP data.
 """
 from __future__ import division
 import logging
-import numpy
 import enum
 import json
+
+from .. import DependencyError
+
+try:
+    import numpy
+except ImportError:
+    raise DependencyError('numpy')
 
 LOG = logging.getLogger(__name__)
 

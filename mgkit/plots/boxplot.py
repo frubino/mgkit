@@ -6,9 +6,14 @@ Code related to boxplots
 from __future__ import division
 
 import logging
-import numpy
-import matplotlib.pyplot as plt
+from .. import DependencyError
 from ..utils.common import deprecated
+
+try:
+    import numpy
+    import matplotlib.pyplot as plt
+except ImportError:
+    raise DependencyError('numpy, matplotlib')
 
 LOG = logging.getLogger(__name__)
 

@@ -2,9 +2,14 @@
 Scaling functions for counts
 """
 
-from scipy import stats
-import numpy
-import pandas
+from .. import DependencyError
+
+try:
+    from scipy import stats
+    import numpy
+    import pandas
+except ImportError:
+    raise DependencyError('numpy, scipy, pandas')
 
 
 def scale_factor_deseq(dataframe):

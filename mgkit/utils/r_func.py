@@ -5,8 +5,17 @@ Access some R functions. requires :mod:`rpy2`
 #to get python 3.x behavior on relative imports - it's absolute unless specified
 #by a dot - otherwise current dir module is loaded
 from __future__ import absolute_import
-import rpy2.robjects as robjects
-import pandas
+from .. import DependencyError
+
+try:
+    import rpy2.robjects as robjects
+except ImportError:
+    raise DependencyError('rpy')
+
+try:
+    import pandas
+except ImportError:
+    raise DependencyError('pandas')
 
 
 def correct_pvalues(pvalues, method='BH'):

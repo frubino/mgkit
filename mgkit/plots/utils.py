@@ -6,8 +6,13 @@ Misc code
 """
 import logging
 
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
+from .. import DependencyError
+
+try:
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+except ImportError:
+    raise DependencyError('matplotlib')
 
 LOG = logging.getLogger(__name__)
 

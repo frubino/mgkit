@@ -59,8 +59,13 @@ of mappings, and the values the list of IDs the annoation maps to.
 
 """
 import logging
-from pymongo import MongoClient
 from ..io import gff
+from .. import DependencyError
+
+try:
+    from pymongo import MongoClient
+except ImportError:
+    raise DependencyError('pymongo')
 
 LOG = logging.getLogger(__name__)
 

@@ -8,10 +8,10 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'numpy>=1.9.2',
-    'pysam>=0.8.2.1',
-    'pandas>=0.16.2',
-    'scipy>=0.15.1',
-    'semidbm>=0.5.1',
+    # 'pysam>=0.8.2.1',
+    # 'pandas>=0.16.2',
+    # 'scipy>=0.15.1',
+    # 'semidbm>=0.5.1',
     # 'cachetools>=1.1.5'
     #'matplotlib>=1.4.3',
     #'goatools',
@@ -28,6 +28,21 @@ if sys.version_info < (3, 4):
     #support for enum backported from Python 3.4
     install_requires.append('enum34')
 
+extras_require = {
+    'htseq': ['HTSeq>=0.6.0'],
+    'db': ['semidbm>=0.5.1', 'pymongo>=3.1.1'],
+    'R': 'rpy2>=2.3.8',
+    'extra_scripts': [
+        'pysam>=0.8.2.1',
+        'pandas>=0.16.2'
+    ],
+}
+
+extras_require['full'] = [
+    'scipy>=0.15.1',
+    'matplotlib>=1.5',
+] + extras_require['db'] + extras_require['extra_scripts']
+
 setup(
     name="mgkit",
     version=__VERSION__,
@@ -43,21 +58,17 @@ setup(
         'scripts/download-taxonomy.sh'
     ],
     tests_require=['nose>=1.3.4', 'yanc'],
-    extras_require={
-        'htseq': ['HTSeq>=0.6.0'],
-        'semidbm': ['semidbm>=0.5.1'],
-        'R': 'rpy2>=2.3.8',
-    },
+    extras_require=extras_require,
     entry_points={
         'console_scripts': [
-            'download_data = mgkit.workflow.download_data:main',
+            'download_data = mgkit.workflow.download_data:main [extra_scripts]',
             'download_profiles = mgkit.workflow.download_profiles:main',
             'filter-gff = mgkit.workflow.filter_gff:main',
-            'add-gff-info = mgkit.workflow.add_gff_info:main',
-            'get-gff-info = mgkit.workflow.extract_gff_info:main [semidbm]',
+            'add-gff-info = mgkit.workflow.add_gff_info:main [extra_scripts]',
+            'get-gff-info = mgkit.workflow.extract_gff_info:main [db]',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'blast2gff = mgkit.workflow.blast2gff:main',
-            'snp_parser = mgkit.workflow.snp_parser:main [htseq]',
+            'snp_parser = mgkit.workflow.snp_parser:main [htseq,full_libs]',
             'translate_seq = mgkit.workflow.nuc2aa:main',
             'fastq_utils = mgkit.workflow.fastq_utils:main [htseq]',
         ],

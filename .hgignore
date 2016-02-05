@@ -16,3 +16,4 @@ docs/source/examples/plots/abund.py
 docs/source/examples/plots/boxplot.py
 docs/source/examples/plots/heatmap.py
 mgkit/_private
+*.msgpack

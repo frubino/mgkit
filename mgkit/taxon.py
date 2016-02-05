@@ -7,7 +7,6 @@ import logging
 import cPickle
 import itertools
 import collections
-import pandas
 from .io import open_file
 from . import DependencyError
 # from .utils.common import deprecated
@@ -773,6 +772,11 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
     Returns:
         pandas.DataFrame: matrix with the pairwise distances of all *taxon_ids*
     """
+    try:
+        import pandas
+    except ImportError:
+        raise DependencyError('pandas')
+
     matrix = pandas.DataFrame(index=taxon_ids, columns=taxon_ids).fillna(0)
 
     for taxon_id1, taxon_id2 in itertools.combinations(taxon_ids, 2):

@@ -151,6 +151,7 @@ import logging
 import itertools
 import numpy
 import pickle
+import functools
 from cStringIO import StringIO
 import mgkit
 from mgkit.io.fasta import load_fasta
@@ -160,7 +161,7 @@ from mgkit.net import uniprot
 from mgkit import taxon
 import mgkit.simple_cache
 from . import utils
-import functools
+
 
 is_ancestor = None
 

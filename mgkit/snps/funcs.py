@@ -2,14 +2,19 @@
 Functions used in SNPs manipulation
 """
 import logging
-import numpy
 import itertools
 import functools
-import pandas
-import scipy.stats
 import csv
 import copy
 from .filter import pipe_filters
+from .. import DependencyError
+
+try:
+    import pandas
+    import numpy
+    import scipy.stats
+except ImportError:
+    raise DependencyError('pandas, numpy, scipy')
 
 LOG = logging.getLogger(__name__)
 

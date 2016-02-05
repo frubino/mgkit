@@ -5,9 +5,14 @@ Code related to heatmaps.
 """
 import logging
 import numpy
-import scipy.spatial.distance as distance
-import scipy.cluster.hierarchy as hclust
 from .utils import get_grid_figure
+from .. import DependencyError
+
+try:
+    import scipy.spatial.distance as distance
+    import scipy.cluster.hierarchy as hclust
+except ImportError:
+    raise DependencyError('scipy')
 
 LOG = logging.getLogger(__name__)
 

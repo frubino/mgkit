@@ -2,11 +2,17 @@
 Module dealing with BAM/SAM files
 """
 
-import numpy
 import logging
 import itertools
-import pandas
-import pysam
+
+from . import DependencyError
+
+try:
+    import pandas
+    import numpy
+    import pysam
+except ImportError:
+    raise DependencyError('numpy, pysam, pandas')
 
 LOG = logging.getLogger(__name__)
 

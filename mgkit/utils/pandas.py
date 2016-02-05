@@ -1,4 +1,6 @@
 """
+.. deprecated:: 0.2.3
+
 Functions related to handling :mod:`pandas` data structures
 """
 

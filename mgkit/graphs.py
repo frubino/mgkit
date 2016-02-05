@@ -5,7 +5,12 @@ Graph module
 """
 
 import itertools
-import networkx as nx
+from . import DependencyError
+
+try:
+    import networkx as nx
+except ImportError:
+    raise DependencyError('networkx')
 
 
 def build_graph(id_links, name, edge_type='', weight=0.5):

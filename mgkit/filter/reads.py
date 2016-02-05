@@ -3,7 +3,13 @@ Some test functions to filter sequences
 """
 from __future__ import division
 
-import numpy
+from .. import DependencyError
+
+try:
+    import numpy
+except ImportError:
+    raise DependencyError('numpy')
+
 # from numpy import sum
 # import pandas
 # from scipy.stats import itemfreq

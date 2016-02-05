@@ -6,11 +6,17 @@ Misc functions for count data
 
 import logging
 import itertools
-import pandas
 import functools
 from mgkit.filter import taxon as tx_filters
 from mgkit.io import open_file
 import mgkit.simple_cache
+
+from .. import DependencyError
+
+try:
+    import pandas
+except ImportError:
+    raise DependencyError('pandas')
 
 LOG = logging.getLogger(__name__)
 
