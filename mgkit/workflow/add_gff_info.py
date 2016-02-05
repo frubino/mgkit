@@ -138,11 +138,11 @@ this script **-e** option must be used.
 The sample names must be provided in the same order as the columns in the input
 files. If the counts are FPKMS the *-f* option can be used.
 
-Adding Taxonomy from GI-Taxa Table
-**********************************
+Adding Taxonomy from a Table
+****************************
 
 There are cases where it may needed or preferred to add the taxonomy from a *GI*
-number already provided in the GFF file. For such cases the *gitaxa* command can
+number already provided in the GFF file. For such cases the *addtaxa* command can
 be used. It works in a similar way to the *taxonomy* command, only it expect the
 *GI* number from NCBI to be in a GFF attribute (by default *gene_id*).
 
@@ -193,13 +193,14 @@ import logging
 import itertools
 import functools
 import pysam
+import json
 import mgkit
 from . import utils
 from .. import align
 from .. import logger
 from .. import taxon
 from .. import kegg
-from ..io import gff, blast, fasta, compressed_handle
+from ..io import gff, blast, fasta, compressed_handle, open_file
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
 from ..net import pfam
@@ -991,27 +992,37 @@ def set_counts_parser(parser):
     parser.set_defaults(func=counts_command)
 
 
-def gitaxa_command(options):
+def addtaxa_command(options):
 
     annotations = []
-    gids = set()
+    gene_ids = set()
 
     for annotation in gff.parse_gff(options.input_file):
         annotations.append(annotation)
-        gids.add(annotation.attr[options.gi_attr])
+        gene_ids.add(annotation.attr[options.gene_attr])
 
-    gids = dict(
-        blast.parse_gi_taxa_table(
-            options.gi_taxa_table,
-            gids=gids)
-    )
+    if options.gene_taxon_table is not None:
+        gene_ids = dict(
+            blast.parse_gi_taxa_table(
+                options.gene_taxon_table,
+                gids=gene_ids)
+        )
+    else:
+        gene_ids = {}
+
+    if options.dictionary is not None:
+        dict_file = open_file(options.dictionary, 'r')
+        if '.json' in options.dictionary:
+            gene_ids.update(json.load(dict_file))
+        elif '.msgpack':
+            pass
 
     if options.taxonomy is not None:
         taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
 
     for annotation in annotations:
         try:
-            taxon_id = gids[annotation.attr[options.gi_attr]]
+            taxon_id = gene_ids[annotation.attr[options.gene_attr]]
             annotation.taxon_id = taxon_id
         except KeyError:
             LOG.error(
@@ -1036,22 +1047,23 @@ def gitaxa_command(options):
         annotation.to_file(options.output_file)
 
 
-def set_gitaxa_parser(parser):
+def set_addtaxa_parser(parser):
     parser.add_argument(
         '-t',
-        '--gi-taxa-table',
+        '--gene-taxon-table',
         action='store',
         default=None,
-        required=True,
-        help="GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz)"
+        help="""GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz) or a similar
+                file where GENE/TAXON are tab separated and one per line"""
     )
     parser.add_argument(
         '-a',
-        '--gi-attr',
+        '--gene-attr',
         action='store',
         default='gene_id',
         help="""
-        In which attribute the GI is stored (defaults to *gene_id*)"""
+        In which attribute the GENEID in the table is stored (defaults to
+        *gene_id*)"""
     )
     parser.add_argument(
         '-x',
@@ -1064,7 +1076,18 @@ def set_gitaxa_parser(parser):
         will be set
         """
     )
-    parser.set_defaults(func=gitaxa_command)
+    parser.add_argument(
+        '-d',
+        '--dictionary',
+        action='store',
+        default=None,
+        help="""
+        A serialised dictionary, where the key is the GENEID and the value is
+        TAXONID. It can be in json or msgpack format (can be a compressed file)
+        *Note*: the dictionary values takes precedence over the table files
+        """
+    )
+    parser.set_defaults(func=addtaxa_command)
 
 
 def pfam_command(options):
@@ -1188,14 +1211,15 @@ def set_parser():
     set_common_options(parser_counts)
     utils.add_basic_options(parser_counts)
 
-    parser_gitaxa = subparsers.add_parser(
-        'gitaxa',
-        help='Adds taxonomy information from a GI-Taxa table'
+    parser_addtaxa = subparsers.add_parser(
+        'addtaxa',
+        help='''Adds taxonomy information from a GI-Taxa, gene_id/taxon_id
+                table or a dictionary serialised as a pickle/msgpack file'''
     )
 
-    set_gitaxa_parser(parser_gitaxa)
-    set_common_options(parser_gitaxa)
-    utils.add_basic_options(parser_gitaxa)
+    set_addtaxa_parser(parser_addtaxa)
+    set_common_options(parser_addtaxa)
+    utils.add_basic_options(parser_addtaxa)
 
     parser_pfam = subparsers.add_parser(
         'pfam',
