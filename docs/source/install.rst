@@ -30,17 +30,27 @@ Most UNIX systems provide a version of Python installed. Latest versions of MacO
 
 The library requires these Python packages:
 
-* numpy >= 1.9.1
-* scipy >= 0.14.0
-* pandas >= 0.15.1
-* matplotlib >= 1.4.0
-* pysam >= 0.8.1 (required by :mod:`mgkit.align`)
+The installation dependencies are flexible, with only *numpy* (version 1.9.2 or later) as being **required**::
+
+	$ pip install mgkit
+
+To install every needed packages, you can use::
+
+	$ pip install mgkit[full]
+
+Other options can be found in the *setup.py* file, in the *extra_requires* dictionary.
+
+The optional dependencies includes:
+
+* scipy
+* pandas
+* matplotlib
+* pysam
 * argparse (if Python 2.6 is installed, part of the standard library from 2.7)
-
-Optional:
-
 * joblib: for script `translate_seq`, to use multiple processors
-* HTSeq >= 0.6.1p1
+* HTSeq
+* semidbm
+* pymongo
 * `goatools <https://github.com/tanghaibao/goatools>`_ (required by :mod:`mgkit.mappings.go`), has package `fisher` as a dependency
 * rpy2 >= 2.3.8 (required by :mod:`mgkit.utils.r_func`)
 

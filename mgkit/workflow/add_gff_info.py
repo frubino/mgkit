@@ -161,7 +161,7 @@ importable. The option to use json and msgpack allow to integrate this script
 with other languages without resorting to a text file.
 
 While the default is to look for the *gene_id* attribute in the GFF annotation,
-another attribute can be specified, using the **-gene-attr* option.
+another attribute can be specified, using the **-gene-attr** option.
 
 .. note::
 
