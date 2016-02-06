@@ -141,10 +141,32 @@ files. If the counts are FPKMS the *-f* option can be used.
 Adding Taxonomy from a Table
 ****************************
 
-There are cases where it may needed or preferred to add the taxonomy from a *GI*
-number already provided in the GFF file. For such cases the *addtaxa* command can
-be used. It works in a similar way to the *taxonomy* command, only it expect the
-*GI* number from NCBI to be in a GFF attribute (by default *gene_id*).
+There are cases where it may needed or preferred to add the taxonomy from a
+*gene_id* already provided in the GFF file. For such cases the *addtaxa* command
+can be used. It works in a similar way to the *taxonomy* command, only it expect
+three different type of inputs:
+
+    * *GI-Taxa* table from NCBI (e.g. gi_taxid_nucl.dmp)
+    * tab separated table
+    * dictionary
+
+The first two are tab separated files, where on each line, the first column is
+the *gene_id* that is found in the first column, while the second if the
+*taxon_id*.
+
+The last option is a serialised Python *dict*/hash table, whose keys are the
+*gene_id* and the value is that gene corresponding *taxon_id*. The serialised
+formats accepted are msgpack, json and pickle. The *msgpack* module must be
+importable. The option to use json and msgpack allow to integrate this script
+with other languages without resorting to a text file.
+
+While the default is to look for the *gene_id* attribute in the GFF annotation,
+another attribute can be specified, using the **-gene-attr* option.
+
+.. note::
+
+    the dictionary content is loaded after the table files and its keys and
+    corresponding values takes precedence over the text files.
 
 Adding information from Pfam
 ****************************
@@ -160,7 +182,7 @@ Changes
 *******
 
 .. versionchanged:: 0.2.3
-    added *pfam* command
+    added *pfam* command, renamed *gitaxa* to *addtaxa* and made it more general
 
 .. versionchanged:: 0.2.2
     added *eggnog*, *gitaxa* and *counts* command
@@ -1025,6 +1047,12 @@ def addtaxa_command(options):
         else:
             gene_ids.update(pickle.load(dict_file))
 
+    # Ensures all taxon_ids are *int*
+    gene_ids = dict(
+        (key, int(value))
+        for key, value in gene_ids.iteritems()
+    )
+
     if options.taxonomy is not None:
         taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
 
@@ -1034,8 +1062,8 @@ def addtaxa_command(options):
             annotation.taxon_id = taxon_id
         except KeyError:
             LOG.error(
-                "No Taxon ID for GI - %s",
-                annotation.attr[options.gi_attr]
+                "No Taxon ID for GENE - %s",
+                annotation.attr[options.gene_attr]
             )
             taxon_id = None
 
@@ -1222,7 +1250,8 @@ def set_parser():
     parser_addtaxa = subparsers.add_parser(
         'addtaxa',
         help='''Adds taxonomy information from a GI-Taxa, gene_id/taxon_id
-                table or a dictionary serialised as a pickle/msgpack file'''
+                table or a dictionary serialised as a pickle/msgpack/json file
+                '''
     )
 
     set_addtaxa_parser(parser_addtaxa)
