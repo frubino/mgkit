@@ -1,6 +1,53 @@
 Changes
 =======
 
+0.2.3
+-----
+
+The installation dependencies are more flexible, with only *numpy* as being **required**. To install every needed packages, you can use::
+
+	pip install mgkit[full]
+
+Added
+*****
+
+* new option to pass the *query sequences* to **blast2gff**, this allows to add the correct frame of the annotation in the GFF
+* added the attributes *evalue*, *subject_start* and *subject_end* to the output of *blast2gff*. The subject start and end position allow to understand on which frame of the *subject sequence* the match was found
+* added the options to annotate the heatmap with the numbers. Also updated the relative example notebook
+* Added the option to reads the taxonomy from NCBI dump files, using :meth:`mgkit.taxon.UniprotTaxonomy.read_from_ncbi_dump`. This make it faster to get the taxonomy file
+* added argument to return information from :func:`mgkit.net.embl.datawarehouse_search`, in the form of tab separated data. The argument *fields* can be used when *display* is set to **report**. An example on how to use it is in the function documentation
+* added a bash script *download-taxonomy.sh* that download the taxonomy
+* added script *venv-docs.sh* to build the documentation in HTML under a virtual environment. matplotlib on MacOS X raises a RuntimeError, because of a bug in `virtualenv <https://github.com/pypa/virtualenv/issues/54>`_, the documentation can be first build with this, after the script *create-apidoc.sh* is create the API documentation. The rest of the documentation (e.g. the PDF) can be created with *make* as usual, afterwards
+* added :mod:`mgkit.net.pfam`, with only one function at the moment, that returns the descriptions of the families.
+* added *pfam* command to *add-gff-info*, using the mentioned function, it adds the description of the Pfam families in the GFF file
+* added a new exception, used internally when an additional dependency is needed
+
+Changed
+*******
+
+* using the NCBI taxonomy dump has two side effects:
+
+    - the scientific/common names are kept as is, not lower cased as was before
+    - a *merged* file is provided for *taxon_id* that changed. While the old taxon_id is kept in the taxonomy, this point to the new taxon, to keep backward compatibility
+
+* renamed the *add-gff-info* *gitaxa* command to *addtaxa*. It now accepts more data sources (dictionaries) and is more general
+* changed :func:`mgkit.net.embl.datawarehouse_search` to automatically set the limit at 100,000 records
+* the taxonomy can now be saved using `msgpack <https://github.com/msgpack/msgpack-python>`_, making it faster to read/write it. It's also more compact and better compression ratio
+* the :func:`mgkit.plots.heatmap.grouped_spine` now accept the rotation of the labels as option
+* added option to use another attribute for the *gene_id* in the *get-gff-info* script *gtf* command
+* added a function to compare the version of MGKit used, throwing a warning, when it's different (:func:`mgkit.check_version`)
+* removed test for old SNPs structures and added the same tests for the new one
+* :class:`mgkit.snps.classes.GeneSNP` now caches the number of synonymous and non-synonymous SNPs for better speed
+* :meth:`mgkit.io.gff.GenomicRange.__contains__` now also accepts a tuple (start, end) or another GenomicRange instance
+
+Fixed
+*****
+
+* a bug in the *gitaxa* (now *addtaxa*) command: when a taxon_id was not found in the table, the wrong *taxon_name* and *lineage* was inserted
+* bug in :class:`mgkit.snps.classes.GeneSNP` that prevented the correct addition of values
+* fixed bug in :func:`mgkit.snps.funcs.flat_sample_snps` with the new class
+* :func:`mgkit.io.gff.parse_gff` now correctly handles comment lines and stops parsing if the fasta file at the end of a GFF is found
+
 0.2.2
 -----
 

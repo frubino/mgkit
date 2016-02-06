@@ -41,6 +41,7 @@ extras_require = {
 extras_require['full'] = [
     'scipy>=0.15.1',
     'matplotlib>=1.5',
+    'msgpack-python>=0.4.6'
 ] + extras_require['db'] + extras_require['extra_scripts']
 
 setup(
