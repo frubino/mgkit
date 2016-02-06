@@ -2,20 +2,13 @@ import sys
 # import ez_setup
 # ez_setup.use_setuptools()
 
-__VERSION__ = "0.2.2"
+__VERSION__ = "0.2.3"
 
 from setuptools import setup, find_packages
 
 install_requires = [
     'numpy>=1.9.2',
-    # 'pysam>=0.8.2.1',
-    # 'pandas>=0.16.2',
-    # 'scipy>=0.15.1',
-    # 'semidbm>=0.5.1',
-    # 'cachetools>=1.1.5'
-    #'matplotlib>=1.4.3',
     #'goatools',
-    # 'networkx>=1.9.1',
 ]
 
 with open('README.rst') as file:

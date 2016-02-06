@@ -6,7 +6,7 @@ Changes
 
 The installation dependencies are more flexible, with only *numpy* as being **required**. To install every needed packages, you can use::
 
-	pip install mgkit[full]
+	$ pip install mgkit[full]
 
 Added
 *****

@@ -137,7 +137,7 @@ def parse_ncbi_taxonomy_merged_file(file_handle):
     .. versionadded:: 0.2.3
 
     Parses the *merged.dmp* file where the merged taxon_id are stored. Available
-    at `ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/`_
+    at ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/
 
     Arguments:
         file_handle (str, file): file name or handle to the file
@@ -164,7 +164,7 @@ def parse_ncbi_taxonomy_names_file(file_handle, name_classes=('scientific name',
     .. versionadded:: 0.2.3
 
     Parses the *names.dmp* file where the names associated to a taxon_id are
-    stored. Available at `ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/`_
+    stored. Available at ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/
 
     Arguments:
         file_handle (str, file): file name or handle to the file
@@ -199,7 +199,7 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
     .. versionadded:: 0.2.3
 
     Parses the *nodes.dmp* file where the nodes of the taxonomy are stored.
-    Available at `ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/`_.
+    Available at ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/.
 
     Arguments:
         file_handle (str, file): file name or handle to the file
@@ -270,7 +270,7 @@ class UniprotTaxonomy(object):
             .. versionadded:: 0.2.3
 
             Uses the *nodes.dmp* and optionally *names.dmp*, *merged.dmp* files
-            from `ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/`_ to populate the
+            from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/ to populate the
             taxonomy.
 
             Arguments:
