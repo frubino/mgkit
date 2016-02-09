@@ -1105,7 +1105,6 @@ def set_addtaxa_parser(parser):
         '-x',
         '--taxonomy',
         action='store',
-        type=argparse.FileType('r'),
         default=None,
         help="""
         Taxonomy file - If given, both *taxon_name* and *lineage* attributes
