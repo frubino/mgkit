@@ -6,6 +6,7 @@ from __future__ import division  # add check to use only on python 2.x
 import itertools
 import logging
 import random
+from StringIO import StringIO
 import numpy
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
@@ -592,10 +593,14 @@ def sequence_composition(sequence, chars=tuple(REV_COMP)):
 
 def get_contigs_info(file_name, pp=False):
     """
+    .. versionchanged:: 0.2.4
+       file_name can be a *dict* name->seq or a list of sequences
+
     .. versionadded:: 0.2.1
 
-    Given a file name for a fasta with sequences, returns the following
-    information in a tuple:
+    Given a file name for a fasta file with sequences, a dictionary of name->seq,
+    or a list of sequences, returns the following information in a tuple, or a
+    string if *pp* is True:
 
     - number of sequences
     - total base pairs
@@ -612,7 +617,15 @@ def get_contigs_info(file_name, pp=False):
         str, tuple: the returned value depends on the value of *pp*, if True a
         formatted string is returned, otherwise the tuple with all values is.
     """
-    seqs = list(seq for name, seq in fasta.load_fasta(file_name))
+
+    if isinstance(file_name, dict):
+	seqs = list(file_name.itervalues())
+        file_name = 'dictionary'
+    elif isinstance(file_name, list):
+        file_name = 'list'
+        seqs = list(file_name)
+    else:
+        seqs = list(seq for name, seq in fasta.load_fasta(file_name))
 
     lengths = numpy.array([len(x) for x in seqs])
     info = (
