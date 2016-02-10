@@ -430,7 +430,7 @@ def add_uniprot_info(annotations, options, info_cache):
     if options.ec:
         columns.append('ec')
     if options.lineage:
-        columns.append('lineage()')
+        columns.append('lineage(ALL)')
     if options.mapping is not None:
         for db in options.mapping:
             columns.append('database({0})'.format(db))
@@ -480,8 +480,8 @@ def add_uniprot_info(annotations, options, info_cache):
                     #test with a try/expect maybe
                     if 'organism' in columns:
                         annotation.attr['taxon_name'] = gene_info['organism']
-                    if column.startswith('lineage'):
-                        annotation.attr['lineage'] = gene_info['lineage()']
+            elif column.startswith('lineage'):
+                    annotation.attr['lineage'] = gene_info['lineage(ALL)']
             elif column.startswith('database'):
                 annotation.attr[
                     'map_{0}'.format(
