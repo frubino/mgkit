@@ -929,6 +929,8 @@ def set_eggnog_parser(parser):
 
 
 def load_counts(count_files, samples, featureCounts):
+    LOG.info("Sample: %s", ', '.join(samples))
+
     counts = {}
 
     index = 6 if featureCounts else 1
@@ -988,7 +990,7 @@ def set_counts_parser(parser):
         '--samples',
         action='store',
         required=True,
-        type=lambda x: x.split(','),
+        type=lambda x: [y for y in x.split(',') if y],
         help="Comma separated sample names, in the same order as the count file"
     )
     parser.add_argument(
