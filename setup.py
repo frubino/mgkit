@@ -62,7 +62,7 @@ setup(
             'get-gff-info = mgkit.workflow.extract_gff_info:main [db]',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'blast2gff = mgkit.workflow.blast2gff:main',
-            'snp_parser = mgkit.workflow.snp_parser:main [htseq,full_libs]',
+            'snp_parser = mgkit.workflow.snp_parser:main [htseq,full]',
             'translate_seq = mgkit.workflow.nuc2aa:main',
             'fastq_utils = mgkit.workflow.fastq_utils:main [htseq]',
         ],
