@@ -1,6 +1,22 @@
 Changes
 =======
 
+0.2.4
+-----
+
+Changed
+*******
+
+* :func:`mgkit.utils.sequence.get_contigs_info` now accepts a dictionary name->seq or a list of sequences, besides a file name (r536)
+* *add-gff-info* **counts** command now removes trailing commas from the samples list
+
+Fixed
+*****
+
+* the **snp_parser** script requirements were set wrong in *setup.py* (r540)
+* uncommented lines to download sample data to build documentation (r533)
+* *add-gff-info* **uniprot** command now writes the *lineage* attribute correctly (r538)
+
 0.2.3
 -----
 
