@@ -246,6 +246,7 @@ def dendrogram(data, ax, method='complete', orientation='top', use_dist=True,
         orientation=orientation
     )
     ax.grid(False)
+    ax.set_axis_off()
     ax.set_axis_bgcolor('white')
     ax.set_xticks([])
     ax.set_yticks([])
