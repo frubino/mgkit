@@ -619,7 +619,7 @@ def get_contigs_info(file_name, pp=False):
     """
 
     if isinstance(file_name, dict):
-	seqs = list(file_name.itervalues())
+        seqs = list(file_name.itervalues())
         file_name = 'dictionary'
     elif isinstance(file_name, list):
         file_name = 'list'
