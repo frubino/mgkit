@@ -46,9 +46,9 @@ def calc_coefficient_of_variation(dataframe):
 
 def make_stat_table(dataframes, roots):
     """
-    Produces a :class:`pandas.DataFrame` that summarise the supplied DataFrames.
-    The stats include mean, stdev and coefficient of variation for each root
-    taxon.
+    Produces a :class:`pandas.DataFrame` that summarise the supplied
+    DataFrames. The stats include mean, stdev and coefficient of variation for
+    each root taxon.
 
     :param iterable dataframes: iterable of DataFrame instances
     :param iterable roots: list of root taxa to which each table belongs

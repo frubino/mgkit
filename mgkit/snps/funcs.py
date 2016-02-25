@@ -33,7 +33,6 @@ def build_rank_matrix(dataframe, taxonomy=None, taxon_rank=None):
 
     :return: :class:`pandas.DataFrame` instance
     """
-    #aggiungere controllo che sia un vettore, altrimenti convertire
     if taxon_rank is None:
         taxon_index = sorted(set(dataframe.index.get_level_values('taxon')))
     else:
@@ -87,8 +86,8 @@ def group_rank_matrix(dataframe, gene_map):
 
     for mapping_id, gene_ids in gene_map.iteritems():
         mapped_matrix = dataframe.loc[gene_ids]
-        #we only use the minimum rank among the genes with a set function
-        #min() will return only those
+        # we only use the minimum rank among the genes with a set function
+        # min() will return only those
         for taxon_id, rank in mapped_matrix.mean().dropna().iteritems():
             rank_matrix.set_value(mapping_id, taxon_id, rank)
 
@@ -209,10 +208,10 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
             to be returned
         filters (iterable): iterable containing filter functions, a list can be
             found in :mod:`mgkit.snps.filter`
-        index_type (str, None): if `None`, each row index for the DataFrame will
-            be a MultiIndex with `gene` and `taxon` as elements. If the equals
-            'gene', the row index will be gene based and if 'taxon' will be
-            taxon based
+        index_type (str, None): if `None`, each row index for the DataFrame
+            will be a MultiIndex with `gene` and `taxon` as elements. If the
+            equals 'gene', the row index will be gene based and if 'taxon' will
+            be taxon based
         gene_func (func): a function to map a gene_id to a gene_map. See
             :func:`.mapper.map_gene_id` for an example
         taxon_func (func): a function to map a taxon_id to a list of IDs. See
@@ -220,12 +219,13 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
             :mod:`.mapper.map_taxon_id_to_ancestor` for examples
         use_uid (bool): if True, uses the `GeneSNP.uid` instead of
             `GeneSNP.gene_id`
-        flag_values (bool): if True, :meth:`mgkit.snps.classes.GeneSNP.calc_ratio_flag`
-            will be used, instead of :meth:`mgkit.snps.classes.GeneSNP.calc_ratio`
+        flag_values (bool): if True,
+            :meth:`mgkit.snps.classes.GeneSNP.calc_ratio_flag` will be used,
+            instead of :meth:`mgkit.snps.classes.GeneSNP.calc_ratio`
 
     Returns:
-        DataFrame: :class:`pandas.DataFrame` with the pN/pS values for the input
-        SNPs, with the columns being the samples.
+        DataFrame: :class:`pandas.DataFrame` with the pN/pS values for the
+        input SNPs, with the columns being the samples.
 
     """
     sample_dict = dict((sample, {}) for sample in snps_data)
@@ -261,9 +261,9 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                 try:
                     sample_dict[sample][key].add(gene_syn)
                 except KeyError:
-                    # Needed with the new GeneSNP, because copies the references
-                    # and the number of SNPs raises (the original data structure
-                    # is modified)
+                    # Needed with the new GeneSNP, because copies the
+                    # references and the number of SNPs raises (the original
+                    # data structure is modified)
                     sample_dict[sample][key] = copy.deepcopy(gene_syn)
 
                 multi_index.add(key)
@@ -278,7 +278,8 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
 
     # we already satisfied a minimum coverage filter or at least if doesn't
     # matter in the calculation anymore, using haplotypes=True, the special
-    # case where syn=nonsyn=0 will result in a 0 as pN/pS for a GeneSyn instance
+    # case where syn=nonsyn=0 will result in a 0 as pN/pS for a GeneSyn
+    # instance
     sample_dict = dict(
         (
             sample,

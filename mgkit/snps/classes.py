@@ -50,32 +50,33 @@ class RatioMixIn(object):
 
             .. note::
 
-                Because pN or pS can be 0, and the return value would be NaN, we
-                take in account some special cases. The default return value in
-                this cases is :const:`numpy.nan`.
+                Because pN or pS can be 0, and the return value would be NaN,
+                we take in account some special cases. The default return value
+                in this cases is :const:`numpy.nan`.
 
             * Both synonymous and non-synonymous values are 0:
 
                 * if both the syn and nonsyn attributes are 0 but there's
-                  coverage for this gene, we return a 0, as there's no evolution
-                  in this gene. Before, the coverage was checked by this method
-                  against either the passed *min_cov* parameter that was equal
-                  to :data:`MIN_COV`. Now the case is for the user to check the
-                  coverage and functions in :mod:`mgkit.snps.conv_func` do that.
-                  If enough coverage was achieved, the *haplotypes* parameter
-                  can be used to return a 0
+                  coverage for this gene, we return a 0, as there's no
+                  evolution in this gene. Before, the coverage was checked by
+                  this method against either the passed *min_cov* parameter
+                  that was equal to :data:`MIN_COV`. Now the case is for the
+                  user to check the coverage and functions in
+                  :mod:`mgkit.snps.conv_func` do that. If enough coverage was
+                  achieved, the *haplotypes* parameter can be used to return a
+                  0
 
             All other cases return a NaN value
 
         """
 
-        #Both values are non-zero
+        # Both values are non-zero
         if (self.nonsyn != 0) and (self.syn != 0):
             pn_value = self.nonsyn / self.exp_nonsyn
             ps_value = self.syn / self.exp_syn
             return pn_value / ps_value
-        #case in which a the SNPs come from haplotypes, in this case we don't
-        #need to check for coverage to return a 0 for this special case
+        # case in which a the SNPs come from haplotypes, in this case we don't
+        # need to check for coverage to return a 0 for this special case
         elif (self.nonsyn == 0) and (self.syn == 0) and haplotypes:
             return 0
 
@@ -120,20 +121,20 @@ class RatioMixIn(object):
             return pn_value / ps_value
 
         if self.nonsyn != 0:
-            #there's at least non-synonymous count but no synonymous one
-            #this will be converted in the max value for the matrix or
-            #to some other value (-1 flag this case)
+            # there's at least non-synonymous count but no synonymous one
+            # this will be converted in the max value for the matrix or
+            # to some other value (-1 flag this case)
             if self.syn == 0:
                 return -1
         else:
-            #there's at least a synonymous count but no non-synonymous one
-            #this will be converted in the max value for the matrix or
-            #to some other value (-2 flag this case)
+            # there's at least a synonymous count but no non-synonymous one
+            # this will be converted in the max value for the matrix or
+            # to some other value (-2 flag this case)
             if self.syn != 0:
                 return -2
             else:
-                #There's no changes in the gene at at all. It should be
-                #checked if that gene has coverage.
+                # There's no changes in the gene at at all. It should be
+                # checked if that gene has coverage.
                 return -3
 
 
@@ -233,9 +234,9 @@ class GeneSNP(RatioMixIn):
 
     def add(self, other):
         """
-        Inplace addition of another instance values. No check for them being the
-        same gene/taxon, it's up to the user to check that they can be added
-        together.
+        Inplace addition of another instance values. No check for them being
+        the same gene/taxon, it's up to the user to check that they can be
+        added together.
 
         Arguments:
             other: instance of :class:`GeneSyn` to add
@@ -299,7 +300,8 @@ class GeneSNP(RatioMixIn):
         self._nonsyn = sum(1 for x in self.snps if x[2] is SNPType.nonsyn)
 
     def _get_cached(self, attr):
-        if (getattr(self, '_nsnps', None) is None) or (self._nsnps != len(self.snps)):
+        if (getattr(self, '_nsnps', None) is None) or \
+                (self._nsnps != len(self.snps)):
             self._cache_values()
         return getattr(self, attr)
 

@@ -37,9 +37,10 @@ DEFAULT_BOXPLOT_COLOURS = {
 }
 
 
-def boxplot_dataframe_multindex(dataframe, axes, plot_order=None, label_map=None,
-                                fonts=None, fill_box=True, colours=None,
-                                data_colours=None, box_vert=True):
+def boxplot_dataframe_multindex(dataframe, axes, plot_order=None,
+                                label_map=None, fonts=None, fill_box=True,
+                                colours=None, data_colours=None,
+                                box_vert=True):
     """
     .. versionadded:: 0.1.13
 
@@ -47,9 +48,9 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None, label_map=None
 
         documentation
 
-    The function draws a series of boxplots from a DataFrame object, whose order
-    is directed by the iterable plot_order. The columns of each DataFrame row
-    contains the values for each boxplot. An axes object is needed.
+    The function draws a series of boxplots from a DataFrame object, whose
+    order is directed by the iterable plot_order. The columns of each DataFrame
+    row contains the values for each boxplot. An axes object is needed.
 
     :param dataframe: dataframe to plot
     :param iterable plot_order: row order used to plot the boxes
@@ -58,8 +59,8 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None, label_map=None
         label used on the plot X axes
     :param dict fonts: dictionary with properties for x axis labels,
         :data:`DEFAULT_BOXPLOT_FONTCONF` is used by default
-    :param bool fill_box: if True each box is filled with the same colour of its
-        outline
+    :param bool fill_box: if True each box is filled with the same colour of
+        its outline
     :param dict colours: dictionary with properties for each boxplot if
         data_colours is None, whi overrides box, whiskers and fliers. Defaults
         to :data:`DEFAULT_BOXPLOT_COLOURS`
@@ -128,7 +129,7 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None, label_map=None
 
         plot_data['medians'][idx].set_color(colours['medians'])
 
-    #It's got a different length (double the size of plot_order)
+    # It's got a different length (double the size of plot_order)
     for idx, tx in enumerate(plot_data['whiskers']):
         whisker = plot_data['whiskers'][idx]
         whisker.set_color(
@@ -228,7 +229,7 @@ def add_values_to_boxplot(dataframe, ax, plot_data, plot_order,
             s=s,
             marker=marker,
             linewidth=linewidth,
-            #this option put the dots below the lines of the boxplot
+            # this option put the dots below the lines of the boxplot
             zorder=1
         )
 
@@ -275,7 +276,7 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
             (feature, colours[feature]) if feature in colours else (feature, colour)
             for feature, colour in DEFAULT_BOXPLOT_COLOURS.items()
         )
-        #DEFAULT_BOXPLOT_COLOURS.copy().update(colours)
+        # DEFAULT_BOXPLOT_COLOURS.copy().update(colours)
     else:
         colours = DEFAULT_BOXPLOT_COLOURS.copy()
 
@@ -309,7 +310,7 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
 
         plot_data['medians'][idx].set_color(colours['medians'])
 
-    #It's got a different length (double the size of plot_order)
+    # It's got a different length (double the size of plot_order)
     for idx, tx in enumerate(plot_data['whiskers']):
         whisker = plot_data['whiskers'][idx]
         whisker.set_color(
@@ -358,11 +359,11 @@ def boxplot_snp_dataframe(ratios, plot_order, taxon_colours=None,
     """
     .. deprecated:: 0.1.7
 
-    The function draws a series of boxplots from a DataFrame object, whose order
-    is directed by the iterable plot_order. The columns of each DataFrame row
-    contains the values for each boxplot. The function allows to write the plot
-    to file and modify a few plot aspects. An axes object can be provided, which
-    overrides fig_aspect, fig_size, fig_multiplier.
+    The function draws a series of boxplots from a DataFrame object, whose
+    order is directed by the iterable plot_order. The columns of each DataFrame
+    row contains the values for each boxplot. The function allows to write the
+    plot to file and modify a few plot aspects. An axes object can be provided,
+    which overrides fig_aspect, fig_size, fig_multiplier.
 
     :param ratios: dataframe to plot
     :param iterable plot_order: row order used to plot the boxes
@@ -383,8 +384,8 @@ def boxplot_snp_dataframe(ratios, plot_order, taxon_colours=None,
     :param fig_size: not used
     :param bool log_scale: if True the Y axes will be log scaled (not always
         possible)
-    :param float fig_aspect: the aspect ratio of the figure axes, specified as a
-        float (1.0 is a square)
+    :param float fig_aspect: the aspect ratio of the figure axes, specified as
+        a float (1.0 is a square)
     :param float fig_multiplier: it seems that the dpi is set when using
         figure.figaspect, so the actual inches used for the plot can be set as
         multiple of the results from figure.figaspect
@@ -418,10 +419,10 @@ def boxplot_snp_dataframe(ratios, plot_order, taxon_colours=None,
         fonts={'rotation': 'vertical', 'fontsize': labelfont}
     )
 
-    if not ylim is None:
+    if ylim is not None:
         ax.set_ylim(0, ylim)
 
-    if not title is None:
+    if title is not None:
         ax.set_title(title)
 
     if log_scale:

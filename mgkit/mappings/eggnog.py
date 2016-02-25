@@ -52,14 +52,14 @@ specific one (:data:`EGGNOG_CAT`).
 
 EGGNOG_CAT = {
 
-    #INFORMATION STORAGE AND PROCESSING
+    # INFORMATION STORAGE AND PROCESSING
     'J': "Translation, ribosomal structure and biogenesis",
     'A': "RNA processing and modification",
     'K': "Transcription",
     'L': "Replication, recombination and repair",
     'B': "Chromatin structure and dynamics",
 
-    #CELLULAR PROCESSES AND SIGNALING
+    # CELLULAR PROCESSES AND SIGNALING
     'D': "Cell cycle control, cell division, chromosome partitioning",
     'Y': "Nuclear structure",
     'V': "Defense mechanisms",
@@ -71,7 +71,7 @@ EGGNOG_CAT = {
     'U': "Intracellular trafficking, secretion, and vesicular transport",
     'O': "Posttranslational modification, protein turnover, chaperones",
 
-    #METABOLISM
+    # METABOLISM
     'C': "Energy production and conversion",
     'G': "Carbohydrate transport and metabolism",
     'E': "Amino acid transport and metabolism",
@@ -81,7 +81,7 @@ EGGNOG_CAT = {
     'P': "Inorganic ion transport and metabolism",
     'Q': "Secondary metabolites biosynthesis, transport and catabolism",
 
-    #POORLY CHARACTERIZED
+    # POORLY CHARACTERIZED
     'R': "General function prediction only",
     'S': "Function unknown"
 }
@@ -115,7 +115,8 @@ class Kegg2NogMapper(kegg.KeggMapperBase):
         * get_uniprot_from_ko
         * get_eggnog_from_uniprot
 
-    return None if there was no problem or a dictionary with the exception thrown
+    return None if there was no problem or a dictionary with the exception
+    thrown
 
     to make mappings ko_id -> eggnog-categories:
     * get_cat_mapping_from_file (file are in the current directory)
@@ -202,7 +203,7 @@ class Kegg2NogMapper(kegg.KeggMapperBase):
                 try:
                     cats.update(self._egg_to_cat[egg_id])
                 except KeyError:
-                    #some egg_ids have no assigned category
+                    # some egg_ids have no assigned category
                     pass
             if cats:
                 self._ko_to_cat[ko_id] = cats
@@ -240,7 +241,8 @@ class Kegg2NogMapper(kegg.KeggMapperBase):
         )
 
 
-def download_data(contact, kegg_data='kegg.pickle', eggnog_data='eggnog.pickle',
+def download_data(contact, kegg_data='kegg.pickle',
+                  eggnog_data='eggnog.pickle',
                   base_url='http://eggnog.embl.de/version_3.0/data/downloads/'):
 
     egg = Kegg2NogMapper()

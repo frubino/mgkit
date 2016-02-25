@@ -25,7 +25,7 @@ def set_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     utils.add_basic_options(parser)
-    #Deinterleave
+    # Deinterleave
     subparsers = parser.add_subparsers()
     parser_d = subparsers.add_parser('di', help='Deinterleave sequences')
     parser_d.add_argument(
@@ -54,7 +54,7 @@ def set_parser():
         help="Strip additional info"
     )
     parser_d.set_defaults(func=deinterleave)
-    #Interleave
+    # Interleave
     parser_i = subparsers.add_parser('il', help='Interleave sequences')
     parser_i.add_argument(
         'mate1_file',
@@ -76,7 +76,7 @@ def set_parser():
         help='Output file name'
     )
     parser_i.set_defaults(func=interleave)
-    #Sort
+    # Sort
     parser_s = subparsers.add_parser('sort', help='Sort paired-end sequences')
     parser_s.add_argument(
         'mate1_input',
@@ -103,7 +103,7 @@ def set_parser():
         help="Output file with mate 2 reads"
     )
     parser_s.set_defaults(func=sort)
-    #Randomise
+    # Randomise
     parser_r = subparsers.add_parser('rand', help='Randomise sequences')
     parser_r.add_argument(
         'input_file',
@@ -172,10 +172,10 @@ def randomise(options):
 
         wcount += 1
 
-    #Shuffle the list
+    # Shuffle the list
     random.shuffle(seqs)
 
-    #Flush the rest of the sequences to disk
+    # Flush the rest of the sequences to disk
     for sequence in seqs:
         write_fastq_sequence(options.output_file, *sequence)
         wcount += 1
@@ -236,7 +236,7 @@ def sort(options):
         seq2 = (sequence2.name, sequence2.seq, sequence2.qualstr)
 
         if key1 == key2:
-            #if the 2
+            # if the 2
             write_fastq_sequence(options.mate1_output, *seq1)
             write_fastq_sequence(options.mate2_output, *seq2)
             wcount += 1
@@ -314,7 +314,7 @@ def deinterleave(options):
             mate2[key] = (sequence_name, sequence.seq, sequence.qualstr)
 
         try:
-            #if sequence header in both
+            # if sequence header in both
             seq1 = mate1[key]
             seq2 = mate2[key]
             write_fastq_sequence(options.mate1_file, *seq1)
@@ -383,7 +383,7 @@ def interleave(options):
         seq2 = (sequence2.name, sequence2.seq, sequence2.qualstr)
 
         if key1 == key2:
-            #if the 2
+            # if the 2
             write_fastq_sequence(options.output_file, *seq1)
             write_fastq_sequence(options.output_file, *seq2)
             wcount += 1
@@ -415,7 +415,7 @@ def main():
     "Main function"
     options = set_parser().parse_args()
 
-    #configs log and set log level
+    # configs log and set log level
     mgkit.logger.config_log(options.verbose)
     options.func(options)
 

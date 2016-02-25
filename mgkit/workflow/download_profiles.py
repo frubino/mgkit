@@ -14,9 +14,9 @@ At the moment, the script uses Kegg Orthologs as the ortholog database.
 
 .. warning::
 
-    Some taxa may still black listed, because they are not relevant to the rumen
-    microbiome. If you find such thing to occur to you, please contact me or
-    open an issue on the repository.
+    Some taxa may still black listed, because they are not relevant to the
+    rumen microbiome. If you find such thing to occur to you, please contact me
+    or open an issue on the repository.
 
 Required Data
 -------------
@@ -103,8 +103,8 @@ The way a taxon is specified is through a few different rules:
   is included in the lineage attribute in the taxonomy.
 
 As an example, if the rank chosen is genus, and the lineage option is
-set to archaea, only the taxa whose rank is genus and that belong to the archaea
-subtree will be downloaded::
+set to archaea, only the taxa whose rank is genus and that belong to the
+archaea subtree will be downloaded::
 
     $ download_profiles -m EMAIL -r genus -l archaea mg_data/kegg.pickle \\
     -t mg_data/taxonomy.pickle
@@ -328,7 +328,7 @@ def choose_ko_ids(kegg_data, options):
         filt_ko = set(
             itertools.chain(
                 *(kegg_data[path_id].genes.keys()
-                  for path_id in kegg_data if not path_id in kegg.BLACK_LIST)
+                  for path_id in kegg_data if path_id not in kegg.BLACK_LIST)
             )
         )
         ko_ids = dict(

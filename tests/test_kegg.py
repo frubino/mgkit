@@ -1,4 +1,4 @@
-from nose.tools import *
+from nose.tools import ok_, eq_, with_setup
 from mgkit import kegg
 import misc_data
 

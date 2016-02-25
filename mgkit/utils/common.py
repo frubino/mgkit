@@ -51,7 +51,8 @@ def union_range(start1, end1, start2, end2):
         end2 (numeric): end of range 2
 
     Returns:
-        (tuple or None): union of the ranges or None if the ranges don't overlap
+        (tuple or None): union of the ranges or None if the ranges don't
+        overlap
 
     Example:
         >>> union_range(10, 13, 1, 10)

@@ -1,7 +1,8 @@
-from nose.tools import *
+from nose.tools import eq_, with_setup, raises
 
 from mgkit.snps.classes import GeneSNP
-from mgkit.snps.filter import *
+from mgkit.snps.filter import filter_genesyn_by_coverage, \
+    filter_genesyn_by_gene_id, filter_genesyn_by_taxon_id, FilterFails
 import mgkit.snps.mapper
 import mgkit.taxon
 import functools
@@ -15,7 +16,7 @@ def test_snps_taxon1():
     filter_list = [
         taxon.taxon_id
         for taxon in taxon_data.TAXONOMY
-        if 'methanobrevibacter' in taxon.s_name
+        if 'methanobrevibacter' in taxon.s_name.lower()
     ]
     taxon_id = taxon_data.TAXONOMY.find_by_name('methanobrevibacter')[0]
     gene_syn = GeneSNP(taxon_id=taxon_id)
@@ -37,7 +38,7 @@ def test_snps_taxon1_rev():
     filter_list = [
         taxon.taxon_id
         for taxon in taxon_data.TAXONOMY
-        if 'methanobrevibacter' in taxon.s_name
+        if 'methanobrevibacter' in taxon.s_name.lower()
     ]
     taxon_id = taxon_data.TAXONOMY.find_by_name('methanobrevibacter')[0]
     gene_syn = GeneSNP(taxon_id=taxon_id)

@@ -107,7 +107,7 @@ def main():
     "Main function"
     options = set_parser().parse_args()
 
-    #configs log and set log level
+    # configs log and set log level
     logger.config_log(options.verbose)
 
     trans_table = load_trans_table(options.trans_table)

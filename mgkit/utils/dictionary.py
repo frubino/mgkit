@@ -8,8 +8,8 @@ import numpy
 def combine_dict(keydict, valuedict):
     """
     Combine two dictionaries when the values of keydict are iterables. The
-    combined dictionary has the same keys as keydict and the its values are sets
-    containing all the values associated to keydict values in valuedict.
+    combined dictionary has the same keys as keydict and the its values are
+    sets containing all the values associated to keydict values in valuedict.
 
     .. digraph:: keydict
         :alt: key1 -> [v1, v2, .., vN]
@@ -45,7 +45,7 @@ def combine_dict(keydict, valuedict):
             try:
                 comb_dict[key].update(valuedict[value])
             except KeyError:
-                #in case a value isn't in valuedict keys, silently pass
+                # in case a value isn't in valuedict keys, silently pass
                 pass
 
     return comb_dict
@@ -115,7 +115,7 @@ def link_ids(id_map, black_list=None):
             if e_id == s_id:
                 continue
             for s_id2 in s_cps:
-                if not black_list is None:
+                if black_list is not None:
                     if s_id2 in black_list:
                         continue
                 if s_id2 in e_cps:

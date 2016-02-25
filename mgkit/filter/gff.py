@@ -9,11 +9,11 @@ def choose_annotation(ann1, ann2, overlap=100, choose_func=None):
     """
     .. versionadded:: 0.1.12
 
-    Given two :class:`mgkit.io.gff.Annotation`, if one of of the two annotations
-    either is contained in the other or they overlap for at least a *overlap*
-    number of bases, *choose_func* will be applied to both. The result of
-    *choose_func* is the the annotation to be discarderd. It returns *None* if
-    the annotations should be both kept.
+    Given two :class:`mgkit.io.gff.Annotation`, if one of of the two
+    annotations either is contained in the other or they overlap for at least a
+    *overlap* number of bases, *choose_func* will be applied to both. The
+    result of *choose_func* is the the annotation to be discarderd. It returns
+    *None* if the annotations should be both kept.
 
     No checks are made to ensure that the two annotations are on the same
         sequence and strand, as the *intersect* method of
@@ -22,7 +22,8 @@ def choose_annotation(ann1, ann2, overlap=100, choose_func=None):
     Arguments:
         ann1: instance of :class:`mgkit.io.gff.Annotation`
         ann2: instance of :class:`mgkit.io.gff.Annotation`
-        overlap (int, float): number of bases overlap that trigger the filtering
+        overlap (int, float): number of bases overlap that trigger the
+            filtering
         choose_func (None, func): function that accepts *ann1* and *ann2* and
             return the one to be discarded or None if both are accepted
 
@@ -34,7 +35,8 @@ def choose_annotation(ann1, ann2, overlap=100, choose_func=None):
 
         If *choose_func* is *None*, the default function is used::
 
-            lambda a1, a2: min(a1, a2, key=lambda el: (el.dbq, el.bitscore, len(el)))
+            lambda a1, a2: min(a1, a2, key=lambda el: (el.dbq, el.bitscore,
+                               len(el)))
 
         In order of importance the db quality, the bitscore and the length. The
         annotation with the lowest tuple value is the one to discard.
@@ -47,19 +49,20 @@ def choose_annotation(ann1, ann2, overlap=100, choose_func=None):
     intersect = ann1.intersect(ann2)
 
     if intersect is not None:
-        #if the intersection is the same size of one of the annotations size,
-        #it means that one contain the other
+        # if the intersection is the same size of one of the annotations size,
+        # it means that one contain the other
         if (len(intersect) == len(ann1)) or (len(intersect) == len(ann2)):
             return choose_func(ann1, ann2)
         else:
-            #if the overlap is longer than the threshold
+            # if the overlap is longer than the threshold
             if len(intersect) > overlap:
                 return choose_func(ann1, ann2)
 
     return None
 
 
-def filter_annotations(annotations, choose_func=None, sort_func=None, reverse=True):
+def filter_annotations(annotations, choose_func=None, sort_func=None,
+                       reverse=True):
     """
     .. versionadded:: 0.1.12
 

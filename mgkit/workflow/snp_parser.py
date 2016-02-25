@@ -10,7 +10,8 @@ from a GFF file, SNP data from a VCF file.
 
     The script accept gzipped VCF files
 
-.. [#] GATK pipeline was tested, but it is possible to use samtools and bcftools
+.. [#] GATK pipeline was tested, but it is possible to use samtools and
+    bcftools
 
 Changes
 *******
@@ -22,7 +23,7 @@ Changes
     reworkked internals and removed SNPDat, syn/nonsyn evaluation is internal
 
 .. versionchanged:: 0.1.13
-    reworked the internals and the classes used, including options `-m` and `-s`
+    reworked the internals and the classes used, including options -m and -s
 
 
 """
@@ -207,13 +208,13 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
     vcf_handle.parse_meta()
     vcf_handle.make_info_dict()
 
-    #total number of SNPs accepted
+    # total number of SNPs accepted
     count_tot = 0
-    #number of SNPs skipped for low depth
+    # number of SNPs skipped for low depth
     skip_dp = 0
-    #number of SNPs skipped for low allele frequency
+    # number of SNPs skipped for low allele frequency
     skip_af = 0
-    #number of SNPs skipped for low quality
+    # number of SNPs skipped for low quality
     skip_qual = 0
     # indels
     skip_indels = 0
@@ -224,23 +225,22 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
             continue
 
         if float(vcf_record.qual) < min_qual:
-            #low quality SNP
+            # low quality SNP
             skip_qual += 1
             continue
 
-        #unpack info records (needed for vcf_record.info to be a dictionary)
+        # unpack info records (needed for vcf_record.info to be a dictionary)
         vcf_record.unpack_info(vcf_handle.infodict)
 
         if vcf_record.info['INDEL']:
             skip_indels += 1
             continue
 
-        #controllare perche' questo controllo e' qui
         if not isinstance(vcf_record.info['DP'], int):
             LOG.warning(vcf_record.info['DP'])
 
         if vcf_record.info['DP'] < min_reads:
-            #not enough reads (depth) for the SNP
+            # not enough reads (depth) for the SNP
             skip_dp += 1
             continue
 
@@ -258,8 +258,8 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
             else:
                 allele_freqs = vcf_record.info['AC'] / vcf_record.info['AN']
 
-        #if the allele frequency is a single value, make it a list, so
-        #the iteration below works anyway
+        # if the allele frequency is a single value, make it a list, so
+        # the iteration below works anyway
         if isinstance(allele_freqs, float):
             allele_freqs = [allele_freqs]
 
@@ -267,8 +267,8 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
         iter_data = zip(allele_freqs, vcf_record.alt)
         for alt_index, (allele_freq, change) in enumerate(iter_data):
             if allele_freq < min_af:
-                #the allele frequency for the SNP is too low, it'll be
-                #skipped
+                # the allele frequency for the SNP is too low, it'll be
+                # skipped
                 skip_af += 1
                 continue
 
@@ -279,7 +279,9 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
                     # prepare the genotype list, to make the comparison easier
                     # the genotype separator to '/' only, to use only one
                     # type of split
-                    for genotype in sample_info['GT'].replace('|', '/').split('/'):
+                    sample_info_gt = sample_info['GT'].replace('|', '/')
+                    sample_info_gt = sample_info_gt.split('/')
+                    for genotype in sample_info_gt:
                         if genotype == '.':
                             continue
                         if int(genotype) == (alt_index + 1):
@@ -297,7 +299,7 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
                 annotations[vcf_record.chrom],
                 seqs[vcf_record.chrom]
             )
-            #increase the total number of snps available
+            # increase the total number of snps available
             count_tot += 1
 
         if vcf_handle.line_no % line_num == 0:
@@ -326,7 +328,7 @@ def main():
     "Main function"
     options = set_parser().parse_args()
 
-    #configs log and set log level
+    # configs log and set log level
     logger.config_log(options.verbose)
 
     seqs = dict(fasta.load_fasta(options.reference))

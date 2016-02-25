@@ -26,8 +26,8 @@ except ImportError:
 #     return qualities.prod(axis=1).sum()
 
 
-#direct use: first (0.033ms loop)
-#in trim_by_ee: first (15.9s)
+# direct use: first (0.033ms loop)
+# in trim_by_ee: first (15.9s)
 def expected_error_rate(qualities):
     """
     Calculate the expected error rate for an array of qualities (converted to

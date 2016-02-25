@@ -5,6 +5,8 @@ from __future__ import print_function
 import sys
 import logging
 
+from . import logger
+
 __VERSION__ = "0.2.4"
 
 __version__ = __VERSION__
@@ -13,8 +15,6 @@ LOG = logging.getLogger(__name__)
 
 DEBUG = False
 "Debug switch for a few functions"
-
-from . import logger
 
 LOGO = """
  _|      _|    _|_|_|  _|    _|  _|    _|

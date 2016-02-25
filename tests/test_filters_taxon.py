@@ -1,8 +1,9 @@
-from nose.tools import *
+from nose.tools import ok_, eq_, with_setup
 import random
 import functools
 
-from mgkit.filter.taxon import *
+from mgkit.filter.taxon import filter_taxonomy_by_rank, \
+    filter_taxonomy_by_lineage, filter_taxon_by_id_list
 from mgkit.taxon import is_ancestor
 # from _utils import skip_test
 
@@ -104,7 +105,7 @@ def test_taxon_id_list1():
     filter_list = [
         taxon.taxon_id
         for taxon in taxon_data.TAXONOMY
-        if 'prevotella' in taxon.s_name
+        if 'prevotella' in taxon.s_name.lower()
     ]
     eq_(
         filter_taxon_by_id_list(taxon_id, filter_list), True
@@ -118,7 +119,7 @@ def test_taxon_id_list1_anc():
         [
             taxon.taxon_id
             for taxon in taxon_data.TAXONOMY
-            if taxon.s_name.startswith('prevotella ')
+            if taxon.s_name.lower().startswith('prevotella ')
         ]
     )
     filter_list = taxon_data.TAXONOMY.find_by_name('prevotella')

@@ -1,4 +1,4 @@
-from nose.tools import *
+from nose.tools import eq_, ok_
 
 from mgkit.snps.classes import GeneSNP, SNPType
 from mgkit.snps.funcs import combine_sample_snps, flat_sample_snps

@@ -72,7 +72,8 @@ except ImportError:
 
 LOG = logging.getLogger(__name__)
 
-TAXONONY_URL = "http://www.uniprot.org/taxonomy/?query=*&format=tab&compress=no"
+TAXONONY_URL = "http://www.uniprot.org/taxonomy/?query=*&format=tab&" + \
+    "compress=no"
 
 
 def set_parser():
@@ -155,7 +156,7 @@ def main():
     "Main function"
     options = set_parser().parse_args()
 
-    #configs log and set log level
+    # configs log and set log level
     mgkit.logger.config_log(options.verbose)
 
     try:

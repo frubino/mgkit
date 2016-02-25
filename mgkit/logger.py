@@ -4,7 +4,8 @@ import logging
 import sys
 import os.path
 
-DEBUG_FMT = "%(asctime)s - %(levelname) 7s - %(name)s->%(funcName)s: %(message)s"
+DEBUG_FMT = "%(asctime)s - %(levelname) 7s - %(name)s->%(funcName)s: " + \
+    "%(message)s"
 INFO_FMT = "%(levelname)s - %(name)s: %(message)s"
 
 

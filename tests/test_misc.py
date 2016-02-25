@@ -1,8 +1,9 @@
-from nose.tools import *
+from nose.tools import eq_
 
 from mgkit.utils.common import average_length, between, union_range, \
     range_intersect
-from mgkit.utils.dictionary import *
+from mgkit.utils.dictionary import find_id_in_dict, combine_dict, \
+    reverse_mapping, link_ids, combine_dict_one_value
 
 
 def test_avg_len1():

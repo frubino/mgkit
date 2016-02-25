@@ -1,5 +1,5 @@
 from __future__ import division
-from nose.tools import *
+from nose.tools import eq_, ok_
 
 import numpy
 from mgkit.utils import sequence

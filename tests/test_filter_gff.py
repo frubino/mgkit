@@ -1,8 +1,9 @@
-from nose.tools import *
+from nose.tools import eq_
 import functools
 
 from mgkit.io.gff import Annotation
-from mgkit.filter.gff import *
+from mgkit.filter.gff import choose_annotation, filter_annotations, \
+    filter_base, filter_len, filter_attr_num, filter_attr_str, filter_base_num
 
 
 def test_choose_annotation_contained1():

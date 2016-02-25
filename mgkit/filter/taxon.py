@@ -113,7 +113,8 @@ def filter_taxon_by_id_list(taxon_id, filter_list=None, exclude=False,
     return ret_val ^ exclude
 
 
-def filter_by_ancestor(taxon_id, filter_list=None, exclude=False, taxonomy=None):
+def filter_by_ancestor(taxon_id, filter_list=None, exclude=False,
+                       taxonomy=None):
     """
     .. versionadded:: 0.1.13
 
@@ -125,4 +126,9 @@ def filter_by_ancestor(taxon_id, filter_list=None, exclude=False, taxonomy=None)
 
     func = functools.partial(is_ancestor, taxonomy)
 
-    return filter_taxon_by_id_list(taxon_id, filter_list=filter_list, func=func, exclude=exclude)
+    return filter_taxon_by_id_list(
+        taxon_id,
+        filter_list=filter_list,
+        func=func,
+        exclude=exclude
+    )

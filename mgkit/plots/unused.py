@@ -33,7 +33,7 @@ TAXON_COLOURS = {
 }
 "Default colours for root taxa"
 
-#for backward compatibility
+# for backward compatibility
 TAXON_COLORS = TAXON_COLOURS
 
 
@@ -60,8 +60,8 @@ def plot_scatter_3d(data, labels, colours=None, pointsize=10., title='',
 
     :param array data: :class:`numpy.array` with shape n, 3
     :param array labels: labels to categorise samples
-    :param dict colours: dictionary whose keys are the labels and the values are
-        valid :mod:`matplotlib` colours
+    :param dict colours: dictionary whose keys are the labels and the values
+        are valid :mod:`matplotlib` colours
     :param int pointsize: point size
     :param str title: plot title
     :param str xlabel: label for x axis
@@ -106,8 +106,8 @@ def plot_scatter_2d(data, labels, colours=None, pointsize=10., title='',
 
     :param array data: :class:`numpy.array` with shape n, 2
     :param array labels: labels to categorise samples
-    :param dict colours: dictionary whose keys are the labels and the values are
-        valid :mod:`matplotlib` colours
+    :param dict colours: dictionary whose keys are the labels and the values
+        are valid :mod:`matplotlib` colours
     :param int pointsize: point size
     :param str title: plot title
     :param str xlabel: label for x axis
@@ -125,7 +125,7 @@ def plot_scatter_2d(data, labels, colours=None, pointsize=10., title='',
             label_dict[label] = [features]
 
     if colours is None:
-        #unify this, generate random colors in a go
+        # unify this, generate random colors in a go
         gen_colours = []
 
     colour_step = 256 // len(label_dict)
@@ -186,10 +186,10 @@ def barchart_categories(data, colours=None, title='', tickfont='small',
                         rotation='vertical', file_name=None, fig_size=None,
                         fig_aspect=None):
     """
-    :param data: DataFrame where the number of rows indicates how many bars will
-        plotted per column
-    :param colours: must be equal the number of data rows if supplied or it will
-        be blue by default
+    :param data: DataFrame where the number of rows indicates how many bars
+        will plotted per column
+    :param colours: must be equal the number of data rows if supplied or it
+        will be blue by default
     :param title: chart title
     :param tickfont: font size for ticks (only for column axis)
     :param xlabel_dict: a mapping to the acual labels to use for the columns.
@@ -237,7 +237,7 @@ def barchart_categories(data, colours=None, title='', tickfont='small',
     ax.set_xlim(0, max(base_index) + (width * len(data.index)))
     ax.set_title(title)
 
-    if not file_name is None:
+    if file_name is not None:
         fig.savefig(file_name, bbox_inches='tight',
                     bbox_extra_artist=(xlabels,))
         fig.clf()
@@ -272,7 +272,11 @@ def plot_contig_assignment_bar(series, taxon_colours=None, log_scale=False,
     if fig_aspect is None:
         fig_aspect = plt.figaspect(2. / len(series))
 
-    LOG.info("Graph size %r and label size %d", tuple(fig_aspect), xlabels_size)
+    LOG.info(
+        "Graph size %r and label size %d",
+        tuple(fig_aspect),
+        xlabels_size
+    )
 
     fig = plt.figure(dpi=300, figsize=fig_aspect)
 
@@ -302,9 +306,10 @@ def plot_contig_assignment_bar(series, taxon_colours=None, log_scale=False,
     return ax
 
 
-def scatter_gene_values(gene_dict, xlabel="Profile pN/pS", ylabel="Rumen pN/pS",
-                        title="", colours=None, file_name=None, plot_order=None,
-                        line_colour='r', max_limit=None, axes=None):
+def scatter_gene_values(gene_dict, xlabel="Profile pN/pS",
+                        ylabel="Rumen pN/pS", title="", colours=None,
+                        file_name=None, plot_order=None, line_colour='r',
+                        max_limit=None, axes=None):
     """
     Plots gene-taxon pN/pS from profiles against their observed values.
 

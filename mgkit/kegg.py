@@ -60,8 +60,8 @@ class KeggReaction(object):
     def __init__(self, rn_id=None, description='', cp_in=None, cp_out=None):
         self.rn_id = rn_id
         self.description = description
-        self.cp_in = cp_in if not cp_in is None else {}
-        self.cp_out = cp_out if not cp_out is None else {}
+        self.cp_in = cp_in if cp_in is not None else {}
+        self.cp_out = cp_out if cp_out is not None else {}
 
     def __eq__(self, other):
         """
@@ -97,12 +97,12 @@ class KeggReaction(object):
 
 class KeggOrtholog(object):
     "Kegg Ortholog gene"
-    #__slots__ = ('ko_id', 'description', 'reactions')
+    # __slots__ = ('ko_id', 'description', 'reactions')
 
     def __init__(self, ko_id=None, description='', reactions=None):
         self.ko_id = ko_id
         self.description = description.replace(';', '')
-        self.reactions = reactions if not reactions is None else {}
+        self.reactions = reactions if reactions is not None else {}
 
     def __eq__(self, other):
         """
@@ -154,7 +154,7 @@ class KeggPathway(object):
     def __init__(self, path_id=None, description=None, genes=None):
         self.path_id = path_id
         self.description = description
-        self.genes = genes if not genes is None else {}
+        self.genes = genes if genes is not None else {}
 
     def __eq__(self, other):
         """
@@ -208,8 +208,9 @@ class KeggClientRest(object):
     """
     Kegg REST client
 
-    The class includes methods and data to use the REST API provided by Kegg. At
-    the moment it provides methods to for 'link', 'list' and 'get' operations,
+    The class includes methods and data to use the REST API provided by Kegg.
+    At the moment it provides methods to for 'link', 'list' and 'get'
+    operations,
 
     `Kegg REST API <http://www.kegg.jp/kegg/rest/keggapi.html>`_
 
@@ -229,7 +230,7 @@ class KeggClientRest(object):
     )
     id_prefix = {'C': 'cpd', 'k': 'map', 'K': 'ko', 'R': 'rn', 'm': 'path'}
 
-    ####### Kegg primitives #######
+    # Kegg primitives #
 
     def link_ids(self, target, ids, strip=True, max_len=50):
         """
@@ -299,7 +300,7 @@ class KeggClientRest(object):
         """
         url = "{0}list/{1}".format(self.api_url, k_id)
         data = url_read(url, agent=self.contact)
-        #leave out the last \n
+        # leave out the last \n
         return data[:-1]
 
     def get_entry(self, k_id, option=None):
@@ -347,7 +348,7 @@ class KeggClientRest(object):
 
         return mappings
 
-    ####### names #######
+    # names #
 
     def get_ids_names(self, target='ko', strip=True):
         """
@@ -437,7 +438,7 @@ class KeggClientRest(object):
         """
         return self.get_ids_names('reaction')
 
-    ####### end names #######
+    # end names #
 
     def get_reaction_equations(self, ids, max_len=10):
         "Get the equation for the reactions"
@@ -534,7 +535,7 @@ class KeggData(object):
     def get_ko_rn_links(self, path_filter=None, description=False):
         rn_links = {}
         for path_id in self:
-            if not path_filter is None:
+            if path_filter is not None:
                 if path_id != path_filter:
                     continue
             for ko_id in self[path_id]:
@@ -550,7 +551,7 @@ class KeggData(object):
     def get_rn_cp_links(self, path_filter=None, description=False):
         rn_links = {}
         for path_id in self:
-            if not path_filter is None:
+            if path_filter is not None:
                 if path_id != path_filter:
                     continue
             for ko_id in self[path_id]:
@@ -573,7 +574,7 @@ class KeggData(object):
     def get_ko_cp_links(self, path_filter=None, description=False):
         ko_links = {}
         for path_id in self:
-            if not path_filter is None:
+            if path_filter is not None:
                 if path_id != path_filter:
                     continue
             for ko_id in self[path_id]:
@@ -584,7 +585,9 @@ class KeggData(object):
                     if description:
                         cp_set.update(
                             "{0}: {1}".format(
-                            cp.cp_id, cp.description)
+                                cp.cp_id,
+                                cp.description
+                            )
                             for cp in itertools.chain(
                                 rn.cp_in.itervalues(), rn.cp_out.itervalues()
                             )
@@ -645,7 +648,7 @@ class KeggData(object):
         if black_list is None:
             black_list = self.pathways.keys()
         else:
-            #keeps only path_ids that are not in the black_list
+            # keeps only path_ids that are not in the black_list
             black_list = set(self.pathways.keys()) - set(black_list)
 
         return dict(
@@ -904,7 +907,7 @@ BLACK_LIST = [
     'ko05130',  # Pathogenic Escherichia coli infection
     'ko05131',  # Shigellosis
 
-    #troppo grandi
+    # Too big
     'ko01100',  # Metabolic pathways
     'ko01110',  # Biosynthesis of secondary metabolites
     'ko01120',  # Microbial metabolism in diverse environments
@@ -963,7 +966,7 @@ def download_data(fname='kegg.pickle', contact=None):
             try:
                 name = ko_names[ko_id]
             except KeyError:
-                #in this case the actual entry for this gene doesn't exists
+                # in this case the actual entry for this gene doesn't exists
                 LOG.warning(
                     "KO %s not found in the descriptions, skipping", ko_id
                 )
@@ -1083,7 +1086,10 @@ class KeggModule(object):
 
         self.reactions = [
             self.parse_reaction(reaction, ko_ids)
-            for ko_ids, reaction in zip(entryd['DEFINITION'][0].split(' '), entryd['REACTION'])
+            for ko_ids, reaction in zip(
+                entryd['DEFINITION'][0].split(' '),
+                entryd['REACTION']
+            )
         ]
         self._orthologs = entryd['DEFINITION'][0].split(' ')
         self._reactions = entryd['REACTION']
@@ -1091,13 +1097,13 @@ class KeggModule(object):
     @staticmethod
     def parse_reaction(line, ko_ids=None):
         """
-        parses the lines with the reactions and substitute reaction IDs with the
-        corresponding KO IDs if provided
+        parses the lines with the reactions and substitute reaction IDs with
+        the corresponding KO IDs if provided
         """
 
-        #line = 'R00294,R02492,R09446,R09808,R09809  C00533 -> C00887'
-        #ko_ids = '(K00370+K00371+K00374+K00373,K02567+K02568)'
-        #some reaction lines have only one space
+        # line = 'R00294,R02492,R09446,R09808,R09809  C00533 -> C00887'
+        # ko_ids = '(K00370+K00371+K00374+K00373,K02567+K02568)'
+        # some reaction lines have only one space
         rn_ids, reaction = line.replace('  ', ' ').split(' ', 1)
         rn_ids = rn_ids.split(',')
         comp1, comp2 = reaction.split(' -> ')

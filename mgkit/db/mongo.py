@@ -18,8 +18,8 @@ defined are kept as well, but no ckeck for the data type is made.
 
 .. note::
 
-    lineage is added as a key, whose values are taxon_id, if a function has been
-    passed to :meth:`mgkit.io.gff.Annotation.to_mongodb`
+    lineage is added as a key, whose values are taxon_id, if a function has
+    been passed to :meth:`mgkit.io.gff.Annotation.to_mongodb`
 
 The exception is the **map** key in the document. It store both the EC mappings
 (EC attribute in the GFF), as well as all mappings whose attribute starts with

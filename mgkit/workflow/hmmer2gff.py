@@ -70,32 +70,53 @@ def set_parser():
     )
 
     group = parser.add_argument_group('Filters')
-    group.add_argument('-t', '--discard', action='store', type=float,
-                       default=0.05,
-                       help='Evalue over which an hit will be discarded')
-    group.add_argument('-d', '--disable-evalue',
-                       action='store_true',
-                       default=False,
-                       help='Disable Evalue filter')
+    group.add_argument(
+        '-t',
+        '--discard',
+        action='store',
+        type=float,
+        default=0.05,
+        help='Evalue over which an hit will be discarded'
+    )
+    group.add_argument(
+        '-d',
+        '--disable-evalue',
+        action='store_true',
+        default=False,
+        help='Disable Evalue filter'
+    )
 
     group = parser.add_argument_group('GFF')
-    group.add_argument('-c', '--no-custom-profiles',
-                       action='store_false',
-                       default=True,
-                       help='Profiles names are not in the custom format')
-    group.add_argument('-db', '--database',
-                       action='store',
-                       default='CUSTOM',
-                       help='Database from which the profiles are generated (e.g. PFAM)')
-    group.add_argument('-f', '--feature-type',
-                       action='store',
-                       default='gene',
-                       help='Type of feature (e.g. gene)')
+    group.add_argument(
+        '-c',
+        '--no-custom-profiles',
+        action='store_false',
+        default=True,
+        help='Profiles names are not in the custom format'
+    )
+    group.add_argument(
+        '-db',
+        '--database',
+        action='store',
+        default='CUSTOM',
+        help='Database from which the profiles are generated " +" (e.g. PFAM)'
+    )
+    group.add_argument(
+        '-f',
+        '--feature-type',
+        action='store',
+        default='gene',
+        help='Type of feature (e.g. gene)'
+    )
 
     group = parser.add_argument_group('Misc')
-    group.add_argument('-q', '--quiet', action='store_const',
-                       const=logging.WARNING, default=logging.DEBUG,
-                       help='only show warnings or errors')
+    group.add_argument(
+        '-q',
+        '--quiet',
+        action='store_const',
+        const=logging.WARNING, default=logging.DEBUG,
+        help='only show warnings or errors'
+    )
 
     utils.add_basic_options(parser)
 

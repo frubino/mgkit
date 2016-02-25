@@ -9,12 +9,13 @@ If the *gene_id* of an annotation is a Uniprot ID, the script queries Uniprot
 for the requested information. At the moment the information that can be added
 is the taxon_id, taxon_name, lineage and mapping to EC, KO, eggNOG IDs.
 
-It's also possible to add mappings to other databases using the *-m* option with
-the correct identifier for the mapping, which can be found at `this page
+It's also possible to add mappings to other databases using the *-m* option
+with the correct identifier for the mapping, which can be found at `this page
 <http://www.uniprot.org/faq/28>`_; for example if it's we want to add the
 mappings of uniprot IDs to *BioCyc*, in the *abbreviation* column of the
-mappings we find that it's identifier is *REACTOME_ID*, so we pass *-m REACTOME*
-to the script (leaving *_ID* out). Mapped IDs are separated by commas.
+mappings we find that it's identifier is *REACTOME_ID*, so we pass
+*-m REACTOME* to the script (leaving *_ID* out). Mapped IDs are separated by
+commas.
 
 The taxonomy IDs are not overwritten if they are found in the annotations, the
 *-f* is provided to force the overwriting of those values.
@@ -40,10 +41,10 @@ file with all mappings from GIDs to taxonomy IDs. More information on how to
 get the file can be read in the documentation of the function
 :func:`mgkit.io.blast.parse_gi_taxa_table`.
 
-The fasta sequences used with BLAST must have as name the uid of the annotations
-they refer to, and one way to obtain these sequences is to use the function
-:func:`mgkit.io.gff.extract_nuc_seqs` and save them to a fasta file. Another
-options is to use the `sequence` command of the `get-gff-info` script
+The fasta sequences used with BLAST must have as name the uid of the
+annotations they refer to, and one way to obtain these sequences is to use the
+function :func:`mgkit.io.gff.extract_nuc_seqs` and save them to a fasta file.
+Another options is to use the `sequence` command of the `get-gff-info` script
 (:ref:`get-gff-info`).
 
 The command accept a minimum bitscore to accept an hit and the taxon ID is
@@ -78,7 +79,8 @@ Coverage Command
 Adds coverage information from BAM alignment files to a GFF file, using the
 function :func:`mgkit.align.add_coverage_info`, the user needs to supply for
 each sample a BAM file, using the `-a` option, whose parameter is in the form
-`sample,samplealg.bam`. More samples can be supplied adding more `-a` arguments.
+`sample,samplealg.bam`. More samples can be supplied adding more `-a`
+arguments.
 
 .. hint::
 
@@ -97,8 +99,8 @@ Uniprot Offline Mappings
 
 Similar to the *uniprot* command, it uses the `idmapping <ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz>`_
 file provided by Uniprot, which speeds up the process of adding mappings and
-taxonomy IDs from Uniprot gene IDs. It's not possible tough to add *EC* mappings
-with this command, as those are not included in the file.
+taxonomy IDs from Uniprot gene IDs. It's not possible tough to add *EC*
+mappings with this command, as those are not included in the file.
 
 Kegg Information
 ****************
@@ -142,9 +144,9 @@ Adding Taxonomy from a Table
 ****************************
 
 There are cases where it may needed or preferred to add the taxonomy from a
-*gene_id* already provided in the GFF file. For such cases the *addtaxa* command
-can be used. It works in a similar way to the *taxonomy* command, only it expect
-three different type of inputs:
+*gene_id* already provided in the GFF file. For such cases the *addtaxa*
+command can be used. It works in a similar way to the *taxonomy* command, only
+it expect three different type of inputs:
 
     * *GI-Taxa* table from NCBI (e.g. gi_taxid_nucl.dmp)
     * tab separated table
@@ -171,7 +173,8 @@ another attribute can be specified, using the **-gene-attr** option.
 Adding information from Pfam
 ****************************
 
-Adds the Pfam description for the annotation, by downloading the list from Pfam.
+Adds the Pfam description for the annotation, by downloading the list from
+Pfam.
 
 The options allow to specify in which attribute the ID/ACCESSION is stored
 (defaults to *gene_id*) and which one between ID/ACCESSION is the value of that
@@ -182,7 +185,7 @@ Changes
 *******
 
 .. versionchanged:: 0.2.3
-    added *pfam* command, renamed *gitaxa* to *addtaxa* and made it more general
+    added *pfam* command, renamed *gitaxa* to *addtaxa* and made it general
 
 .. versionchanged:: 0.2.2
     added *eggnog*, *gitaxa* and *counts* command
@@ -463,21 +466,20 @@ def add_uniprot_info(annotations, options, info_cache):
         try:
             gene_info = info_cache[annotation.gene_id]
         except KeyError:
-            #no data was found
+            # no data was found
             continue
 
         for column, values in gene_info.iteritems():
-            #nothing found
+            # nothing found
             if not values:
                 continue
-            # print column
 
             if column == 'organism-id':
                 if (annotation.taxon_id and options.force_taxon_id) or \
                    (annotation.taxon_id is None):
                     annotation.attr['taxon_id'] = int(values)
                     annotation.attr['taxon_db'] = 'UNIPROT'
-                    #test with a try/expect maybe
+                    # test with a try/expect maybe
                     if 'organism' in columns:
                         annotation.attr['taxon_name'] = gene_info['organism']
             elif column.startswith('lineage'):
@@ -598,42 +600,43 @@ def get_gids(uid_gid_map):
 
 
 def choose_by_lca(hits, taxonomy, gid_taxon_map, score=10):
-    #the minimum score required to be part of the taxon IDs selected is to
-    #be at most 10 bits (by default) from the maximum bitscore found in the hits
+    # the minimum score required to be part of the taxon IDs selected is to
+    # be at most 10 bits (by default) from the maximum bitscore found in the
+    # hits
     min_score = max(hits, key=lambda x: x[-1])[-1] - score
 
-    #filter over only cellular organisms
+    # filter over only cellular organisms
     cellular_organism = 131567
 
     taxon_ids = set()
 
     for gid, identity, bitscore in hits:
-        #No taxon_id found for the gid
+        # No taxon_id found for the gid
         taxon_id = gid_taxon_map.get(gid, None)
 
-        #skip already included taxon_ids
+        # skip already included taxon_ids
         if taxon_id in taxon_ids:
             continue
 
-        #if the requirements are met
+        # if the requirements are met
         if (taxon_id is not None) and (bitscore >= min_score):
             try:
-                #test to make sure it is a cellular organism
+                # test to make sure it is a cellular organism
                 if taxon.is_ancestor(taxonomy, taxon_id, cellular_organism):
                     taxon_ids.add(taxon_id)
-                #not part of the loop
+                # not part of the loop
                 else:
                     LOG.debug("%d not part of cellular organisms", taxon_id)
-            #The taxon id is not in the taxonomy used. It's skipped
+            # The taxon id is not in the taxonomy used. It's skipped
             except KeyError:
                 LOG.warning("%d is not part of the taxonomy", taxon_id)
                 continue
 
-    #no taxon_id passes the filters
+    # no taxon_id passes the filters
     if len(taxon_ids) == 0:
         return None
 
-    #log message fired up only if the package is set on DEBUG
+    # log message fired up only if the package is set on DEBUG
     if mgkit.DEBUG and (len(taxon_ids) > 1):
         LOG.debug(
             "Num hits %d: %s",
@@ -945,7 +948,8 @@ def load_counts(count_files, samples, featureCounts):
         uid = line[0]
         if len(line[index:]) != len(samples):
             utils.exit_script(
-                "The number of samples is not the same as the columns in the count file",
+                "The number of samples is not the same as the columns in " +
+                "the count file",
                 2
             )
         counts[uid] = {}
@@ -991,7 +995,8 @@ def set_counts_parser(parser):
         action='store',
         required=True,
         type=lambda x: [y for y in x.split(',') if y],
-        help="Comma separated sample names, in the same order as the count file"
+        help="Comma separated sample names, in the same order as the count " +
+             " file"
     )
     parser.add_argument(
         '-c',

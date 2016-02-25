@@ -1,4 +1,4 @@
-from nose.tools import *
+from nose.tools import eq_, with_setup, raises
 import random
 
 from mgkit.taxon import is_ancestor, last_common_ancestor, NoLcaFound

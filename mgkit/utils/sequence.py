@@ -6,7 +6,6 @@ from __future__ import division  # add check to use only on python 2.x
 import itertools
 import logging
 import random
-from StringIO import StringIO
 import numpy
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
@@ -104,8 +103,8 @@ def translate_sequence(sequence, start=0, tbl=None, reverse=False):
 def put_gaps_in_nuc_seq(nuc_seq, aa_seq, trim=True):
     """
     Match the gaps in an amino-acid aligned sequence to its original nucleotide
-    sequence. If the nucleotide sequence is not a multiple of 3, the trim option
-    by default trim those bases from the output.
+    sequence. If the nucleotide sequence is not a multiple of 3, the trim
+    option by default trim those bases from the output.
 
     :param str nuc_seq: original nucleotide sequence
     :param str aa_seq: aligned amino-acid sequence
@@ -152,7 +151,10 @@ def get_syn_matrix(trans_table=None, nuc_list=None):
     if nuc_list is None:
         nuc_list = REV_COMP
 
-    syn_matrix = dict((codon, {'syn': 0, 'nonsyn': 0}) for codon in trans_table)
+    syn_matrix = dict(
+        (codon, {'syn': 0, 'nonsyn': 0})
+        for codon in trans_table
+    )
 
     for codon1 in trans_table:
         for frame in range(0, 3):
@@ -161,7 +163,7 @@ def get_syn_matrix(trans_table=None, nuc_list=None):
                 codon2[frame] = nuc
                 codon2 = ''.join(codon2)
 
-                #skips if its the same
+                # skips if its the same
                 if codon1 == codon2:
                     continue
 
@@ -184,7 +186,10 @@ def get_syn_matrix_all(trans_table=None):
     if trans_table is None:
         trans_table = TRANS_TABLE
 
-    syn_matrix = dict((codon, {'syn': 0, 'nonsyn': 0}) for codon in trans_table)
+    syn_matrix = dict(
+        (codon, {'syn': 0, 'nonsyn': 0})
+        for codon in trans_table
+    )
 
     for codon1, codon2 in itertools.permutations(trans_table, 2):
         if trans_table[codon1] == trans_table[codon2]:
@@ -304,7 +309,8 @@ def reverse_aa_coord(start, end, seq_len):
 
 def calc_n50(seq_lengths):
     """
-    Calculate the N50 statistics for a :class:`numpy.array` of sequence lengths.
+    Calculate the N50 statistics for a :class:`numpy.array` of sequence
+    lengths.
 
     The algorithm finds in the supplied array the element (contig length) for
     which the sum all contig lengths equal or greater than it is equal to half
@@ -499,9 +505,9 @@ def check_snp_in_seq(ref_seq, pos, change, start=0, trans_table=None):
 
     :return bool: True if it is a synonymous change, False if non-synonymous
     """
-    #pos is expected to be a 1 based index
-    #returns true if snp is synonymous
-    #start is expected to be 0 based
+    # pos is expected to be a 1 based index
+    # returns true if snp is synonymous
+    # start is expected to be 0 based
     if trans_table is None:
         trans_table = TRANS_TABLE
 
@@ -598,9 +604,9 @@ def get_contigs_info(file_name, pp=False):
 
     .. versionadded:: 0.2.1
 
-    Given a file name for a fasta file with sequences, a dictionary of name->seq,
-    or a list of sequences, returns the following information in a tuple, or a
-    string if *pp* is True:
+    Given a file name for a fasta file with sequences, a dictionary of
+    name->seq, or a list of sequences, returns the following information in a
+    tuple, or a string if *pp* is True:
 
     - number of sequences
     - total base pairs
@@ -638,7 +644,8 @@ def get_contigs_info(file_name, pp=False):
     )
 
     if pp:
-        info = '{}: {} contigs, {} bp, max {}, min {}, avg {:.2f}, n50 {}'.format(
+        info_str = '{}: {} contigs, {} bp, max {}, min {}, avg {:.2f}, n50 {}'
+        info = info_str.format(
             file_name, *info
         )
 

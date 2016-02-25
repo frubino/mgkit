@@ -151,7 +151,7 @@ def project_point(point):
     Returns:
         tuple: the projected point in a planar-simplex
     """
-    #a = point[0]
+    # a = point[0]
     b = point[1]
     c = point[2]
 
@@ -225,7 +225,7 @@ def draw_circles(ax, data, col_func=col_func_name, csize=200, alpha=.5,
         *linewidths* equal *0*
 
     """
-    #normalize data (ternary plots requires that the sum of a row is 1)
+    # normalize data (ternary plots requires that the sum of a row is 1)
     data = data.div(data.sum(axis=1), axis=0)
 
     def no_project(a, b):

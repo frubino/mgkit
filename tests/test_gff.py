@@ -1,4 +1,4 @@
-from nose.tools import *
+from nose.tools import eq_, ok_, with_setup, raises
 
 from mgkit.io import gff
 from mgkit.utils import sequence
@@ -13,7 +13,8 @@ def test_fromgff1():
     ann = gff.from_gff(line)
 
     eq_(
-        "KMSRIGKLPITVPAGVTVTVDENNLVTVKGPKGTLSQQVNPDITLKQEGNILTLERPTDSKPHKAMHGL",
+        "KMSRIGKLPITVPAGVTVTVDENNLVTVKGPKGTLSQQVNPDITLKQEGNILTLERPTDSKPHKA" +
+        "MHGL",
         ann.attr['aa_seq']
     )
 
@@ -221,7 +222,9 @@ def test_Annotation_to_gtf2():
     ann = gff.from_gff(line)
 
     eq_(
-        ann.gene_id, gff.from_gff(ann.to_gtf(gene_id_attr='ko')).attr['transcript_id']
+        ann.gene_id, gff.from_gff(
+            ann.to_gtf(gene_id_attr='ko')
+        ).attr['transcript_id']
     )
 
 
@@ -395,7 +398,7 @@ def test_Annotation_is_syn1_1():
 
 
 def test_Annotation_is_syn2_1():
-    #second position on reference, first base in codon
+    # second position on reference, first base in codon
     ann = gff.Annotation(start=2, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -406,7 +409,7 @@ def test_Annotation_is_syn2_1():
 
 
 def test_Annotation_is_syn2_2():
-    #second position on reference, second base in codon
+    # second position on reference, second base in codon
     ann = gff.Annotation(start=2, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -417,7 +420,7 @@ def test_Annotation_is_syn2_2():
 
 
 def test_Annotation_is_syn2_3():
-    #second position on reference, third base in codon
+    # second position on reference, third base in codon
     ann = gff.Annotation(start=2, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -428,7 +431,7 @@ def test_Annotation_is_syn2_3():
 
 
 def test_Annotation_is_syn3_1():
-    #first position on reference, second codon, first base in codon
+    # first position on reference, second codon, first base in codon
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -439,7 +442,7 @@ def test_Annotation_is_syn3_1():
 
 
 def test_Annotation_is_syn3_2():
-    #first position on reference, second codon, second base in codon
+    # first position on reference, second codon, second base in codon
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -450,7 +453,7 @@ def test_Annotation_is_syn3_2():
 
 
 def test_Annotation_is_syn3_3():
-    #first position on reference, second codon, third base in codon
+    # first position on reference, second codon, third base in codon
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -461,7 +464,7 @@ def test_Annotation_is_syn3_3():
 
 
 def test_Annotation_is_syn4_1():
-    #first position on reference, third codon, first base in codon
+    # first position on reference, third codon, first base in codon
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -472,7 +475,7 @@ def test_Annotation_is_syn4_1():
 
 
 def test_Annotation_is_syn4_2():
-    #first position on reference, third codon, second base in codon
+    # first position on reference, third codon, second base in codon
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -483,7 +486,7 @@ def test_Annotation_is_syn4_2():
 
 
 def test_Annotation_is_syn4_3():
-    #first position on reference, third codon, third base in codon
+    # first position on reference, third codon, third base in codon
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -494,7 +497,7 @@ def test_Annotation_is_syn4_3():
 
 
 def test_Annotation_is_syn__start1_1():
-    #first position on reference, second codon, first base in codon, phase=1
+    # first position on reference, second codon, first base in codon, phase=1
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -505,7 +508,7 @@ def test_Annotation_is_syn__start1_1():
 
 
 def test_Annotation_is_syn__start1_2():
-    #first position on reference, second codon, second base in codon, phase=1
+    # first position on reference, second codon, second base in codon, phase=1
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -516,7 +519,7 @@ def test_Annotation_is_syn__start1_2():
 
 
 def test_Annotation_is_syn__start1_3():
-    #first position on reference, second codon, third base in codon, phase=1
+    # first position on reference, second codon, third base in codon, phase=1
     ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
     seq = 'ACTG' * 10
 
@@ -527,7 +530,7 @@ def test_Annotation_is_syn__start1_3():
 
 
 def test_Annotation_is_syn__start2_1():
-    #first position on reference, second codon, first base in codon, phase=1
+    # first position on reference, second codon, first base in codon, phase=1
     ann = gff.Annotation(start=1, end=40, strand='+', phase=1)
     seq = 'ACTG' * 10
 
@@ -538,7 +541,7 @@ def test_Annotation_is_syn__start2_1():
 
 
 def test_Annotation_is_syn__start3_1():
-    #first position on reference, third codon, third base in codon, phase=1
+    # first position on reference, third codon, third base in codon, phase=1
     ann = gff.Annotation(start=1, end=40, strand='+', phase=1)
     seq = 'ACTG' * 10
 
@@ -549,7 +552,7 @@ def test_Annotation_is_syn__start3_1():
 
 
 def test_Annotation_is_syn__start3_2():
-    #first position on reference, third codon, second base in codon, phase=1
+    # first position on reference, third codon, second base in codon, phase=1
     ann = gff.Annotation(start=1, end=40, strand='+', phase=1)
     seq = 'ACTG' * 10
 

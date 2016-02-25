@@ -66,7 +66,8 @@ def get_mappings(entry_ids, db_from='ID', db_to='EMBL', out_format='tab',
         to the maximum length of a HTTP request, so it should be less than 50
     :param str db_from: string that identify the DB for elements in entry_ids
     :param str db_to: string that identify the DB to which map entry_ids
-    :param str out_format: format of the mapping; 'list' and 'tab' are processed
+    :param str out_format: format of the mapping; 'list' and 'tab' are
+        processed
     :param str contact: email address to be passed in the query (requested
         Uniprot API)
 
@@ -94,7 +95,7 @@ def get_mappings(entry_ids, db_from='ID', db_to='EMBL', out_format='tab',
     elif out_format == 'tab':
         mapping_dict = {}
         mappings = mappings.split('\n')
-        #delete first row 'From to'
+        # delete first row 'From to'
         del mappings[0]
 
         for mapping in mappings:
@@ -156,7 +157,7 @@ def ko_to_mapping(ko_id, query, columns, contact=None):
 
         categories.update(mappings)
 
-    #in case an empty line is present
+    # in case an empty line is present
     try:
         categories.remove('')
     except KeyError:
@@ -231,7 +232,7 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
             infos[gene_id] = dict(
                 (
                     column,
-                    value if (not value.endswith(';')) and (not value.endswith('; ')) and (not '; ' in value)
+                    value if (not value.endswith(';')) and (not value.endswith('; ')) and ('; ' not in value)
                     else [x.strip() for x in value.split(';') if x.strip()]
                 )
                 for column, value in zip(columns, values[1:])
@@ -348,7 +349,8 @@ def get_ko_to_eggnog_mappings(ko_ids, contact=None):
 
     It's not possible to map in one go KO IDs to eggNOG IDs via the API in
     Uniprot. This function uses :func:`query_uniprot` to get all Uniprot IDs
-    requested and the return a dictionary with all their eggNOG IDs they map to.
+    requested and the return a dictionary with all their eggNOG IDs they map
+    to.
 
     Arguments:
         ko_ids (iterable): an iterable of KO IDs

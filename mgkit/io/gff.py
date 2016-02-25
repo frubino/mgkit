@@ -607,8 +607,8 @@ class Annotation(GenomicRange):
 
         var_names = (
             'seq_id', 'source', 'feat_type', 'start', 'end', 'score', 'strand',
-            'phase', 'gene_id', 'taxon_id', 'bitscore', 'exp_nonsyn', 'exp_syn',
-            'length', 'dbq', 'coverage'
+            'phase', 'gene_id', 'taxon_id', 'bitscore', 'exp_nonsyn',
+            'exp_syn', 'length', 'dbq', 'coverage'
         )
 
         for var_name in var_names:
@@ -1230,7 +1230,8 @@ def annotate_sequence(name, seq, window=None):
         yield annotation
 
 
-def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False, **kwd):
+def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False,
+                   **kwd):
     """
     .. versionadded:: 0.1.12
 
@@ -1827,10 +1828,10 @@ def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
 
     for fname in files:
         for annotation in parse_gff(fname):
-            #no information on taxa - exclude
+            # no information on taxa - exclude
             if annotation.taxon_id is None:
                 continue
-            #to exclude ribosomial genes or any other kind
+            # to exclude ribosomial genes or any other kind
             if exclude_ids is not None:
                 if annotation.gene_id in exclude_ids:
                     continue
@@ -1872,10 +1873,10 @@ def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
 
     for fname in files:
         for annotation in parse_gff(fname):
-            #skips genes that are already in the mapping
+            # skips genes that are already in the mapping
             if annotation.gene_id in infos:
                 continue
-            #exclude genes with no taxonomic information
+            # exclude genes with no taxonomic information
             if annotation.taxon_id is None:
                 continue
 
@@ -1883,7 +1884,7 @@ def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
                 if annotation.gene_id in exclude_ids:
                     continue
 
-            #skips non bacterial/achaeal genes
+            # skips non bacterial/achaeal genes
             if (include_taxa is not None) and (taxonomy is not None):
                 if not taxonomy.is_ancestor(annotation.taxon_id, include_taxa):
                     continue
@@ -1928,8 +1929,8 @@ def get_annotation_map(annotations, key_func, value_func):
 
     Yields:
         tuple: a tuple where the first value is the result of *key_func* on
-        the passed annotation and the second is the value returned by *value_func*
-        on the same annotation
+        the passed annotation and the second is the value returned by
+        *value_func* on the same annotation
     """
     for annotation in annotations:
         yield key_func(annotation), value_func(annotation)

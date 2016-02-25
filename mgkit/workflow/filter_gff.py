@@ -11,8 +11,8 @@ but `--str-eq`, `--str-in`, `--num-ge` and `--num-le` allow to make additional
 filters.
 
 The functions used to make the filters are located in the module
-:mod:`mgkit.filter.gff`, and their names start with `filter_base`, `filter_attr`
-and `filter_len`.
+:mod:`mgkit.filter.gff`, and their names start with `filter_base`,
+`filter_attr` and `filter_len`.
 
 .. blockdiag::
 
@@ -306,8 +306,8 @@ def set_values_parser(parser):
         action='append',
         type=functools.partial(parse_attr_arg, convert=str),
         help='''filter by custom key:value, if the argument is 'key:value' the
-             annotation is kept if it contains an attribute 'key' whose value is
-             exactly 'value' as a string.
+             annotation is kept if it contains an attribute 'key' whose value
+             is exactly 'value' as a string.
              '''
     )
     parser.add_argument(
@@ -320,13 +320,15 @@ def set_values_parser(parser):
         '--num-ge',
         action='append',
         type=functools.partial(parse_attr_arg, convert=float),
-        help="Same as '--str-eq' but 'value' is a number which is equal or greater than"
+        help="Same as '--str-eq' but 'value' is a number which is equal or " +
+        "greater than"
     )
     parser.add_argument(
         '--num-le',
         action='append',
         type=functools.partial(parse_attr_arg, convert=float),
-        help="Same as '--num-ge' but 'value' is a number which is equal or less than"
+        help="Same as '--num-ge' but 'value' is a number which is equal " +
+        "or less than"
     )
 
     common_options(parser)
@@ -391,7 +393,7 @@ def set_parser():
 
 def setup_filters(options):
     filters = []
-    #base filters
+    # base filters
     base_filters = (
         'taxon_id',
         'seq_id',
@@ -411,7 +413,7 @@ def setup_filters(options):
                     value=getattr(options, attr)
                 )
             )
-    #length
+    # length
     if options.length or options.length_short:
 
         value = options.length if options.length else options.length_short
@@ -422,9 +424,13 @@ def setup_filters(options):
                 greater=True if options.length else False
             )
         )
-        LOG.info("Filter length %s %s", '>=' if options.length else '<=', value)
+        LOG.info(
+            "Filter length %s %s",
+            '>=' if options.length else '<=',
+            value
+        )
 
-    #start position
+    # start position
     if options.start_lower or options.start_higher:
         if options.start_lower:
             value = options.start_lower
@@ -443,7 +449,7 @@ def setup_filters(options):
             '>=' if options.start_higher else '<=',
             value
         )
-    #end position
+    # end position
     if options.end_lower or options.end_higher:
         if options.end_lower:
             value = options.end_lower
