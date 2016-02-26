@@ -608,8 +608,12 @@ class KeggData(object):
                     cp_dict = getattr(rn, 'cp_' + direction)
                     if description:
                         for cp_obj in cp_dict.itervalues():
-                            cp.add("{0}: {1}".format(
-                                   cp_obj.cp_id, cp_obj.description))
+                            cp.add(
+                                "{0}: {1}".format(
+                                    cp_obj.cp_id,
+                                    cp_obj.description
+                                )
+                            )
                     else:
                         cp.update(cp_dict.keys())
                 cp_links[ko_id] = cp

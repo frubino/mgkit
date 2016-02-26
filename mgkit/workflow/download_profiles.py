@@ -525,8 +525,12 @@ def main():
         except IOError, error:
             LOG.error("Couldn't write sequences for %s", ko_id)
             LOG.error(str(error))
-            file_list = glob.glob(os.path.join(output_dir,
-                                  '{0}*'.format(ko_id)))
+            file_list = glob.glob(
+                os.path.join(
+                    output_dir,
+                    '{0}*'.format(ko_id)
+                )
+            )
             for fname in file_list:
                 LOG.error("-> %s", fname)
                 os.remove(fname)

@@ -819,6 +819,8 @@ def get_lineage(taxonomy, taxon_id, names=False):
 
 def last_common_ancestor_multiple(taxonomy, taxon_ids):
     """
+    .. versionadded:: 0.2.5
+
     Applies :func:`last_common_ancestor` to an iterable that yields *taxon_id*
     while removing any *None* values. If the list is of one element, that
     *taxon_id* is returned.

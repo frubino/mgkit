@@ -283,10 +283,15 @@ def print_ko_to_cat(data_file='eggnog.pickle', descr=False):
         except KeyError:
             cats = []
 
-        print("{0}\t{1}".format(ko_id, '\t'.join(
-            EGGNOG_CAT[x] if descr else x
-            for x in cats)
-        ))
+        print(
+            "{0}\t{1}".format(
+                ko_id,
+                '\t'.join(
+                    EGGNOG_CAT[x] if descr else x
+                    for x in cats
+                )
+            )
+        )
 
 
 class NOGInfo(object):
