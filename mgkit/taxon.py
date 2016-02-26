@@ -494,8 +494,8 @@ class UniprotTaxonomy(object):
                 break
             elif ranked.parent_id is None:
                 break
-            #kept only for backward compatibility.
-            #needs a check to other scripts
+            # kept only for backward compatibility.
+            # needs a check to other scripts
             elif roots and (ranked.s_name in TAXON_ROOTS):
                 break
 
@@ -815,3 +815,39 @@ def get_lineage(taxonomy, taxon_id, names=False):
         lineage = [taxonomy[x].s_name for x in lineage]
 
     return list(reversed(lineage))
+
+
+def last_common_ancestor_multiple(taxonomy, taxon_ids):
+    """
+    Applies :func:`last_common_ancestor` to an iterable that yields *taxon_id*
+    while removing any *None* values. If the list is of one element, that
+    *taxon_id* is returned.
+
+    Arguments:
+        taxonomy: instance of :class:`UniprotTaxonomy`
+        taxon_ids (iterable): an iterable that yields taxon_id
+
+    Returns:
+        int: the *taxon_id* that is the last common ancestor of all taxon_ids
+        passed
+
+    Raises:
+        NoLcaFound: when no common ancestry is found or the number of
+        *taxon_ids* is 0
+    """
+
+    taxon_ids = [
+        taxon_id
+        for taxon_id in taxon_ids
+        if taxon_id is not None
+    ]
+
+    if not taxon_ids:
+        raise NoLcaFound('Empty *taxon_ids*')
+    elif len(taxon_ids):
+        return taxon_ids[0]
+
+    return reduce(
+        lambda x1, x2: last_common_ancestor(taxonomy, x1, x2),
+        taxon_ids
+    )
