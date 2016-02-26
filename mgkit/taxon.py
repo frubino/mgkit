@@ -844,8 +844,6 @@ def last_common_ancestor_multiple(taxonomy, taxon_ids):
 
     if not taxon_ids:
         raise NoLcaFound('Empty *taxon_ids*')
-    elif len(taxon_ids):
-        return taxon_ids[0]
 
     return reduce(
         lambda x1, x2: last_common_ancestor(taxonomy, x1, x2),
