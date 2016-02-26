@@ -11,6 +11,10 @@ LOG = logging.getLogger(__name__)
 
 
 class CiteAction(argparse.Action):
+    """
+    Argparse action to print the citation, using the :func:`mgkit.cite`
+    function.
+    """
     def __init__(self,
                  option_strings,
                  dest=argparse.SUPPRESS,
@@ -24,7 +28,7 @@ class CiteAction(argparse.Action):
             help=help)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        mgkit.cite(file=sys.stderr)
+        mgkit.cite(file_handle=sys.stderr)
         setattr(namespace, self.dest, values)
         parser.exit(0)
 
@@ -53,5 +57,8 @@ def add_basic_options(parser):
 
 
 def exit_script(message, ret_value):
+    """
+    Used to exit the script with a return value
+    """
     LOG.critical(message)
     sys.exit(ret_value)

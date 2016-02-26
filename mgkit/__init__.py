@@ -37,7 +37,7 @@ Available at: http://figshare.com/articles/MGkit_Metagenomic_Framework_For_The_S
 PKG_NAME = 'MGKit'
 
 
-def cite(file=sys.stderr):
+def cite(file_handle=sys.stderr):
     """
     Print citation to the specified stream
     """
@@ -46,7 +46,7 @@ def cite(file=sys.stderr):
         'MGKit Version: {0}'.format(__VERSION__),
         CITE,
         sep='\n',
-        file=file
+        file=file_handle
     )
 
 
