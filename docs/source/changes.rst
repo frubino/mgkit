@@ -9,6 +9,7 @@ Changed
 
 * :func:`mgkit.utils.sequence.get_contigs_info` now accepts a dictionary name->seq or a list of sequences, besides a file name (r536)
 * *add-gff-info* **counts** command now removes trailing commas from the samples list
+* the axes are turned off after the dendrogram is plo
 
 Fixed
 *****
