@@ -276,7 +276,7 @@ def heatmap_clustered(data, figsize=(10, 5), cmap=None, norm=None):
         width_ratios=[0.25, 1],
         height_ratios=[0.25, 1]
     )
-    dendr = dendrogram(data, fig.add_subplot(gs[1, 0]), orientation='right')
+    dendr = dendrogram(data, fig.add_subplot(gs[1, 0]), orientation='left')
     dendc = dendrogram(data.T, fig.add_subplot(gs[0, 1]))
 
     baseheatmap(

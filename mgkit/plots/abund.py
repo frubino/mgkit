@@ -259,3 +259,26 @@ def draw_circles(ax, data, col_func=col_func_name, csize=200, alpha=.5,
         s=csize * (sizescale if sizescale is not None else 1)
     )
     return paths
+
+
+def draw_axis_internal_triangle(ax, color='r', linewidth=2.):
+    """
+    .. versionadded:: 0.2.5
+
+    Draws a triangle that indicates the 50% limit for all 3 samples
+
+    Arguments:
+        ax: axis to use
+        color (str, float, tuple): color used to draw the triangle
+        linewidth (float): line width
+    """
+    x1, y1 = project_point([.5, .5, 0.])
+    x2, y2 = project_point([.5, 0., 0.5])
+    x3, y3 = project_point([.0, 0.5, 0.5])
+
+    ax.plot(
+        [x1, x2, x3, x1],
+        [y1, y2, y3, y1],
+        color=color,
+        linewidth=linewidth
+    )
