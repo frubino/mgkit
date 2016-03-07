@@ -849,5 +849,5 @@ def last_common_ancestor_multiple(taxonomy, taxon_ids):
 
     return reduce(
         lambda x1, x2: last_common_ancestor(taxonomy, x1, x2),
-        taxon_ids
+        set(taxon_ids)
     )

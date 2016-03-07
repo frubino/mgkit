@@ -1078,11 +1078,9 @@ def addtaxa_command(options):
             try:
                 annotation.attr['taxon_name'] = taxonomy[taxon_id].s_name
                 annotation.attr['lineage'] = ','.join(
-                    taxon.get_lineage(
-                        taxonomy,
-                        taxon_id,
-                        names=True
-                    )
+                    taxon_name
+                    for taxon_name in taxon.get_lineage(taxonomy, taxon_id, names=True)
+                    if taxon_name
                 )
             except KeyError:
                 LOG.warning("Taxon ID %d not found in the Taxonomy", taxon_id)
