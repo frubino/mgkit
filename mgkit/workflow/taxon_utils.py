@@ -80,7 +80,7 @@ def set_lca_contig_parser(parser):
     parser.add_argument(
         '-b',
         '--bitscore',
-        default=50,
+        default=0,
         type=float,
         help='Minimum bitscore accepted'
     )
@@ -107,9 +107,15 @@ def write_lca_gff(file_handle, seq_id, seq, taxon_id, taxon_name, lineage):
     annotation.to_file(file_handle)
 
 
-def write_lca_tab(file_handle, seq_id, taxon_id, taxon_name, lineage):
+def write_lca_tab(file_handle, seq_id, taxon_id, taxon_name, rank, lineage):
     file_handle.write(
-        "{}\t{}\t{}\t{}\n".format(seq_id, taxon_id, taxon_name, lineage)
+        "{}\t{}\t{}\t{}\t{}\n".format(
+            seq_id,
+            taxon_id,
+            taxon_name,
+            rank,
+            lineage
+        )
     )
 
 
@@ -172,6 +178,7 @@ def lca_contig_command(options):
                 seq_id,
                 taxon_id,
                 taxon_name,
+                taxonomy[taxon_id].rank,
                 lineage
             )
 
@@ -209,6 +216,7 @@ def lca_line_command(options):
             ';'.join(str(x) for x in taxon_ids),
             taxon_id,
             taxon_name,
+            taxonomy[taxon_id].rank,
             lineage
         )
 
