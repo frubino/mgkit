@@ -25,6 +25,8 @@ ALGAE = {
 BACTERIA = 2
 ARCHAEA = 2157
 FUNGI = 4751
+VIRUS = 10239
+EUKARYOTA = 2759
 
 PROTISTS = {
     #'apicomplexa', alveolata

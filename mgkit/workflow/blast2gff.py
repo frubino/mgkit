@@ -66,7 +66,7 @@ def parse_attr_arg(value):
     values = value.split(':')
     if len(values) != 2:
         raise argparse.ArgumentTypeError(
-            "Wrong filter format, must be 'key:value' 'key:value'"
+            "Wrong key/value format, must be 'key:value' 'key:value'"
         )
 
     return values[0], values[1]
