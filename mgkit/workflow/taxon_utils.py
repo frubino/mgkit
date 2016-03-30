@@ -133,6 +133,11 @@ def get_taxon_info(taxonomy, taxon_id):
 
 
 def lca_contig_command(options):
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
 
     if options.reference is not None:
@@ -195,6 +200,11 @@ def set_lca_line_parser(parser):
 
 
 def lca_line_command(options):
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
 
     for line in options.input_file:

@@ -161,6 +161,11 @@ def set_mongodb_parser(parser):
 
 def mongodb_command(options):
 
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     lineage_func = None
 
     if options.taxonomy is not None:
@@ -180,6 +185,11 @@ def mongodb_command(options):
 
 
 def gtf_command(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
 
     for annotation in gff.parse_gff(options.input_file):
         options.output_file.write(

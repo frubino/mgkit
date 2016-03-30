@@ -183,6 +183,11 @@ def convert_from_blastdb(options):
     .. versionadded:: 0.2.2
     """
 
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     seqs = load_fasta_file(options.fasta_file)
 
     iterator = blast.parse_uniprot_blast(
@@ -204,6 +209,11 @@ def convert_from_blastdb(options):
 
 
 def convert_from_uniprot(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
 
     seqs = load_fasta_file(options.fasta_file)
 

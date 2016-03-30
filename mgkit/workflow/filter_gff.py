@@ -538,6 +538,11 @@ def setup_filters(options):
 
 def filter_values(options):
 
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     filters = setup_filters(options)
 
     for annotation in gff.parse_gff(options.input_file, gff_type=gff.from_gff):
@@ -572,6 +577,11 @@ def make_choose_func(argument):
 
 
 def filter_overlaps(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
 
     file_iterator = gff.parse_gff(options.input_file, gff_type=gff.from_gff)
 
