@@ -346,9 +346,12 @@ def parse_fragment_blast(file_handle, bitscore=40.0):
         yield uid, hits
 
 
+@deprecated
 def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
     """
     .. versionadded:: 0.1.13
+
+    .. deprecated:: 0.2.6
 
     Parses the taxonomy files from the `ncbi ftp
     <ftp://ftp.ncbi.nih.gov/pub/taxonomy/>`_; the file names are
@@ -368,20 +371,75 @@ def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
         converted into an integer.
 
     """
+    return parse_accession_taxa_table(file_handle, acc_ids=gids, key=3,
+                                      num_lines=num_lines)
+
+
+def parse_accession_taxa_table(file_handle, acc_ids=None, key=1,
+                               num_lines=NUM_LINES):
+    """
+    .. versionadded:: 0.2.5
+
+    This function superseeds :func:`parse_gi_taxa_table`, since NCBI is
+    deprecating the GIDs in favor of accessions like *X53318*. The new file can
+    be found at the NCBI `ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid`,
+    for DNA sequences (*nt* DB) *nucl_gb.accession2taxid.gz*.
+
+    The file contains 4 columns, the first one is the accession without its
+    version, the second one includes the version, the third column is the
+    taxonomic identifier and the fourth is either the old GID or **na**.
+
+    The column used as key is the *second*, since by default the fasta headers
+    used in NCBI DBs use the versioned identifier. To use the GID as key, the
+    *key* parameter can be set to 3, but if no identifier is found (*na* as per
+    the file README), the line is skipped.
+
+    Arguments:
+        file_handle (str, file): file name or open file handle
+        acc_ids (None, list): if it's not `None` only the keys included in the
+            passed `acc_ids` list will be returned
+        key (int): 0-based index for the column to use as accession. Defaults
+            to the versioned accession that is used in GenBank fasta files.
+        num_lines (None, int): number of which a message is logged. If None,
+            no message is logged
+
+    .. note::
+
+        GIDs are being phased out in September 2016:
+        http://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/
+
+    """
+
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
 
-    if gids is not None:
-        gids = set(gids)
+    LOG.info(
+        "Reading taxonomic information from file (%s)",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
+
+    if acc_ids is not None:
+        acc_ids = set(acc_ids)
 
     for idx, line in enumerate(file_handle):
+
+        # skip header
+        if line.startswith('accession'):
+            continue
 
         if (num_lines is not None) and ((idx + 1) % num_lines == 0):
             LOG.info("Parsed %d lines", idx + 1)
 
-        gid, taxon_id = line.strip().split('\t')
+        line = line.strip().split('\t')
 
-        if (gids is not None) and (gid not in gids):
+        acc_id = line[key]
+
+        if (acc_ids is not None) and (acc_id not in acc_ids):
             continue
 
-        yield gid, int(taxon_id)
+        # this is the case if the column used as key is the fourth (GID) and
+        # the GID is not available for that accession. The best case is to skip
+        if acc_id.lower() == 'na':
+            continue
+
+        yield acc_id, int(line[2])
