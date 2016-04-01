@@ -122,6 +122,15 @@ Examples of function strings:
   to *dbq*
 * `+evalue`: will discard the annotation with the highest *evalue*
 
+Per Sequence Values
+*******************
+
+The *sequence* command allows to filter on a per sequence basis, using
+functions such as the median, quantile and mean on attributes like evalue,
+bitscore and identity. The file can be passed as sorted already, saving memory
+(like in the *overlap* command), but it's not needed to sort the file by strand,
+only by the first column.
+
 Changes
 *******
 
@@ -133,12 +142,18 @@ Changes
 .. versionchanged:: 0.2.0
     changed option *-c* to accept a string to filter overlap
 
+.. versionchanged:: 0.2.5
+    added *sequence* command
+
 """
 
 import sys
 import argparse
 import logging
 import functools
+
+import pandas
+
 from .. import logger
 from . import utils
 from ..io import gff
@@ -368,6 +383,158 @@ def set_overlap_parser(parser):
     parser.set_defaults(func=filter_overlaps)
 
 
+def set_perseq_parser(parser):
+    parser.add_argument(
+        '-t',
+        '--sorted',
+        action='store_true',
+        help='''If the GFF file is sorted (all of a sequence annotations are
+                contiguos) can use less memory, `sort -s -k 1,1` can be used''',
+        default=False
+    )
+    parser.add_argument(
+        '-a',
+        '--attribute',
+        action='store',
+        help='Attribute on which to apply the filter',
+        type=str,
+        choices=['evalue', 'bitscore', 'identity'],
+        default='bitscore'
+    )
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        '-m',
+        '--mean',
+        action='store_true',
+        help='Filter by the mean value',
+        default=False
+    )
+    group.add_argument(
+        '-d',
+        '--median',
+        action='store_true',
+        help='Filter by the median value',
+        default=False
+    )
+    group.add_argument(
+        '-q',
+        '--quantile',
+        action='store',
+        type=float,
+        help='Filter by the quantile value'
+    )
+
+    group.add_argument(
+        '-s',
+        '--std',
+        action='store',
+        type=float,
+        help='''Filter by: mean + (X * std) where X is the number
+                supplied'''
+    )
+    parser.add_argument(
+        '-c',
+        '--comparison',
+        action='store',
+        help='Type of comparison (e.g. ge -> greater than or equal to)',
+        type=str,
+        default='gt',
+        choices=['gt', 'ge', 'lt', 'le']
+    )
+
+    common_options(parser)
+
+    parser.set_defaults(func=filter_perseq)
+
+
+def perseq_calc_threshold(annotations, attribute, function, func_arg=None):
+
+    values = pandas.Series(
+        annotation.get_attr(attribute, float)
+        for annotation in annotations
+    )
+
+    if function == 'mean':
+        thres = values.mean()
+    elif function == 'median':
+        thres = values.median()
+    elif function == 'quantile':
+        thres = values.quantile(func_arg)
+    elif function == 'std':
+        thres = values.mean() + (func_arg * values.std())
+
+    LOG.debug(
+        """Threshold for contig %s found: %.2f, using funcion %s and its
+           arg %.2f on %d ann.""",
+        annotations[0],
+        thres,
+        function,
+        func_arg,
+        len(annotations)
+    )
+    return thres
+
+
+def find_function(options):
+    for function in ('mean', 'quantile', 'median', 'std'):
+        if getattr(options, function):
+            return function
+    # in case no function was selected
+    return None
+
+
+def find_comparison(options):
+    if options.comparison == 'gt':
+        return lambda x, y: x > y
+    elif options.comparison == 'ge':
+        return lambda x, y: x >= y
+    elif options.comparison == 'lt':
+        return lambda x, y: x < y
+    elif options.comparison == 'le':
+        return lambda x, y: x <= y
+
+
+def filter_perseq(options):
+
+    function = find_function(options)
+
+    if function is None:
+        utils.exit_script("No function selected (e.g. mean)", 1)
+
+    comparison = find_comparison(options)
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
+    file_iterator = gff.parse_gff(options.input_file, gff_type=gff.from_gff)
+
+    if options.sorted:
+        LOG.info("Input GFF is assumed sorted")
+        grouped = gff.group_annotations_sorted(
+            file_iterator, lambda x: x.seq_id
+        )
+    else:
+        grouped = gff.group_annotations(
+            file_iterator, lambda x: x.seq_id
+        ).itervalues()
+
+    attribute = options.attribute
+
+    for annotations in grouped:
+        threshold = perseq_calc_threshold(
+            annotations,
+            attribute,
+            function,
+            getattr(options, function)
+        )
+
+        for annotation in annotations:
+            if comparison(annotation.get_attr(attribute, float), threshold):
+                annotation.to_file(options.output_file)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -385,6 +552,13 @@ def set_parser():
     parser_o = subparsers.add_parser('overlap', help='Use overlapping filter')
 
     set_overlap_parser(parser_o)
+
+    parser_perseq = subparsers.add_parser(
+        'sequence',
+        help='Filter on a per sequence basis'
+    )
+
+    set_perseq_parser(parser_perseq)
 
     utils.add_basic_options(parser)
 
