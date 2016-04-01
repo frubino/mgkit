@@ -48,7 +48,7 @@ setup(
     # package_dir={'mgkit': 'mgkit'},
     install_requires=install_requires,
     scripts=[
-        'bin/snp_analysis.py',
+        # 'bin/snp_analysis.py',
         'scripts/download-taxonomy.sh'
     ],
     tests_require=['nose>=1.3.4', 'yanc'],
@@ -57,7 +57,7 @@ setup(
         'console_scripts': [
             'download_data = mgkit.workflow.download_data:main [extra_scripts]',
             'download_profiles = mgkit.workflow.download_profiles:main',
-            'filter-gff = mgkit.workflow.filter_gff:main',
+            'filter-gff = mgkit.workflow.filter_gff:main [extra_scripts]',
             'add-gff-info = mgkit.workflow.add_gff_info:main [extra_scripts]',
             'get-gff-info = mgkit.workflow.extract_gff_info:main [db]',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
