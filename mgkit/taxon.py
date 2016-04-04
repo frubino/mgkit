@@ -381,9 +381,19 @@ class UniprotTaxonomy(object):
                 import msgpack
             except ImportError:
                 raise DependencyError('msgpack')
-            for taxon in msgpack.Unpacker(file_handle, use_list=False):
+            merged = []
+            for taxon_id, taxon in msgpack.Unpacker(file_handle, use_list=False):
                 taxon = UniprotTaxonTuple(*taxon)
-                self[taxon.taxon_id] = taxon
+                # if it's a merged taxon_id keep it and don't add it
+                if taxon_id != taxon.taxon_id:
+                    merged.append((taxon_id, taxon.taxon_id))
+                else:
+                    self[taxon_id] = taxon
+            # the list of merged ids is iterated over and pointers are added to
+            # the correct ids
+            for merged_id, taxon_id in merged:
+                self[merged_id] = self[taxon_id]
+
         else:
             self._taxa = cPickle.load(file_handle)
 
@@ -416,8 +426,10 @@ class UniprotTaxonomy(object):
                 import msgpack
             except ImportError:
                 raise DependencyError('msgpack')
-            for taxon in self:
-                file_handle.write(msgpack.packb(taxon))
+            for taxon_id, taxon in self._taxa.iteritems():
+                file_handle.write(
+                    msgpack.packb((taxon_id, taxon))
+                )
         else:
             cPickle.dump(self._taxa, file_handle, -1)
 
