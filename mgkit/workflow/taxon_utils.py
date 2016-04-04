@@ -37,6 +37,12 @@ the difference that instead of the first column, which in this command becames
 a list of all *taxon_ids* that were used to find the last common ancestor for
 that line. The list of *taxon_ids* is separated by semicolon ";".
 
+.. note::
+
+    Both also accept the *-n* option, to report the config/line and the
+    taxon_ids that had no common ancestors. These are treated as errors and do
+    not appear in the output file. The no
+
 """
 from __future__ import division
 import sys
@@ -61,13 +67,6 @@ def set_common_options(parser):
         required=True
     )
     parser.add_argument(
-        '-n',
-        '--no-lca',
-        type=argparse.FileType('w'),
-        default=None,
-        help='File to which write records with no LCA',
-    )
-    parser.add_argument(
         'input_file',
         nargs='?',
         type=argparse.FileType('r'),
@@ -80,6 +79,16 @@ def set_common_options(parser):
         type=argparse.FileType('w'),
         default=sys.stdout,
         help='Output file, defaults to stdout'
+    )
+
+
+def lca_options(parser):
+    parser.add_argument(
+        '-n',
+        '--no-lca',
+        type=argparse.FileType('w'),
+        default=None,
+        help='File to which write records with no LCA',
     )
 
 
@@ -98,6 +107,8 @@ def set_lca_contig_parser(parser):
         type=argparse.FileType('r'),
         help='Reference file for the GFF, if supplied a GFF file is the output'
     )
+
+    lca_options(parser)
 
     parser.set_defaults(func=lca_contig_command)
 
@@ -143,7 +154,7 @@ def write_no_lca(file_handle, seq_id, taxon_ids):
     file_handle.write(
         "{}\t{}\n".format(
             seq_id,
-            ','.join(str(taxon_id) for taxon_id in taxon_ids)
+            ','.join(str(taxon_id) for taxon_id in set(taxon_ids))
         )
     )
 
@@ -153,6 +164,12 @@ def lca_contig_command(options):
         'Writing to file (%s)',
         getattr(options.output_file, 'name', repr(options.output_file))
     )
+
+    if options.no_lca is not None:
+        LOG.info(
+            "Writing contigs/taxon_ids of contigs with no LCA to (%s)",
+            getattr(options.no_lca, 'name', repr(options.no_lca))
+        )
 
     taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
 
@@ -218,6 +235,7 @@ def set_lca_line_parser(parser):
         type=str,
         help='separator for taxon_ids (defaults to TAB)'
     )
+    lca_options(parser)
     parser.set_defaults(func=lca_line_command)
 
 
@@ -226,6 +244,12 @@ def lca_line_command(options):
         'Writing to file (%s)',
         getattr(options.output_file, 'name', repr(options.output_file))
     )
+
+    if options.no_lca is not None:
+        LOG.info(
+            "Writing taxon_ids of lines with no LCA to (%s)",
+            getattr(options.no_lca, 'name', repr(options.no_lca))
+        )
 
     taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
 
