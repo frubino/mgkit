@@ -61,6 +61,13 @@ def set_common_options(parser):
         required=True
     )
     parser.add_argument(
+        '-n',
+        '--no-lca',
+        type=argparse.FileType('w'),
+        default=None,
+        help='File to which write records with no LCA',
+    )
+    parser.add_argument(
         'input_file',
         nargs='?',
         type=argparse.FileType('r'),
@@ -132,6 +139,15 @@ def get_taxon_info(taxonomy, taxon_id):
     return taxon_name, lineage
 
 
+def write_no_lca(file_handle, seq_id, taxon_ids):
+    file_handle.write(
+        "{}\t{}\n".format(
+            seq_id,
+            ','.join(str(taxon_id) for taxon_id in taxon_ids)
+        )
+    )
+
+
 def lca_contig_command(options):
     LOG.info(
         'Writing to file (%s)',
@@ -165,6 +181,12 @@ def lca_contig_command(options):
             )
         except taxon.NoLcaFound as error:
             LOG.error("No LCA found for %s (%s)", seq_id, error)
+            if options.no_lca is not None:
+                write_no_lca(
+                    options.no_lca,
+                    seq_id,
+                    (annotation.taxon_id for annotation in seq_ann)
+                )
             continue
 
         taxon_name, lineage = get_taxon_info(taxonomy, taxon_id)
@@ -219,6 +241,12 @@ def lca_line_command(options):
             )
         except taxon.NoLcaFound as error:
             LOG.error("No LCA found for %s (%s)", taxon_ids, error)
+            if options.no_lca is not None:
+                write_no_lca(
+                    options.no_lca,
+                    '',
+                    taxon_ids
+                )
             continue
         taxon_name, lineage = get_taxon_info(taxonomy, taxon_id)
         write_lca_tab(
