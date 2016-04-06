@@ -372,10 +372,10 @@ def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
 
     """
     return parse_accession_taxa_table(file_handle, acc_ids=gids, key=0,
-                                      num_lines=num_lines)
+                                      value=1, num_lines=num_lines)
 
 
-def parse_accession_taxa_table(file_handle, acc_ids=None, key=1,
+def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
                                num_lines=NUM_LINES):
     """
     .. versionadded:: 0.2.5
@@ -442,4 +442,4 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1,
         if acc_id.lower() == 'na':
             continue
 
-        yield acc_id, int(line[2])
+        yield acc_id, int(line[value])
