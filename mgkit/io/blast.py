@@ -371,7 +371,7 @@ def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
         converted into an integer.
 
     """
-    return parse_accession_taxa_table(file_handle, acc_ids=gids, key=3,
+    return parse_accession_taxa_table(file_handle, acc_ids=gids, key=0,
                                       num_lines=num_lines)
 
 
