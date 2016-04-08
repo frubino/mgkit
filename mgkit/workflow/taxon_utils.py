@@ -43,16 +43,41 @@ that line. The list of *taxon_ids* is separated by semicolon ";".
     taxon_ids that had no common ancestors. These are treated as errors and do
     not appear in the output file. The no
 
+Filter by Taxon
+***************
+
+The **filter** command of this script allows to filter a GFF file using the
+*taxon_id* attribute to include only some annotations, or exclude some. The
+filter is based on the `mgkit.taxon.is_ancestor` function, and the
+`mgkit.filter.taxon.filter_taxon_by_id_list`. It allows to pass a list of
+taxon_id (or taxon_names) to the script. The *include* filter will only output
+annotations that have one of the passed taxa as ancestors, while the *exclude*
+filter will remove those annotations, that have the passed taxa as ancestors,
+from the output.
+
+A list of comma separated taxon_ids can be supplied, as for the names. If any
+of the the supplied names have multiple taxon_id (e.g. Actinobacteria) the
+script exits and in the log can be found the list of duplicates. For cases like
+this, it's preferred for the user to supply a taxon_id, as they can be searched
+in NCBI taxonomy (also Uniprot).
+
+.. warning::
+
+    Annotations with no taxon_id are not included in the output of both filters
+
 """
 from __future__ import division
 import sys
 import argparse
 import logging
+import functools
 
 import mgkit
 from . import utils
 from mgkit.io import gff, fasta
 from mgkit import taxon
+from mgkit.simple_cache import memoize
+from mgkit.filter.taxon import filter_taxon_by_id_list
 
 LOG = logging.getLogger(__name__)
 
@@ -283,6 +308,145 @@ def lca_line_command(options):
         )
 
 
+def validate_taxon_ids(taxon_ids, taxonomy):
+    taxon_ids = set(
+        int(taxon_id)
+        for taxon_id in taxon_ids.split(',')
+        if taxon_id
+    )
+    broken = False
+    for taxon_id in taxon_ids:
+        if taxon_id not in taxonomy:
+            LOG.critical(
+                "taxon_id %d was not found in the taxonomy",
+                taxon_id
+            )
+            broken = True
+    if broken:
+        utils.exit_script(
+            "Some of taxon_ids were not found", 1
+        )
+    return taxon_ids
+
+
+def validate_taxon_names(taxon_names, taxonomy):
+    taxon_names = tuple(
+        taxon_name
+        for taxon_name in taxon_names.split(',')
+        if taxon_name
+    )
+
+    broken = False
+    taxon_ids = set()
+    for taxon_name in taxon_names:
+        try:
+            taxon_id = taxonomy.find_by_name(taxon_name)
+        except KeyError:
+            LOG.critical("'%s' was not found in the taxonomy", taxon_name)
+            broken = True
+            continue
+        if len(taxon_id) > 1:
+            LOG.critical(
+                "'%s' was found multiple times in the taxonomy: (%s)",
+                taxon_name,
+                ', '.join(str(tid) for tid in taxon_id)
+            )
+            broken = True
+            continue
+        # takes the first (and only) taxon_id from the list returned
+        taxon_ids.add(taxon_id[0])
+
+    if broken:
+        utils.exit_script(
+            "Some of taxon_names were not found", 2
+        )
+    return taxon_ids
+
+
+def set_filter_taxa_parser(parser):
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        '-i',
+        '--include-taxon-id',
+        action='store',
+        type=str,
+        help='Include only taxon_ids (comma separated)'
+    )
+    group.add_argument(
+        '-in',
+        '--include-taxon-name',
+        action='store',
+        type=str,
+        help='Include only taxon_names (comma separated)'
+    )
+    group.add_argument(
+        '-e',
+        '--exclude-taxon-id',
+        action='store',
+        type=str,
+        help='Exclude taxon_ids (comma separated)'
+    )
+    group.add_argument(
+        '-en',
+        '--exclude-taxon-name',
+        action='store',
+        type=str,
+        help='Exclude taxon_names (comma separated)'
+    )
+    parser.set_defaults(func=filter_taxa_command)
+
+
+def filter_taxa_command(options):
+    taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+
+    exclude = False
+
+    if options.exclude_taxon_name is not None:
+        exclude = True
+        taxon_ids = validate_taxon_names(
+            options.exclude_taxon_name,
+            taxonomy
+        )
+    elif options.exclude_taxon_id is not None:
+        exclude = True
+        taxon_ids = validate_taxon_ids(
+            options.exclude_taxon_id,
+            taxonomy
+        )
+    elif options.include_taxon_name is not None:
+        taxon_ids = validate_taxon_names(
+            options.include_taxon_name,
+            taxonomy
+        )
+    elif options.include_taxon_id is not None:
+        taxon_ids = validate_taxon_ids(
+            options.include_taxon_id,
+            taxonomy
+        )
+
+    if exclude:
+        LOG.info("Excluding Taxa")
+    else:
+        LOG.info("Only include Taxa")
+
+    comp_taxa = functools.partial(
+        filter_taxon_by_id_list,
+        filter_list=taxon_ids,
+        exclude=exclude,
+        func=functools.partial(
+            taxon.is_ancestor,
+            taxonomy
+        )
+    )
+    comp_taxa = memoize(comp_taxa)
+
+    for annotation in gff.parse_gff(options.input_file):
+        if annotation.taxon_id is None:
+            continue
+        if comp_taxa(annotation.taxon_id):
+            annotation.to_file(options.output_file)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -311,6 +475,15 @@ def set_parser():
     set_lca_line_parser(parser_lca_line)
     set_common_options(parser_lca_line)
     utils.add_basic_options(parser_lca_line)
+
+    parser_filter_taxa = subparsers.add_parser(
+        'filter',
+        help='Filter a GFF file based on taxonomy'
+    )
+
+    set_filter_taxa_parser(parser_filter_taxa)
+    set_common_options(parser_filter_taxa)
+    utils.add_basic_options(parser_filter_taxa)
 
     utils.add_basic_options(parser)
 
