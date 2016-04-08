@@ -169,7 +169,7 @@ def get_taxon_info(taxonomy, taxon_id):
         taxon_name = taxonomy[taxon_id].c_name
     lineage = ','.join(
         tx
-        for tx in taxon.get_lineage(taxonomy, taxon_id, names=True)
+        for tx in taxon.get_lineage(taxonomy, taxon_id, names=True, only_ranked=True)
         if tx
     )
     return taxon_name, lineage

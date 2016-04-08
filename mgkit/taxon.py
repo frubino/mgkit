@@ -801,9 +801,12 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
     return matrix
 
 
-def get_lineage(taxonomy, taxon_id, names=False):
+def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False):
     """
     .. versionadded:: 0.2.1
+
+    .. versionchanged:: 0.2.5
+        added *only_ranked*
 
     Returns the lineage of a taxon_id, as a list of taxon_id or taxa names
 
@@ -812,10 +815,14 @@ def get_lineage(taxonomy, taxon_id, names=False):
         taxon_id (int): taxon_id whose lineage to return
         names (bool): if True, the returned list contains the names of the taxa
             instead of the taxon_id
+        only_ranked (bool): if True, only taxonomic levels whose rank is in
+            data:`TAXON_RANKS` will be returned
 
     Returns:
         list: lineage of the taxon_id, the elements are `int` if names is False,
-        and `str` when names is True
+        and `str` when *names* is True. If a taxon has no scientific name, the
+        common name is used. If *only_ranked* is True, the returned list only
+        contains ranked taxa (according to :data:`TAXON_RANKS`).
     """
     lineage = []
 
@@ -823,10 +830,15 @@ def get_lineage(taxonomy, taxon_id, names=False):
         taxon_id = taxonomy[taxon_id].parent_id
         if taxon_id is None:
             break
+        if only_ranked and (taxonomy[taxon_id].rank not in TAXON_RANKS):
+            continue
         lineage.append(taxon_id)
 
     if names:
-        lineage = [taxonomy[x].s_name for x in lineage]
+        lineage = [
+            taxonomy[x].s_name if taxonomy[x].s_name else taxonomy[x].c_name
+            for x in lineage
+        ]
 
     return list(reversed(lineage))
 

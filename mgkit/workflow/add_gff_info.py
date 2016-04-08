@@ -1079,7 +1079,7 @@ def addtaxa_command(options):
                 annotation.attr['taxon_name'] = taxonomy[taxon_id].s_name
                 annotation.attr['lineage'] = ','.join(
                     taxon_name
-                    for taxon_name in taxon.get_lineage(taxonomy, taxon_id, names=True)
+                    for taxon_name in taxon.get_lineage(taxonomy, taxon_id, names=True, only_ranked=True)
                     if taxon_name
                 )
             except KeyError:
