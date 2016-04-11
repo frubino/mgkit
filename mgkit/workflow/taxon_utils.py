@@ -132,6 +132,15 @@ def set_lca_contig_parser(parser):
         type=argparse.FileType('r'),
         help='Reference file for the GFF, if supplied a GFF file is the output'
     )
+    parser.add_argument(
+        '-t',
+        '--sorted',
+        action='store_true',
+        help='''If the GFF file is sorted (all of a sequence annotations are
+                contiguos) can use less memory, `sort -s -k 1,1` can be
+                used''',
+        default=False
+    )
 
     lca_options(parser)
 
@@ -203,18 +212,29 @@ def lca_contig_command(options):
     else:
         seqs = None
 
-    # groups the annotations by sequence, in case they're not sorted
-    annotations = gff.group_annotations(
-        (
-            annotation
-            for annotation in gff.parse_gff(options.input_file)
-            # only use annotations whose bitscore pass the filter
-            # and have a taxon_id
-            if (annotation.bitscore >= options.bitscore) and
-               (annotation.taxon_id is not None)
-        ),
-        lambda annotation: annotation.seq_id
+    # basic filter for the presence of a taxon_id and bitscore
+    annotations_iter = (
+        annotation
+        for annotation in gff.parse_gff(options.input_file)
+        # only use annotations whose bitscore pass the filter
+        # and have a taxon_id
+        if (annotation.bitscore >= options.bitscore) and
+           (annotation.taxon_id is not None)
     )
+
+    if options.sorted:
+        LOG.info("Input GFF is assumed sorted")
+        annotations = gff.group_annotations_sorted(
+            annotations_iter,
+            lambda annotation: annotation.seq_id
+        )
+    else:
+        # groups the annotations by sequence, in case they're not sorted
+        annotations = gff.group_annotations(
+            annotations_iter,
+            lambda annotation: annotation.seq_id
+        )
+
     for seq_id, seq_ann in annotations.iteritems():
         try:
             taxon_id = taxon.last_common_ancestor_multiple(
