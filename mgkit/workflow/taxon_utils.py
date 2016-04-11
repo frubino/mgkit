@@ -133,7 +133,7 @@ def set_lca_contig_parser(parser):
         help='Reference file for the GFF, if supplied a GFF file is the output'
     )
     parser.add_argument(
-        '-t',
+        '-s',
         '--sorted',
         action='store_true',
         help='''If the GFF file is sorted (all of a sequence annotations are
