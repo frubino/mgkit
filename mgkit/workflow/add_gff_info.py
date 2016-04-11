@@ -184,6 +184,9 @@ warning message is logged.
 Changes
 *******
 
+.. versionchanged:: 0.2.5
+    if a dictionary is supplied to *addtaxa*, the GFF is not preloaded
+
 .. versionchanged:: 0.2.3
     added *pfam* command, renamed *gitaxa* to *addtaxa* and made it general
 
@@ -1025,20 +1028,26 @@ def set_counts_parser(parser):
 
 def addtaxa_command(options):
 
-    annotations = []
-    gene_ids = set()
-
-    for annotation in gff.parse_gff(options.input_file):
-        annotations.append(annotation)
-        gene_ids.add(annotation.attr[options.gene_attr])
-
     if options.gene_taxon_table is not None:
+        annotations = []
+        gene_ids = set()
+
+        # the annotations are preloaded if a table is supplied, such as
+        # the one from NCBI, so only the gene_ids necessary are taken from that
+        # table to save memory
+
+        for annotation in gff.parse_gff(options.input_file):
+            annotations.append(annotation)
+            gene_ids.add(annotation.attr[options.gene_attr])
         gene_ids = dict(
             blast.parse_gi_taxa_table(
                 options.gene_taxon_table,
                 gids=gene_ids)
         )
     else:
+        # in case a dictionary is supplied, it's expected to fit in memory,
+        # meaning that the GFF doesn't have to be preloaded
+        annotations = gff.parse_gff(options.input_file)
         gene_ids = {}
 
     if options.dictionary is not None:
