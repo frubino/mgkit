@@ -233,9 +233,10 @@ def lca_contig_command(options):
         annotations = gff.group_annotations(
             annotations_iter,
             lambda annotation: annotation.seq_id
-        )
+        ).itervalues()
 
-    for seq_id, seq_ann in annotations.iteritems():
+    for seq_ann in annotations:
+        seq_id = seq_ann[0].seq_id
         try:
             taxon_id = taxon.last_common_ancestor_multiple(
                 taxonomy,
