@@ -18,7 +18,14 @@ import urllib
 # python 2.7 includes OrderedDict, the following recipe will be
 # used on older (2.6 versions)
 # http://code.activestate.com/recipes/576693/
-from collections import OrderedDict
+# and available as ordereddict in PyPI
+try:
+    # python >= 2.7
+    from collections import OrderedDict
+except ImportError:
+    # it's been added as requirement for installation
+    from ordereddict import OrderedDict
+
 import mgkit.io
 from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
