@@ -620,3 +620,49 @@ def map_counts_to_category(counts, gene_map, nomap=False, nomap_id='NOMAP'):
                 newcounts[map_id] = count
 
     return pandas.Series(newcounts)
+
+
+def load_counts_from_gff(annotations, elem_func=lambda x: x.uid, sample_func=None, nozero=True):
+    """
+    .. versionadded:: 0.2.5
+
+    Loads counts for each annotations that are stored into the annotation
+    *counts_* attributes. Annotations with a total of 0 counts are skipped by
+    default (nozero=True), the row index is set to the *uid* of the annotation
+    and the column to the sample name. The functions used to transform the
+    indices expect the annotation (for the row, *elem_func*) and the sample
+    name (for the column, *sample_func*).
+
+    Arguments:
+        annotations (iter): iterable of annotations
+        elem_func (func): function that accepts an annotation and return a
+            str/int for a Index or a tuple for a MultiIndex, defaults to
+            returning the *uid* of the annotation
+        sample_func (func, None): function that accepts the sample name and
+            returns tuple for a MultiIndex. Defaults to *None* so no
+            transformation is performed
+        nozero (bool): if *True*, annotations with no counts are skipped
+    """
+
+    count_dict = {}
+
+    for annotation in annotations:
+        counts = pandas.Series(annotation.counts)
+
+        if nozero and (counts.sum() == 0):
+            continue
+
+        count_dict[elem_func(annotation)] = counts
+
+    # LOG.debug('Returning DataFrame')
+
+    count_dict = pandas.DataFrame.from_dict(count_dict, orient='index')
+    if sample_func is not None:
+        count_dict.columns = pandas.MultiIndex.from_tuples(
+            [
+                sample_func(column)
+                for column in count_dict.columns
+            ]
+        )
+
+    return count_dict
