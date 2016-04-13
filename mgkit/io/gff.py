@@ -1456,7 +1456,7 @@ def parse_gff(file_handle, gff_type=from_gff):
         getattr(file_handle, 'name', repr(file_handle))
     )
 
-    for line in file_handle:
+    for index, line in enumerate(file_handle):
         # the first is for GFF with comments and the second for
         # GFF with the fasta file attached
         if line.startswith('#'):
@@ -1466,6 +1466,12 @@ def parse_gff(file_handle, gff_type=from_gff):
 
         annotation = gff_type(line)
         yield annotation
+
+    LOG.info(
+        "Read %d line from file (%s)",
+        index + 1,
+        getattr(file_handle, 'name', repr(file_handle))
+    )
 
 
 def diff_gff(files, key_func=None):
