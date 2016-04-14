@@ -33,6 +33,9 @@ some quick defaults to parse BLAST results.
 Changes
 *******
 
+.. versionchanged:: 0.2.5
+    added more options to give user control to the *blastdb* command
+
 .. versionadded:: 0.2.3
     added *--fasta-file* option, added more data from a blsat hit
 
@@ -164,6 +167,30 @@ def set_blastdb_parser(parser):
         default='NCBI-NT',
         help='blastdb used'
     )
+    parser.add_argument(
+        '-n',
+        '--no-split',
+        action='store_true',
+        default=False,
+        help='''if used, the script assumes that the sequence header will be
+                used as gene_id'''
+    )
+    parser.add_argument(
+        '-s',
+        '--header-sep',
+        action='store',
+        default='|',
+        help="""The separator for the header, defaults to '|' (pipe)"""
+    )
+    parser.add_argument(
+        '-i',
+        '--gene-index',
+        action='store',
+        default=1,
+        type=int,
+        help="""Which of the header columns (0-based) to use as gene_id
+                (defaults to 1 - the second column)"""
+    )
 
     parser.set_defaults(func=convert_from_blastdb)
 
@@ -190,12 +217,17 @@ def convert_from_blastdb(options):
 
     seqs = load_fasta_file(options.fasta_file)
 
+    if options.no_split:
+        name_func = lambda x: x
+    else:
+        name_func = lambda x: x.split(options.header_sep)[options.gene_index]
+
     iterator = blast.parse_uniprot_blast(
         options.input_file,
         bitscore=options.bitscore,
         db=options.db_used,
         dbq=options.db_quality,
-        name_func=None,
+        name_func=name_func,
         feat_type=options.feat_type,
         seq_lengths=seqs
     )
