@@ -36,7 +36,7 @@ This was added because at the moment the GI identifier (the second column in
 the header) is used, but it's being phased out in favour of the embl/gb/ddbj
 (right now the fourth column in the header). This should easy the transition to
 the new format and makes it easier to adapt an older pipeline/blastdb to newer
-files (like the ID to TAXA fikes).
+files (like the ID to TAXA files).
 
 The header from the a *ncbi-nt* header looks like this::
 

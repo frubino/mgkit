@@ -1,6 +1,29 @@
 Changes
 =======
 
+A lot of bugs were fixed in this release, especially for reading NCBI taxonomy and using the *mesgpack* format to save a UniprotTaxonomy instance.
+
+0.2.5
+-----
+
+Changed
+*******
+
+* added the *only_ranked* argument to :func:`mgkit.taxon.get_lineage`
+* *add-gff-info addtaxa* (:ref:`add-gff-info`) doesn't preload the GFF file if a dictionary is used instead of the taxa table
+* *blast2gff blastdb* ((:ref:`blast2gff`) offers more options to control the format of the header in the DB used
+* added the *sequence* command to *filter-gff* (:ref:`filter-gff`), to filter all annotations on a per-sequence base, based on mean bitscore or other comparisons
+
+Added
+*****
+
+* added :func:`mgkit.counts.func.load_counts_from_gff`
+* added :func:`mgkit.io.blast.parse_accession_taxa_table`
+* added :func:`mgkit.plots.abund.draw_axis_internal_triangle`
+* added representation of :class:`mgkit.taxon.UniprotTaxonomy`, it show the number of taxa in the instance
+* added :func:`mgkit.taxon.last_common_ancestor_multiple`
+* added *taxon_utils* (:ref:`taxon-utils`) to filter GFF based on their taxonomy and find the last common ancestor for a reference sequence based on either GFF annotations or a list of taxon_ids (in a text file)
+
 0.2.4
 -----
 
