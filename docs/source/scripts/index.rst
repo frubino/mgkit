@@ -13,6 +13,6 @@ This section detailed information about the scripts included
    hmmer2gff
    snp_analysis
    download-taxonomy
-   download_data
    download_profiles
    taxon_utils
+   download_data
