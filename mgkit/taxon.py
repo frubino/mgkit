@@ -149,7 +149,10 @@ def parse_ncbi_taxonomy_merged_file(file_handle):
     """
     file_handle = open_file(file_handle)
 
-    LOG.info("Reading NCBI taxonomy merged file %s", file_handle.name)
+    LOG.info(
+        "Reading NCBI taxonomy merged file %s",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
 
     merged_taxa = {}
 
@@ -179,19 +182,28 @@ def parse_ncbi_taxonomy_names_file(file_handle, name_classes=('scientific name',
 
     file_handle = open_file(file_handle)
 
-    LOG.info("Reading NCBI taxonomy names file %s", file_handle.name)
+    LOG.info(
+        "Reading NCBI taxonomy names file %s",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
 
     taxa_names = {}
 
     for line in file_handle:
-        taxon_id, taxon_name, uniq_name, name_class = [col for col in line.strip().split('\t') if col != '|']
+        taxon_id, taxon_name, uniq_name, name_class = [
+            col.strip()
+            for col in line.strip().split('\t')
+            if col != '|'
+        ]
+        taxon_id = int(taxon_id)
 
         if name_class not in name_classes:
             continue
-        if taxon_id not in taxa_names:
-            taxa_names[int(taxon_id)] = {}
 
-        taxa_names[int(taxon_id)][name_class] = taxon_name
+        if taxon_id not in taxa_names:
+            taxa_names[taxon_id] = {}
+
+        taxa_names[taxon_id][name_class] = taxon_name
 
     return taxa_names
 
@@ -214,7 +226,10 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
 
     file_handle = open_file(file_handle)
 
-    LOG.info("Reading NCBI taxonomy nodes file %s", file_handle.name)
+    LOG.info(
+        "Reading NCBI taxonomy nodes file %s",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
 
     for line in file_handle:
         line = [col for col in line.strip().split('\t') if col != '|']
@@ -581,6 +596,12 @@ class UniprotTaxonomy(object):
         if isinstance(taxon, int):
             return taxon in self._taxa
         return False
+
+    def __repr__(self):
+        """
+        .. versionadded:: 0.2.5
+        """
+        return "{} - {} taxa".format(self.__class__, len(self))
 
 
 def group_by_root(taxa, roots=TAXON_ROOTS, only_names=False, replace_space='#'):
