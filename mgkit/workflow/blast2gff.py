@@ -30,6 +30,41 @@ BlastDB
 If a BlastDB, such as *nt* or *nr* was used, the **blastdb** command offers
 some quick defaults to parse BLAST results.
 
+It now includes options to control the way the sequence header are formatted.
+Options to change the separator used, as well as the column used as *gene_id*.
+This was added because at the moment the GI identifier (the second column in
+the header) is used, but it's being phased out in favour of the embl/gb/ddbj
+(right now the fourth column in the header). This should easy the transition to
+the new format and makes it easier to adapt an older pipeline/blastdb to newer
+files (like the ID to TAXA fikes).
+
+The header from the a *ncbi-nt* header looks like this::
+
+    gi|160361034|gb|CP000884.1
+
+This is the default output accepted by the *blastdb* command. The fields are
+separated by **|** (pipe) and the GI is used (--gene-index 1, since internally
+the string is split by the separator and the second element is take - lists
+indices are 0-based in Python). This output uses the following options::
+
+    --header-sep '|' --gene-index 1
+
+Notice the single quotes to pass the pipe symbol, since *bash* would interpret
+it as pipeing to the next coommand otherwise. This is the default.
+
+In case, for the same header, we want to use the *gb* identifier, the only
+option to be specified is::
+
+    --gene-index 3
+
+This will get the fourth element of the header (since we're splitting by pipe).
+
+As in the *uniprot* command, the *gene_id* can be set to use the whole header,
+using the *-n* option. Useful in case the *BLAST* db that was used was custom
+made. While pipe is used in major databases, it was made the default, by if the
+db used has different conventions the separator can be changed. There's also
+the options of later changing the *gene_id* in the output GFF if necessary.
+
 Changes
 *******
 

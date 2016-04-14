@@ -148,7 +148,7 @@ There are cases where it may needed or preferred to add the taxonomy from a
 command can be used. It works in a similar way to the *taxonomy* command, only
 it expect three different type of inputs:
 
-    * *GI-Taxa* table from NCBI (e.g. gi_taxid_nucl.dmp)
+    * *GI-Taxa* table from NCBI (e.g. gi_taxid_nucl.dmp, )
     * tab separated table
     * dictionary
 
@@ -169,6 +169,14 @@ another attribute can be specified, using the **-gene-attr** option.
 
     the dictionary content is loaded after the table files and its keys and
     corresponding values takes precedence over the text files.
+
+.. warning::
+
+    from September 2016 NCBI will retire the GI. In that case the same
+    kind of table can be built from the *nucl_gb.accession2taxid.gz* file
+    The format is different, but some information can be found in
+    :func:`mgkit.io.blast.parse_accession_taxa_table`
+
 
 Adding information from Pfam
 ****************************

@@ -15,3 +15,4 @@ This section detailed information about the scripts included
    download-taxonomy
    download_data
    download_profiles
+   taxon_utils
