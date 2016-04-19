@@ -68,6 +68,9 @@ the options of later changing the *gene_id* in the output GFF if necessary.
 Changes
 *******
 
+.. versionchanged:: 0.2.6
+    added *-r* option to *blastdb*
+
 .. versionchanged:: 0.2.5
     added more options to give user control to the *blastdb* command
 
@@ -226,6 +229,14 @@ def set_blastdb_parser(parser):
         help="""Which of the header columns (0-based) to use as gene_id
                 (defaults to 1 - the second column)"""
     )
+    parser.add_argument(
+        '-r',
+        '--remove-version',
+        action='store_true',
+        default=False,
+        help='''if used, the script removes the *version* information from the
+                gene_id'''
+    )
 
     parser.set_defaults(func=convert_from_blastdb)
 
@@ -255,7 +266,10 @@ def convert_from_blastdb(options):
     if options.no_split:
         name_func = lambda x: x
     else:
-        name_func = lambda x: x.split(options.header_sep)[options.gene_index]
+        if options.remove_version:
+            name_func = lambda x: x.split(options.header_sep)[options.gene_index].split('.')[0]
+        else:
+            name_func = lambda x: x.split(options.header_sep)[options.gene_index]
 
     iterator = blast.parse_uniprot_blast(
         options.input_file,
