@@ -7,6 +7,8 @@ import itertools
 import logging
 import random
 import numpy
+import pandas
+
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
 import collections
@@ -650,3 +652,108 @@ def get_contigs_info(file_name, pp=False):
         )
 
     return info
+
+
+def sliding_window(seq, size, step=None):
+    """
+    .. versionadded:: 0.2.6
+
+    Returns a generator, with every iteration yielding a subsequence of size
+    *size*, with a step of *step*.
+
+    Arguments:
+        seq (str): sequnece
+        size (int): size of the sliding window
+        step (int, None): the step to use in the sliding window. If *None*,
+            half of the sequence length is used
+
+    Yields:
+        str: a subsequence of size *size* and step *step*
+    """
+    for index in xrange(0, len(seq) - size + 1, size // 2 if step is None else step):
+        yield seq[index:index+size]
+
+
+def get_kmers(seq, k):
+    """
+    .. versionadded:: 0.2.6
+
+    Returns a generator, with every iteration yielding a kmer of size *k*
+
+    Arguments:
+        seq (str): sequence
+        k (int): kmer size
+
+    Yields:
+        str: a portion of *seq*, of size *k* with a step of *1*
+    """
+    for index in xrange(0, len(seq) - k + 1):
+        yield seq[index:index+k]
+
+
+def sequence_signature(seq, w_size, k_size=4, step=None):
+    """
+    .. versionadded:: 0.2.6
+
+    Returns the signature of a sequence, based on a kmer length, over a sliding
+    window. Each sliding window signature is placed in order into a list, with
+    each element being a :class:`collections.Counter` instance whose keys are
+    the kmer found in that window.
+
+    Arguments:
+        seq (str): sequence for which to get the signature
+        w_size (int): size of the sliding window size
+        k_size (int): size of the kmer to use :func:`get_kmers`
+        step (int): step to use in :func:`sliding_window`
+
+    Returns:
+        list: a list of :class:`collections.Counter` instances, for each
+        window used
+    """
+    kmer_counts = []
+    for subseq in sliding_window(seq, w_size, step):
+        kmer_counts.append(
+            collections.Counter(kmer for kmer in get_kmers(subseq, k_size) if 'N' not in kmer)
+        )
+    return kmer_counts
+
+
+def signatures_matrix(seqs, w_size, k_size=4, step=None):
+    """
+    .. versionadded:: 0.2.6
+
+    Return a matrix (pandas.DataFrame) where the columns are the kmer found in
+    all sequences *seqs* and the rows are the a MultiIndex with the first level
+    being the sequnce name and the second the index of the sliding window for
+    which a signature was computed.
+
+    Arguments:
+        seqs (iterable): iterable that yields a tuple, with the first element
+            being the sequence name and the second the sequence itself
+        w_size (int): size of the sliding window size
+        k_size (int): size of the kmer to use :func:`get_kmers`
+        step (int): step to use in :func:`sliding_window`
+
+    Returns:
+        pandas.DataFrame: a DataFrame where the columns are the kmers and the
+        rows are the signatures of each contigs/windows.
+    """
+
+    def flatten_contigs(data):
+        for name, windows in data.iteritems():
+            for index, window in enumerate(windows):
+                yield (name, index), dict(window)
+
+    step = w_size // 2 if step is None else step
+
+    kmer_counts = {}
+
+    for name, seq in seqs:
+        sign = sequence_signature(seq, w_size, k_size, step=step)
+        kmer_counts[name] = sign
+
+    return pandas.DataFrame(
+        dict(
+            flatten_contigs(kmer_counts)
+        )
+    ).T.fillna(0)
