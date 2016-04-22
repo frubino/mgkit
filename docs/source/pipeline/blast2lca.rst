@@ -1,12 +1,34 @@
 .. _blast2lca:
 
+.. highlight:: bash
+   :linenothreshold: 3
+
 Profile a Community with BLAST
 ==============================
 
 .. blockdiag::
 
 	{
-		BLAST -> blast2gff -> filter -> addtaxa -> profile
+		default_fontsize=14;
+    	default_textcolor = 'white';
+    	node_width = 120;
+    	node_height = 60;
+
+    	class mgkit [color = "#e41a1c"];
+	    class data [color = "#4daf4a"];
+	    class software [color = "#377eb8"];
+	    class gff [color = "#984ea3"];
+    	class link-label [textcolor='black'];
+
+		BLAST [label="BLAST+", class=software];
+		blast2gff, filter, addtaxa, profile [class=mgkit];
+		filter [label="GFF filter"];
+		addtaxa [label="Add Taxonomy"];
+		profile [label="Taxonomy\nProfile (LCA)"]
+
+		BLAST -> blast2gff -> filter -> addtaxa -> profile;
+
+		filter -> addtaxa [folded];
 	}
 
 
@@ -96,12 +118,22 @@ Which will create a file called *taxonomy.pickle*
 Community Profiling
 -------------------
 
+To make the tutorial faster, we'll filter the assembly file to include only contigs of at least 500bp::
+
+	$ python - <<END
+	from mgkit.io import fasta
+	with open('final-contigs-filt.fa', 'w') as f:
+	    for name, seq in fasta.load_fasta('final-contigs.fa'):
+	        if len(seq) >= 500:
+	            fasta.write_fasta_sequence(f, name, seq)
+	END
+
 BLAST
 *****
 
 The *blastn* command will be used to search for similar sequences in the *NCBI nt* DB. The following command will create a tab separated file with the results::
 
-	$ blastn -query final-contigs.fa -db ncbi-nt/nt -outfmt 6 -out assembly-nt.tab
+	$ blastn -query final-contigs-filt.fa -db ncbi-nt/nt -outfmt 6 -out assembly-nt.tab -evalue 0.001
 
 Convert into a GFF
 ******************

@@ -33,7 +33,7 @@ some quick defaults to parse BLAST results.
 It now includes options to control the way the sequence header are formatted.
 Options to change the separator used, as well as the column used as *gene_id*.
 This was added because at the moment the GI identifier (the second column in
-the header) is used, but it's being phased out in favour of the embl/gb/ddbj
+the header) is used, but it's being phased out in favour of the embl/gb/dbj
 (right now the fourth column in the header). This should easy the transition to
 the new format and makes it easier to adapt an older pipeline/blastdb to newer
 files (like the ID to TAXA files).
