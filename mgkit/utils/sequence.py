@@ -630,12 +630,13 @@ def get_contigs_info(file_name, pp=False):
         seqs = list(file_name.itervalues())
         file_name = 'dictionary'
     elif isinstance(file_name, list):
-        file_name = 'list'
         seqs = list(file_name)
+        file_name = 'list'
     else:
         seqs = list(seq for name, seq in fasta.load_fasta(file_name))
 
     lengths = numpy.array([len(x) for x in seqs])
+
     info = (
         len(seqs),
         lengths.sum(),
