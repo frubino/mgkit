@@ -61,6 +61,8 @@ def load_fasta(f_handle):
             yield cur_name, ''.join(cur_seq).upper()
     f_handle.close()
 
+    LOG.info("Read %d fasta sequences", nseq)
+
 
 def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
     """
