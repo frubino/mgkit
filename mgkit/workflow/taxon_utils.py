@@ -65,6 +65,13 @@ in NCBI taxonomy (also Uniprot).
 
     Annotations with no taxon_id are not included in the output of both filters
 
+
+Changes
+*******
+
+.. versionchanged:: 0.2.6
+    added *feat-type* option to *lca* command
+
 """
 from __future__ import division
 import sys
@@ -141,17 +148,25 @@ def set_lca_contig_parser(parser):
                 used''',
         default=False
     )
+    parser.add_argument(
+        '-ft',
+        '--feat-type',
+        default='LCA',
+        type=str,
+        help='Feature type used if the output is a GFF (default is *LCA*)'
+    )
 
     lca_options(parser)
 
     parser.set_defaults(func=lca_contig_command)
 
 
-def write_lca_gff(file_handle, seq_id, seq, taxon_id, taxon_name, lineage):
+def write_lca_gff(file_handle, seq_id, seq, taxon_id, taxon_name, lineage,
+                  feat_type):
     annotation = gff.from_sequence(
         seq_id,
         seq,
-        feat_type='LCA',
+        feat_type=feat_type,
         taxon_id=taxon_id,
         taxon_name=taxon_name,
         lineage=lineage
@@ -260,7 +275,8 @@ def lca_contig_command(options):
                 seqs[seq_id],
                 taxon_id,
                 taxon_name,
-                lineage
+                lineage,
+                options.feat_type
             )
         else:
             write_lca_tab(
