@@ -192,6 +192,9 @@ warning message is logged.
 Changes
 *******
 
+.. versionchanged:: 0.2.6
+    added *skip-no-taxon* option to *addtaxa*
+
 .. versionchanged:: 0.2.5
     if a dictionary is supplied to *addtaxa*, the GFF is not preloaded
 
@@ -1090,6 +1093,8 @@ def addtaxa_command(options):
                 annotation.attr[options.gene_attr]
             )
             taxon_id = None
+            if options.skip_no_taxon:
+                continue
 
         if (options.taxonomy is not None) and (taxon_id is not None):
             try:
@@ -1144,6 +1149,14 @@ def set_addtaxa_parser(parser):
         *Note*: the dictionary values takes precedence over the table files
         """
     )
+    parser.add_argument(
+        '-e',
+        '--skip-no-taxon',
+        action='store_true',
+        default=False,
+        help="""If used, annotations with no taxon_id won't be outputted"""
+    )
+
     parser.set_defaults(func=addtaxa_command)
 
 
