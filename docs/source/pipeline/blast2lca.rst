@@ -155,10 +155,23 @@ At the moment, the header format of the *NCBI nt* DB is a *|* (pipe) list that c
 
 The reason for this is that the file containing the *taxon_id* for each identifier is better used with a fourth element of the header without the versioning information.
 
+Adding the Taxonomic Information
+********************************
+
+The *add-gff-info addtaxa* command allows to insert taxonomic information (in the GFF *taxon_id* attribute) into the GFF file. This step integrates the content of the *nucl_gb.accession2taxid.gz* file with the GFF file. The structure of this file is:
+
+	ACCESSION ACCESSION.VERSION TAXONID GI
+
+Since we used the `ACCESSION` as *gene_id*, we need to edit the file to pass it to the *add-gff-info addtaxa* command `-t` option. This can be don on the fly and the following command adds information to all 3 GFF files we created::
+
+	$ add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) -e assembly-nt.gff assembly-nt-taxa.gff; mv assembly-nt-taxa.gff assembly-nt.gff
+
+The `-t` option is the file that can contains the *taxon_id* for each *gene_id*, the script accept a tab separated file. After the this we rename the output file to keep less files around. The `-e` option was used to remove from the output file any annotation for which a *taxon_id* was not found. Since we need them for the LCA later, it makes sense to remove them before filtering.
+
 Filter the GFF
 **************
 
-As mentioned we'll provide three different way to filter a GFF, before passing it to the script that will output the *lca* information.
+As mentioned we'll provide three different way to filter a GFF, before passing it to the script that will output the *lca* information. This way we can compare the different filtering strategies.
 
 Filter by Value
 ###############
@@ -195,22 +208,5 @@ We just chained the filtering from the *values* command, keeping only annotation
 
 More information about this type of filter can be found in :ref:`simple-tutorial` and :ref:`filter-gff`.
 
-Adding the Taxonomic Information
-********************************
-
-The *add-gff-info addtaxa* command allows to insert taxonomic information (in the GFF *taxon_id* attribute) into the filtered hits. This step integrates the content of the *nucl_gb.accession2taxid.gz* file into the GFF file. The structure of this file is:
-
-	ACCESSION ACCESSION.VERSION TAXONID GI
-
-Since we used the `ACCESSION` as *gene_id*, we need to edit the file to pass it to the *add-gff-info addtaxa* command `-t` option. This can be don on the fly and the following command adds information to all 3 GFF files we created::
-
-	$ for x in *filt*.gff; do
-		add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) $x `basename $x .gff`-final.gff
-	;done
-
-The `-t` option is the file that can contains the *taxon_id* for each *gene_id*, the script accept a tab separated file. We add the information for all of them to compare the results of the three type of filters.
-
 Getting the Profile
 *******************
-
-LC_ALL=C blast2gff blastdb -i 3 -r -b 50 index-marine_nt.tab |sort -s -k 1,1 -k 7,7 | filter-gff overlap -t -s 1 | add-gff-info addtaxa -t <(zcat nucl_gb.accession2taxid.gz | cut -f1,3 ) | taxon_utils lca -t ../taxonomy.msgpack -n index-marine_nt-fo-no_lca.tab -s - index-marine_nt-fo_lca.tab
