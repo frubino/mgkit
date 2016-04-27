@@ -205,12 +205,33 @@ The *add-gff-info addtaxa* command allows to insert taxonomic information (in th
 Since we used the `ACCESSION` as *gene_id*, we need to edit the file to pass it to the *add-gff-info addtaxa* command `-t` option. This can be don on the fly and the following command adds information to all 3 GFF files we created::
 
 	$ for x in *filt*.gff; do
-		add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) $x `basename $x .gff`-final.gff
-	;done
+		add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) $x `basename $x .gff`-final.gff;
+	done
 
 The `-t` option is the file that can contains the *taxon_id* for each *gene_id*, the script accept a tab separated file. We add the information for all of them to compare the results of the three type of filters.
+
 
 Getting the Profile
 *******************
 
-LC_ALL=C blast2gff blastdb -i 3 -r -b 50 index-marine_nt.tab |sort -s -k 1,1 -k 7,7 | filter-gff overlap -t -s 1 | add-gff-info addtaxa -t <(zcat nucl_gb.accession2taxid.gz | cut -f1,3 ) | taxon_utils lca -t ../taxonomy.msgpack -n index-marine_nt-fo-no_lca.tab -s - index-marine_nt-fo_lca.tab
+We'll have 3 GFF files ending in *final.gff*, one per each type of filtering, that contain the *taxon_id* for each annotation they contain.
+
+.. note::
+
+	these files are available at `this page <http://bitbucket.org>`_ if you want to skip
+
+Since the filtered files are available now, we can create a file that contains the LCA assignments. We can ouput 2 type of files (see :ref:`taxon-utils`), but for the purpose of this tutorial, we'll get a GFF file that we can also use in a assembly viewer. The command to create them is::
+
+	$ for x in *final.gff; do
+	taxon_utils lca -v -t taxonomy.pickle -r final-contigs-filt.fa -s -n `basename $x .gff`-nolca.tab -ft LCA-`echo $x | egrep -o 'value|overlap|sequence' | tr [:lower:] [:upper:]` $x `basename $x .gff`-lca.gff;
+	done
+
+The options used are:
+
+	* `-t` to direct the script to the taxonomy that we already downloaded
+	* `-r` to output a GFF with one annotation per contig that covers the whole sequence
+	* `-s` indicates that the input is sorted by reference sequence
+	* `-n` outputs a tab separated file with the contigs that could not be assigned
+	* `-ft` is used to change the *feature type* column in the GFF, from the dafault *LCA* to one which includes the type of filtering used
+
+The file ending in *-nolca.tab* contain the contigs that could not be assigned, while the files ending in *-lca.gff* contain the taxonomic assignments, with the *taxon_id* pointing to the assigned taxon identifier, *taxon_name* for the taxon scientific name (or common name if none is found) and *lineage* contains the whole lineage of the taxon.
