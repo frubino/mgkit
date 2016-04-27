@@ -1764,6 +1764,9 @@ def split_gff_file(file_handle, name_mask, num_files=2):
     """
     .. versionadded:: 0.1.14
 
+    .. versionchanged:: 0.2.6
+        now accept a file object as sole input
+
     Splits a GFF, or a list of them, into a number of files. It is assured that
     annotations for the same sequence are kept in the same file, which is
     useful for cases like filtering, even when the annotations are from
@@ -1786,12 +1789,13 @@ def split_gff_file(file_handle, name_mask, num_files=2):
         >>> name_mask = 'split-file-{0}.gff'
         >>> split_gff_file(files, name_mask, 5)
     """
-    if isinstance(file_handle, str):
-        file_handle = [file_handle]
+    if not isinstance(file_handle, file):
+        if isinstance(file_handle, str):
+            file_handle = [file_handle]
 
-    file_handle = itertools.chain(
-        *(mgkit.io.open_file(x, 'r') for x in file_handle)
-    )
+        file_handle = itertools.chain(
+            *(mgkit.io.open_file(x, 'r') for x in file_handle)
+        )
 
     out_handles = [
         open(name_mask.format(filen), 'w')
