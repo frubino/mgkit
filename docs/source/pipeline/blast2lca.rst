@@ -162,11 +162,34 @@ The *add-gff-info addtaxa* command allows to insert taxonomic information (in th
 
 	ACCESSION ACCESSION.VERSION TAXONID GI
 
-Since we used the `ACCESSION` as *gene_id*, we need to edit the file to pass it to the *add-gff-info addtaxa* command `-t` option. This can be don on the fly and the following command adds information to all 3 GFF files we created::
+.. warning::
+
+	this command has to load all the GFF in memory, so a high memory machine should be used (~30GB). The GFF can be split into smaller files to save memory and the subsection here will describe the process.
+
+Since we used the `ACCESSION` as *gene_id*, we need to edit the file to pass it to the *add-gff-info addtaxa* command `-t` option. This can be don on the fly and the following command adds information to the GFF file created::
 
 	$ add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) -e assembly-nt.gff assembly-nt-taxa.gff; mv assembly-nt-taxa.gff assembly-nt.gff
 
 The `-t` option is the file that can contains the *taxon_id* for each *gene_id*, the script accept a tab separated file. After the this we rename the output file to keep less files around. The `-e` option was used to remove from the output file any annotation for which a *taxon_id* was not found. Since we need them for the LCA later, it makes sense to remove them before filtering.
+
+Reduce Memory Usage
+###################
+
+First we need to split the *assembly-nt.gff* file, with a good option being using the `split` command in Unix. The following command will create the files::
+
+	$ split -l 1000000 -d assembly-nt.gff split-gff
+
+This command will create 12 GFF files (of at most 1 milion lines each), whose names start with *split-gff*. Since we split the files we can use a loop to add the taxonomic information to all of them::
+
+	$ for x in split-gff*; do
+	add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) -e $x $x-taxa;
+	done
+
+This reduces the memory usage to ~2.5GB, but it takes longer to re-read the *nucl_gb.accession2taxid.gz* 12 times. There are way to parallelise it, but they are beyond the scope of this tutorial.
+
+After the command has finished running, the content of the files can be concatenated into a single file again and delete the split files::
+
+	$ cat split-gff*-taxa > assembly-nt.gff; rm split-gff*
 
 Filter the GFF
 **************
