@@ -64,7 +64,7 @@ def set_parser():
         type=int,
         help='Number of sequences to read/write at a time'
     )
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 

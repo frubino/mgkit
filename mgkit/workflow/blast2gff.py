@@ -350,7 +350,7 @@ def set_parser():
     set_blastdb_parser(parser_blastdb)
     set_common_options(parser_blastdb)
 
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 

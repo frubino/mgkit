@@ -33,7 +33,33 @@ class CiteAction(argparse.Action):
         parser.exit(0)
 
 
-def add_basic_options(parser):
+class PrintManAction(argparse.Action):
+    """
+    .. versionadded:: 0.2.6
+
+    Argparse action to print the manual
+    """
+    def __init__(self,
+                 option_strings,
+                 dest=argparse.SUPPRESS,
+                 default=argparse.SUPPRESS,
+                 help='Show the script manual',
+                 manual=''):
+        super(PrintManAction, self).__init__(
+            option_strings,
+            dest=dest,
+            default=default,
+            nargs=0,
+            help=help)
+        self.manual = manual
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        print(self.manual, file=sys.stdout)
+        setattr(namespace, self.dest, values)
+        parser.exit(0)
+
+
+def add_basic_options(parser, manual=''):
     """
     Adds verbose and version options to the option parser
     """
@@ -48,6 +74,11 @@ def add_basic_options(parser):
     parser.add_argument(
         '--cite',
         action=CiteAction
+    )
+    parser.add_argument(
+        '--manual',
+        action=PrintManAction,
+        manual=manual
     )
     parser.add_argument(
         '--version',

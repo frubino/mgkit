@@ -560,7 +560,7 @@ def set_parser():
 
     set_perseq_parser(parser_perseq)
 
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 

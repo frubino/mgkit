@@ -155,10 +155,46 @@ At the moment, the header format of the *NCBI nt* DB is a *|* (pipe) list that c
 
 The reason for this is that the file containing the *taxon_id* for each identifier is better used with a fourth element of the header without the versioning information.
 
+Adding the Taxonomic Information
+********************************
+
+The *add-gff-info addtaxa* command allows to insert taxonomic information (in the GFF *taxon_id* attribute) into the GFF file. This step integrates the content of the *nucl_gb.accession2taxid.gz* file with the GFF file. The structure of this file is:
+
+	ACCESSION ACCESSION.VERSION TAXONID GI
+
+.. warning::
+
+	this command has to load all the GFF in memory, so a high memory machine should be used (~30GB). The GFF can be split into smaller files to save memory and the subsection here will describe the process.
+
+Since we used the `ACCESSION` as *gene_id*, we need to edit the file to pass it to the *add-gff-info addtaxa* command `-t` option. This can be don on the fly and the following command adds information to the GFF file created::
+
+	$ add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) -e assembly-nt.gff assembly-nt-taxa.gff; mv assembly-nt-taxa.gff assembly-nt.gff
+
+The `-t` option is the file that can contains the *taxon_id* for each *gene_id*, the script accept a tab separated file. After the this we rename the output file to keep less files around. The `-e` option was used to remove from the output file any annotation for which a *taxon_id* was not found. Since we need them for the LCA later, it makes sense to remove them before filtering.
+
+Reduce Memory Usage
+###################
+
+First we need to split the *assembly-nt.gff* file, with a good option being using the `split` command in Unix. The following command will create the files::
+
+	$ split -l 1000000 -d assembly-nt.gff split-gff
+
+This command will create 12 GFF files (of at most 1 milion lines each), whose names start with *split-gff*. Since we split the files we can use a loop to add the taxonomic information to all of them::
+
+	$ for x in split-gff*; do
+	add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) -e $x $x-taxa;
+	done
+
+This reduces the memory usage to ~2.5GB, but it takes longer to re-read the *nucl_gb.accession2taxid.gz* 12 times. There are way to parallelise it, but they are beyond the scope of this tutorial.
+
+After the command has finished running, the content of the files can be concatenated into a single file again and delete the split files::
+
+	$ cat split-gff*-taxa > assembly-nt.gff; rm split-gff*
+
 Filter the GFF
 **************
 
-As mentioned we'll provide three different way to filter a GFF, before passing it to the script that will output the *lca* information.
+As mentioned we'll provide three different way to filter a GFF, before passing it to the script that will output the *lca* information. This way we can compare the different filtering strategies.
 
 Filter by Value
 ###############
@@ -194,22 +230,6 @@ The following command will make that type of filtering::
 We just chained the filtering from the *values* command, keeping only annotations with at least 50 bitscore and passing it to the sort command. This passage is not necessary it the the `-t` option is not used with *filter-gff overlap*, but it uses less memory by pre-sorting the GFF by contig/strand first, since the *filter-gff overlap* works on each strand separately.
 
 More information about this type of filter can be found in :ref:`simple-tutorial` and :ref:`filter-gff`.
-
-Adding the Taxonomic Information
-********************************
-
-The *add-gff-info addtaxa* command allows to insert taxonomic information (in the GFF *taxon_id* attribute) into the filtered hits. This step integrates the content of the *nucl_gb.accession2taxid.gz* file into the GFF file. The structure of this file is:
-
-	ACCESSION ACCESSION.VERSION TAXONID GI
-
-Since we used the `ACCESSION` as *gene_id*, we need to edit the file to pass it to the *add-gff-info addtaxa* command `-t` option. This can be don on the fly and the following command adds information to all 3 GFF files we created::
-
-	$ for x in *filt*.gff; do
-		add-gff-info addtaxa -t <(gunzip -c nucl_gb.accession2taxid.gz | cut -f 1,3) $x `basename $x .gff`-final.gff;
-	done
-
-The `-t` option is the file that can contains the *taxon_id* for each *gene_id*, the script accept a tab separated file. We add the information for all of them to compare the results of the three type of filters.
-
 
 Getting the Profile
 *******************

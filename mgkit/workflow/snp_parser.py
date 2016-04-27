@@ -127,7 +127,7 @@ def set_parser():
         help="bcftools call was used to produce the VCF file"
     )
 
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 

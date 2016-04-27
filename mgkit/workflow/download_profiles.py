@@ -247,7 +247,7 @@ def set_parser():
         action='store_true',
         help='Download all KO from Kegg - exclude blacklist'
     )
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 

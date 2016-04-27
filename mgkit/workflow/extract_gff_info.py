@@ -36,8 +36,17 @@ gtf command
 
 Outputs annotations in the GTF format
 
+split command
+*************
+
+Splits a GFF file into smaller chunks, ensuring that all of a sequence
+annotations are in the same file.
+
 Changes
 *******
+
+.. versionchanged:: 0.2.6
+    added *split* command
 
 .. versionchanged:: 0.2.3
     added *--gene-id* option to *gtf* command
@@ -227,6 +236,47 @@ def set_common_options(parser):
     )
 
 
+def set_split_parser(parser):
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        type=argparse.FileType('r'),
+        default='-',
+        help='Input GFF file, defaults to stdin'
+    )
+    parser.add_argument(
+        '-p',
+        '--prefix',
+        type=str,
+        default='split',
+        help='GFF attribute to use for the GTF gene_id attribute'
+    )
+    parser.add_argument(
+        '-n',
+        '--number',
+        type=int,
+        default=10,
+        help='Number of chunks into which split the GFF file'
+    )
+    parser.set_defaults(func=split_command)
+
+
+def split_command(options):
+    LOG.info(
+        "Splitting GFF into %d chunks with prefix %s",
+        options.number,
+        options.prefix
+    )
+
+    name_mask = "%s-{0:05}.gff" % options.prefix
+
+    gff.split_gff_file(
+        options.input_file,
+        name_mask,
+        num_files=options.number
+    )
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -273,7 +323,15 @@ def set_parser():
     set_common_options(parser_gtf)
     utils.add_basic_options(parser_gtf)
 
-    utils.add_basic_options(parser)
+    parser_split = subparsers.add_parser(
+        'split',
+        help='Split annotations from a GFF file to a several files'
+    )
+
+    set_split_parser(parser_split)
+    utils.add_basic_options(parser_split)
+
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 
