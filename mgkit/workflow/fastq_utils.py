@@ -24,7 +24,7 @@ def set_parser():
         description='Interleave/Deinterleave fastq files',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
     # Deinterleave
     subparsers = parser.add_subparsers()
     parser_d = subparsers.add_parser('di', help='Deinterleave sequences')

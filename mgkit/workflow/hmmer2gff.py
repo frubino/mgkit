@@ -118,7 +118,7 @@ def set_parser():
         help='only show warnings or errors'
     )
 
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 

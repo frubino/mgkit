@@ -1302,7 +1302,7 @@ def set_parser():
     utils.add_basic_options(parser_pfam)
 
     # top parser
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 

@@ -331,7 +331,7 @@ def set_parser():
     set_split_parser(parser_split)
     utils.add_basic_options(parser_split)
 
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 

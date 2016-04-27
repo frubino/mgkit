@@ -522,7 +522,7 @@ def set_parser():
     set_common_options(parser_filter_taxa)
     utils.add_basic_options(parser_filter_taxa)
 
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 
