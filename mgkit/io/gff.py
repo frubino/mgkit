@@ -773,6 +773,9 @@ class Annotation(GenomicRange):
         Generic method to get an attribute and convert it to a specific
         datatype
         """
+        if attr == 'length':
+            return len(self)
+
         try:
             value = self.attr[attr]
         except KeyError:
