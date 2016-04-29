@@ -467,8 +467,8 @@ def perseq_calc_threshold(annotations, attribute, function, func_arg=None):
         thres = values.mean() + (func_arg * values.std())
 
     LOG.debug(
-        """Threshold for contig %s found: %.2f, using funcion %s and its
-           arg %.2f on %d ann.""",
+        "Threshold for contig %s found: %.2f, using funcion %s and its " +
+        "arg %.2f on %d ann.",
         annotations[0],
         thres,
         function,
