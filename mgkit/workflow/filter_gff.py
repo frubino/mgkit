@@ -672,7 +672,7 @@ def setup_filters(options):
                     equal=True
                 )
             )
-            LOG.info("Filter attribute '%s' = '%s'", attr, value)
+            LOG.info("Filter attribute '%s' = '%s'", key, value)
     if options.str_in:
         for key, value in options.str_in:
             filters.append(
@@ -683,7 +683,7 @@ def setup_filters(options):
                     equal=False
                 )
             )
-            LOG.info("Filter attribute '%s' contains '%s'", attr, value)
+            LOG.info("Filter attribute '%s' contains '%s'", key, value)
     if options.num_ge:
         for key, value in options.num_ge:
             filters.append(
@@ -694,7 +694,7 @@ def setup_filters(options):
                     greater=True
                 )
             )
-            LOG.info("Filter attribute '%s' >= %s", attr, value)
+            LOG.info("Filter attribute '%s' >= %s", key, value)
     if options.num_le:
         for key, value in options.num_le:
             filters.append(
@@ -705,7 +705,7 @@ def setup_filters(options):
                     greater=False
                 )
             )
-            LOG.info("Filter attribute '%s' <= %s", attr, value)
+            LOG.info("Filter attribute '%s' <= %s", key, value)
 
     return filters
 
