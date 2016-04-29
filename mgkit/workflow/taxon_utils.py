@@ -434,6 +434,11 @@ def set_filter_taxa_parser(parser):
 
 
 def filter_taxa_command(options):
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
 
     exclude = False
