@@ -22,10 +22,16 @@ ALGAE = {
     'rhodophyta': 2763,
 }
 
+# superkingdoms
 BACTERIA = 2
 ARCHAEA = 2157
-FUNGI = 4751
 VIRUS = 10239
+
+CELLULAR_ORGANISMS = 131567
+# kingdoms
+FUNGI = 4751
+VIRIDIPLANTAE = 33090
+METAZOA = 33208
 EUKARYOTA = 2759
 
 PROTISTS = {
@@ -542,6 +548,8 @@ class UniprotTaxonomy(object):
 
     def get_taxon_root(self, taxon_id, roots=TAXON_ROOTS):
         """
+        .. deprecated:: 0.2.6
+
         Given a :class:`UniprotTaxon` instance and the associated taxonomy, returns
         the correct root taxon the supplied taxon belongs to.
 
@@ -606,6 +614,8 @@ class UniprotTaxonomy(object):
 
 def group_by_root(taxa, roots=TAXON_ROOTS, only_names=False, replace_space='#'):
     """
+    .. deprecated:: 0.2.6
+
     Returns a dictionary containing as keys the root taxa and as values a list
     of taxa belonging to that group (checks lineage attribute of
     :class:`UniprotTaxon` instances)

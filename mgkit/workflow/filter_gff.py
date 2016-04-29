@@ -145,6 +145,9 @@ Changes
 .. versionchanged:: 0.2.5
     added *sequence* command
 
+.. versionchanged:: 0.2.6
+    added *length* as attribute for command *sequence*
+
 """
 
 import sys
@@ -398,7 +401,7 @@ def set_perseq_parser(parser):
         action='store',
         help='Attribute on which to apply the filter',
         type=str,
-        choices=['evalue', 'bitscore', 'identity'],
+        choices=['evalue', 'bitscore', 'identity', 'length'],
         default='bitscore'
     )
     group = parser.add_mutually_exclusive_group()

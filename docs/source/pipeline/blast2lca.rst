@@ -91,12 +91,13 @@ We'll be using the NCBI nt which will be stored in the *ncbi-nt* directory. If a
 
 	$ ln -s path-to-the-db ncbi-nt
 
-Otherwise, a copy can be downloaded with the following commands::
+Otherwise, a copy can be downloaded and prepared with the following commands::
 
 	$ mkdir ncbi-nt
 	cd ncbi-nt
 	ncftpget ftp://ftp.ncbi.nlm.nih.gov/blast/db/nt*.gz
-	
+	for x in *.tar.gz; do tar xfvz $x ;done
+	rm *.tar.gz
 	cd ..
 
 ID to Taxonomy
