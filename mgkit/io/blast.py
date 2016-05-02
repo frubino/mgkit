@@ -215,7 +215,7 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         getattr(file_handle, 'name', repr(file_handle))
     )
 
-    for line in file_handle:
+    for lineno, line in enumerate(file_handle):
         if line.startswith('#'):
             continue
 
@@ -232,6 +232,8 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         )
 
         yield key, values
+
+    LOG.info('Read %d BLAST records', lineno + 1)
 
 
 def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
