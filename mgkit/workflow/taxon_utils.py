@@ -1,6 +1,4 @@
 """
-.. versionadded:: 0.2.5
-
 The script contains commands used to access functionality related to
 taxonomy, without the need to write ad-hoc code for functionality that
 can be part of a workflow. One example is access to the the last common
@@ -71,6 +69,8 @@ Changes
 
 .. versionchanged:: 0.2.6
     added *feat-type* option to *lca* command
+
+.. versionadded:: 0.2.5
 
 """
 from __future__ import division

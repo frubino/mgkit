@@ -1,10 +1,6 @@
 """
 This modules define classes and function related to manipulation of GFF/GTF
 files.
-
-Needs to be adapted for a more general GFF dialect. It incorporates data from
-metagenomic analysis right now. BaseGFF is the class to use for a more general
-approach.
 """
 from __future__ import print_function
 from __future__ import division
