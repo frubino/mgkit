@@ -180,14 +180,6 @@ def common_options(parser):
         default=sys.stdout,
         help='Output GFF file, defaults to stdout'
     )
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_const',
-        const=logging.DEBUG,
-        default=logging.INFO,
-        help='more verbose'
-    )
 
 
 def parse_attr_arg(value, convert=str):
@@ -548,13 +540,21 @@ def set_parser():
     )
 
     subparsers = parser.add_subparsers()
-    parser_b = subparsers.add_parser('values', help='Filter based on values')
+    parser_b = subparsers.add_parser(
+        'values',
+        help='Filter based on values'
+    )
 
     set_values_parser(parser_b)
+    utils.add_basic_options(parser_b, manual=__doc__)
 
-    parser_o = subparsers.add_parser('overlap', help='Use overlapping filter')
+    parser_o = subparsers.add_parser(
+        'overlap',
+        help='Use overlapping filter'
+    )
 
     set_overlap_parser(parser_o)
+    utils.add_basic_options(parser_o, manual=__doc__)
 
     parser_perseq = subparsers.add_parser(
         'sequence',
@@ -562,6 +562,7 @@ def set_parser():
     )
 
     set_perseq_parser(parser_perseq)
+    utils.add_basic_options(parser_perseq, manual=__doc__)
 
     utils.add_basic_options(parser, manual=__doc__)
 

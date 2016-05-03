@@ -341,6 +341,7 @@ def set_parser():
 
     set_uniprot_parser(parser_u)
     set_common_options(parser_u)
+    utils.add_basic_options(parser_u, manual=__doc__)
 
     parser_blastdb = subparsers.add_parser(
         'blastdb',
@@ -349,6 +350,7 @@ def set_parser():
 
     set_blastdb_parser(parser_blastdb)
     set_common_options(parser_blastdb)
+    utils.add_basic_options(parser_blastdb, manual=__doc__)
 
     utils.add_basic_options(parser, manual=__doc__)
 

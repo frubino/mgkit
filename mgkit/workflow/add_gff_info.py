@@ -1215,7 +1215,7 @@ def set_parser():
 
     set_uniprot_parser(parser_u)
     set_common_options(parser_u)
-    utils.add_basic_options(parser_u)
+    utils.add_basic_options(parser_u, manual=__doc__)
 
     parser_t = subparsers.add_parser(
         'taxonomy',
@@ -1225,7 +1225,7 @@ def set_parser():
 
     set_blast_taxonomy_parser(parser_t)
     set_common_options(parser_t)
-    utils.add_basic_options(parser_t)
+    utils.add_basic_options(parser_t, manual=__doc__)
 
     parser_c = subparsers.add_parser(
         'coverage',
@@ -1234,7 +1234,7 @@ def set_parser():
 
     set_coverage_parser(parser_c)
     set_common_options(parser_c)
-    utils.add_basic_options(parser_c)
+    utils.add_basic_options(parser_c, manual=__doc__)
 
     parser_e = subparsers.add_parser(
         'exp_syn',
@@ -1243,7 +1243,7 @@ def set_parser():
 
     set_exp_syn_parser(parser_e)
     set_common_options(parser_e)
-    utils.add_basic_options(parser_e)
+    utils.add_basic_options(parser_e, manual=__doc__)
 
     parser_f = subparsers.add_parser(
         'unipfile',
@@ -1252,7 +1252,7 @@ def set_parser():
 
     set_uniprot_offline_parser(parser_f)
     set_common_options(parser_f)
-    utils.add_basic_options(parser_f)
+    utils.add_basic_options(parser_f, manual=__doc__)
 
     parser_k = subparsers.add_parser(
         'kegg',
@@ -1261,7 +1261,7 @@ def set_parser():
 
     set_kegg_parser(parser_k)
     set_common_options(parser_k)
-    utils.add_basic_options(parser_k)
+    utils.add_basic_options(parser_k, manual=__doc__)
 
     parser_eggnog = subparsers.add_parser(
         'eggnog',
@@ -1270,7 +1270,7 @@ def set_parser():
 
     set_eggnog_parser(parser_eggnog)
     set_common_options(parser_eggnog)
-    utils.add_basic_options(parser_eggnog)
+    utils.add_basic_options(parser_eggnog, manual=__doc__)
 
     parser_counts = subparsers.add_parser(
         'counts',
@@ -1279,7 +1279,7 @@ def set_parser():
 
     set_counts_parser(parser_counts)
     set_common_options(parser_counts)
-    utils.add_basic_options(parser_counts)
+    utils.add_basic_options(parser_counts, manual=__doc__)
 
     parser_addtaxa = subparsers.add_parser(
         'addtaxa',
@@ -1290,7 +1290,7 @@ def set_parser():
 
     set_addtaxa_parser(parser_addtaxa)
     set_common_options(parser_addtaxa)
-    utils.add_basic_options(parser_addtaxa)
+    utils.add_basic_options(parser_addtaxa, manual=__doc__)
 
     parser_pfam = subparsers.add_parser(
         'pfam',
@@ -1299,7 +1299,7 @@ def set_parser():
 
     set_pfam_parser(parser_pfam)
     set_common_options(parser_pfam)
-    utils.add_basic_options(parser_pfam)
+    utils.add_basic_options(parser_pfam, manual=__doc__)
 
     # top parser
     utils.add_basic_options(parser, manual=__doc__)

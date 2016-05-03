@@ -507,7 +507,7 @@ def set_parser():
 
     set_lca_contig_parser(parser_lca_contig)
     set_common_options(parser_lca_contig)
-    utils.add_basic_options(parser_lca_contig)
+    utils.add_basic_options(parser_lca_contig, manual=__doc__)
 
     parser_lca_line = subparsers.add_parser(
         'lca_line',
@@ -516,7 +516,7 @@ def set_parser():
 
     set_lca_line_parser(parser_lca_line)
     set_common_options(parser_lca_line)
-    utils.add_basic_options(parser_lca_line)
+    utils.add_basic_options(parser_lca_line, manual=__doc__
 
     parser_filter_taxa = subparsers.add_parser(
         'filter',
@@ -525,7 +525,7 @@ def set_parser():
 
     set_filter_taxa_parser(parser_filter_taxa)
     set_common_options(parser_filter_taxa)
-    utils.add_basic_options(parser_filter_taxa)
+    utils.add_basic_options(parser_filter_taxa, manual=__doc__)
 
     utils.add_basic_options(parser, manual=__doc__)
 
