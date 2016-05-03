@@ -589,12 +589,15 @@ class Annotation(GenomicRange):
 
         return json.dumps(dictionary, separators=(',', ':'))
 
-    def to_mongodb(self, lineage_func=None):
+    def to_mongodb(self, lineage_func=None, indent=None):
         """
         .. versionadded:: 0.2.1
 
         .. versionchanged:: 0.2.2
             added handling of *counts_* and *fpkms_*
+
+        .. versionchanged:: 0.2.6
+            added *indent* parameter
 
         Returns a MongoDB document that represent the Annotation.
 
@@ -658,7 +661,7 @@ class Annotation(GenomicRange):
             )
         )
 
-        return json.dumps(dictionary, indent=4, separators=(',', ': '))
+        return json.dumps(dictionary, indent=indent, separators=(',', ':'))
 
     def to_file(self, file_handle):
         """
