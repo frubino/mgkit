@@ -516,7 +516,7 @@ def set_parser():
 
     set_lca_line_parser(parser_lca_line)
     set_common_options(parser_lca_line)
-    utils.add_basic_options(parser_lca_line, manual=__doc__
+    utils.add_basic_options(parser_lca_line, manual=__doc__)
 
     parser_filter_taxa = subparsers.add_parser(
         'filter',
