@@ -228,7 +228,7 @@ The following command will make that type of filtering::
 
 	$ filter-gff values -b 50 assembly-nt.gff | sort -s -k 1,1 -k 7,7 | filter-gff overlap -t -s 1 - assembly-nt_filt-overlap.gff
 
-We just chained the filtering from the *values* command, keeping only annotations with at least 50 bitscore and passing it to the sort command. This passage is not necessary it the the `-t` option is not used with *filter-gff overlap*, but it uses less memory by pre-sorting the GFF by contig/strand first, since the *filter-gff overlap* works on each strand separately.
+We just chained the filtering from the *values* command, keeping only annotations with at least 50 bitscore and passing it to the sort command. This passage is not necessary it the the `-t` option is not used with *filter-gff overlap*, but it uses less memory by pre-sorting the GFF by contig/strand first, since the *filter-gff overlap* works on each strand separately. We also used the `-s` options to trigger the filter for annotations that overlap for as much as 1 bp.
 
 More information about this type of filter can be found in :ref:`simple-tutorial` and :ref:`filter-gff`.
 
@@ -243,7 +243,7 @@ We'll have 3 GFF files ending in *final.gff*, one per each type of filtering, th
 
 Since the filtered files are available now, we can create a file that contains the LCA assignments. We can ouput 2 type of files (see :ref:`taxon-utils`), but for the purpose of this tutorial, we'll get a GFF file that we can also use in a assembly viewer. The command to create them is::
 
-	$ for x in *final.gff; do
+	$ for x in *filt-*.gff; do
 	taxon_utils lca -v -t taxonomy.pickle -r final-contigs-filt.fa -s -n `basename $x .gff`-nolca.tab -ft LCA-`echo $x | egrep -o 'value|overlap|sequence' | tr [:lower:] [:upper:]` $x `basename $x .gff`-lca.gff;
 	done
 
@@ -256,3 +256,11 @@ The options used are:
 	* `-ft` is used to change the *feature type* column in the GFF, from the dafault *LCA* to one which includes the type of filtering used
 
 The file ending in *-nolca.tab* contain the contigs that could not be assigned, while the files ending in *-lca.gff* contain the taxonomic assignments, with the *taxon_id* pointing to the assigned taxon identifier, *taxon_name* for the taxon scientific name (or common name if none is found) and *lineage* contains the whole lineage of the taxon.
+
+Using Tablet
+############
+
+The GFF created can be used in software such as `Tablet <https://ics.hutton.ac.uk/tablet/>`_. The image below shows a contig with the features loaded from the filtered (overlap) GFF and the GFF LCA file produced by *taxon_utils lca*.
+
+.. image:: ../images/lca-tablet.png
+	:alt: example of a contig in Tablet with both the LCA GFF and CDS from the overlap filtering loaded
