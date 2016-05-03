@@ -589,18 +589,23 @@ class Annotation(GenomicRange):
 
         return json.dumps(dictionary, separators=(',', ':'))
 
-    def to_mongodb(self, lineage_func=None):
+    def to_mongodb(self, lineage_func=None, indent=None):
         """
         .. versionadded:: 0.2.1
 
         .. versionchanged:: 0.2.2
             added handling of *counts_* and *fpkms_*
 
+        .. versionchanged:: 0.2.6
+            added *indent* parameter
+
         Returns a MongoDB document that represent the Annotation.
 
         Arguments:
-            lineage: function used to populate the lineage key, returns a list
-              of taxon_id
+            lineage (func): function used to populate the lineage key, returns
+                a list of taxon_id
+            indent (int): the amount of indent to put in the record, None (the
+                default) is for the most compact - one line for the record
 
         Returns:
             str: the MongoDB document, with Annotation.uid as _id
@@ -658,7 +663,7 @@ class Annotation(GenomicRange):
             )
         )
 
-        return json.dumps(dictionary, indent=4, separators=(',', ': '))
+        return json.dumps(dictionary, indent=indent, separators=(',', ':'))
 
     def to_file(self, file_handle):
         """
@@ -1972,12 +1977,15 @@ def convert_gff_to_gtf(file_in, file_out, gene_id_attr='uid'):
         file_out.write(annotation.to_gtf())
 
 
-def from_mongodb(record):
+def from_mongodb(record, lineage=True):
     """
     .. versionadded:: 0.2.1
 
     .. versionchanged:: 0.2.2
         added handling of *counts_* and *fpkms_*
+
+    .. versionchanged:: 0.2.6
+        better handling of missing attributes and added *lineage* parameter
 
     Returns a :class:`Annotation` instance from a MongoDB record (created)
     using :meth:`Annotation.to_mongodb`. The actual record returned by pymongo
@@ -1986,6 +1994,8 @@ def from_mongodb(record):
 
     Arguments:
         record (dict): a dictionary with the full record from a MongoDB query
+        lineage (bool): indicates if the lineage information in the record
+            should be kept in the annotation
 
     Returns:
         Annotation: instance of :class:`Annotation` object
@@ -1997,12 +2007,6 @@ def from_mongodb(record):
 
     mappings = record['map'].copy()
     del record['map']
-
-    counts = record['counts'].copy()
-    del record['counts']
-
-    fpkms = record['fpkms'].copy()
-    del record['fpkms']
 
     try:
         record['EC'] = ','.join(mappings['ec'])
@@ -2017,15 +2021,22 @@ def from_mongodb(record):
         pass
 
     try:
+        counts = record['counts'].copy()
+        del record['counts']
         for key in counts:
             record['counts_{}'.format(key)] = counts[key]
     except KeyError:
         pass
 
     try:
+        fpkms = record['fpkms'].copy()
+        del record['fpkms']
         for key in fpkms:
             record['fpkms_{}'.format(key)] = fpkms[key]
     except KeyError:
         pass
+
+    if ('lineage' in record) and (not lineage):
+        del record['lineage']
 
     return Annotation(**record)

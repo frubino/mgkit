@@ -67,6 +67,7 @@ setup(
             'translate_seq = mgkit.workflow.nuc2aa:main',
             'fastq_utils = mgkit.workflow.fastq_utils:main [htseq]',
             'taxon_utils = mgkit.workflow.taxon_utils:main',
+            'json2gff = mgkit.workflow.json2gff:main',
         ],
         # 'R': ['R = mgkit.utils:r_func [R]']
     },

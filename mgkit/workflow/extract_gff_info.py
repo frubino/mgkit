@@ -46,7 +46,7 @@ Changes
 *******
 
 .. versionchanged:: 0.2.6
-    added *split* command
+    added *split* command, *--indent* option to *mongodb*
 
 .. versionchanged:: 0.2.3
     added *--gene-id* option to *gtf* command
@@ -164,6 +164,14 @@ def set_mongodb_parser(parser):
         default=True,
         help='No cache for the lineage function'
     )
+    parser.add_argument(
+        '-i',
+        '--indent',
+        action='store',
+        type=int,
+        default=None,
+        help='No cache for the lineage function'
+    )
 
     parser.set_defaults(func=mongodb_command)
 
@@ -189,8 +197,12 @@ def mongodb_command(options):
 
     for annotation in gff.parse_gff(options.input_file):
         options.output_file.write(
-            annotation.to_mongodb(lineage_func=lineage_func)
+            annotation.to_mongodb(
+                lineage_func=lineage_func,
+                indent=options.indent
+            )
         )
+        options.output_file.write('\n')
 
 
 def gtf_command(options):
@@ -295,7 +307,7 @@ def set_parser():
 
     set_sequence_parser(parser_s)
     set_common_options(parser_s)
-    utils.add_basic_options(parser_s)
+    utils.add_basic_options(parser_s, manual=__doc__)
 
     parser_d = subparsers.add_parser(
         'dbm',
@@ -303,7 +315,7 @@ def set_parser():
     )
 
     set_dbm_parser(parser_d)
-    utils.add_basic_options(parser_d)
+    utils.add_basic_options(parser_d, manual=__doc__)
 
     parser_m = subparsers.add_parser(
         'mongodb',
@@ -312,7 +324,7 @@ def set_parser():
 
     set_mongodb_parser(parser_m)
     set_common_options(parser_m)
-    utils.add_basic_options(parser_m)
+    utils.add_basic_options(parser_m, manual=__doc__)
 
     parser_gtf = subparsers.add_parser(
         'gtf',
@@ -321,7 +333,7 @@ def set_parser():
 
     set_gtf_parser(parser_gtf)
     set_common_options(parser_gtf)
-    utils.add_basic_options(parser_gtf)
+    utils.add_basic_options(parser_gtf, manual=__doc__)
 
     parser_split = subparsers.add_parser(
         'split',
@@ -329,7 +341,7 @@ def set_parser():
     )
 
     set_split_parser(parser_split)
-    utils.add_basic_options(parser_split)
+    utils.add_basic_options(parser_split, manual=__doc__)
 
     utils.add_basic_options(parser, manual=__doc__)
 
