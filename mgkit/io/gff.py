@@ -15,10 +15,8 @@ import logging
 import uuid
 import json
 import urllib
-# python 2.7 includes OrderedDict, the following recipe will be
-# used on older (2.6 versions)
-# http://code.activestate.com/recipes/576693/
-# and available as ordereddict in PyPI
+# python 2.7 includes OrderedDict, older versions will use
+# the available as ordereddict in PyPI
 try:
     # python >= 2.7
     from collections import OrderedDict
