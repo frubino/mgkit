@@ -146,7 +146,8 @@ Changes
     added *sequence* command
 
 .. versionchanged:: 0.2.6
-    added *length* as attribute for command *sequence*
+    added *length* as attribute for command *sequence*, *--sort-attr* to
+    *overlap*
 
 """
 
@@ -371,6 +372,16 @@ def set_overlap_parser(parser):
         type=make_choose_func,
         help='Function to choose between two overlapping annotations',
         default='dbq,bitscore,length'
+    )
+    parser.add_argument(
+        '-a',
+        '--sort-attr',
+        action='store',
+        help='Attribute to sort annotations before filtering (default ' +
+             'bitscore)',
+        type=str,
+        choices=['bitscore', 'identity', 'length'],
+        default='bitscore'
     )
 
     common_options(parser)
@@ -779,7 +790,7 @@ def filter_overlaps(options):
         filtered = filter_gff.filter_annotations(
             annotations,
             choose_func=choose_func,
-            sort_func=lambda x: x.bitscore,
+            sort_func=lambda x: x.get_attr(options.sort_attr, float),
             reverse=True
         )
         for annotation in filtered:
