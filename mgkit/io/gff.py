@@ -1059,10 +1059,14 @@ def from_gff(line, strict=True):
     """
     .. versionadded:: 0.1.12
 
+    .. versionchanged:: 0.2.6
+        added *strict* parameter
+
     Parse GFF line and returns an :class:`Annotation` instance
 
     Arguments:
         line (str): GFF line
+        strict (bool): if True duplicate keys raise an exception
 
     Returns:
         Annotation: instance of :class:`Annotation` for the line
@@ -1433,6 +1437,9 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
 
 def parse_gff(file_handle, gff_type=from_gff, strict=True):
     """
+    .. versionchanged:: 0.2.6
+        added *strict* parameter
+
     .. versionchanged:: 0.2.3
         correctly handling of GFF with comments of appended sequences
 
@@ -1446,6 +1453,7 @@ def parse_gff(file_handle, gff_type=from_gff, strict=True):
     Arguments:
         file_handle (str, file): file name or file handle to read from
         gff_type (class): class/function used to parse a GFF annotation
+        strict (bool): if True duplicate keys raise an exception
 
     Yields:
         Annotation: an iterator of :class:`Annotation` instances
@@ -1917,11 +1925,15 @@ def parse_gff_files(files, strict=True):
     """
     .. versionadded:: 0.1.15
 
+    .. versionchanged:: 0.2.6
+        added *strict* parameter
+
     Function that returns an iterator of annotations from multiple GFF files.
 
     Arguments:
         files (iterable, str): iterable of file names of GFF files, or a single
             file name
+        strict (bool): if True duplicate keys raise an exception
 
     Yields:
         :class:`Annotation`: iterator of annotations
