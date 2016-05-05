@@ -1055,7 +1055,7 @@ class DuplicateKeyError(Exception):
     pass
 
 
-def from_gff(line):
+def from_gff(line, strict=True):
     """
     .. versionadded:: 0.1.12
 
@@ -1116,7 +1116,7 @@ def from_gff(line):
                 var = pair.strip()
                 value = None
 
-        if var in attr:
+        if (var in attr) and strict:
             raise DuplicateKeyError("Duplicate attribute: {0}".format(var))
 
         if value is not None:
@@ -1431,7 +1431,7 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
     return annotation
 
 
-def parse_gff(file_handle, gff_type=from_gff):
+def parse_gff(file_handle, gff_type=from_gff, strict=True):
     """
     .. versionchanged:: 0.2.3
         correctly handling of GFF with comments of appended sequences
@@ -1466,7 +1466,7 @@ def parse_gff(file_handle, gff_type=from_gff):
         if line.startswith('>'):
             break
 
-        annotation = gff_type(line)
+        annotation = gff_type(line, strict=strict)
         yield annotation
 
     LOG.info(
@@ -1913,7 +1913,7 @@ def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
     return infos
 
 
-def parse_gff_files(files):
+def parse_gff_files(files, strict=True):
     """
     .. versionadded:: 0.1.15
 
@@ -1929,7 +1929,7 @@ def parse_gff_files(files):
     if isinstance(files, str):
         files = [files]
 
-    return itertools.chain(*(parse_gff(file_name) for file_name in files))
+    return itertools.chain(*(parse_gff(file_name, strict=strict) for file_name in files))
 
 
 def get_annotation_map(annotations, key_func, value_func):
