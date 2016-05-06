@@ -270,6 +270,13 @@ def set_split_parser(parser):
         default=10,
         help='Number of chunks into which split the GFF file'
     )
+    parser.add_argument(
+        '-z',
+        '--gzip',
+        action='store_true',
+        default=False,
+        help='gzip output files'
+    )
     parser.set_defaults(func=split_command)
 
 
@@ -281,6 +288,8 @@ def split_command(options):
     )
 
     name_mask = "%s-{0:05}.gff" % options.prefix
+    if options.gzip:
+        name_mask += '.gz'
 
     gff.split_gff_file(
         options.input_file,

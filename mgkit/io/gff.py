@@ -1808,7 +1808,7 @@ def split_gff_file(file_handle, name_mask, num_files=2):
         )
 
     out_handles = [
-        open(name_mask.format(filen), 'w')
+        mgkit.io.open_file(name_mask.format(filen), 'w')
         for filen in xrange(num_files)
     ]
 
