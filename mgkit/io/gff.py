@@ -1815,6 +1815,11 @@ def split_gff_file(file_handle, name_mask, num_files=2):
     seq_ids = {}
 
     for line in file_handle:
+        if line.startswith('#'):
+            continue
+        if line.startswith('>'):
+            break
+
         seq_id = line.split('\t')[0]
         try:
             out_handle = out_handles[seq_ids[seq_id]]

@@ -290,6 +290,7 @@ def split_command(options):
     name_mask = "%s-{0:05}.gff" % options.prefix
     if options.gzip:
         name_mask += '.gz'
+        LOG.info("Output files will be compressed (gzip)")
 
     gff.split_gff_file(
         options.input_file,
