@@ -98,7 +98,7 @@ This function:
 
 While the default behaviour is the same, now it is posible to decided the
 function used to discard one the two annotations. It is possible to use the
-`-c` argument to pass a string that defines the funtion. The string passed must
+`-c` argument to pass a string that defines the function. The string passed must
 start with or without a **+**. Using **+** translates into the builtin function
 *max* while no **+** translates into *min* from the second character on, any
 number of attributes can be used, separated by commas. The attributes, however,
@@ -146,8 +146,8 @@ Changes
     added *sequence* command
 
 .. versionchanged:: 0.2.6
-    added *length* as attribute for command *sequence*, *--sort-attr* to
-    *overlap*
+    added *length* as attribute and *min*/*max* for command *sequence*,
+    *--sort-attr* to *overlap*
 
 """
 
@@ -438,13 +438,27 @@ def set_perseq_parser(parser):
         help='''Filter by: mean + (X * std) where X is the number
                 supplied'''
     )
+    group.add_argument(
+        '-x',
+        '--max',
+        action='store_true',
+        help='Filter by the maximum value',
+        default=False
+    )
+    group.add_argument(
+        '-n',
+        '--min',
+        action='store_true',
+        help='Filter by the minimum value',
+        default=False
+    )
     parser.add_argument(
         '-c',
         '--comparison',
         action='store',
         help='Type of comparison (e.g. ge -> greater than or equal to)',
         type=str,
-        default='gt',
+        default='ge',
         choices=['gt', 'ge', 'lt', 'le']
     )
 
@@ -468,6 +482,10 @@ def perseq_calc_threshold(annotations, attribute, function, func_arg=None):
         thres = values.quantile(func_arg)
     elif function == 'std':
         thres = values.mean() + (func_arg * values.std())
+    elif function == 'max':
+        thres = values.max()
+    elif function == 'min':
+        thres = values.min()
 
     LOG.debug(
         "Threshold for contig %s found: %.2f, using funcion %s and its " +
@@ -475,14 +493,14 @@ def perseq_calc_threshold(annotations, attribute, function, func_arg=None):
         annotations[0],
         thres,
         function,
-        func_arg,
+        func_arg if function in ('quantile', 'std') else 0,
         len(annotations)
     )
     return thres
 
 
 def find_function(options):
-    for function in ('mean', 'quantile', 'median', 'std'):
+    for function in ('mean', 'quantile', 'median', 'std', 'max', 'min'):
         if getattr(options, function):
             return function
     # in case no function was selected
