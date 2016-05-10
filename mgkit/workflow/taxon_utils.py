@@ -68,7 +68,7 @@ Changes
 *******
 
 .. versionchanged:: 0.2.6
-    added *feat-type* option to *lca* command
+    added *feat-type* option to *lca* command, added phylum output to nolca
 
 .. versionadded:: 0.2.5
 
@@ -199,11 +199,12 @@ def get_taxon_info(taxonomy, taxon_id):
     return taxon_name, lineage
 
 
-def write_no_lca(file_handle, seq_id, taxon_ids):
+def write_no_lca(file_handle, seq_id, taxon_ids, extra=None):
     file_handle.write(
-        "{}\t{}\n".format(
+        "{}\t{}\t{}\n".format(
             seq_id,
-            ','.join(str(taxon_id) for taxon_id in set(taxon_ids))
+            ','.join(str(taxon_id) for taxon_id in set(taxon_ids)),
+            '' if extra is None else ','.join(extra)
         )
     )
 
@@ -263,7 +264,14 @@ def lca_contig_command(options):
                 write_no_lca(
                     options.no_lca,
                     seq_id,
-                    (annotation.taxon_id for annotation in seq_ann)
+                    (annotation.taxon_id for annotation in seq_ann),
+                    extra=set(
+                        taxonomy.get_ranked_taxon(
+                            annotation.taxon_id,
+                            'phylum'
+                        ).s_name
+                        for annotation in seq_ann
+                    )
                 )
             continue
 

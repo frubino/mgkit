@@ -146,8 +146,8 @@ Changes
     added *sequence* command
 
 .. versionchanged:: 0.2.6
-    added *length* as attribute and *min*/*max* for command *sequence*,
-    *--sort-attr* to *overlap*
+    added *length* as attribute and *min*/*max*, and *ge* is the default
+    comparison for command *sequence*, *--sort-attr* to *overlap*
 
 """
 
