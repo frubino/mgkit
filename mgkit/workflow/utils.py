@@ -61,15 +61,27 @@ class PrintManAction(argparse.Action):
 
 def add_basic_options(parser, manual=''):
     """
+    .. versionchanged:: 0.2.6
+        added *quiet* option
+
     Adds verbose and version options to the option parser
     """
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
         '-v',
         '--verbose',
         action='store_const',
         const=logging.DEBUG,
         default=logging.INFO,
-        help='more verbose'
+        help='more verbose - includes debug messages',
+        dest='verbose'
+    )
+    group.add_argument(
+        '--quiet',
+        action='store_const',
+        const=logging.ERROR,
+        help='less verbose - only error and critical messages',
+        dest='verbose'
     )
     parser.add_argument(
         '--cite',
