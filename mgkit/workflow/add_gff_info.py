@@ -302,6 +302,12 @@ def set_kegg_parser(parser):
 
 
 def kegg_command(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     kegg_client = kegg.KeggClientRest()
 
     LOG.info('Retrieving KO names')
@@ -518,6 +524,11 @@ def add_uniprot_info(annotations, options, info_cache):
 
 def uniprot_command(options):
 
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     if options.buffer < 1:
         options.buffer = 1
 
@@ -676,6 +687,11 @@ def choose_by_score(hits, gid_taxon_map):
 
 def taxonomy_command(options):
 
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     if options.lca:
         LOG.info(
             "Using LCA to resolve multiple hits %.2f bits from the top hit",
@@ -806,6 +822,12 @@ def set_exp_syn_parser(parser):
 
 
 def exp_syn_command(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     """
     .. versionadded:: 0.1.16
     """
@@ -819,6 +841,11 @@ def exp_syn_command(options):
 
 
 def uniprot_offline_command(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
 
     LOG.info("Mappings selected: %s", ', '.join(options.mapping))
 
@@ -908,6 +935,12 @@ def read_lines_from_files(file_handles):
 
 
 def eggnog_command(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     base_info = {}
     LOG.info(
         "Reading eggNOG annotations from files: %s",
@@ -980,6 +1013,12 @@ def load_counts(count_files, samples, featureCounts):
 
 
 def counts_command(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     counts = load_counts(
         options.count_files,
         options.samples,
@@ -1038,6 +1077,11 @@ def set_counts_parser(parser):
 
 
 def addtaxa_command(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
 
     if options.gene_taxon_table is not None:
         annotations = []
@@ -1161,6 +1205,12 @@ def set_addtaxa_parser(parser):
 
 
 def pfam_command(options):
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
     LOG.info("Downloading Pfam Information")
 
     pfam_families = pfam.get_pfam_families(
