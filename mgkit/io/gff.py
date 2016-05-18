@@ -2051,3 +2051,56 @@ def from_mongodb(record, lineage=True):
         del record['lineage']
 
     return Annotation(**record)
+
+
+def from_prodigal_frag(main_gff, blast_gff, attr='ID', split_func=None):
+    """
+    .. versionadded:: 0.2.6
+        *experimental*
+
+    Reads the GFF given in output by PRODIGAL and the resulting GFF from using
+    BLAST (or other software) on the aa or nucleotide file output by PRODIGAL.
+
+    It then integrates the two outputs, so to the PRODIGAL GFF is added the
+    information from the the output of the gene prediction software used.
+
+    Arguments:
+        main_gff (file): GFF file from PRODIGAL
+        blast_gff (file): GFF with the returned annotations
+        attr (str): attribute in the PRODIGAL GFF that is used to identify an
+            annotation
+        split_func (func): function to rename the headers from the predicted
+            sequences back to their parent sequence
+
+    Yields:
+        annotation: annotation for each *blast_gff* back translated
+
+    """
+    if split_func is None:
+        split_func = lambda x: tuple(x.rsplit('_', 1))
+
+    prodigal_gff = {}
+    for annotation in parse_gff(main_gff, strict=False):
+        key = (
+            annotation.seq_id,
+            split_func(annotation.get_attr(attr))[1]
+        )
+        prodigal_gff[key] = (
+            annotation.start,
+            annotation.end,
+            annotation.strand,
+            annotation.get_attr(attr)
+        )
+    for annotation in parse_gff(blast_gff):
+        key = split_func(annotation.seq_id)
+        annotation.set_attr('prodigal_start', annotation.start)
+        annotation.set_attr('prodigal_end', annotation.end)
+        annotation.set_attr('prodigal_strand', annotation.strand)
+
+        start, end, strand, p_id = prodigal_gff[key]
+
+        annotation.seq_id = key[0]
+        annotation.start = start
+        annotation.end = end
+        annotation.set_attr('prodigal_ID', p_id)
+        yield annotation
