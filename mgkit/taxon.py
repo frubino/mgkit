@@ -288,15 +288,41 @@ class UniprotTaxonomy(object):
         if fname:
             self.load_data(fname)
 
-    def read_from_gtdb_taxonomy(self, file_handle, use_gtdb_name=True):
+    def read_from_gtdb_taxonomy(self, file_handle, use_gtdb_name=True, sep='\t'):
         """
         .. versionadded:: 0.3.0
 
+        Reads a GTDB taxonomy file (tab separated genome_id/taxonomy) and
+        populate the taxonomy instance. The method also return a dictionary of
+        genome_id -> taxon_id.
+
+        Arguments:
+            file_handle (file): file with the taxonomy
+            use_gtdb_name (bool): if True, the names are kept as-is in the
+                *s_name* attribute of :class:`UniprotTaxonTuple` and the
+                "cleaned" version in *c_name* (e.g. f__Ammonifexaceae ->
+                Ammonifexaceae). If False, the values are switched
+            sep (str): separator between the columns of the file
+
+        Returns:
+            dict: dictionary of genome_id -> taxon_id, reflecting the created
+            taxonomy
+
+        .. note::
+
+            the taxon_id are generated, so there's no guarantee they will be
+            the same in a successive execution
+
         """
+        if isinstance(file_handle, str):
+            file_handle = open_file(file_handle)
+
         LOG.info(
             "Reading GTDB taxonomy from file",
             getattr(file_handle, 'name', repr(file_handle))
         )
+
+        genome_ids = {}
 
         # ranks used in GTDB
         ranks = {
@@ -313,7 +339,19 @@ class UniprotTaxonomy(object):
         count = 1
         for line in file_handle:
             # expecting the table to be the exported file from GTDB
-            line = [x for x in line.strip().split('\t')[1].split(';') if len(x) > 3]
+            try:
+                # print line.strip().split(sep)
+                genome_id, line = line.strip().split(sep)
+                # in case there's no gtdb taxonomy
+            except ValueError:
+                continue
+
+            line = [
+                taxon_name
+                for taxon_name in line.split(';')
+                if len(taxon_name) > 3
+            ]
+
             if not line:
                 continue
 
@@ -327,7 +365,10 @@ class UniprotTaxonomy(object):
                     count += 1
 
                 taxon_id = taxon_ids[taxon_name]
-                rank = ranks[taxon_name[0]]
+                try:
+                    rank = ranks[taxon_name[0]]
+                except KeyError:
+                    raise KeyError
 
                 # keep the full gtdb name in the common name
                 # cut the scientific name to remove the rank information
@@ -346,6 +387,9 @@ class UniprotTaxonomy(object):
                     parent_id
                 )
                 parent_id = taxon_id
+            genome_ids[genome_id] = taxon_id
+
+        return genome_ids
 
     def read_from_ncbi_dump(self, nodes_file, names_file=None, merged_file=None):
         """
