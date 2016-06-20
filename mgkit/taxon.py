@@ -288,6 +288,65 @@ class UniprotTaxonomy(object):
         if fname:
             self.load_data(fname)
 
+    def read_from_gtdb_taxonomy(self, file_handle, use_gtdb_name=True):
+        """
+        .. versionadded:: 0.3.0
+
+        """
+        LOG.info(
+            "Reading GTDB taxonomy from file",
+            getattr(file_handle, 'name', repr(file_handle))
+        )
+
+        # ranks used in GTDB
+        ranks = {
+            'g': 'genus',
+            'f': 'family',
+            'p': 'phylum',
+            'o': 'order',
+            'd': 'domain',
+            's': 'species',
+            'c': 'class'
+        }
+
+        taxon_ids = {}
+        count = 1
+        for line in file_handle:
+            # expecting the table to be the exported file from GTDB
+            line = [x for x in line.strip().split('\t')[1].split(';') if len(x) > 3]
+            if not line:
+                continue
+
+            # if no parent, use None as the NCBI taxonomy
+            parent_id = None
+            for taxon_name in line:
+
+                # register a taxo_id for unknown taxon
+                if taxon_name not in taxon_ids:
+                    taxon_ids[taxon_name] = count
+                    count += 1
+
+                taxon_id = taxon_ids[taxon_name]
+                rank = ranks[taxon_name[0]]
+
+                # keep the full gtdb name in the common name
+                # cut the scientific name to remove the rank information
+                common_name = taxon_name
+                taxon_name = taxon_name[3:]
+                # but if th use_gtdb_name option is True, switch them
+                if use_gtdb_name:
+                    taxon_name, common_name = common_name, taxon_name
+
+                self[taxon_id] = UniprotTaxonTuple(
+                    taxon_id,
+                    taxon_name,
+                    common_name,
+                    rank,
+                    (None,),
+                    parent_id
+                )
+                parent_id = taxon_id
+
     def read_from_ncbi_dump(self, nodes_file, names_file=None, merged_file=None):
         """
             .. versionadded:: 0.2.3
