@@ -186,9 +186,11 @@ def read_samtools_depth(file_handle, num_seqs=10000):
     .. note::
 
         The information on position is not used, to use numpy and save memory.
-        samtools *depth* should be called with the `-a` option::
+        samtools *depth* should be called with the `-aa` option::
 
-             `samtools depth -a bamfile`
+             `samtools depth -aa bamfile`
+        This options will output both base position with 0 coverage and
+        sequneces with no aligned reads
 
     Arguments:
         file_handle (file): file handle of the coverage file
@@ -232,18 +234,19 @@ class SamtoolsDepth(object):
     .. versionadded:: 0.3.0
 
     A class used to cache the results of :func:`read_samtools_depth`, while
-    reading only the necessary data from a`samtools depth -a` file.
+    reading only the necessary data from a`samtools depth -aa` file.
     """
     file_handle = None
     data = None
 
-    def __init__(self, file_handle):
+    def __init__(self, file_handle, num_seqs=10**4):
         """
         Arguments:
             file_handle (file): the file handle to pass to
                 :func:`read_samtools_depth`
+            num_seqs (int): number of sequence that fires a log message
         """
-        self.file_handle = read_samtools_depth(file_handle)
+        self.file_handle = read_samtools_depth(file_handle, num_seqs=num_seqs)
         self.data = {}
 
     def region_coverage(self, seq_id, start, end):
@@ -274,10 +277,5 @@ class SamtoolsDepth(object):
                 if key == seq_id:
                     cov = value[start-1:end]
                     break
-            else:
-                # the sequence was not found, it probably doesn't have any
-                # read aligned to it (and the used didn't use the -aa option to
-                # output it)
-                if seq_id not in self.data:
-                    return 0.
+
         return cov.mean()
