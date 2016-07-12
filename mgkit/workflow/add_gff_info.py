@@ -94,6 +94,22 @@ A total coverage for the annotation is also calculated and stored in the
 `cov` attribute, while each sample coverage is stored into `sample_cov` as per
 :ref:`gff-specs`.
 
+Adding Coverage from samtools depth
+***********************************
+
+The *cov_samtools* allows the use of the output of *samtools* **depth**
+command. The *-aa* options must be used to pass information about all base
+pairs and sequences coverage in the BAM/SAM file. The command accept only one
+sample and the relative file/stream from *samtools*, meaning that multiple
+samples coverage information must be added one at a time. One solution is to
+pipe multiple commands to obtain result wanted. For example::
+
+    $ add-gff-info cov_samtools -s SAMPLE1 -d sample1-coverage input.gff | \
+        add-gff-info cov_samtools -s SAMPLE2 -d sample2-coverage - output.gff
+
+This command will add the coverage information for SAMPLE1 and SAMPLE2 from
+the respective files.
+
 Uniprot Offline Mappings
 ************************
 
@@ -191,6 +207,9 @@ warning message is logged.
 
 Changes
 *******
+
+.. versionchanged:: 0.3.0
+    added *cov_samtools* command
 
 .. versionchanged:: 0.2.6
     added *skip-no-taxon* option to *addtaxa*
@@ -1247,6 +1266,47 @@ def set_pfam_parser(parser):
     parser.set_defaults(func=pfam_command)
 
 
+def set_samtools_depth_parser(parser):
+    parser.add_argument(
+        '-s',
+        '--sample',
+        action='store',
+        required=True,
+        type=str,
+        help='sample name'
+    )
+    parser.add_argument(
+        '-d',
+        '--depth',
+        action='store',
+        required=True,
+        type=argparse.FileType('r'),
+        help='`samtools depth -a` file'
+    )
+    parser.add_argument(
+        '-n',
+        '--num-seqs',
+        action='store',
+        default=10**4,
+        type=int,
+        help='Number of sequences to update the log'
+    )
+    parser.set_defaults(func=samtools_depth_command)
+
+
+def samtools_depth_command(options):
+    depth = align.SamtoolsDepth(options.depth, options.num_seqs)
+
+    for annotation in gff.parse_gff(options.input_file):
+        cov = depth.region_coverage(
+            annotation.seq_id,
+            annotation.start,
+            annotation.end
+        )
+        annotation.set_attr('cov', cov)
+        annotation.to_file(options.output_file)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -1350,6 +1410,15 @@ def set_parser():
     set_pfam_parser(parser_pfam)
     set_common_options(parser_pfam)
     utils.add_basic_options(parser_pfam, manual=__doc__)
+
+    parser_samtools_depth = subparsers.add_parser(
+        'cov_samtools',
+        help='Adds information from samtools_depth'
+    )
+
+    set_samtools_depth_parser(parser_samtools_depth)
+    set_common_options(parser_samtools_depth)
+    utils.add_basic_options(parser_samtools_depth, manual=__doc__)
 
     # top parser
     utils.add_basic_options(parser, manual=__doc__)
