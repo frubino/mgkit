@@ -217,14 +217,14 @@ def read_samtools_depth(file_handle, num_seqs=10000):
             else:
                 line_no += 1
                 if line_no % num_seqs == 0:
-                    LOG.info('Read %d contigs coverage', line_no)
+                    LOG.info('Read %d sequence coverage', line_no)
                 yield curr_key, numpy.array(curr_cov)
                 curr_key = name
                 curr_cov = [cov]
     else:
         yield curr_key, numpy.array(curr_cov)
 
-    LOG.info('Read a total of %d contigs coverage', line_no + 1)
+    LOG.info('Read a total of %d sequence coverage', line_no + 1)
 
 
 class SamtoolsDepth(object):
@@ -269,7 +269,15 @@ class SamtoolsDepth(object):
         except KeyError:
             for key, value in self.file_handle:
                 self.data[key] = value
+                # if the key is the one requested, the loop is stopped and and
+                # the value is kept
                 if key == seq_id:
                     cov = value[start-1:end]
                     break
+            else:
+                # the sequence was not found, it probably doesn't have any
+                # read aligned to it (and the used didn't use the -aa option to
+                # output it)
+                if seq_id not in self.data:
+                    return 0.
         return cov.mean()
