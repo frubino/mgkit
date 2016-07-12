@@ -45,6 +45,9 @@ annotations are in the same file.
 Changes
 *******
 
+.. versionchanged:: 0.3.0
+    added *--split* option to *sequence* command
+
 .. versionchanged:: 0.2.6
     added *split* command, *--indent* option to *mongodb*
 
@@ -93,6 +96,14 @@ def set_sequence_parser(parser):
         default=False
     )
     parser.add_argument(
+        '-s',
+        '--split',
+        action='store_true',
+        help='''Split the sequence header of the reference at the first
+        space, to emulate to BLAST behaviour''',
+        default=False
+    )
+    parser.add_argument(
         '-f',
         '--reference',
         type=argparse.FileType('r'),
@@ -112,7 +123,13 @@ def sequence_command(options):
     if options.no_wrap:
         wrap = None
 
-    seqs = dict(fasta.load_fasta(options.reference))
+    seqs = dict(
+        (
+            seq_id.split(' ')[0] if options.split else seq_id,
+            seq
+        )
+        for seq_id, seq in fasta.load_fasta(options.reference)
+    )
 
     ann_iter = gff.parse_gff(options.input_file, gff_type=gff.from_gff)
 
