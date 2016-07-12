@@ -209,7 +209,7 @@ Changes
 *******
 
 .. versionchanged:: 0.3.0
-    added *cov_samtools* command
+    added *cov_samtools* command, *--split* option to *exp_syn*
 
 .. versionchanged:: 0.2.6
     added *skip-no-taxon* option to *addtaxa*
@@ -837,6 +837,14 @@ def set_exp_syn_parser(parser):
         type=argparse.FileType('r'),
         help='reference sequence in fasta format'
     )
+    parser.add_argument(
+        '-s',
+        '--split',
+        action='store_true',
+        help='''Split the sequence header of the reference at the first
+        space, to emulate to BLAST behaviour''',
+        default=False
+    )
     parser.set_defaults(func=exp_syn_command)
 
 
@@ -851,7 +859,13 @@ def exp_syn_command(options):
     .. versionadded:: 0.1.16
     """
 
-    seqs = dict(fasta.load_fasta(options.reference))
+    seqs = dict(
+        (
+            seq_id.split(' ')[0] if options.split else seq_id,
+            seq
+        )
+        for seq_id, seq in fasta.load_fasta(options.reference)
+    )
 
     for annotation in gff.parse_gff(options.input_file):
         annotation.add_exp_syn_count(seqs[annotation.seq_id])
