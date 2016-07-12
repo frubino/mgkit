@@ -19,6 +19,11 @@ UNIPROT_GET = 'http://www.uniprot.org/uniprot/'
 UNIPROT_TAXONOMY = 'http://www.uniprot.org/taxonomy/'
 "URL to Uniprot REST API - Taxonomy"
 
+COLS_TAXON = 'organism-id'
+COLS_KO = 'database(KO)'
+COLS_EGGNOG = 'database(EGGNOG)'
+COLS_EC = 'ec'
+
 LOG = logging.getLogger(__name__)
 
 

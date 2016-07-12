@@ -1130,7 +1130,7 @@ def from_gff(line, strict=True):
     return Annotation(**attr)
 
 
-def from_sequence(name, seq, feat_type='CDS', **kwd):
+def from_sequence(name, seq, feat_type='SEQUENCE', **kwd):
     """
     .. versionadded:: 0.1.12
 
