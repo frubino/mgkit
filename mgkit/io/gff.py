@@ -737,7 +737,7 @@ class Annotation(GenomicRange):
         attributes = self.attr
 
         return dict(
-            (attribute.replace('_cov', ''), int(value))
+            (attribute.replace('_cov', ''), float(value))
             for attribute, value in attributes.iteritems()
             if attribute.endswith('_cov')
         )
