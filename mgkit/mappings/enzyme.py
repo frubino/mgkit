@@ -120,6 +120,36 @@ def change_mapping_level(ec_map, level=3):
         )
 
 
+def get_mapping_level(ec_map, level=3):
+    """
+    .. versionadded:: 0.3.0
+
+    Given a dictionary, whose values are iterable of EC numbers, returns an
+    iterator that can be used to build a dictionary with the same top level
+    keys and the values are sets of the transformed EC numbers.
+
+    Arguments:
+        ec_map (dict): dictionary genes to EC
+        level (int): number from 1 to 4, to specify the level of the mapping,
+            passed to :func:`get_enzyme_level`
+
+    Yields:
+        tuple: a tuple (gene_id, set(ECs)), which can be passed to *dict* to
+        make a dictionary
+    """
+    for gene_id, ec_list in ec_map.iteritems():
+
+        if not ec_list:
+            continue
+
+        if isinstance(ec_list, str):
+            ec_list = [ec_list]
+
+        yield gene_id, set(
+            get_enzyme_level(ec_id, level=level) for ec_id in ec_list
+        )
+
+
 def get_enzyme_full_name(ec_id, ec_names, sep=', '):
     """
     .. versionadded:: 0.2.1
