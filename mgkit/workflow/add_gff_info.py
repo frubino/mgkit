@@ -1164,6 +1164,7 @@ def addtaxa_command(options):
         try:
             taxon_id = gene_ids[annotation.attr[options.gene_attr]]
             annotation.taxon_id = taxon_id
+            annotation.set_attr('taxon_db', options.taxon_db)
         except KeyError:
             LOG.error(
                 "No Taxon ID for GENE - %s",
@@ -1232,6 +1233,13 @@ def set_addtaxa_parser(parser):
         action='store_true',
         default=False,
         help="""If used, annotations with no taxon_id won't be outputted"""
+    )
+    parser.add_argument(
+        '-db',
+        '--taxon-db',
+        action='store',
+        default='NONE',
+        help="DB used to add the taxonomic information"
     )
 
     parser.set_defaults(func=addtaxa_command)
