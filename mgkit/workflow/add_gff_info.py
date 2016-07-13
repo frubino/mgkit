@@ -1325,7 +1325,7 @@ def samtools_depth_command(options):
             annotation.start,
             annotation.end
         )
-        annotation.set_attr('cov', cov)
+        annotation.set_attr('{}_cov'.format(options.sample), cov)
         annotation.to_file(options.output_file)
 
 
