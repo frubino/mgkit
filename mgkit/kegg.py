@@ -1057,10 +1057,17 @@ class KeggModule(object):
     _reactions = None
     reactions = None
 
-    def __init__(self, entry=None):
+    def __init__(self, entry=None, old=False):
+        """
+        .. versionchanged:: 0.3.0
+            added *old* parameter, to use the old parser
+        """
         if entry is None:
             return
-        self.parse_entry(entry)
+        if old:
+            self.parse_entry(entry)
+        else:
+            self.parse_entry2(entry)
 
     def parse_entry(self, entry):
         """
@@ -1098,9 +1105,49 @@ class KeggModule(object):
         self._orthologs = entryd['DEFINITION'][0].split(' ')
         self._reactions = entryd['REACTION']
 
+    def parse_entry2(self, entry):
+        """
+        .. versionadded:: 0.3.0
+
+        Parses a Kegg module entry and change the instance values. By default
+        the reactions IDs are NOT substituted with the KO IDs.
+        """
+        entryd = {}
+        curr_field = ''
+        for line in entry.splitlines():
+            if line.startswith(' '):
+                entryd[curr_field].append(line.strip())
+            elif line.startswith('///'):
+                continue
+            else:
+                curr_field = line.split(' ')[0]
+                entryd[curr_field] = []
+                entryd[curr_field].append(line.replace(curr_field, '').strip())
+
+        self.entry = re.search(r"(M\d{5})\s+.+", entryd['ENTRY'][0]).group(1)
+        self.name = entryd['NAME'][0]
+
+        self.classes = entryd['CLASS'][0].split('; ')
+        self.compounds = [
+            re.search(r"(C\d{5})\s+.+", line).group(1)
+            for line in entryd['COMPOUND']
+        ]
+
+        self.reactions = []
+
+        for reaction in entryd['REACTION']:
+            reaction = self.parse_reaction(reaction, ko_ids=None)
+            self.reactions.append(reaction)
+
+        self._orthologs = entryd['DEFINITION'][0].split(' ')
+        self._reactions = entryd['REACTION']
+
     @staticmethod
     def parse_reaction(line, ko_ids=None):
         """
+        .. versionchanged:: 0.3.0
+            cleaned the parsing
+
         parses the lines with the reactions and substitute reaction IDs with
         the corresponding KO IDs if provided
         """
@@ -1109,25 +1156,73 @@ class KeggModule(object):
         # ko_ids = '(K00370+K00371+K00374+K00373,K02567+K02568)'
         # some reaction lines have only one space
         rn_ids, reaction = line.replace('  ', ' ').split(' ', 1)
-        rn_ids = rn_ids.split(',')
+        rn_ids = tuple(x.strip() for x in rn_ids.replace('+', ',').split(','))
         comp1, comp2 = reaction.split(' -> ')
+        comp1 = comp1.replace('(spontaneous)', '')
+        comp2 = comp2.replace('(spontaneous)', '')
+        comp1 = tuple(x.strip() for x in comp1.replace('+', ',').split(','))
+        comp2 = tuple(x.strip() for x in comp2.replace('+', ',').split(','))
         if ko_ids is not None:
             rn_ids = ko_ids.replace('+', ',').replace('-', ',').replace('(', '').replace(')', '').split(',')
-        return tuple(rn_ids), (comp1, comp2)
+        return rn_ids, (comp1, comp2)
 
     @property
     def first_cp(self):
         "Returns the first compound in the module"
-        return self.compounds[0]
+        return self.reactions[0][1][0][0]
 
     @property
     def last_cp(self):
         "Returns the first compound in the module"
-        return self.compounds[-1]
+        return self.reactions[-1][-1][-1][0]
 
-    def to_edges(self):
-        "Returns the reactions as edges that can be supplied to a graph"
-        for ko_ids, (comp1, comp2) in self.reactions:
-            for ko_id in ko_ids:
-                yield (comp1, ko_id)
-                yield (ko_id, comp2)
+    def to_edges(self, id_only=None):
+        """
+        .. versionchanged:: 0.3.0
+            added id_only and changed to reflect changes in :attr:`reactions`
+
+        Returns the reactions as edges that can be supplied to make graph.
+
+        Arguments:
+            id_only (None, iterable): if None the returned edges are for the
+                whole module, if an iterable (converted to a :class:`set`),
+                only edges for those reactions are returned
+
+        Yield:
+            tuple: the elements are the compounds and reactions in the module
+        """
+
+        if id_only is not None:
+            id_only = set(id_only)
+
+        for rn_ids, (comp1s, comp2s) in self.reactions:
+            for rn_id in rn_ids:
+                if (id_only is not None) and (rn_id not in id_only):
+                    continue
+                for comp1 in comp1s:
+                    yield (comp1, rn_id)
+                for comp2 in comp2s:
+                    yield (rn_id, comp2)
+
+    def find_submodules(self):
+        """
+        .. versionadded:: 0.3.0
+
+        Returns the possible submodules, as a list of tuples where the elements
+        are the first and last compounds in a submodule
+        """
+        sub_modules = []
+        sub_module = None
+        for rn_ids, (left_cpds, right_cpds) in self.reactions:
+            if sub_module is None:
+                sub_module = [left_cpds, right_cpds]
+                continue
+
+            if set(sub_module[1]) & set(left_cpds):
+                sub_module[1] = right_cpds
+            else:
+                sub_modules.append((sub_module[0][0], sub_module[-1][-1]))
+                sub_module = [left_cpds, right_cpds]
+        else:
+            sub_modules.append((sub_module[0][0], sub_module[-1][-1]))
+        return sub_modules

@@ -1293,7 +1293,6 @@ def set_samtools_depth_parser(parser):
         '-s',
         '--sample',
         action='store',
-        required=True,
         type=str,
         help='sample name'
     )
@@ -1318,6 +1317,10 @@ def set_samtools_depth_parser(parser):
 
 def samtools_depth_command(options):
     depth = align.SamtoolsDepth(options.depth, options.num_seqs)
+    if options.sample is None:
+        cov_attr = 'cov'
+    else:
+        cov_attr = '{}_cov'.format(options.sample)
 
     for annotation in gff.parse_gff(options.input_file):
         cov = depth.region_coverage(
@@ -1325,7 +1328,7 @@ def samtools_depth_command(options):
             annotation.start,
             annotation.end
         )
-        annotation.set_attr('{}_cov'.format(options.sample), cov)
+        annotation.set_attr(cov_attr, cov)
         annotation.to_file(options.output_file)
 
 

@@ -733,7 +733,8 @@ def signatures_matrix(seqs, w_size, k_size=4, step=None):
             being the sequence name and the second the sequence itself
         w_size (int): size of the sliding window size
         k_size (int): size of the kmer to use :func:`get_kmers`
-        step (int): step to use in :func:`sliding_window`
+        step (int): step to use in :func:`sliding_window`, defaults to half of
+            the window size
 
     Returns:
         pandas.DataFrame: a DataFrame where the columns are the kmers and the
