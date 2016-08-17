@@ -1128,9 +1128,13 @@ def addtaxa_command(options):
             annotations.append(annotation)
             gene_ids.add(annotation.attr[options.gene_attr])
         gene_ids = dict(
-            blast.parse_gi_taxa_table(
+            blast.parse_accession_taxa_table(
                 options.gene_taxon_table,
-                gids=gene_ids)
+                acc_ids=gene_ids,
+                key=0,
+                value=1,
+                no_zero=True
+            )
         )
     else:
         # in case a dictionary is supplied, it's expected to fit in memory,
