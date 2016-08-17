@@ -378,9 +378,12 @@ def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
 
 
 def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
-                               num_lines=NUM_LINES):
+                               num_lines=NUM_LINES, no_zero=True):
     """
     .. versionadded:: 0.2.5
+
+    .. versionchanged:: 0.3.0
+        added *no_zero*
 
     This function superseeds :func:`parse_gi_taxa_table`, since NCBI is
     deprecating the GIDs in favor of accessions like *X53318*. The new file can
@@ -404,6 +407,7 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
             to the versioned accession that is used in GenBank fasta files.
         num_lines (None, int): number of which a message is logged. If None,
             no message is logged
+        no_zero (bool): if True (default) a key with taxon_id of 0 is not yield
 
     .. note::
 
@@ -422,6 +426,8 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
 
     if acc_ids is not None:
         acc_ids = set(acc_ids)
+
+    zero_acc = 0
 
     for idx, line in enumerate(file_handle):
 
@@ -444,4 +450,17 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
         if acc_id.lower() == 'na':
             continue
 
-        yield acc_id, int(line[value])
+        taxon_id = int(line[value])
+
+        # in cases where 0 is the organism (doesn't exist in the taxonomy)
+        if no_zero and (taxon_id == 0):
+            # LOG.warning("accession '%s' has taxon_id 0", acc_id)
+            zero_acc += 1
+            continue
+
+        yield acc_id, taxon_id
+
+    if no_zero:
+        LOG.warning("%d accessions have taxon_id 0", zero_acc)
+
+    LOG.info("Parsed %d lines", idx + 1)
