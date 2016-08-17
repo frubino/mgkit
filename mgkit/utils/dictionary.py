@@ -242,3 +242,50 @@ def filter_nan(ratios):
         (key, [ratio for ratio in ratios[key] if not numpy.isnan(ratio)])
         for key in ratios
     )
+
+
+class cache_dict_file(object):
+    """
+    .. versionadded:: 0.3.0
+
+    Used to cache the result of a function that yields a tuple (key and value).
+    If the value is found in the internal dictionary (as the class behave), the
+    correspondent value is returned, otherwise the iterator is advanced until
+    the key is found.
+
+    Example:
+        >>> from mgkit.io.blast import parse_accession_taxa_table
+        >>> i = parse_accession_taxa_table('nucl_gb.accession2taxid.gz', key=0)
+        >>> d = cache_dict_file(i)
+        >>> d['AH001684']
+        4400
+    """
+    _iterator = None
+    _dict = None
+
+    def __init__(self, iterator, skip_lines=0):
+        """
+        Arguments:
+            iterator (iter): iterator used in building the dictionary
+            skip_lines (int): how many iterations to skip at the start
+        """
+        for index in xrange(skip_lines):
+            next(iterator)
+        self._iterator = iterator
+        self._dict = {}
+
+    def __getitem__(self, key):
+        try:
+            value = self._dict[key]
+        except KeyError:
+            while True:
+                nkey, nvalue = self.next()
+                if nkey == key:
+                    value = nvalue
+                    break
+        return value
+
+    def next(self):
+        key, value = next(self._iterator)
+        self._dict[key] = value
+        return key, value
