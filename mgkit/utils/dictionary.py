@@ -286,6 +286,9 @@ class cache_dict_file(object):
         return value
 
     def next(self):
-        key, value = next(self._iterator)
+        try:
+            key, value = next(self._iterator)
+        except StopIteration:
+            raise KeyError
         self._dict[key] = value
         return key, value

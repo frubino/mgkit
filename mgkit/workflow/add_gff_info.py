@@ -209,7 +209,8 @@ Changes
 *******
 
 .. versionchanged:: 0.3.0
-    added *cov_samtools* command, *--split* option to *exp_syn*
+    added *cov_samtools* command, *--split* option to *exp_syn*, *-c* option to
+    *addtaxa*
 
 .. versionchanged:: 0.2.6
     added *skip-no-taxon* option to *addtaxa*
@@ -259,11 +260,13 @@ from .. import align
 from .. import logger
 from .. import taxon
 from .. import kegg
+from .. import DependencyError
 from ..io import gff, blast, fasta, compressed_handle, open_file
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
-from .. import DependencyError
 from ..net import pfam
+from ..utils.dictionary import cache_dict_file
+
 
 LOG = logging.getLogger(__name__)
 
@@ -1116,7 +1119,7 @@ def addtaxa_command(options):
         getattr(options.output_file, 'name', repr(options.output_file))
     )
 
-    if options.gene_taxon_table is not None:
+    if (options.gene_taxon_table is not None) and (not options.cache_table):
         annotations = []
         gene_ids = set()
 
@@ -1131,6 +1134,16 @@ def addtaxa_command(options):
             blast.parse_accession_taxa_table(
                 options.gene_taxon_table,
                 acc_ids=gene_ids,
+                key=0,
+                value=1,
+                no_zero=True
+            )
+        )
+    elif (options.gene_taxon_table is not None) and options.cache_table:
+        annotations = gff.parse_gff(options.input_file)
+        gene_ids = cache_dict_file(
+            blast.parse_accession_taxa_table(
+                options.gene_taxon_table,
                 key=0,
                 value=1,
                 no_zero=True
@@ -1155,11 +1168,11 @@ def addtaxa_command(options):
         else:
             gene_ids.update(pickle.load(dict_file))
 
-    # Ensures all taxon_ids are *int*
-    gene_ids = dict(
-        (key, int(value))
-        for key, value in gene_ids.iteritems()
-    )
+        # Ensures all taxon_ids are *int*
+        gene_ids = dict(
+            (key, int(value))
+            for key, value in gene_ids.iteritems()
+        )
 
     if options.taxonomy is not None:
         taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
@@ -1245,6 +1258,15 @@ def set_addtaxa_parser(parser):
         default='NONE',
         help="DB used to add the taxonomic information"
     )
+    parser.add_argument(
+        '-c',
+        '--cache-table',
+        action='store_true',
+        default=False,
+        help="""If used, annotations are not preloaded, but the taxa table is
+        cached, instead.
+        """
+    )
 
     parser.set_defaults(func=addtaxa_command)
 
@@ -1306,7 +1328,7 @@ def set_samtools_depth_parser(parser):
         action='store',
         required=True,
         type=argparse.FileType('r'),
-        help='`samtools depth -a` file'
+        help='`samtools depth -aa` file'
     )
     parser.add_argument(
         '-n',
