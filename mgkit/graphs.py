@@ -77,32 +77,67 @@ def build_weighted_graph(id_links, name, weights, edge_type=''):
     return g
 
 
-def copy_nodes(g, graph1):
+def rename_graph_nodes(graph, name_func=None, exclude_ids=None):
+    new_graph = nx.Graph()
+
+    if exclude_ids is None:
+        exclude_ids = set()
+
+    for node, data in graph.nodes_iter(data=True):
+        new_graph.add_node(
+            node if node in exclude_ids else name_func(node),
+            **data
+        )
+
+    for node1, node2, data in graph.edges_iter(data=True):
+        new_graph.add_edge(
+            node1 if node1 in exclude_ids else name_func(node1),
+            node2 if node2 in exclude_ids else name_func(node2),
+            **data
+        )
+
+    return new_graph
+
+
+def copy_nodes(g, graph1, name=None, id_attr=None, **kwd):
     """
     .. versionadded:: 0.1.12
 
     Used by :func:`link_nodes` to copy nodes
     """
+
+    if name is None:
+        name = graph1.name
+
+    if id_attr is None:
+        id_attr = 'id'
+
     for node, data in graph1.nodes_iter(data=True):
+        data = data.copy()
+        data.update(kwd)
         g.add_node(
-            "{0}_{1}".format(graph1.name, data['id']),
-            module=graph1.name,
-            alpha=1.0,
+            "{0}_{1}".format(name, data[id_attr]),
             **data
         )
 
 
-def copy_edges(g, graph1):
+def copy_edges(g, graph1, name=None, **kwd):
     """
     .. versionadded:: 0.1.12
 
     Used by :func:`link_nodes` to copy edges
     """
+
+    if name is None:
+        name = graph1.name
+
     for node1, node2, data in graph1.edges_iter(data=True):
+        data = data.copy()
+        data.update(kwd)
         g.add_edge(
-            "{0}_{1}".format(graph1.name, node1),
-            "{0}_{1}".format(graph1.name, node2),
-            data
+            "{0}_{1}".format(name, node1),
+            "{0}_{1}".format(name, node2),
+            **data
         )
 
 
