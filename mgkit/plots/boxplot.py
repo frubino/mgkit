@@ -8,6 +8,7 @@ from __future__ import division
 import logging
 from .. import DependencyError
 from ..utils.common import deprecated
+from .colors import float_to_hex_color
 
 try:
     import numpy
@@ -209,22 +210,39 @@ def add_values_to_boxplot(dataframe, ax, plot_data, plot_order,
         linewidth (float): width of the line used to draw the marker
         box_vert (bool): specify if the original boxplot is vertical or not
     """
+
+    if data_colours is not None:
+        # in case each color is a tuple of rgb floats, it converts them into
+        # strings to avoid matplotlit to confuse the single color as different
+        # shades of grey. It only happens when the number of data points in a
+        # row is 3
+        if not isinstance(data_colours[data_colours.keys()[0]], str):
+            data_colours = dict(
+                (key, float_to_hex_color(*value))
+                for key, value in data_colours.iteritems()
+            )
+
     for index, row_id in enumerate(plot_order):
         if box_vert:
             xvals = plot_data['medians'][index].get_xdata()
             mean_x = xvals.mean()
             y = dataframe.loc[row_id].dropna()
-            x = [mean_x] * len(dataframe.loc[row_id].dropna())
+            x = [mean_x] * dataframe.loc[row_id].count()
         else:
             yvals = plot_data['medians'][index].get_ydata()
             mean_y = yvals.mean()
             x = dataframe.loc[row_id].dropna()
-            y = [mean_y] * len(dataframe.loc[row_id].dropna())
+            y = [mean_y] * dataframe.loc[row_id].count()
+
+        if data_colours is None:
+            DEFAULT_BOXPLOT_COLOURS['boxes']
+        else:
+            color = data_colours[row_id]
 
         ax.scatter(
             x,
             y,
-            c=DEFAULT_BOXPLOT_COLOURS['boxes'] if data_colours is None else data_colours[row_id],
+            c=color,
             alpha=alpha,
             s=s,
             marker=marker,
