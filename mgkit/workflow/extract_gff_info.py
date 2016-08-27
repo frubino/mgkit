@@ -278,7 +278,7 @@ def set_split_parser(parser):
         '--prefix',
         type=str,
         default='split',
-        help='GFF attribute to use for the GTF gene_id attribute'
+        help='Prefix for the file name in output'
     )
     parser.add_argument(
         '-n',
