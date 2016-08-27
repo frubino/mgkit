@@ -94,7 +94,7 @@ def split_write(records, name_mask, write_func, num_files=2):
             returned by `records` as the second argument
         num_files (int): the number of files to split the records
     """
-    out_handles = [open(name_mask.format(x), 'w') for x in xrange(num_files)]
+    out_handles = [open_file(name_mask.format(x), 'w') for x in xrange(num_files)]
 
     for index, record in enumerate(records):
         out_handle = out_handles[index % num_files]
