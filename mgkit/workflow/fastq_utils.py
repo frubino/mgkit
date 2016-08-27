@@ -1,5 +1,9 @@
 """
 Interleave/deinterleave paired-end fastq files.
+
+.. versionchanged:: 0.3.0
+    added *convert* command to FASTA
+
 """
 from __future__ import division
 
@@ -11,6 +15,7 @@ import HTSeq
 from itertools import izip
 from mgkit.io.fastq import choose_header_type
 from mgkit.io.fastq import write_fastq_sequence
+from mgkit.io import fasta
 from . import utils
 
 LOG = logging.getLogger(__name__)
@@ -127,7 +132,38 @@ def set_parser():
     )
     parser_r.set_defaults(func=randomise)
 
+    # Convert to fasta
+    parser_convert = subparsers.add_parser('convert', help='Convert to FASTA')
+    parser_convert.add_argument(
+        'input_file',
+        type=argparse.FileType('r'),
+        action='store',
+        help="Input FastQ file"
+    )
+    parser_convert.add_argument(
+        'output_file',
+        type=argparse.FileType('w'),
+        action='store',
+        help="Output FASTA file"
+    )
+    parser_convert.set_defaults(func=convert_command)
+
     return parser
+
+
+def convert_command(options):
+    LOG.info(
+        "Reading from file (%s)",
+        options.input_file.name
+    )
+    file_handle = HTSeq.FastqReader(options.input_file)
+
+    for sequence in file_handle:
+        fasta.write_fasta_sequence(
+            options.output_file,
+            sequence.name,
+            sequence.seq
+        )
 
 
 def report_counts(count, wcount, counter=None):
