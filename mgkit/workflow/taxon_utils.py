@@ -39,7 +39,30 @@ that line. The list of *taxon_ids* is separated by semicolon ";".
 
     Both also accept the *-n* option, to report the config/line and the
     taxon_ids that had no common ancestors. These are treated as errors and do
-    not appear in the output file. The no
+    not appear in the output file.
+
+Krona Output
+############
+
+**Added in 0.3.0**
+
+The *lca* command supports the writing of a file compatible with Krona. The
+output file can be used with the *ktImportText/ImportText.pl* script included
+with `KronaTools <https://github.com/marbl/Krona/wiki>`_. Specifically, the
+output from *taxon_utils* will be a file with all the lineages found (tab
+separated), that can be used with::
+
+    $ ktImportText -q taxon_utils_ouput
+
+Note the use of *-q* to make the script count the lineages. Sequences with no
+LCA found will be marked as *No LCA* in the graph, the *-n* is not required.
+
+.. note::
+
+    Please note that the output won't include any sequence that didn't have a
+    hit with the software used. If that's important, the **-kt** option can be
+    used to add a number of *Unknown* lines at the end, to read the total
+    supplied.
 
 Filter by Taxon
 ***************
@@ -66,6 +89,9 @@ in NCBI taxonomy (also Uniprot).
 
 Changes
 *******
+
+.. versionchanged:: 0.3.0
+    added *-k* and *-kt* options for Krona output, lineage now includes the LCA
 
 .. versionchanged:: 0.2.6
     added *feat-type* option to *lca* command, added phylum output to nolca
@@ -97,6 +123,21 @@ def set_common_options(parser):
         default=None,
         help='Taxonomy file',
         required=True
+    )
+    parser.add_argument(
+        '-k',
+        '--krona',
+        action='store_true',
+        default=False,
+        help='Output a file that can be read by Krona (text)',
+    )
+    parser.add_argument(
+        '-kt',
+        '--krona-total',
+        type=int,
+        default=None,
+        help='''Total number of raw sequences (used to output correct
+                percentages in Krona''',
     )
     parser.add_argument(
         'input_file',
@@ -193,7 +234,7 @@ def get_taxon_info(taxonomy, taxon_id):
         taxon_name = taxonomy[taxon_id].c_name
     lineage = ','.join(
         tx
-        for tx in taxon.get_lineage(taxonomy, taxon_id, names=True, only_ranked=True)
+        for tx in taxon.get_lineage(taxonomy, taxon_id, names=True, only_ranked=True, with_last=True)
         if tx
     )
     return taxon_name, lineage
@@ -206,6 +247,22 @@ def write_no_lca(file_handle, seq_id, taxon_ids, extra=None):
             ','.join(str(taxon_id) for taxon_id in set(taxon_ids)),
             '' if extra is None else ','.join(extra)
         )
+    )
+
+
+def write_krona(file_handle, taxonomy, taxon_id):
+    if taxon_id is None:
+        lineage = ['No LCA']
+    else:
+        lineage = taxon.get_lineage(
+            taxonomy,
+            taxon_id,
+            names=True,
+            only_ranked=True,
+            with_last=True
+        )
+    file_handle.write(
+        '{}\n'.format('\t'.join(lineage))
     )
 
 
@@ -251,7 +308,9 @@ def lca_contig_command(options):
             lambda annotation: annotation.seq_id
         ).itervalues()
 
+    count = 0
     for seq_ann in annotations:
+        count += 1
         seq_id = seq_ann[0].seq_id
         try:
             taxon_id = taxon.last_common_ancestor_multiple(
@@ -273,6 +332,8 @@ def lca_contig_command(options):
                         for annotation in seq_ann
                     )
                 )
+            if options.krona:
+                write_krona(options.output_file, taxonomy, None)
             continue
 
         taxon_name, lineage = get_taxon_info(taxonomy, taxon_id)
@@ -286,6 +347,8 @@ def lca_contig_command(options):
                 lineage,
                 options.feat_type
             )
+        elif options.krona:
+            write_krona(options.output_file, taxonomy, taxon_id)
         else:
             write_lca_tab(
                 options.output_file,
@@ -295,6 +358,9 @@ def lca_contig_command(options):
                 taxonomy[taxon_id].rank,
                 lineage
             )
+    if options.krona and (options.krona_total is not None):
+        for index in xrange(count, options.krona_total):
+            options.output_file.write('Unknown\n')
 
 
 def set_lca_line_parser(parser):
