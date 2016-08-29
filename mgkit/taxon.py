@@ -935,12 +935,16 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
     return matrix
 
 
-def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False):
+def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
+                with_last=False):
     """
     .. versionadded:: 0.2.1
 
     .. versionchanged:: 0.2.5
         added *only_ranked*
+
+    .. versionchanged:: 0.3.0
+        added *with_last*
 
     Returns the lineage of a taxon_id, as a list of taxon_id or taxa names
 
@@ -951,6 +955,8 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False):
             instead of the taxon_id
         only_ranked (bool): if True, only taxonomic levels whose rank is in
             data:`TAXON_RANKS` will be returned
+        with_last (bool): if True, the passed taxon_id is included in the
+            lineage
 
     Returns:
         list: lineage of the taxon_id, the elements are `int` if names is False,
@@ -959,6 +965,9 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False):
         contains ranked taxa (according to :data:`TAXON_RANKS`).
     """
     lineage = []
+
+    if with_last:
+        lineage.append(taxon_id)
 
     while True:
         taxon_id = taxonomy[taxon_id].parent_id
