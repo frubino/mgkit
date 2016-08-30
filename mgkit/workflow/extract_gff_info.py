@@ -100,7 +100,7 @@ def set_sequence_parser(parser):
         '--split',
         action='store_true',
         help='''Split the sequence header of the reference at the first
-        space, to emulate to BLAST behaviour''',
+        space, to emulate BLAST behaviour''',
         default=False
     )
     parser.add_argument(
