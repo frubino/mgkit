@@ -186,7 +186,7 @@ def main():
     Main loop
     """
     options = set_parser().parse_args()
-    logger.config_log(options.quiet)
+    logger.config_log(options.verbose)
 
     parse_domain_table_contigs(
         options
