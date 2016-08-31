@@ -62,7 +62,7 @@ LCA found will be marked as *No LCA* in the graph, the *-n* is not required.
     Please note that the output won't include any sequence that didn't have a
     hit with the software used. If that's important, the **-kt** option can be
     used to add a number of *Unknown* lines at the end, to read the total
-    supplied.
+1    supplied.
 
 Filter by Taxon
 ***************
@@ -92,6 +92,8 @@ Changes
 
 .. versionchanged:: 0.3.0
     added *-k* and *-kt* options for Krona output, lineage now includes the LCA
+    also added *-n* option to select between lineages with only ranked taxa.
+    Now it defaults to all components.
 
 .. versionchanged:: 0.2.6
     added *feat-type* option to *lca* command, added phylum output to nolca
@@ -190,6 +192,15 @@ def set_lca_contig_parser(parser):
         default=False
     )
     parser.add_argument(
+        '-n',
+        '--only-ranked',
+        action='store_true',
+        help='''If set, only taxa that have a rank will be used in the lineage.
+             This is not advised for lineages such as Viruses, where the top
+             levels have no rank''',
+        default=False
+    )
+    parser.add_argument(
         '-ft',
         '--feat-type',
         default='LCA',
@@ -227,14 +238,14 @@ def write_lca_tab(file_handle, seq_id, taxon_id, taxon_name, rank, lineage):
     )
 
 
-def get_taxon_info(taxonomy, taxon_id):
+def get_taxon_info(taxonomy, taxon_id, only_ranked):
     if taxonomy[taxon_id].s_name:
         taxon_name = taxonomy[taxon_id].s_name
     else:
         taxon_name = taxonomy[taxon_id].c_name
     lineage = ','.join(
         tx
-        for tx in taxon.get_lineage(taxonomy, taxon_id, names=True, only_ranked=True, with_last=True)
+        for tx in taxon.get_lineage(taxonomy, taxon_id, names=True, only_ranked=only_ranked, with_last=True)
         if tx
     )
     return taxon_name, lineage
@@ -250,7 +261,7 @@ def write_no_lca(file_handle, seq_id, taxon_ids, extra=None):
     )
 
 
-def write_krona(file_handle, taxonomy, taxon_id):
+def write_krona(file_handle, taxonomy, taxon_id, only_ranked):
     if taxon_id is None:
         lineage = ['No LCA']
     else:
@@ -258,7 +269,7 @@ def write_krona(file_handle, taxonomy, taxon_id):
             taxonomy,
             taxon_id,
             names=True,
-            only_ranked=True,
+            only_ranked=only_ranked,
             with_last=True
         )
     file_handle.write(
@@ -336,7 +347,11 @@ def lca_contig_command(options):
                 write_krona(options.output_file, taxonomy, None)
             continue
 
-        taxon_name, lineage = get_taxon_info(taxonomy, taxon_id)
+        taxon_name, lineage = get_taxon_info(
+            taxonomy,
+            taxon_id,
+            options.only_ranked
+        )
         if seqs is not None:
             write_lca_gff(
                 options.output_file,
@@ -348,7 +363,12 @@ def lca_contig_command(options):
                 options.feat_type
             )
         elif options.krona:
-            write_krona(options.output_file, taxonomy, taxon_id)
+            write_krona(
+                options.output_file,
+                taxonomy,
+                taxon_id,
+                options.only_ranked
+            )
         else:
             write_lca_tab(
                 options.output_file,
