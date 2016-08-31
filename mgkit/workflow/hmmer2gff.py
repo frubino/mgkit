@@ -110,13 +110,6 @@ def set_parser():
     )
 
     group = parser.add_argument_group('Misc')
-    group.add_argument(
-        '-q',
-        '--quiet',
-        action='store_const',
-        const=logging.WARNING, default=logging.DEBUG,
-        help='only show warnings or errors'
-    )
 
     utils.add_basic_options(parser, manual=__doc__)
 
