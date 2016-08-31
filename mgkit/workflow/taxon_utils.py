@@ -92,7 +92,7 @@ Changes
 
 .. versionchanged:: 0.3.0
     added *-k* and *-kt* options for Krona output, lineage now includes the LCA
-    also added *-n* option to select between lineages with only ranked taxa.
+    also added *-a* option to select between lineages with only ranked taxa.
     Now it defaults to all components.
 
 .. versionchanged:: 0.2.6
@@ -192,7 +192,7 @@ def set_lca_contig_parser(parser):
         default=False
     )
     parser.add_argument(
-        '-n',
+        '-a',
         '--only-ranked',
         action='store_true',
         help='''If set, only taxa that have a rank will be used in the lineage.
