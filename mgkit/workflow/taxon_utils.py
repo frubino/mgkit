@@ -344,7 +344,7 @@ def lca_contig_command(options):
                     )
                 )
             if options.krona:
-                write_krona(options.output_file, taxonomy, None)
+                write_krona(options.output_file, taxonomy, None, False)
             continue
 
         taxon_name, lineage = get_taxon_info(
