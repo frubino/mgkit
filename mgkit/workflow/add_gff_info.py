@@ -845,7 +845,7 @@ def set_exp_syn_parser(parser):
         '--split',
         action='store_true',
         help='''Split the sequence header of the reference at the first
-        space, to emulate to BLAST behaviour''',
+        space, to emulate BLAST behaviour''',
         default=False
     )
     parser.set_defaults(func=exp_syn_command)

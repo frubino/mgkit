@@ -14,6 +14,7 @@ This section detailed information about the scripts included
    snp_analysis
    download-taxonomy
    taxon_utils
+   fasta-utils
    json2gff
    download_profiles
    download_data

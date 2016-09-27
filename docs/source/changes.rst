@@ -1,7 +1,32 @@
 Changes
 =======
 
-A lot of bugs were fixed in this release, especially for reading NCBI taxonomy and using the *mesgpack* format to save a UniprotTaxonomy instance.
+0.3.0
+-----
+
+A lot of bugs were fixed in this release, especially for reading NCBI taxonomy and using the *msgpack* format to save a UniprotTaxonomy instance. Also added a tutorial for profiling a microbial community using MGKit and BLAST (:ref:`blast2lca`)
+
+Added
+*****
+
+* :func:`mgkit.align.read_samtools_depth` to read the samtools depth format iteratively (returns a generator)
+* :class:`mgkit.align.SamtoolsDepth`, used to cache the samtools depth format, while requesting region coverage
+* :meth:`mgkit.kegg.KeggModule.find_submodules`, :meth:`mgkit.kegg.KeggModule.parse_entry2`
+* :func:`mgkit.mappings.enzyme.get_mapping_level`
+* :func:`mgkit.utils.dictionary.cache_dict_file` to cache a large dictionary file (tab separated file with 2 columns), an example of its usage is in the documentation
+* :meth:`mgkit.taxon.UniprotTaxonomy.read_from_gtdb_taxonomy` to read a custom taxonomy from a tab separated file. The taxon_id are not guaranteed to be stable between runs
+* added *cov_samtools* to *add-gff-info* script
+* added :mod:`mgkit.workflow.fasta_utils` and correspondent script *fasta-utils*
+* added options *-k* and *-kt* to *taxon_utils*, which outputs a file that can be used with Krona *ktImportText* (needs to use *-q* with this script)
+
+Changed
+*******
+
+* added *no_zero* parameter to :func:`mgkit.io.blast.parse_accession_taxa_table`
+* changed behaviour of :class:`mgkit.kegg.KeggModule` and some of its methods.
+* added *with_last* parameter to :func:`mgkit.taxon.get_lineage`
+* added *--split* option to *add-gff-info exp_syn* and *get-gff-info sequence* scripts, to emulate BLAST behaviour in parsing sequence headers
+* added *-c* option to *add-gff-info addtaxa*
 
 0.2.5
 -----

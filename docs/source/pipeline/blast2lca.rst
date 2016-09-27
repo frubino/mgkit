@@ -1,10 +1,10 @@
 .. _blast2lca:
 
-.. highlight:: bash
-   :linenothreshold: 3
-
 Profile a Community with BLAST
 ==============================
+
+.. highlight:: bash
+   :linenothreshold: 3
 
 .. blockdiag::
 
@@ -256,6 +256,25 @@ The options used are:
 	* `-ft` is used to change the *feature type* column in the GFF, from the dafault *LCA* to one which includes the type of filtering used
 
 The file ending in *-nolca.tab* contain the contigs that could not be assigned, while the files ending in *-lca.gff* contain the taxonomic assignments, with the *taxon_id* pointing to the assigned taxon identifier, *taxon_name* for the taxon scientific name (or common name if none is found) and *lineage* contains the whole lineage of the taxon.
+
+Using Krona
+###########
+
+Besides having a file with the assignments and a GFF that can be used in Tablet, a quick profile can be produced using `Krona <https://github.com/marbl/Krona/wiki>`_ and its associated *Krona Tools*. To produce a file that can be used with Krona Tools the **-k** can be used with the *taxon_utils lca* command. An additional option is to give the tool the total number of sequences in the assembly with the **-kt** option, to have a complete profile of the assembly::
+
+	$ for x in *filt-{overlap,sequence,value}.gff; do
+	taxon_utils lca -v -t taxonomy.pickle -k -kt `grep -c '>' final-contigs-filt.fa` -s $x `basename $x .gff`-lca.krona;
+	done
+
+To the *-kt* option was passed the total number of sequences (just used grep to count how many headers are in the fasta file).
+
+The produced files with **krona** extension can be the be used with the **ktImportText** (or **ImportText** if Krona Tools were not installed). The **-q** option of the script must be used::
+
+	$ for x in *.krona; do
+	ktImportText -q -o `basename $x .krona`.html $x;
+	done
+
+This will create an HTML file for each one that can be read in a web browser.
 
 Using Tablet
 ############
