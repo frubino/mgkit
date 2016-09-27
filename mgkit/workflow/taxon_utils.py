@@ -62,7 +62,7 @@ LCA found will be marked as *No LCA* in the graph, the *-n* is not required.
     Please note that the output won't include any sequence that didn't have a
     hit with the software used. If that's important, the **-kt** option can be
     used to add a number of *Unknown* lines at the end, to read the total
-1    supplied.
+    supplied.
 
 Filter by Taxon
 ***************

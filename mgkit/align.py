@@ -189,6 +189,7 @@ def read_samtools_depth(file_handle, num_seqs=10000):
         samtools *depth* should be called with the `-aa` option::
 
              `samtools depth -aa bamfile`
+
         This options will output both base position with 0 coverage and
         sequneces with no aligned reads
 
