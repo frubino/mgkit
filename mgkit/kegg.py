@@ -54,45 +54,31 @@ class KeggCompound(object):
 
 
 class KeggReaction(object):
-    "Kegg Reaction"
-    # __slots__ = ('rn_id', 'description', 'cp_in', 'cp_out')
+    """
+    .. versionchanged:: 0.3.1
+        reworked, only stores the equation
 
-    def __init__(self, rn_id=None, description='', cp_in=None, cp_out=None):
-        self.rn_id = rn_id
-        self.description = description
-        self.cp_in = cp_in if cp_in is not None else {}
-        self.cp_out = cp_out if cp_out is not None else {}
+    Kegg Reaction, used for parsing the equation line
+    """
 
-    def __eq__(self, other):
+    rn_id = None
+    left_cp = None
+    right_cp = None
+
+    def __init__(self, entry):
         """
-        >>> KeggReaction('test') == KeggReaction('test')
-        True
-        >>> KeggReaction('test') == 1
-        False
+
+        Raises:
+            ValueError: if no EQUATION line is found
         """
-        if not isinstance(other, KeggReaction):
-            return False
-        return self.rn_id == other.rn_id
-
-    def __ne__(self, other):
-        """
-        >>> KeggReaction('test') != KeggReaction('test1')
-        True
-        >>> KeggReaction('test') != 1
-        True
-        """
-        return not self == other
-
-    def __hash__(self):
-        return hash(self.rn_id)
-
-    def __str__(self):
-        return "{0}: {1} - CPIN ({2}) CPOUT ({3})".format(
-            self.rn_id, self.description, len(self.cp_in), len(self.cp_out)
-        )
-
-    def __repr__(self):
-        return str(self)
+        entry = entry.splitlines()
+        self.rn_id = entry[0].split()[1]
+        for line in entry:
+            if line.startswith('EQUATION'):
+                break
+        if line.startswith('///'):
+            raise ValueError('No Equation in Entry')
+        self.left_cp, self.right_cp = parse_reaction(line)
 
 
 class KeggOrtholog(object):
@@ -1226,3 +1212,21 @@ class KeggModule(object):
         else:
             sub_modules.append((sub_module[0][0], sub_module[-1][-1]))
         return sub_modules
+
+
+def parse_reaction(line):
+    """
+    .. versionadded:: 0.3.1
+    """
+    line = line.replace('EQUATION', '').strip()
+    if '<=>' in line:
+        line = line.replace(' ', '').split('<=>')
+        left = set(x if x.startswith('C') else x[1:] for x in line[0].split('+'))
+        right = set(x if x.startswith('C') else x[1:] for x in line[1].split('+'))
+        return left, right
+    elif '=>' in line:
+        raise ValueError('>>>')
+    elif '<=' in line:
+        raise ValueError('<<<')
+    else:
+        raise ValueError('???')
