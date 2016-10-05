@@ -4,9 +4,13 @@ Interleave/deinterleave paired-end fastq files.
 .. versionchanged:: 0.3.0
     added *convert* command to FASTA
 
+.. versionchanged:: 0.3.1
+    added stdin/stdout defaults for some commands
+
 """
 from __future__ import division
 
+import sys
 import random
 import argparse
 import logging
@@ -114,12 +118,16 @@ def set_parser():
         'input_file',
         type=argparse.FileType('r'),
         action='store',
+        nargs='?',
+        default='-',
         help="File with sequences"
     )
     parser_r.add_argument(
         'output_file',
         type=argparse.FileType('w'),
         action='store',
+        nargs='?',
+        default=sys.stdout,
         help="Output file"
     )
     parser_r.add_argument(
@@ -138,12 +146,16 @@ def set_parser():
         'input_file',
         type=argparse.FileType('r'),
         action='store',
+        nargs='?',
+        default='-',
         help="Input FastQ file"
     )
     parser_convert.add_argument(
         'output_file',
         type=argparse.FileType('w'),
         action='store',
+        nargs='?',
+        default=sys.stdout,
         help="Output FASTA file"
     )
     parser_convert.set_defaults(func=convert_command)
