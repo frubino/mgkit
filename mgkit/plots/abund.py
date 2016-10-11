@@ -256,7 +256,7 @@ def draw_circles(ax, data, col_func=col_func_name, csize=200, alpha=.5,
         linewidths=linewidths,
         edgecolor=edgecolor,
         marker=u'o',
-        s=csize * (sizescale if sizescale is not None else 1)
+        s=csize * (sizescale.loc[order] if sizescale is not None else 1)
     )
     return paths
 
