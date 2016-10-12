@@ -1324,7 +1324,7 @@ def from_json(line):
 
 
 def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
-               db='CUSTOM', custom_profiles=True):
+               db='CUSTOM', custom_profiles=True, noframe=False):
     """
     .. versionadded:: 0.1.15
         first implementation to move old scripts to new GFF specs
@@ -1334,6 +1334,9 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
 
     .. versionchanged:: 0.2.2
         taxon_id and taxon_name are not saved for non-custom profiles
+
+    .. versionchanged:: 0.3.1
+        added support for non mgkit-translated sequences (*noframe*)
 
     Parse HMMER results (one line), it won't parse commented lines (starting
     with *#*)
@@ -1347,6 +1350,7 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
         custom_profiles (bool): if True, the profile name contains gene,
             taxonomy and reviewed information in the form
             KOID_TAXONID_TAXON-NAME(-nr)
+        noframe (bool): if True, the sequence is assumed to be in frame f0
 
     Returns:
         A :class:`Annotation` instance
@@ -1358,7 +1362,12 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
 
     """
     line = line.split()
-    contig, frame = line[0].rsplit('-', 1)
+    if noframe:
+        # no information on the frame is provided (already a protein, so f0)
+        frame = 'f0'
+        contig = line[0]
+    else:
+        contig, frame = line[0].rsplit('-', 1)
 
     t_from = int(line[17])
     t_to = int(line[18])
@@ -1366,12 +1375,14 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
     if frame.startswith('r'):
         seq_len = len(aa_seqs[line[0]])
         t_from, t_to = seq_utils.reverse_aa_coord(t_from, t_to, seq_len)
-    # converts in nucleotide coordinates
-    t_from, t_to = seq_utils.convert_aa_to_nuc_coord(
-        t_from,
-        t_to,
-        frame=int(frame[-1])
-    )
+    # necessary only if frame information available
+    if not noframe:
+        # converts in nucleotide coordinates
+        t_from, t_to = seq_utils.convert_aa_to_nuc_coord(
+            t_from,
+            t_to,
+            frame=int(frame[-1])
+        )
 
     # maintains the aa coordinates
     aa_from = int(line[17])

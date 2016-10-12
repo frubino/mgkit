@@ -9,6 +9,11 @@ The profiles tested are those made from Kegg Orthologs, from the
 the script can be used with any profile name. The profile name will be used
 for `gene_id`, `taxon_id` and `taxon_name` in the GFF file.
 
+It is possible to use seuqnces not translated using mgkit, no information on
+the frame is assumed, so this script can be used against a protein DB. For
+example Uniprot can be searched for profiles, in which case the **--no-frame**
+options must be used.
+
 .. note::
 
     for GENEID, old documentation points to KOID, it is the same
@@ -28,6 +33,10 @@ Changes
 
 .. versionchanged:: 0.2.1
     added options to customise output and filters and old restrictions
+
+.. versionchanged:: 0.3.1
+    added *--no-frame* option for non mgkit-translated proteins, sequence
+    headers are handled the same way as HMMER (truncated at the first space)
 
 """
 
@@ -108,6 +117,13 @@ def set_parser():
         default='gene',
         help='Type of feature (e.g. gene)'
     )
+    group.add_argument(
+        '-n',
+        '--no-frame',
+        action='store_true',
+        default=False,
+        help='Set if the sequences were not translated with translate_seq'
+    )
 
     group = parser.add_argument_group('Misc')
 
@@ -122,7 +138,10 @@ def get_aa_data(f_handle):
     """
     # LOG.info('Loading aa data from file %s', f_handle.name)
 
-    aa_seqs = dict((name, seq) for name, seq in fasta.load_fasta(f_handle))
+    aa_seqs = dict(
+        (name.split(' ')[0], seq)
+        for name, seq in fasta.load_fasta(f_handle)
+    )
 
     return aa_seqs
 
@@ -155,7 +174,8 @@ def parse_domain_table_contigs(options):
                 aa_seqs,
                 feat_type=options.feature_type,
                 db=options.database,
-                custom_profiles=options.no_custom_profiles
+                custom_profiles=options.no_custom_profiles,
+                noframe=options.no_frame,
             )
         except ZeroDivisionError:
             LOG.error(
