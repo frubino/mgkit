@@ -149,6 +149,9 @@ Changes
     added *length* as attribute and *min*/*max*, and *ge* is the default
     comparison for command *sequence*, *--sort-attr* to *overlap*
 
+.. versionchanged:: 0.3.1
+    added *--num-gt* and *--num-lt* to *values* command
+
 """
 
 import sys
@@ -340,6 +343,20 @@ def set_values_parser(parser):
         type=functools.partial(parse_attr_arg, convert=float),
         help="Same as '--num-ge' but 'value' is a number which is equal " +
         "or less than"
+    )
+    parser.add_argument(
+        '--num-gt',
+        action='append',
+        type=functools.partial(parse_attr_arg, convert=float),
+        help="Same as '--str-eq' but 'value' is a number which is " +
+        "greater than"
+    )
+    parser.add_argument(
+        '--num-lt',
+        action='append',
+        type=functools.partial(parse_attr_arg, convert=float),
+        help="Same as '--num-ge' but 'value' is a number which is " +
+        "less than"
     )
 
     common_options(parser)
@@ -739,6 +756,28 @@ def setup_filters(options):
                 )
             )
             LOG.info("Filter attribute '%s' <= %s", key, value)
+    if options.num_gt:
+        for key, value in options.num_gt:
+            filters.append(
+                functools.partial(
+                    filter_gff.filter_attr_num_s,
+                    attr=key,
+                    value=value,
+                    greater=True
+                )
+            )
+            LOG.info("Filter attribute '%s' > %s", key, value)
+    if options.num_lt:
+        for key, value in options.num_lt:
+            filters.append(
+                functools.partial(
+                    filter_gff.filter_attr_num_s,
+                    attr=key,
+                    value=value,
+                    greater=False
+                )
+            )
+            LOG.info("Filter attribute '%s' < %s", key, value)
 
     return filters
 

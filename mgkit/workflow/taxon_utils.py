@@ -127,21 +127,6 @@ def set_common_options(parser):
         required=True
     )
     parser.add_argument(
-        '-k',
-        '--krona',
-        action='store_true',
-        default=False,
-        help='Output a file that can be read by Krona (text)',
-    )
-    parser.add_argument(
-        '-kt',
-        '--krona-total',
-        type=int,
-        default=None,
-        help='''Total number of raw sequences (used to output correct
-                percentages in Krona''',
-    )
-    parser.add_argument(
         'input_file',
         nargs='?',
         type=argparse.FileType('r'),
@@ -206,6 +191,21 @@ def set_lca_contig_parser(parser):
         default='LCA',
         type=str,
         help='Feature type used if the output is a GFF (default is *LCA*)'
+    )
+    parser.add_argument(
+        '-k',
+        '--krona',
+        action='store_true',
+        default=False,
+        help='Output a file that can be read by Krona (text)',
+    )
+    parser.add_argument(
+        '-kt',
+        '--krona-total',
+        type=int,
+        default=None,
+        help='''Total number of raw sequences (used to output correct
+                percentages in Krona''',
     )
 
     lca_options(parser)
