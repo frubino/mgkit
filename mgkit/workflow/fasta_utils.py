@@ -14,15 +14,21 @@ Changes
 
 .. versionadded:: 0.3.0
 
+.. versionchanged:: 0.3.1
+    added *translate* command
+
 """
 
 from __future__ import division
 import argparse
 import logging
+import sys
 
 import mgkit
 from . import utils
 from mgkit.io import fasta
+from ..utils import trans_tables
+from ..utils.sequence import translate_sequence
 
 LOG = logging.getLogger(__name__)
 
@@ -47,6 +53,14 @@ def set_parser():
 
     set_split_parser(parser_split)
     utils.add_basic_options(parser_split, manual=__doc__)
+
+    parser_translate = subparsers.add_parser(
+        'translate',
+        help='Translate FASTA file in all 6 frames'
+    )
+
+    set_translate_parser(parser_translate)
+    utils.add_basic_options(parser_translate, manual=__doc__)
 
     return parser
 
@@ -100,6 +114,61 @@ def split_command(options):
         name_mask,
         num_files=options.number
     )
+
+
+def set_translate_parser(parser):
+    parser.add_argument(
+        '-t',
+        '--trans-table',
+        default='universal',
+        action='store',
+        choices=[
+            table_name.lower() for table_name in dir(trans_tables)
+            if not table_name.startswith('_')
+        ],
+        help='translation table'
+    )
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        type=argparse.FileType('r'),
+        default='-',
+        help='Input FASTA file, defaults to stdin'
+    )
+    parser.add_argument(
+        'output_file',
+        nargs='?',
+        type=argparse.FileType('2'),
+        default=sys.stdout,
+        help='Input FASTA file, defaults to stdin'
+    )
+    parser.set_defaults(func=translate_command)
+
+
+def load_trans_table(table_name):
+    "Loads translation table "
+    return getattr(trans_tables, table_name.upper())
+
+
+def translate_seq(name, seq, trans_table):
+    "Tranlate sequence into the 6 frames"
+    header = "{0}-{1}{2}"
+    for start in range(3):
+        yield header.format(name, 'f', start), translate_sequence(seq, start, trans_table, False)
+        yield header.format(name, 'r', start), translate_sequence(seq, start, trans_table, True)
+
+
+def translate_command(options):
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
+    trans_table = load_trans_table(options.trans_table)
+
+    for name, seq in fasta.load_fasta(options.input_file):
+        for new_header, new_seq in translate_seq(name, seq, trans_table):
+            fasta.write_fasta_sequence(options.output_file, new_header, new_seq)
 
 
 def main():
