@@ -1,7 +1,7 @@
 """
 Translate nucleotidic sequence in amino acidic sequences
 """
-
+import sys
 import argparse
 import logging
 import itertools
@@ -29,12 +29,16 @@ def set_parser():
         'input_file',
         action='store',
         help='input file with aa sequences',
+        nargs='?',
+        default='-',
         type=argparse.FileType('r')
     )
     parser.add_argument(
         'output_file',
         action='store',
         help='output file with aa sequences',
+        nargs='?',
+        default=sys.stdout,
         type=argparse.FileType('w')
     )
     parser.add_argument(
