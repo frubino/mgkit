@@ -138,7 +138,7 @@ def set_translate_parser(parser):
     parser.add_argument(
         'output_file',
         nargs='?',
-        type=argparse.FileType('2'),
+        type=argparse.FileType('w'),
         default=sys.stdout,
         help='Input FASTA file, defaults to stdin'
     )
