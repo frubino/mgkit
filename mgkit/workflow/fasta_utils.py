@@ -9,13 +9,24 @@ split command
 
 Used to split a fasta file into smaller fragments
 
+translate command
+*****************
+
+Used to translate nucleotide sequences into amino acids.
+
+uid command
+***********
+
+Used to change a FASTA file headers to a unique ID. A table (tab separated)
+with the changes made can be kept, using the *--table* option.
+
 Changes
 *******
 
 .. versionadded:: 0.3.0
 
 .. versionchanged:: 0.3.1
-    added *translate* command
+    added *translate* and *uid* command
 
 """
 
@@ -23,10 +34,11 @@ from __future__ import division
 import argparse
 import logging
 import sys
+from uuid import uuid4
 
 import mgkit
 from . import utils
-from mgkit.io import fasta
+from mgkit.io import fasta, open_file
 from ..utils import trans_tables
 from ..utils.sequence import translate_sequence
 
@@ -61,6 +73,14 @@ def set_parser():
 
     set_translate_parser(parser_translate)
     utils.add_basic_options(parser_translate, manual=__doc__)
+
+    parser_uid = subparsers.add_parser(
+        'uid',
+        help='Changes the header to a uid (unique ID)'
+    )
+
+    set_uid_parser(parser_uid)
+    utils.add_basic_options(parser_uid, manual=__doc__)
 
     return parser
 
@@ -151,7 +171,7 @@ def load_trans_table(table_name):
 
 
 def translate_seq(name, seq, trans_table):
-    "Tranlate sequence into the 6 frames"
+    "Tranlates sequence into the 6 frames"
     header = "{0}-{1}{2}"
     for start in range(3):
         yield header.format(name, 'f', start), translate_sequence(seq, start, trans_table, False)
@@ -169,6 +189,55 @@ def translate_command(options):
     for name, seq in fasta.load_fasta(options.input_file):
         for new_header, new_seq in translate_seq(name, seq, trans_table):
             fasta.write_fasta_sequence(options.output_file, new_header, new_seq)
+
+
+def set_uid_parser(parser):
+    parser.add_argument(
+        '-t',
+        '--table',
+        default=None,
+        action='store',
+        type=str,
+        help='Filename of table of the changes (by default discards it)'
+    )
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        type=argparse.FileType('r'),
+        default='-',
+        help='Input FASTA file, defaults to stdin'
+    )
+    parser.add_argument(
+        'output_file',
+        nargs='?',
+        type=argparse.FileType('w'),
+        default=sys.stdout,
+        help='Input FASTA file, defaults to stdin'
+    )
+    parser.set_defaults(func=uid_command)
+
+
+def uid_command(options):
+    if options.table is not None:
+        table_file = open_file(options.table, 'w')
+        LOG.info(
+            'Writing Table to file (%s)',
+            getattr(options.table, 'name', repr(options.table))
+        )
+    else:
+        table_file = None
+
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
+    for name, seq in fasta.load_fasta(options.input_file):
+        uid = str(uuid4())
+        if table_file is not None:
+            table_file.write("{}\t{}\n".format(uid, name))
+
+        fasta.write_fasta_sequence(options.output_file, uid, seq)
 
 
 def main():
