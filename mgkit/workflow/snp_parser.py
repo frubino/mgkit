@@ -245,7 +245,7 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
             continue
 
         # Samtools mpileup -> bcftools call doesn't output the allele freq.
-        # it can be calculated with AC/AN for eac ALT nucleotide
+        # it can be calculated with AC/AN for each ALT nucleotide
         # checked on bfctools (roh command) manual
         # https://samtools.github.io/bcftools/bcftools.html
         try:
