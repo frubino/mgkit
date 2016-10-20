@@ -98,3 +98,54 @@ class GFFDB(object):
         """
         for record in self.cursor(query):
             yield self.convert_record(record)
+
+    def __getitem__(self, uid):
+        """
+        .. versionadded:: 0.3.1
+
+        Retrieves an annotation from the DB by its *uid*
+        """
+        return self.convert_record(self.db.find_one(uid))
+
+    def values(self):
+        """
+        .. versionadded:: 0.3.1
+
+        Iterates over all the annotations in the db/collection
+        """
+        return self.find_annotation()
+
+    def itervalues(self):
+        """
+        .. versionadded:: 0.3.1
+
+        Alias for :meth:`GFFDB.values`
+        """
+        return self.values()
+
+    def items(self):
+        """
+        .. versionadded:: 0.3.1
+
+        Iterates over all the annotations in the db/collection, yielding a
+        tuple (*annotation.uid*, *annotation*)
+        """
+        for record in self.values():
+            yield record.uid, record
+
+    def iteritems(self):
+        """
+        .. versionadded:: 0.3.1
+
+        Alias for :meth:`GFFDB.items`
+        """
+        return self.items()
+
+    def keys(self):
+        """
+        .. versionadded:: 0.3.1
+
+        Iterates over all the *uid* in the db/collection
+        """
+        for record in self.values():
+            yield record.uid
