@@ -797,10 +797,10 @@ class Annotation(GenomicRange):
 
         Return the total coverage for the annotation
 
-        :return int: coverage
+        :return float: coverage
         :raise AttributeNotFound: if no coverage attribute is found
         """
-        return self.get_attr('cov', int)
+        return self.get_attr('cov', float)
 
     @property
     def exp_syn(self):
