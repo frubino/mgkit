@@ -87,8 +87,13 @@ class GFFDB(object):
         return self.db.find(query)
 
     def convert_record(self, record):
-        "Converts the record (a dictionary instance) to an Annotation"
-        return gff.from_mongodb(record)
+        """
+        .. versionchanged:: 0.3.1
+            removes *lineage* from the attributes
+
+        Converts the record (a dictionary instance) to an Annotation
+        """
+        return gff.from_mongodb(record, lineage=False)
 
     def find_annotation(self, query=None):
         """
