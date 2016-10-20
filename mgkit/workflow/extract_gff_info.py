@@ -187,7 +187,7 @@ def set_mongodb_parser(parser):
         action='store',
         type=int,
         default=None,
-        help='No cache for the lineage function'
+        help='If used, the json will be written in a human readble form'
     )
 
     parser.set_defaults(func=mongodb_command)
