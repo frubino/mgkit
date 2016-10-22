@@ -112,6 +112,14 @@ class GFFDB(object):
         """
         return self.convert_record(self.db.find_one(uid))
 
+    def __iter__(self):
+        """
+        .. versionadded:: 0.3.1
+
+        Iterates over all annotations
+        """
+        return self.values()
+
     def values(self):
         """
         .. versionadded:: 0.3.1
