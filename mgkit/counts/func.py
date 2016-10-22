@@ -7,6 +7,8 @@ Misc functions for count data
 import logging
 import itertools
 import functools
+from collections import Counter
+
 from mgkit.filter import taxon as tx_filters
 from mgkit.io import open_file
 import mgkit.simple_cache
@@ -666,3 +668,69 @@ def load_counts_from_gff(annotations, elem_func=lambda x: x.uid, sample_func=Non
         )
 
     return count_dict
+
+
+def from_gff(annotations, samples, ann_func=None, sample_func=None):
+    """
+    .. versionadded:: 0.3.1
+
+    Loads count data from a GFF file, only for the requested samples. By
+    default the function returns a DataFrame where the index is the *uid* of
+    each annotation and the columns the requested samples.
+
+    This can be customised by supplying *ann_func* and *sample_func*.
+    *sample_func* is a function that accept a sample name and is expected to
+    return a string or a tuple. This will be used to change the columns in the
+    DataFrame. *ann_func* must accept an :class:`mgkit.io.gff.Annotation`
+    instance and return an iterable, with each iteration yielding either a
+    single element or a tuple (for a MultiIndex DataFrame), each element
+    yielded will have the count of that annotation added to.
+
+    Arguments:
+        annotation (iterable): iterable yielding annotations
+        samples (iterable): list of samples to keep
+        ann_func (func): function used to customise the output
+        sample_func (func): function to customise the column elements
+
+    Returns:
+        DataFrame: dataframe with the count data, columns are the samples and
+        rows the annotation counts (unless mapped with *ann_func*)
+
+    Exmples:
+        Assuming we have a list of *annotations* and sample SAMPLE1 and SAMPLE2
+        we can obtain the count table for all annotations with this
+
+        >>> from_gff(annotations, ['SAMPLE1', 'SAMPLE2'])
+
+        Assuming we want to group the samples, for example treatment1,
+        treatment2 and control1, control2 into a MultiIndex DataFrame column
+
+        >>> sample_func = lambda x: ('T' if x.startswith('t') else 'C', x)
+        >>> from_gff(annotations, ['treatment1', 'treatment2', 'control1', 'control2'], sample_func=sample_func)
+
+        Annotations can be mapped to other levels for example instead of using
+        the *uid* that is the default, it can be mapped to the gene_id, taxon_id
+        information that is included in the annotation, resulting in a MultiIndex
+        index for the rows, with (gene_id, taxon_id) as key.
+
+        >>> ann_func = lambda x: [(x.gene_id, x.taxon_id)]
+        >>> from_gff(annotations, ['SAMPLE1', 'SAMPLE2'], ann_func=ann_func)
+    """
+    if ann_func is None:
+        ann_func = lambda x: (x.uid, )
+
+    if sample_func is None:
+        sample_func = lambda x: x
+
+    counters = {
+        sample_func(sample): Counter()
+        for sample in samples
+    }
+
+    for annotation in annotations:
+        for sample, count in annotation.counts.iteritems():
+            sample = sample_func(sample)
+            for ann_id in ann_func(annotation):
+                counters[sample][ann_id] += count
+
+    return pandas.DataFrame(counters)
