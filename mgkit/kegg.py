@@ -334,6 +334,128 @@ class KeggClientRest(object):
 
         return mappings
 
+    def find(self, query, database, options=None, strip=True):
+        """
+        .. versionadded:: 0.3.1
+
+        Kegg Help:
+
+        http://rest.kegg.jp/find/<database>/<query>
+
+        <database> = pathway | module | ko | genome | <org> | compound | glycan |
+                     reaction | rclass | enzyme | disease | drug | dgroup | environ |
+                     genes | ligand
+        <org> = KEGG organism code or T number
+
+        http://rest.kegg.jp/find/<database>/<query>/<option>
+
+        <database> = compound | drug
+        <option> = formula | exact_mass | mol_weight
+
+        Examples:
+            >>> kc = KeggClientRest()
+            >>> kc.find('CH4', 'compound')
+            {'C01438': 'Methane; CH4'}
+            >>> kc.find('K00844', 'genes', strip=False)
+            {'tped:TPE_0072': 'hexokinase; K00844 hexokinase [EC:2.7.1.1]',
+            ...
+            >>> kc.find('174.05', 'compound', options='exact_mass')
+            {'C00493': '174.052823',
+             'C04236': '174.052823',
+             'C16588': '174.052823',
+             'C17696': '174.052823',
+             'C18307': '174.052823',
+             'C18312': '174.052823',
+             'C21281': '174.052823'}
+        """
+
+        url = 'http://rest.kegg.jp/find/{}/{}/{}'.format(
+            database,
+            query,
+            '' if options is None else options
+        )
+
+        LOG.debug(url)
+
+        data = url_read(url, agent=self.contact)
+
+        mappings = {}
+        for line in data.splitlines():
+            target_id, description = line.rstrip().split('\t')
+
+            if strip:
+                target_id = target_id.split(':')[1]
+
+            mappings[target_id] = description
+
+        return mappings
+
+    def conv(self, target_db, source_db, strip=True):
+        """
+        .. versionadded:: 0.3.1
+
+        Kegg Help:
+
+        http://rest.kegg.jp/conv/<target_db>/<source_db>
+
+        (<target_db> <source_db>) = (<kegg_db> <outside_db>) | (<outside_db> <kegg_db>)
+
+        For gene identifiers:
+        <kegg_db> = <org>
+        <org> = KEGG organism code or T number
+        <outside_db> = ncbi-proteinid | ncbi-geneid | uniprot
+
+        For chemical substance identifiers:
+        <kegg_db> = drug | compound | glycan
+        <outside_db> = pubchem | chebi
+        http://rest.kegg.jp/conv/<target_db>/<dbentries>
+
+        For gene identifiers:
+        <dbentries> = database entries involving the following <database>
+        <database> = <org> | genes | ncbi-proteinid | ncbi-geneid | uniprot
+        <org> = KEGG organism code or T number
+
+        For chemical substance identifiers:
+        <dbentries> = database entries involving the following <database>
+        <database> = drug | compound | glycan | pubchem | chebi
+
+        Examples:
+            >>> kc = KeggClientRest()
+            >>> kc.conv('ncbi-geneid', 'eco')
+            {'eco:b0217': {'ncbi-geneid:949009'},
+             'eco:b0216': {'ncbi-geneid:947541'},
+             'eco:b0215': {'ncbi-geneid:946441'},
+             'eco:b0214': {'ncbi-geneid:946955'},
+             'eco:b0213': {'ncbi-geneid:944903'},
+            ...
+            >>> kc.conv('ncbi-proteinid', 'hsa:10458+ece:Z5100')
+            {'10458': {'NP_059345'}, 'Z5100': {'AAG58814'}}
+        """
+
+        url = 'http://rest.kegg.jp/conv/{}/{}/'.format(
+            target_db,
+            source_db,
+        )
+
+        LOG.debug(url)
+
+        data = url_read(url, agent=self.contact)
+
+        mappings = {}
+        for line in data.splitlines():
+            source_id, target_id = line.rstrip().split('\t')
+
+            if strip:
+                target_id = target_id.split(':')[1]
+                source_id = source_id.split(':')[1]
+
+            try:
+                mappings[source_id].add(target_id)
+            except KeyError:
+                mappings[source_id] = set([target_id])
+
+        return mappings
+
     # names #
 
     def get_ids_names(self, target='ko', strip=True):
