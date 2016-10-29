@@ -730,6 +730,8 @@ def from_gff(annotations, samples, ann_func=None, sample_func=None):
     for annotation in annotations:
         for sample, count in annotation.counts.iteritems():
             sample = sample_func(sample)
+            if sample not in counters:
+                continue
             for ann_id in ann_func(annotation):
                 counters[sample][ann_id] += count
 

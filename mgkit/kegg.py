@@ -9,6 +9,7 @@ import itertools
 from .utils import dictionary as dict_utils
 from .utils.common import deprecated
 from .net import uniprot, url_read
+from .io import open_file
 
 
 LOG = logging.getLogger(__name__)
@@ -192,6 +193,9 @@ class KeggPathway(object):
 
 class KeggClientRest(object):
     """
+    .. versionchanged:: 0.3.1
+        added a *cache* attribute for some methods
+
     Kegg REST client
 
     The class includes methods and data to use the REST API provided by Kegg.
@@ -216,10 +220,67 @@ class KeggClientRest(object):
     )
     id_prefix = {'C': 'cpd', 'k': 'map', 'K': 'ko', 'R': 'rn', 'm': 'path'}
 
+    cache = None
+
+    def __init__(self, cache=None):
+        """
+        .. versionadded:: 0.3.1
+
+        The "cache" parameter is a file name for the cached data wrote using
+        :meth:`KeggClientRest.write_cache`.
+        """
+
+        if cache is None:
+            self.empty_cache()
+        else:
+            self.load_cache(cache)
+
+    def empty_cache(self, methods=None):
+        """
+        .. versionadded:: 0.3.1
+
+        Empties the cache completely or for a specific method(s)
+
+        Arguments:
+            methods (iterable, str): string or iterable of strings that are
+                part of the cache. If None the cache is fully emptied
+        """
+
+        if methods is None:
+            methods = ('link_ids', 'get_entry', 'get_ids_names')
+        else:
+            if isinstance(methods, str):
+                methods = [methods]
+
+        if self.cache is None:
+            self.cache = {}
+
+        for method in methods:
+            self.cache[method] = {}
+
+    def load_cache(self, file_handle):
+        """
+        .. versionadded:: 0.3.1
+
+        Loads the cache from file
+        """
+        self.cache = pickle.load(open_file(file_handle, 'r'))
+
+    def write_cache(self, file_handle):
+        """
+        .. versionadded:: 0.3.1
+
+        Write the cache to file
+        """
+        pickle.dump(self.cache, open_file(file_handle, 'w'))
+
     # Kegg primitives #
 
     def link_ids(self, target, ids, strip=True, max_len=50):
         """
+        .. versionchanged:: 0.3.1
+            the output (if *strip* is True) is cached
+
         The method abstract the use of the 'link' operation in the Kegg API
 
         The target parameter can be one of the following::
@@ -241,21 +302,31 @@ class KeggClientRest(object):
         if isinstance(ids, (set, frozenset, dict)):
             ids = list(ids)
 
+        if strip:
+            try:
+                mapping = self.cache['link_ids'][target]
+            except KeyError:
+                mapping = {}
+                self.cache['link_ids'][target] = mapping
+        else:
+            mapping = {}
+
+        download_ids = list(set(ids) - set(mapping))
+
         data = []
-        for idx in range(0, len(ids), max_len):
-            if len(ids) > max_len:
+        for idx in range(0, len(download_ids), max_len):
+            if len(download_ids) > max_len:
                 LOG.info(
                     "Downloading links - range %d-%d",
                     idx + 1, idx + max_len
                 )
             url = "{0}link/{1}/{2}".format(
-                self.api_url, target, '+'.join(ids[idx:idx+max_len])
+                self.api_url, target, '+'.join(download_ids[idx:idx+max_len])
             )
             t_data = url_read(url, agent=self.contact)
             t_data = t_data.split('\n')
             data.extend(t_data)
 
-        mapping = {}
         for line in data:
             if not line:
                 continue
@@ -268,7 +339,14 @@ class KeggClientRest(object):
             except KeyError:
                 mapping[source] = [target]
 
-        return mapping
+        if strip:
+            return {
+                kegg_id: list(value)
+                for kegg_id, value in mapping.iteritems()
+                if kegg_id in ids
+            }
+        else:
+            return mapping
 
     def list_ids(self, k_id):
         """
@@ -291,17 +369,25 @@ class KeggClientRest(object):
 
     def get_entry(self, k_id, option=None):
         """
+        .. versionchanged:: 0.3.1
+            this is now cached
+
         The method abstract the use of the 'get' operation in the Kegg API
 
         :param str k_id: kegg id of the resource to get
         :param str option: optional, to specify a format
         """
-        url = "{0}get/{1}/{2}".format(
-            self.api_url,
-            k_id,
-            '' if option is None else option
-        )
-        data = url_read(url, agent=self.contact)
+        try:
+            data = self.cache['get_entry'][(k_id, option)]
+        except KeyError:
+            url = "{0}get/{1}/{2}".format(
+                self.api_url,
+                k_id,
+                '' if option is None else option
+            )
+            data = url_read(url, agent=self.contact)
+            self.cache['get_entry'][(k_id, option)] = data
+
         return data
 
     def link(self, target, source, options=None):
@@ -461,6 +547,9 @@ class KeggClientRest(object):
     def get_ids_names(self, target='ko', strip=True):
         """
         .. versionadded:: 0.1.13
+
+        .. versionchanged:: 0.3.1
+            the call is now cached
 
         Returns a dictionary with the names/description of all the id of a
         specific target, (ko, path, cpd, etc.)
