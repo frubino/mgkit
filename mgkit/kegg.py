@@ -305,13 +305,20 @@ class KeggClientRest(object):
         if strip:
             try:
                 mapping = self.cache['link_ids'][target]
+                LOG.debug('Cached Call')
             except KeyError:
+                LOG.debug('Empty Cache')
                 mapping = {}
                 self.cache['link_ids'][target] = mapping
         else:
             mapping = {}
 
         download_ids = list(set(ids) - set(mapping))
+        LOG.debug(
+            'Number of cached items (%d/%d)',
+            len(ids) - len(download_ids),
+            len(ids)
+        )
 
         data = []
         for idx in range(0, len(download_ids), max_len):
@@ -340,10 +347,13 @@ class KeggClientRest(object):
                 mapping[source] = [target]
 
         if strip:
+            # Empty (Not Found) elements, set to None
+            for kegg_id in set(ids) - set(mapping):
+                mapping[kegg_id] = None
             return {
                 kegg_id: list(value)
                 for kegg_id, value in mapping.iteritems()
-                if kegg_id in ids
+                if (kegg_id in ids) and (value is not None)
             }
         else:
             return mapping
