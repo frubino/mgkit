@@ -52,7 +52,12 @@ def cite(file_handle=sys.stderr):
 
 def check_version(version):
     if __version__ != version:
-        LOG.warning("This was tested with %s version %s", PKG_NAME, version)
+        LOG.warning(
+            "This was tested with %s version %s (%s was found)",
+            PKG_NAME,
+            version,
+            __version__
+        )
 
 
 class DependencyError(Exception):
