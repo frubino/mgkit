@@ -567,6 +567,13 @@ class KeggClientRest(object):
         If strip=True the id will stripped of the module abbreviation (e.g.
         md:M00002->M00002)
         """
+
+        if strip:
+            try:
+                return self.cache['get_ids_names'][target]
+            except KeyError:
+                LOG.debug('No cached values')
+
         id_names = {}
 
         for line in self.list_ids(target).splitlines():
@@ -574,6 +581,10 @@ class KeggClientRest(object):
             if strip:
                 kegg_id = kegg_id.split(':')[1]
             id_names[kegg_id] = name
+
+        if strip:
+            self.cache['get_ids_names'][target] = id_names.copy()
+
         return id_names
 
     @deprecated
