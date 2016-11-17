@@ -3,21 +3,31 @@
 Installation
 ============
 
-Preconfigured Virtual Machine
------------------------------
+Docker Instance (with Jupyter Notebook)
+---------------------------------------
 
-A preconfigured virtual machine instance (user: user, pass: user) has been configured using the instructions in :ref:`install-ubuntu` and the home directory contains the following directories:
+A preconfigured Docker instance (user: mgkit, no password) has been configured using the instructions in :ref:`install-ubuntu`, including more packages for testing, available at Docker Hub (frubino/mgkit)::
 
-	* mgkit-repo
-	* mgkit-docs
-	* mgkit-venv
-	* mgkit-tutorial
+	$ docker run -p 8881:8888 -v host-dir:/home/mgkit/notebooks/ -it frubino/mgkit
 
-**mgkit-repo** contains the repository cloned to the latest version. **mgkit-docs** contains the documentation, in both html and PDF, *docs-html* for the former and **mgkit-docs.pdf** for the latter. The installed and configured virtual environment is in **mgkit-venv** and can be activated using this command::
+This command (assuming that Docker is already installed), will pull the instance and present with a bash terminal. IPython and Jupyter are installed and can be used. For a recap of the options:
 
-	$ source $HOME/mgkit-venv/bin/activate
+* `-p 8888:8888` instruct to open the port 8888 on the host
+* `-v` mount the directory `host-dir` into the virtual machine */home/mgkit/notebooks/* directory
+* `-it` opens an interactive shell
 
-The last directory, **mgkit-tutorial**, contains the scripts to run the tutorial.
+The port to open is port 8881 on the host for using the Jupyter Notebook. The port can be change to what best fits the user. The same applies to the working directory.
+
+After entering the virtual machine prompt, the command that is to be used to launch the notebook is::
+
+	$ jupyter notebook --ip=0.0.0.0
+
+After which in a browser it will possible to access it at *localhost:8881*.
+
+.. note::
+
+	The Dockerfile used to build the instance is available in the repository at: docs/source/extra/Dockerfile
+
 
 Requirements
 ------------
@@ -56,17 +66,17 @@ The optional dependencies includes:
 
 .. _install-ubuntu:
 
-Installing on Ubuntu Server 10.04.3
------------------------------------
+Installing on Ubuntu Server 16.04
+---------------------------------
 
 You'll need to install the following packages with `apt-get`::
 
-	$ apt-get install velvet bowtie2 python-pip python \
+	$ apt-get install -y velvet bowtie2 python-pip python \
 	  virtualenv python-dev zlib1g-dev libblas-dev \
 	  liblapack-dev gfortran libfreetype6-dev libpng-dev \
 	  fontconfig pkg-config
 
-Create a virtual environment to ensure that the correct library versions are installed as explained in :ref:`install-virtualenv`
+Create a virtual environment to ensure that the correct library versions are installed as explained in :ref:`install-virtualenv`.
 
 Using pip
 ---------
