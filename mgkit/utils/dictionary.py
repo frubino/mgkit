@@ -5,6 +5,26 @@ Dictionary utils
 import numpy
 
 
+def merge_dictionaries(dicts):
+    """
+    .. versionadded:: 0.3.1
+
+    Merges keys and values from a list/iterable of dictionaries. The resulting
+    dictionary's values are converted into sets, with the assumption that the
+    values are one of the following: float, str, int, bool
+    """
+    merged = {}
+    for d in dicts:
+        for key, value in d.iteritems():
+            if isinstance(value, (float, str, int, bool)):
+                value = [value]
+            try:
+                merged[key].update(value)
+            except KeyError:
+                merged[key] = set(value)
+    return merged
+
+
 def combine_dict(keydict, valuedict):
     """
     Combine two dictionaries when the values of keydict are iterables. The

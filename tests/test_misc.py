@@ -3,7 +3,7 @@ from nose.tools import eq_
 from mgkit.utils.common import average_length, between, union_range, \
     range_intersect
 from mgkit.utils.dictionary import find_id_in_dict, combine_dict, \
-    reverse_mapping, link_ids, combine_dict_one_value
+    reverse_mapping, link_ids, combine_dict_one_value, merge_dictionaries
 
 
 def test_avg_len1():
@@ -218,4 +218,25 @@ def test_range_intersect_fail1():
     eq_(
         range_intersect(*(range1 + range2)),
         None
+    )
+
+
+def test_merge_dictionaries():
+
+    res = merge_dictionaries(
+        [
+            {
+                1: xrange(5)
+            },
+            {
+                1: range(8)
+            },
+            {
+                1: 9
+            }
+        ]
+    )
+    eq_(
+        res,
+        {1: {0, 1, 2, 3, 4, 5, 6, 7, 9}}
     )
