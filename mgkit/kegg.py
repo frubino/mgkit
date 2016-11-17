@@ -4,6 +4,7 @@ Module containing classes and functions to access Kegg data
 
 import logging
 import pickle
+import random
 import re
 import itertools
 from .utils import dictionary as dict_utils
@@ -276,10 +277,10 @@ class KeggClientRest(object):
 
     # Kegg primitives #
 
-    def link_ids(self, target, ids, strip=True, max_len=50):
+    def link_ids(self, target, kegg_ids, max_len=50):
         """
         .. versionchanged:: 0.3.1
-            the output (if *strip* is True) is cached
+            removed *strip* and cached the results
 
         The method abstract the use of the 'link' operation in the Kegg API
 
@@ -297,66 +298,67 @@ class KeggClientRest(object):
             request, should not exceed 50
         :return dict: dictionary mapping requested id to target id(s)
         """
-        if isinstance(ids, str):
-            ids = [ids]
-        if isinstance(ids, (set, frozenset, dict)):
-            ids = list(ids)
+        if isinstance(kegg_ids, str):
+            kegg_ids = [kegg_ids]
 
-        if strip:
-            try:
-                mapping = self.cache['link_ids'][target]
-                LOG.debug('Cached Call')
-            except KeyError:
-                LOG.debug('Empty Cache')
-                mapping = {}
-                self.cache['link_ids'][target] = mapping
-        else:
+        if isinstance(kegg_ids, (list, dict)):
+            kegg_ids = set(kegg_ids)
+
+        try:
+            mapping = self.cache['link_ids'][target]
+            LOG.debug('Cached Call')
+        except KeyError:
+            LOG.debug('Empty Cache')
             mapping = {}
+            self.cache['link_ids'][target] = mapping
 
-        download_ids = list(set(ids) - set(mapping))
+        download_ids = kegg_ids - set(mapping)
         LOG.debug(
             'Number of cached items (%d/%d)',
-            len(ids) - len(download_ids),
-            len(ids)
+            len(kegg_ids) - len(download_ids),
+            len(kegg_ids)
         )
 
-        data = []
-        for idx in range(0, len(download_ids), max_len):
-            if len(download_ids) > max_len:
+        while download_ids:
+            try:
+                sample_ids = set(random.sample(download_ids, max_len))
+            except ValueError:
+                # download_ids size is less than max_len
+                sample_ids = download_ids.copy()
+            if len(kegg_ids) > max_len:
                 LOG.info(
-                    "Downloading links - range %d-%d",
-                    idx + 1, idx + max_len
+                    "Downloading links - %d out of %d",
+                    len(kegg_ids) - len(download_ids), len(kegg_ids)
                 )
             url = "{0}link/{1}/{2}".format(
-                self.api_url, target, '+'.join(download_ids[idx:idx+max_len])
+                self.api_url, target, '+'.join(sample_ids)
             )
-            t_data = url_read(url, agent=self.contact)
-            t_data = t_data.split('\n')
-            data.extend(t_data)
+            data = url_read(url, agent=self.contact)
+            data = data.split('\n')
 
-        for line in data:
-            if not line:
-                continue
-            source, target = line.split()
-            if strip:
+            for line in data:
+                if not line:
+                    continue
+                source, linked = line.split('\t')
                 source = source.split(':')[1]
-                target = target.split(':')[1]
-            try:
-                mapping[source].append(target)
-            except KeyError:
-                mapping[source] = [target]
+                linked = linked.split(':')[1]
 
-        if strip:
-            # Empty (Not Found) elements, set to None
-            for kegg_id in set(ids) - set(mapping):
-                mapping[kegg_id] = None
-            return {
-                kegg_id: list(value)
-                for kegg_id, value in mapping.iteritems()
-                if (kegg_id in ids) and (value is not None)
-            }
-        else:
-            return mapping
+                try:
+                    mapping[source].append(linked)
+                except KeyError:
+                    mapping[source] = [linked]
+
+            download_ids = download_ids - sample_ids
+
+        # Empty (Not Found) elements, set to None
+        for kegg_id in kegg_ids - set(mapping):
+            mapping[kegg_id] = None
+
+        return {
+            kegg_id: list(value)
+            for kegg_id, value in mapping.iteritems()
+            if (kegg_id in kegg_ids) and (value is not None)
+        }
 
     def list_ids(self, k_id):
         """
@@ -570,9 +572,9 @@ class KeggClientRest(object):
 
         if strip:
             try:
-                return self.cache['get_ids_names'][target]
+                return self.cache['get_ids_names'][target].copy()
             except KeyError:
-                LOG.debug('No cached values')
+                LOG.debug('No cached values for "%s"', target)
 
         id_names = {}
 
@@ -1446,7 +1448,7 @@ class KeggModule(object):
         return sub_modules
 
 
-def parse_reaction(line):
+def parse_reaction(line, prefix=('C', 'G')):
     """
     .. versionadded:: 0.3.1
     """

@@ -3,44 +3,44 @@ from mgkit import kegg
 import misc_data
 
 
-@with_setup(setup=misc_data.setup_keggmod_data)
-def test_keggmod_parse1():
-    km = kegg.KeggModule(misc_data.KEGGMOD_FILE)
-    cpd = ['C00014', 'C00192', 'C00088']
-    name = 'Nitrification, ammonia => nitrite'
-    reactions = [
-        (
-            ('K10944', 'K10945', 'K10946'),
-            ('C00014', 'C00192')
-        ),
-        (
-            ('K10535',),
-            ('C00192', 'C00088')
-        )
-    ]
-    eq_(
-        [km.name, km.compounds, km.reactions],
-        [name, cpd, reactions]
-    )
+# @with_setup(setup=misc_data.setup_keggmod_data)
+# def test_keggmod_parse1():
+#     km = kegg.KeggModule(misc_data.KEGGMOD_FILE)
+#     cpd = ['C00014', 'C00192', 'C00088']
+#     name = 'Nitrification, ammonia => nitrite'
+#     reactions = [
+#         (
+#             ('K10944', 'K10945', 'K10946'),
+#             ('C00014', 'C00192')
+#         ),
+#         (
+#             ('K10535',),
+#             ('C00192', 'C00088')
+#         )
+#     ]
+#     eq_(
+#         [km.name, km.compounds, km.reactions],
+#         [name, cpd, reactions]
+#     )
 
 
-@with_setup(setup=misc_data.setup_keggmod_data)
-def test_keggmod_parse2():
-    km = kegg.KeggModule(misc_data.KEGGMOD_FILE)
-    edges = [
-        ('C00014', 'K10944'),
-        ('K10944', 'C00192'),
-        ('C00014', 'K10945'),
-        ('K10945', 'C00192'),
-        ('C00014', 'K10946'),
-        ('K10946', 'C00192'),
-        ('C00192', 'K10535'),
-        ('K10535', 'C00088')
-    ]
-    eq_(
-        list(km.to_edges()),
-        edges
-    )
+# @with_setup(setup=misc_data.setup_keggmod_data)
+# def test_keggmod_parse2():
+#     km = kegg.KeggModule(misc_data.KEGGMOD_FILE)
+#     edges = [
+#         ('C00014', 'K10944'),
+#         ('K10944', 'C00192'),
+#         ('C00014', 'K10945'),
+#         ('K10945', 'C00192'),
+#         ('C00014', 'K10946'),
+#         ('K10946', 'C00192'),
+#         ('C00192', 'K10535'),
+#         ('K10535', 'C00088')
+#     ]
+#     eq_(
+#         list(km.to_edges()),
+#         edges
+#     )
 
 
 def test_keggclient_link1():
