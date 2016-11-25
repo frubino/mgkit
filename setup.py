@@ -1,6 +1,21 @@
 import sys
+import os
 # import ez_setup
 # ez_setup.use_setuptools()
+from distutils.extension import Extension
+
+try:
+    USE_CYTHON = os.environ['USE_CYTHON']
+    USE_CYTHON = True
+except KeyError:
+    USE_CYTHON = False
+
+ext = '.pyx' if USE_CYTHON else '.c'
+extensions = [Extension("mgkit.utils._sequence", ["mgkit/utils/_sequence" + ext])]
+
+if USE_CYTHON:
+    from Cython.Build import cythonize
+    extensions = cythonize(extensions)
 
 __VERSION__ = "0.3.0"
 
@@ -8,6 +23,7 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'numpy>=1.9.2',
+    'pandas>=0.18'
     #'goatools',
 ]
 
@@ -28,7 +44,6 @@ extras_require = {
     'R': 'rpy2>=2.3.8',
     'extra_scripts': [
         'pysam>=0.8.2.1',
-        'pandas>=0.16.2'
     ],
 }
 
@@ -93,5 +108,6 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
-    ]
+    ],
+    ext_modules=extensions
 )

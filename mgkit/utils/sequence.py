@@ -1,5 +1,11 @@
 """
 Module containing functions related to sequence data
+
+.. note::
+
+    For those functions without a docstring, look at the same with a
+    underscore ('_') prepended.
+
 """
 from __future__ import division  # add check to use only on python 2.x
 
@@ -13,6 +19,8 @@ from ..utils.common import between
 from .trans_tables import UNIVERSAL
 import collections
 from ..io import fasta
+from ._sequence import get_kmers, sliding_window, sequence_signature, \
+    signatures_matrix
 
 LOG = logging.getLogger(__name__)
 
@@ -655,7 +663,7 @@ def get_contigs_info(file_name, pp=False):
     return info
 
 
-def sliding_window(seq, size, step=None):
+def _sliding_window(seq, size, step=None):
     """
     .. versionadded:: 0.2.6
 
@@ -675,7 +683,7 @@ def sliding_window(seq, size, step=None):
         yield seq[index:index+size]
 
 
-def get_kmers(seq, k):
+def _get_kmers(seq, k):
     """
     .. versionadded:: 0.2.6
 
@@ -692,7 +700,7 @@ def get_kmers(seq, k):
         yield seq[index:index+k]
 
 
-def sequence_signature(seq, w_size, k_size=4, step=None):
+def _sequence_signature(seq, w_size, k_size=4, step=None):
     """
     .. versionadded:: 0.2.6
 
@@ -719,7 +727,7 @@ def sequence_signature(seq, w_size, k_size=4, step=None):
     return kmer_counts
 
 
-def signatures_matrix(seqs, w_size, k_size=4, step=None):
+def _signatures_matrix(seqs, w_size, k_size=4, step=None):
     """
     .. versionadded:: 0.2.6
 
