@@ -1647,6 +1647,57 @@ def annotation_coverage(annotations, seqs, strand=True):
         yield key, covered / seq_len * 100
 
 
+def annotation_coverage_sorted(annotations, seqs, strand=True):
+    """
+    .. versionadded:: 0.3.1
+
+    Given a list of annotations and a dictionary where the keys are the
+    sequence names referred in the annotations and the values are the sequences
+    themselves, returns a number which indicated how much the sequence length
+    is "covered" in annotations. If *strand* is True the coverage is strand
+    specific.
+
+    .. note::
+
+        It differs from :func:`annotation_coverage` because it assumes the
+        annotations are correctly sorted and in the values yielded
+
+    Arguments:
+        annotations (iterable): iterable of :class:`Annotation` instances
+        seqs (dict): dictionary in which the keys are the sequence names and
+            the values are the sequences
+        strand (bool): if True, the values are strand specific (the
+            annotations) are grouped by (seq_id, strand) instead of seq_id
+
+    Yields:
+        tuple: the first element is the seq_id, the second the strand (if
+        strand is True, else it's set to *None*), and the third element is the
+        coverage.
+    """
+
+    if strand:
+        key_func = lambda x: (x.seq_id, x.strand)
+    else:
+        key_func = lambda x: x.seq_id
+
+    annotations = group_annotations_sorted(
+        annotations,
+        key_func=key_func
+    )
+
+    for ann in annotations:
+        seq_id = ann[0].seq_id
+        if strand:
+            ann_strand = ann[0].strand
+        else:
+            ann_strand = None
+        seq_len = len(seqs[seq_id])
+
+        covered = ranges_length(elongate_annotations(ann))
+
+        yield seq_id, ann_strand, covered / seq_len * 100
+
+
 def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
     """
     .. versionadded:: 0.1.12
