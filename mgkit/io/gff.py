@@ -563,11 +563,18 @@ class Annotation(GenomicRange):
 
         return "{0}\t{1}\n".format(values, attr_column)
 
-    def to_json(self):
+    def to_dict(self, exclude_attr=None):
         """
-        .. versionadded:: 0.2.1
+        .. versionadded:: 0.3.1
 
-        Returns a json representation of the Annotation
+        Return a dictionary representation of the Annotation.
+
+        Arguments:
+            exclude_attr (str,list): attributes to exclude from the dictionary,
+                can be either a single attribute (string) or a list of strings
+
+        Returns:
+            dict: dictionary with the annotation
         """
         var_names = (
             'seq_id', 'source', 'feat_type', 'start', 'end',
@@ -581,7 +588,26 @@ class Annotation(GenomicRange):
 
         dictionary.update(self.attr)
 
-        return json.dumps(dictionary, separators=(',', ':'))
+        if exclude_attr is not None:
+            if isinstance(exclude_attr, str):
+                exclude_attr = [exclude_attr]
+
+            for attr in exclude_attr:
+                del dictionary[attr]
+
+        return dictionary
+
+    def to_json(self):
+        """
+        .. versionadded:: 0.2.1
+
+        .. versionchanged:: 0.3.1
+            now :meth:`Annotation.to_dict` is used
+
+        Returns a json representation of the Annotation
+        """
+
+        return json.dumps(self.to_dict(), separators=(',', ':'))
 
     def to_mongodb(self, lineage_func=None, indent=None):
         """
