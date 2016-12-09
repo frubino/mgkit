@@ -11,6 +11,7 @@ from .. import DependencyError
 try:
     import matplotlib.pyplot as plt
     from matplotlib.gridspec import GridSpec
+    from matplotlib import patches as mpatches
 except ImportError:
     raise DependencyError('matplotlib')
 
@@ -57,4 +58,25 @@ def get_grid_figure(rows, cols, dpi=300, figsize=(10, 20), **kwd):
     return fig, gs
 
 
-__all__ = ['get_grid_figure', 'get_single_figure']
+def legend_patches(labels, colors):
+    """
+    .. versionadded:: 0.3.1
+
+    Makes handles (using matplotlib Patch) that can be passed to the legend
+    method of a matplotlib axes instance
+
+    Arguments:
+        labels (iterable): iterable that yields a label
+        colors (iterable): iterable that yields a valid matplotlib color
+
+    Returns:
+        list: list of patches that can be passed to the `handles` parameter in
+        the `ax.legend` method
+    """
+    return [
+        mpatches.Patch(color=color, label=label)
+        for label, color in zip(labels, colors)
+    ]
+
+
+__all__ = ['get_grid_figure', 'get_single_figure', 'legend_patches']
