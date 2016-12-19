@@ -6,8 +6,15 @@
 # processed to remove the first line and saved in a file that can be used
 # with *add-gff-info addtaxa*, with the *-t* option.
 
+if [ -z "$1" ];
+	then
+		ARG=ALL
+	else
+		ARG=$1
+fi
+
 # checks if a file name for the output file was passed as argument
-if [ `echo "$1" | tr '[:lower:]' '[:upper:]'` = "SP" ];
+if [ `echo "$ARG" | tr '[:lower:]' '[:upper:]'` = "SP" ];
 	then
 		REVIEWED=yes
 		echo "Downloading only SwissProt Taxa IDs"

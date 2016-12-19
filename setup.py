@@ -67,6 +67,7 @@ setup(
         # 'bin/snp_analysis.py',
         'scripts/download-taxonomy.sh',
         'scripts/download-uniprot-taxa.sh',
+        'scripts/download-ncbi-taxa.sh',
     ],
     tests_require=['nose>=1.3.4', 'yanc'],
     extras_require=extras_require,
