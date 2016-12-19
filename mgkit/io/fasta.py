@@ -64,6 +64,21 @@ def load_fasta(f_handle):
     LOG.info("Read %d fasta sequences", nseq)
 
 
+def load_fasta_rename(file_handle, name_func=None):
+    """
+    .. versionadded:: 0.3.1
+
+    Renames the header of the sequences using *name_func*, which is called on
+    each header. By default, the behaviour is to keep the header to the left of
+    the first space (BLAST behaviour).
+    """
+    if name_func is None:
+        name_func = lambda x: x.split(' ')[0]
+
+    for seq_id, seq in load_fasta(file_handle):
+        yield name_func(seq_id), seq
+
+
 def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
     """
     Write a fasta sequence to file. If the *file_handle* is a string, the file
