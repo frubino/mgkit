@@ -215,6 +215,8 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         getattr(file_handle, 'name', repr(file_handle))
     )
 
+    lineno = 0
+
     for lineno, line in enumerate(file_handle):
         if line.startswith('#'):
             continue
