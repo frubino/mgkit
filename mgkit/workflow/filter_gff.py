@@ -131,6 +131,14 @@ bitscore and identity. The file can be passed as sorted already, saving memory
 (like in the *overlap* command), but it's not needed to sort the file by strand,
 only by the first column.
 
+Coverage Filtering
+******************
+
+The *cov* command calculates the coverage of annotations as a measure of the
+percentage of each reference sequence length. A minimum coverage percentage can
+be used to keep the annotations of sequences that have a greater or equal
+coverage than the specified one.
+
 Changes
 *******
 
@@ -150,9 +158,10 @@ Changes
     comparison for command *sequence*, *--sort-attr* to *overlap*
 
 .. versionchanged:: 0.3.1
-    added *--num-gt* and *--num-lt* to *values* command
+    added *--num-gt* and *--num-lt* to *values* command, added *cov* command
 
 """
+from __future__ import division
 
 import sys
 import argparse
@@ -163,8 +172,9 @@ import pandas
 
 from .. import logger
 from . import utils
-from ..io import gff
+from ..io import gff, fasta
 from ..filter import gff as filter_gff
+from ..utils.common import ranges_length
 
 LOG = logging.getLogger(__name__)
 
@@ -576,6 +586,82 @@ def filter_perseq(options):
                 annotation.to_file(options.output_file)
 
 
+def set_coverage_parser(parser):
+    parser.add_argument(
+        '-f',
+        '--reference',
+        type=argparse.FileType('r'),
+        required=True,
+        help='Reference FASTA file for the GFF'
+    )
+    parser.add_argument(
+        '-s',
+        '--strand-specific',
+        action='store_true',
+        default=False,
+        help='If the coverage must be calculated on each strand'
+    )
+    parser.add_argument(
+        '-t',
+        '--sorted',
+        action='store_true',
+        default=False,
+        help='Assumes the GFF to be correctly sorted'
+    )
+    parser.add_argument(
+        '-c',
+        '--min-coverage',
+        action='store',
+        default=0.,
+        type=float,
+        help='Minimum coverage for the contig/strand'
+    )
+
+    common_options(parser)
+
+    parser.set_defaults(func=coverage_command)
+
+
+def coverage_command(options):
+    LOG.info(
+        'Writing to file (%s)',
+        getattr(options.output_file, 'name', repr(options.output_file))
+    )
+
+    file_iterator = gff.parse_gff(options.input_file, gff_type=gff.from_gff)
+
+    if options.strand_specific:
+        key_func = lambda x: (x.seq_id, x.strand)
+    else:
+        key_func = lambda x: x.seq_id
+
+    if options.sorted:
+        LOG.info("Input GFF is assumed sorted")
+        grouped = gff.group_annotations_sorted(
+            file_iterator, key_func
+        )
+    else:
+        grouped = gff.group_annotations(
+            file_iterator, key_func
+        ).itervalues()
+
+    sequences = {
+        seq_id: len(seq)
+        for seq_id, seq in fasta.load_fasta(options.reference)
+    }
+
+    for annotations in grouped:
+        covered = ranges_length(
+            gff.elongate_annotations(annotations)
+        ) / sequences[annotations[0].seq_id] * 100
+
+        if covered < options.min_coverage:
+            continue
+
+        for annotation in annotations:
+            annotation.to_file(options.output_file)
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -609,6 +695,14 @@ def set_parser():
 
     set_perseq_parser(parser_perseq)
     utils.add_basic_options(parser_perseq, manual=__doc__)
+
+    parser_coverage = subparsers.add_parser(
+        'cov',
+        help='Filter on a per coverage basis'
+    )
+
+    set_coverage_parser(parser_coverage)
+    utils.add_basic_options(parser_coverage, manual=__doc__)
 
     utils.add_basic_options(parser, manual=__doc__)
 
