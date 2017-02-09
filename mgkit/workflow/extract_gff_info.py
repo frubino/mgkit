@@ -42,8 +42,27 @@ split command
 Splits a GFF file into smaller chunks, ensuring that all of a sequence
 annotations are in the same file.
 
+cov command
+***********
+
+Calculate annotation coverage for each contig in a GFF file. The command can be
+run as strand specific (not by default) and requires the reference file to
+which the annotation refer to. The output file is a tab separated one, with the
+first column being the sequence name, the second is the strand (+, -, or NA if
+not strand specific) and the third is the percentage of the sequence covered by
+annotations.
+
+.. warning::
+
+    The GFF file is assumed to be sorted, by sequence or sequence-strand if
+    wanted. The GFF file can be sorted using `sort -s -k 1,1 -k 7,7` for strand
+    specific, or `sort -s -k 1,1` if not strand specific.
+
 Changes
 *******
+
+.. versionchanged:: 0.3.1
+    added *cov* command
 
 .. versionchanged:: 0.3.0
     added *--split* option to *sequence* command
@@ -316,6 +335,55 @@ def split_command(options):
     )
 
 
+def set_coverage_parser(parser):
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        type=argparse.FileType('r'),
+        default='-',
+        help='Input GFF file, defaults to stdin'
+    )
+    parser.add_argument(
+        'output_file',
+        nargs='?',
+        type=argparse.FileType('w'),
+        default='-',
+        help='Output file (tab separated), defaults to stdout'
+    )
+    parser.add_argument(
+        '-f',
+        '--reference',
+        type=argparse.FileType('r'),
+        required=True,
+        help='Reference FASTA file for the GFF'
+    )
+    parser.add_argument(
+        '-s',
+        '--strand-specific',
+        action='store_true',
+        default=False,
+        help='If the coverage must be calculated on each strand'
+    )
+    parser.set_defaults(func=coverage_command)
+
+
+def coverage_command(options):
+    sequences = dict(fasta.load_fasta(options.reference))
+    iterator = gff.annotation_coverage_sorted(
+        gff.parse_gff(options.input_file),
+        sequences,
+        strand=options.strand_specific
+    )
+    for seq_id, strand, coverage in iterator:
+        options.output_file.write(
+            "{}\t{}\t{}\n".format(
+                seq_id,
+                "NA" if strand is None else strand,
+                coverage
+            )
+        )
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -369,6 +437,14 @@ def set_parser():
 
     set_split_parser(parser_split)
     utils.add_basic_options(parser_split, manual=__doc__)
+
+    parser_coverage = subparsers.add_parser(
+        'cov',
+        help='Report on how much a sequence length is covered by annotations'
+    )
+
+    set_coverage_parser(parser_coverage)
+    utils.add_basic_options(parser_coverage, manual=__doc__)
 
     utils.add_basic_options(parser, manual=__doc__)
 
