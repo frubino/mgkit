@@ -345,11 +345,17 @@ class Annotation(GenomicRange):
     @property
     def taxon_id(self):
         """
+        .. versionchanged:: 0.3.1
+            if taxon_id is set to "None" as a string, it's converted to *None*
+
         taxon_id of the annotation
         """
-        value = self.attr.get('taxon_id', None)
-
-        return None if value is None else int(value)
+        value = self.attr.get('taxon_id', "None")
+        if value == "None":
+            value = None
+        else:
+            value = int(value)
+        return value
 
     @taxon_id.setter
     def taxon_id(self, value):
