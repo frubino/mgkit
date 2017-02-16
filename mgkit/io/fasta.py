@@ -79,6 +79,37 @@ def load_fasta_rename(file_handle, name_func=None):
         yield name_func(seq_id), seq
 
 
+def load_fasta_prodigal(file_handle):
+    """
+    .. versionadded:: 0.3.1
+
+    Reads a Prodigal aminoacid fasta file and yields a dictionary with
+    basic information about the sequences.
+
+    Arguments:
+        file_handle (str, file): passed to :func:`load_fasta`
+
+    Yields:
+        dict: dictionary with the information contained in the header, the last
+        of the attributes put into key *attr*, while the rest are transformed
+        to other keys: seq_id, seq, start, end (genomic), strand, ordinal of
+    """
+
+    for seq_id, seq in load_fasta(file_handle):
+        seq_id, start, end, strand, attr = seq_id.split(' # ')
+        seq_id, idx = seq_id.rsplit('_', 1)
+
+        yield dict(
+            seq_id=seq_id,
+            seq=seq,
+            start=int(start),
+            end=int(end),
+            strand='+' if strand == '1' else '-',
+            idx=int(idx),
+            attr=attr
+        )
+
+
 def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
     """
     Write a fasta sequence to file. If the *file_handle* is a string, the file
