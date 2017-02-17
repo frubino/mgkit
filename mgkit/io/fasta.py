@@ -96,10 +96,11 @@ def load_fasta_prodigal(file_handle):
     """
 
     for seq_id, seq in load_fasta(file_handle):
-        seq_id, start, end, strand, attr = seq_id.split(' # ')
-        seq_id, idx = seq_id.rsplit('_', 1)
+        prod_seq_id, start, end, strand, attr = seq_id.split(' # ')
+        seq_id, idx = prod_seq_id.rsplit('_', 1)
 
         yield dict(
+            prod_seq_id=prod_seq_id,
             seq_id=seq_id,
             seq=seq,
             start=int(start),
