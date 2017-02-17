@@ -90,6 +90,9 @@ in NCBI taxonomy (also Uniprot).
 Changes
 *******
 
+.. versionchanged:: 0.3.1
+    added *-j* option to *lca*, which outputs a JSON file with the LCA results
+
 .. versionchanged:: 0.3.0
     added *-k* and *-kt* options for Krona output, lineage now includes the LCA
     also added *-a* option to select between lineages with only ranked taxa.
@@ -106,6 +109,7 @@ import sys
 import argparse
 import logging
 import functools
+import json
 
 import mgkit
 from . import utils
@@ -161,13 +165,6 @@ def set_lca_contig_parser(parser):
         help='Minimum bitscore accepted'
     )
     parser.add_argument(
-        '-r',
-        '--reference',
-        default=None,
-        type=argparse.FileType('r'),
-        help='Reference file for the GFF, if supplied a GFF file is the output'
-    )
-    parser.add_argument(
         '-s',
         '--sorted',
         action='store_true',
@@ -192,12 +189,27 @@ def set_lca_contig_parser(parser):
         type=str,
         help='Feature type used if the output is a GFF (default is *LCA*)'
     )
-    parser.add_argument(
+    output_type = parser.add_mutually_exclusive_group(required=False)
+    output_type.add_argument(
+        '-r',
+        '--reference',
+        default=None,
+        type=argparse.FileType('r'),
+        help='Reference file for the GFF, if supplied a GFF file is the output'
+    )
+    output_type.add_argument(
         '-k',
         '--krona',
         action='store_true',
         default=False,
         help='Output a file that can be read by Krona (text)',
+    )
+    output_type.add_argument(
+        '-j',
+        '--json',
+        action='store_true',
+        default=False,
+        help='If used, the output is a JSON file with the LCA information'
     )
     parser.add_argument(
         '-kt',
@@ -277,6 +289,24 @@ def write_krona(file_handle, taxonomy, taxon_id, only_ranked):
     )
 
 
+def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
+    if taxon_id is None:
+        lineage = ""
+    else:
+        lineage = taxon.get_lineage(
+            taxonomy,
+            taxon_id,
+            names=True,
+            only_ranked=only_ranked,
+            with_last=True
+        )
+
+    lca_dict[seq_id] = dict(
+        taxon_id=taxon_id,
+        lineage=';'.join(lineage),
+    )
+
+
 def lca_contig_command(options):
     LOG.info(
         'Writing to file (%s)',
@@ -320,6 +350,7 @@ def lca_contig_command(options):
         ).itervalues()
 
     count = 0
+    lca_dict = {}
     for seq_ann in annotations:
         count += 1
         seq_id = seq_ann[0].seq_id
@@ -369,6 +400,14 @@ def lca_contig_command(options):
                 taxon_id,
                 options.only_ranked
             )
+        elif options.json:
+            write_json(
+                lca_dict,
+                seq_id,
+                taxonomy,
+                taxon_id,
+                options.only_ranked
+            )
         else:
             write_lca_tab(
                 options.output_file,
@@ -381,6 +420,9 @@ def lca_contig_command(options):
     if options.krona and (options.krona_total is not None):
         for index in xrange(count, options.krona_total):
             options.output_file.write('Unknown\n')
+
+    if options.json:
+        json.dump(lca_dict, options.output_file, indent=4)
 
 
 def set_lca_line_parser(parser):
