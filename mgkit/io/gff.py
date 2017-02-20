@@ -350,11 +350,11 @@ class Annotation(GenomicRange):
 
         taxon_id of the annotation
         """
-        value = self.attr.get('taxon_id', "None")
-        if value == "None":
-            value = None
-        else:
+        value = self.attr.get('taxon_id', None)
+        try:
             value = int(value)
+        except TypeError:
+            value = None
         return value
 
     @taxon_id.setter
