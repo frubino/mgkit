@@ -88,6 +88,7 @@ import sys
 import argparse
 import logging
 import functools
+import json
 
 import mgkit
 from . import utils
@@ -357,31 +358,58 @@ def set_coverage_parser(parser):
         required=True,
         help='Reference FASTA file for the GFF'
     )
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument(
+        '-j',
+        '--json',
+        action='store_true',
+        default=False,
+        help='The output will be a JSON dictionary'
+    ),
+    group.add_argument(
         '-s',
         '--strand-specific',
         action='store_true',
         default=False,
         help='If the coverage must be calculated on each strand'
     )
+    parser.add_argument(
+        '-r',
+        '--rename',
+        action='store_true',
+        default=False,
+        help='Emulate BLAST output (use only the header part before the' +
+        ' first space)'
+    )
     parser.set_defaults(func=coverage_command)
 
 
 def coverage_command(options):
-    sequences = dict(fasta.load_fasta(options.reference))
+    sequences = dict(
+        fasta.load_fasta_rename(options.reference) if options.rename else fasta.load_fasta(options.reference)
+    )
     iterator = gff.annotation_coverage_sorted(
         gff.parse_gff(options.input_file),
         sequences,
         strand=options.strand_specific
     )
+
+    contig_coverage = {}
+
     for seq_id, strand, coverage in iterator:
-        options.output_file.write(
-            "{}\t{}\t{}\n".format(
-                seq_id,
-                "NA" if strand is None else strand,
-                coverage
+        if options.json:
+            contig_coverage[seq_id] = coverage
+        else:
+            options.output_file.write(
+                "{}\t{}\t{}\n".format(
+                    seq_id,
+                    "NA" if strand is None else strand,
+                    coverage
+                )
             )
-        )
+
+    if options.json:
+        json.dump(contig_coverage, options.output_file, indent=4)
 
 
 def set_parser():
