@@ -68,6 +68,7 @@ setup(
         'scripts/download-taxonomy.sh',
         'scripts/download-uniprot-taxa.sh',
         'scripts/download-ncbi-taxa.sh',
+        'scripts/sort-gff.sh',
     ],
     tests_require=['nose>=1.3.4', 'yanc'],
     extras_require=extras_require,
