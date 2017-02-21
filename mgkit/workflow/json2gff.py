@@ -11,6 +11,13 @@ Annotations converted into MongoDB records with *get-gff-info mongodb* can be
 converted back into a GFF file using this command. It can be useful to get a
 GFF file as output from a query to a MongoDB instance on the command line.
 
+For example:
+
+mongoexport -d db -c test | json2gff mongodb
+
+will convert all the annotations in the database *db*, collection *test* to
+the standard out.
+
 """
 
 from __future__ import division
