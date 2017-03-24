@@ -673,6 +673,21 @@ class UniprotTaxonomy(object):
 
         return taxon
 
+    def get_lineage(self, taxon_id, names=False, only_ranked=True, with_last=True):
+        """
+        .. versionadded:: 0.3.1
+
+        Proxy for :func:`get_lineage`, with changed defaults
+        """
+
+        return get_lineage(
+            self,
+            taxon_id,
+            names=names,
+            only_ranked=only_ranked,
+            with_last=with_last
+        )
+
     def __getitem__(self, taxon_id):
         """
         Defines dictionary behavior. Key is a taxon_id, the returned value is a
