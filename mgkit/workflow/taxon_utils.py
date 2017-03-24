@@ -332,7 +332,8 @@ def lca_contig_command(options):
         for annotation in gff.parse_gff(options.input_file)
         # only use annotations whose bitscore pass the filter
         # and have a taxon_id
-        if (annotation.bitscore >= options.bitscore) and
+        if ((annotation.bitscore >= options.bitscore) or
+            (annotation.bitscore is None)) and
            (annotation.taxon_id is not None) and
            # redundant probably, but used in cases when a taxon_id was deleted
            # from the taxonomy
