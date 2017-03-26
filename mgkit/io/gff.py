@@ -353,7 +353,7 @@ class Annotation(GenomicRange):
         value = self.attr.get('taxon_id', None)
         try:
             value = int(value)
-        except ValueError:
+        except (TypeError, ValueError):
             value = None
         return value
 
