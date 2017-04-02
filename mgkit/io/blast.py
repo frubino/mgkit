@@ -462,7 +462,7 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
 
         yield acc_id, taxon_id
 
-    if no_zero:
+    if no_zero and (zero_acc > 0):
         LOG.warning("%d accessions have taxon_id 0", zero_acc)
 
     LOG.info("Parsed %d lines", idx + 1)
