@@ -56,9 +56,11 @@ def load_fasta(f_handle):
         if nseq != 0:
             if cur_name != last_name:
                 yield cur_name, ''.join(cur_seq).upper()
+                nseq += 1
         # case in which only one sequence is present
         else:
             yield cur_name, ''.join(cur_seq).upper()
+            nseq += 1
     f_handle.close()
 
     LOG.info("Read %d fasta sequences", nseq)
