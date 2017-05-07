@@ -293,6 +293,9 @@ class UniprotTaxonomy(object):
         """
         .. versionadded:: 0.3.0
 
+        .. versionchanged:: 0.3.1
+            replaced *domain* with *superkingdom* to support *get_lineage*
+
         Reads a GTDB taxonomy file (tab separated genome_id/taxonomy) and
         populate the taxonomy instance. The method also return a dictionary of
         genome_id -> taxon_id.
@@ -331,7 +334,7 @@ class UniprotTaxonomy(object):
             'f': 'family',
             'p': 'phylum',
             'o': 'order',
-            'd': 'domain',
+            'd': 'superkingdom',
             's': 'species',
             'c': 'class'
         }
@@ -348,7 +351,7 @@ class UniprotTaxonomy(object):
                 continue
 
             line = [
-                taxon_name
+                taxon_name.strip()
                 for taxon_name in line.split(';')
                 if len(taxon_name) > 3
             ]
