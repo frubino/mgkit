@@ -89,6 +89,7 @@ setup(
             'taxon-utils = mgkit.workflow.taxon_utils:main',
             'json2gff = mgkit.workflow.json2gff:main',
             'fasta-utils = mgkit.workflow.fasta_utils:main',
+            'sampling-utils = mgkit.workflow.sampling_utils:main',
         ],
         # 'R': ['R = mgkit.utils:r_func [R]']
     },
