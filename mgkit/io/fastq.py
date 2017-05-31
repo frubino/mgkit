@@ -201,7 +201,7 @@ def load_fastq(file_handle, num_qual=False):
 
     Raises:
         ValueError: if the headers in both sequence and quality scores are not
-        the same. This implies that the sequence/qualities have carriage returns
+        valid. This implies that the sequence/qualities have carriage returns
         or the file is truncated.
 
         TypeError: if the qualities are in a format different than sanger
@@ -218,20 +218,23 @@ def load_fastq(file_handle, num_qual=False):
     sequence_count = 0
 
     while True:
-        header1 = file_handle.readline().strip()[1:]
+        header1 = file_handle.readline().strip()
         # Reached the end of the file
         if not header1:
             break
 
         seq = file_handle.readline().strip()
 
-        header2 = file_handle.readline().strip()[1:]
+        header2 = file_handle.readline().strip()
         qualities = file_handle.readline().strip()
 
-        if header1 != header2:
+        if (header1[0] != '@') or (header2[0] != '+'):
             raise ValueError(
-                "The sequence and quality headers are not the same '{}' != '{}'".format(header1, header2)
+                "The sequence and quality headers are not valid '{}' != '{}'".format(header1, header2)
             )
+
+        header1 = header1[1:]
+        header2 = header2[1:]
 
         if check_qual:
             qual_type = check_fastq_type(qualities)
