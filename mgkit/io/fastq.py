@@ -2,6 +2,12 @@
 Fastq utility functions
 """
 import re
+import numpy
+import logging
+
+from . import open_file
+
+LOG = logging.getLogger(__name__)
 
 CASAVA_HEADER_OLD = r"""(?P<machine>\w+-\w+):
         (?P<lane>\d):
@@ -57,8 +63,6 @@ def check_fastq_type(qualities):
 
     max_qual = max(qualities)
     min_qual = min(qualities)
-
-    print min_qual, max_qual
 
     if (min_qual >= 33) and (max_qual <= 73):
         return 'sanger'
@@ -169,3 +173,79 @@ def choose_header_type(seq_id):
     if re.search(CASAVA_KHMER, seq_id, re.X) is not None:
         return re.compile(CASAVA_KHMER, re.X)
     return None
+
+
+def load_fastq(file_handle, num_qual=False):
+    """
+    .. versionadded:: 0.3.1
+
+    Loads a fastq file and returns a generator of tuples in which the first
+    element is the name of the sequence, the second the sequence and the third
+    the quality scores (converted in a numpy array if *num_qual* is True).
+
+    .. note::
+
+        this is a simple parser that assumes each sequence is on 4 lines,
+        1st and 3rd for the headers, 2nd for the sequence and 4th the quality
+        scores
+
+    Arguments:
+        file_handle (str, file): fastq file to open, can be a file name or a
+            file handle
+
+    Yields:
+        tuple: first element is the sequence name/header, the second element is
+        the sequence, the third is the quality score. The quality scores are
+        kept as a string if *num_qual* is False (default) and converted to a
+        numpy array with correct values (0-41) if *num_qual* is True
+
+    Raises:
+        ValueError: if the headers in both sequence and quality scores are not
+        the same. This implies that the sequence/qualities have carriage returns
+        or the file is truncated.
+
+        TypeError: if the qualities are in a format different than sanger
+        (min 0, max 40) or illumina-1.8 (0, 41)
+    """
+
+    file_handle = open_file(file_handle)
+
+    if getattr(file_handle, 'name', None) is not None:
+        LOG.info("Reading fastq file (%s)", file_handle.name)
+
+    check_qual = True
+
+    sequence_count = 0
+
+    while True:
+        header1 = file_handle.readline().strip()[1:]
+        # Reached the end of the file
+        if not header1:
+            break
+
+        seq = file_handle.readline().strip()
+
+        header2 = file_handle.readline().strip()[1:]
+        qualities = file_handle.readline().strip()
+
+        if header1 != header2:
+            raise ValueError(
+                "The sequence and quality headers are not the same '{}' != '{}'".format(header1, header2)
+            )
+
+        if check_qual:
+            qual_type = check_fastq_type(qualities)
+            if qual_type not in ('sanger', 'illumina-1.8'):
+                raise TypeError(
+                    'Quality scores are in "{}" format. You must convert them to Sanger (phred33)'.format(qual_type)
+                )
+            check_qual = False
+
+        if num_qual:
+            qualities = numpy.fromiter((ord(x) for x in qualities), numpy.int) - 33
+
+        sequence_count += 1
+
+        yield header1, seq, qualities
+
+    LOG.info("Read %d fastq sequences", sequence_count)
