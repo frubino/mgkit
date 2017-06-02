@@ -116,10 +116,10 @@ def sample_command(options):
         options.prefix
     )
 
-    if (options.prob == 1) or (options.prob <= 0):
+    if (options.prob > 1) or (options.prob <= 0):
         utils.exit_script(
             "The probability value ({}) is outside the correct range" +
-            " (0 < p < 1)",
+            " (0 < p <= 1)",
             1
         )
 

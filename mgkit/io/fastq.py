@@ -5,7 +5,7 @@ import re
 import numpy
 import logging
 
-from . import open_file
+from .utils import open_file, compressed_handle
 
 LOG = logging.getLogger(__name__)
 
@@ -208,7 +208,10 @@ def load_fastq(file_handle, num_qual=False):
         (min 0, max 40) or illumina-1.8 (0, 41)
     """
 
-    file_handle = open_file(file_handle)
+    if isinstance(file_handle, str):
+        file_handle = open_file(file_handle, 'r')
+    else:
+        file_handle = compressed_handle(file_handle)
 
     if getattr(file_handle, 'name', None) is not None:
         LOG.info("Reading fastq file (%s)", file_handle.name)
