@@ -918,7 +918,7 @@ def test_genomicrange_union4():
     gen_range2 = gff.GenomicRange()
     gen_range2.seq_id = 'seq1'
     gen_range2.strand = '+'
-    gen_range2.start = 20
+    gen_range2.start = 21
     gen_range2.end = 30
 
     gen_range_u = gen_range2.union(gen_range1)
@@ -977,7 +977,7 @@ def test_genomicrange_union_fail3():
     gen_range1.end = 20
     gen_range2 = gff.GenomicRange()
     gen_range2.seq_id = 'seq1'
-    gen_range2.strand = '+'
+    gen_range2.strand = '-'
     gen_range2.start = 21
     gen_range2.end = 30
 

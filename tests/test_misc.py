@@ -165,7 +165,7 @@ def test_union_range3():
 def test_union_range4():
     eq_(
         union_range(1, 10, 11, 13),
-        None
+        (1, 13)
     )
 
 
