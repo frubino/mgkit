@@ -112,11 +112,13 @@ import functools
 import json
 
 import mgkit
+import pandas as pd
 from . import utils
 from mgkit.io import gff, fasta
 from mgkit import taxon
 from mgkit.simple_cache import memoize
 from mgkit.filter.taxon import filter_taxon_by_id_list
+import progressbar
 
 LOG = logging.getLogger(__name__)
 
@@ -629,6 +631,98 @@ def filter_taxa_command(options):
             annotation.to_file(options.output_file)
 
 
+def set_taxa_table_parser(parser):
+    parser.add_argument(
+        '-n',
+        '--table-name',
+        default='taxa',
+        help='Name of the table/storage to use'
+    )
+    parser.add_argument(
+        '-w',
+        '--overwrite',
+        default=False,
+        action='store_true',
+        help='Overwrite the file, instead of appending to it'
+    )
+    parser.add_argument(
+        '-s',
+        '--index-size',
+        default=12,
+        type=int,
+        help='Maximum number of characters for the gene_id'
+    )
+    parser.add_argument(
+        '-c',
+        '--chunk-size',
+        default=5000000,
+        type=int,
+        help='Chunk size to use when reading the input file'
+    )
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        type=argparse.FileType('r'),
+        default='-',
+        help='Input file, defaults to stdin'
+    )
+    parser.add_argument(
+        'output_file',
+        type=str,
+        nargs='?',
+        default='taxa-table.hf5',
+        help='Output file, defaults to (taxa-table.hf5)'
+    )
+    parser.set_defaults(func=taxa_table_command)
+
+
+def taxa_table_command(options):
+    try:
+        import tables
+    except ImportError:
+        raise mgkit.DependencyError('tables')
+
+    hdf = pd.HDFStore(
+        options.output_file,
+        mode='w' if options.overwrite else 'a'
+    )
+
+    iterator = pd.read_table(
+        options.input_file, header=None,
+        squeeze=False,
+        index_col=0,
+        engine='c',
+        chunksize=options.chunk_size,
+        names=['taxon_id']
+    )
+    LOG.info('Reading Taxa Table from file (%s)', options.input_file.name)
+    LOG.info(
+        'Writing HDF5 file (%s) Table (%s) - Overwrite: %s',
+        options.output_file,
+        options.table_name,
+        options.overwrite
+    )
+    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+    for chunk in bar(iterator):
+        hdf.append(
+            options.table_name,
+            chunk,
+            min_itemsize=options.index_size,
+            index=False,
+            # data_columns=False
+        )
+
+    LOG.info('Creating Indices')
+    hdf.create_table_index(options.table_name, optlevel=9, kind='full')
+    hdf.close()
+
+    LOG.info("It's reccomended to compress the file with `ptrepack`")
+    LOG.info(
+        "e.g. ptrepack --propindexes --complevel 9 --complib blosc %s:/ taxa-table-compressed.hf5:/",
+        options.output_file
+    )
+
+
 def set_parser():
     """
     Sets command line arguments parser
@@ -666,6 +760,14 @@ def set_parser():
     set_filter_taxa_parser(parser_filter_taxa)
     set_common_options(parser_filter_taxa)
     utils.add_basic_options(parser_filter_taxa, manual=__doc__)
+
+    parser_taxa_table = subparsers.add_parser(
+        'to_hdf',
+        help='Convert a taxa table to HDF5'
+    )
+
+    set_taxa_table_parser(parser_taxa_table)
+    utils.add_basic_options(parser_taxa_table, manual=__doc__)
 
     utils.add_basic_options(parser, manual=__doc__)
 

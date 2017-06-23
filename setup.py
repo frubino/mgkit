@@ -23,7 +23,8 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'numpy>=1.9.2',
-    'pandas>=0.18'
+    'pandas>=0.18',
+    'progressbar2',
     #'goatools',
 ]
 
