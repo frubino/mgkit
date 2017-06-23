@@ -254,6 +254,8 @@ import functools
 import pysam
 import json
 import pickle
+import pandas
+import progressbar
 import mgkit
 from . import utils
 from .. import align
@@ -1112,6 +1114,23 @@ def set_counts_parser(parser):
     parser.set_defaults(func=counts_command)
 
 
+def parse_hdf5_arg(argument):
+    file_name, table = argument.strip().split(':')
+    return (file_name, table)
+
+
+class HDFDict(object):
+    def __init__(self, file_name, table):
+        self._hdf = pandas.HDFStore(file_name, mode='r')
+        self._table = table
+
+    def __getitem__(self, key):
+        df = self._hdf.select(self._table, 'index=key')
+        if df.empty:
+            raise KeyError('Key not found {}'.format(key))
+        return df.taxon_id
+
+
 def addtaxa_command(options):
 
     LOG.info(
@@ -1149,13 +1168,16 @@ def addtaxa_command(options):
                 no_zero=True
             )
         )
+    elif options.hdf_table is not None:
+        gene_ids = HDFDict(options.hdf_table[0], options.hdf_table[1])
+        annotations = gff.parse_gff(options.input_file)
     else:
         # in case a dictionary is supplied, it's expected to fit in memory,
         # meaning that the GFF doesn't have to be preloaded
         annotations = gff.parse_gff(options.input_file)
         gene_ids = {}
 
-    if options.dictionary is not None:
+    if (options.dictionary is not None) and (options.hdf_table is None):
         dict_file = open_file(options.dictionary, 'r')
         if '.json' in options.dictionary:
             gene_ids.update(json.load(dict_file))
@@ -1176,6 +1198,10 @@ def addtaxa_command(options):
 
     if options.taxonomy is not None:
         taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+
+    if options.hdf_table is not None:
+        bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+        annotations = bar(annotations)
 
     for annotation in annotations:
         try:
@@ -1213,6 +1239,19 @@ def set_addtaxa_parser(parser):
         default=None,
         help="""GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz) or a similar
                 file where GENE/TAXON are tab separated and one per line"""
+    )
+    parser.add_argument(
+        '-f',
+        '--hdf-table',
+        action='store',
+        default=None,
+        type=parse_hdf5_arg,
+        help="""
+        HDF5 file and table name to use for taxon_id lookups. The format to
+        pass is the file name, colon and the table file.hf5:taxa-table. The
+        index in the table is the accession_id, while the column `taxon_id`
+        stores the taxon_id as int
+        """
     )
     parser.add_argument(
         '-a',
