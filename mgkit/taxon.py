@@ -561,20 +561,51 @@ class UniprotTaxonomy(object):
         else:
             cPickle.dump(self._taxa, file_handle, -1)
 
-    def find_by_name(self, s_name):
+    def find_by_name(self, s_name, rank=None):
         """
         .. versionchanged:: 0.2.3
             the search is now case insensitive
 
+        .. versionchanged:: 0.3.1
+            added *rank* parameter
+
         Returns the taxon IDs associated with the scientific name provided
 
-        :param str s_name: the scientific name
+        Arguments:
+            s_name (str): the scientific name
+            rank (str, None): return only a taxon_id of a specific rank
 
-        :return list: a reference to the list of IDs that have for `s_name`
+        Returns:
+            list: a reference to the list of IDs that have for *s_name*, if
+            *rank* is None. If *rank* is not None and one taxon is found, its
+            taxon_id is returned, or None if no taxon is found.
+
+        Raises:
+            KeyError: If multiple taxa are found, a *KeyError* exception is
+            raised.
         """
         if not self._name_map:
             self.gen_name_map()
-        return self._name_map[s_name.lower()]
+
+        if rank is None:
+            return self._name_map[s_name.lower()]
+        else:
+            taxon_ids = [
+                taxon_id
+                for taxon_id in self._name_map.get(s_name.lower(), [])
+                if self[taxon_id].rank == rank
+            ]
+            if len(set(taxon_ids)) > 1:
+                raise KeyError(
+                    "More than one taxon ({}) with rank {}".format(
+                        s_name,
+                        rank
+                    )
+                )
+            elif len(taxon_ids) == 0:
+                return None
+            else:
+                return taxon_ids[0]
 
     def is_ancestor(self, leaf_id, anc_ids):
         """
@@ -690,6 +721,106 @@ class UniprotTaxonomy(object):
             only_ranked=only_ranked,
             with_last=with_last
         )
+
+    def add_taxon(self, taxon_name, common_name='', rank='no rank', parent_id=None):
+        """
+        .. versionadded:: 0.3.1
+
+        Adds a taxon to the taxonomy. If a taxon with the same name and rank is
+        found, its taxon_id is returned, otherwise a new taxon_id is returned.
+
+        Arguments:
+            taxon_name (str): scientific name of the taxon
+            common_name (str): common name
+            rank (str): rank, defaults to 'no rank'
+            parent_id (int): taxon_id of the parent, defaults to *None*, which
+                is the taxonomy root
+
+        Returns:
+            int: the taxon_id of the added taxon (if new), or the taxon_id of
+            the taxon with the same name and rank found in the taxonomy
+        """
+        # Tries to find it in the name map
+        taxon_id = self.find_by_name(taxon_name, rank=rank)
+
+        if taxon_id is None:
+            try:
+                taxon_id = max(self._taxa) + 1
+            except ValueError:
+                taxon_id = 1
+
+            self[taxon_id] = UniprotTaxonTuple(
+                taxon_id,
+                taxon_name,
+                common_name,
+                rank,
+                (None,),
+                parent_id
+            )
+
+        # adds the new name to the name map (which is initialised by
+        # find_by_name)
+        self._name_map[taxon_name.lower()] = [taxon_id]
+
+        return taxon_id
+
+    def add_lineage(self, **lineage):
+        """
+        .. versionadded:: 0.3.1
+
+        Adds a lineage to the taxonomy. It's passed by keyword arguments, where
+        each key is a value in the `TAXON_RANKS` rankes and the value is the
+        scientific name. Appended underscores '_' will be stripped from the
+        rank name. This is for cases such as *class* where the key is a reserved
+        word in Python. Also one extra node can be added, such as
+        strain/cultivar/subspecies and so on, but one only is expected to be
+        passed.
+
+        Arguments:
+            lineage (**dict): the lineage as a keyword arguments
+
+        Returns:
+            int: the taxon_id of the last element in the lineage
+
+        Raises:
+            ValueError: if more than a keyword argument is not contained in
+            `TAXON_RANKS`
+        """
+        lineage = {
+            key.rstrip('_'): value
+            for key, value in lineage.iteritems()
+        }
+        extra_nodes = set(lineage) - set(TAXON_RANKS)
+        if len(extra_nodes) > 1:
+            raise ValueError(
+                "Expected at most a one lower level below species, found: {}".format(
+                    ', '.join(extra_nodes)
+                )
+            )
+        else:
+            extra_nodes = list(extra_nodes) if len(extra_nodes) == 1 else []
+
+        ranks = list(TAXON_RANKS) + extra_nodes
+
+        parent_ids = [None]
+        taxon_id = None
+        for rank in ranks:
+            try:
+                taxon_name = lineage[rank]
+            except KeyError:
+                continue
+            if not isinstance(taxon_name, str):
+                continue
+
+            taxon_id = self.add_taxon(
+                taxon_name,
+                rank=rank,
+                parent_id=parent_ids[-1]
+            )
+            # print taxon_id, rank, taxon_name, parent_ids[-1]
+            parent_ids.append(taxon_id)
+
+        return taxon_id
 
     def __getitem__(self, taxon_id):
         """
