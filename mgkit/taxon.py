@@ -789,9 +789,9 @@ class UniprotTaxonomy(object):
                 parent_id
             )
 
-        # adds the new name to the name map (which is initialised by
-        # find_by_name)
-        self._name_map[taxon_name.lower()] = [taxon_id]
+            # adds the new name to the name map (which is initialised by
+            # find_by_name)
+            self._name_map[taxon_name.lower()] = [taxon_id]
 
         return taxon_id
 
