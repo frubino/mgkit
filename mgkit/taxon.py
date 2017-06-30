@@ -561,24 +561,28 @@ class UniprotTaxonomy(object):
         else:
             cPickle.dump(self._taxa, file_handle, -1)
 
-    def find_by_name(self, s_name, rank=None):
+    def find_by_name(self, s_name, rank=None, strict=True):
         """
         .. versionchanged:: 0.2.3
             the search is now case insensitive
 
         .. versionchanged:: 0.3.1
-            added *rank* parameter
+            added *rank* and *strict* parameter
 
         Returns the taxon IDs associated with the scientific name provided
 
         Arguments:
             s_name (str): the scientific name
             rank (str, None): return only a taxon_id of a specific rank
+            strict (book): if True and *rank* is not None, KeyError will be
+                raised if multiple taxa have the same name and rank
 
         Returns:
             list: a reference to the list of IDs that have for *s_name*, if
             *rank* is None. If *rank* is not None and one taxon is found, its
-            taxon_id is returned, or None if no taxon is found.
+            taxon_id is returned, or None if no taxon is found. If *strict* is
+            True and *rank* is not None, the set of taxon_ids found is
+            resturned.
 
         Raises:
             KeyError: If multiple taxa are found, a *KeyError* exception is
@@ -596,12 +600,15 @@ class UniprotTaxonomy(object):
                 if self[taxon_id].rank == rank
             ]
             if len(set(taxon_ids)) > 1:
-                raise KeyError(
-                    "More than one taxon ({}) with rank {}".format(
-                        s_name,
-                        rank
+                if strict:
+                    raise KeyError(
+                        "More than one taxon ({}) with rank {}".format(
+                            s_name,
+                            rank
+                        )
                     )
-                )
+                else:
+                    return set(taxon_ids)
             elif len(taxon_ids) == 0:
                 return None
             else:
@@ -739,9 +746,33 @@ class UniprotTaxonomy(object):
         Returns:
             int: the taxon_id of the added taxon (if new), or the taxon_id of
             the taxon with the same name and rank found in the taxonomy
+
+        Raises:
+            KeyError: if more than one taxon has already the passed name and
+            rank and it can't be resolved by looking at the parent_id passed,
+            the exception is raised.
         """
         # Tries to find it in the name map
-        taxon_id = self.find_by_name(taxon_name, rank=rank)
+        taxon_id = self.find_by_name(taxon_name, rank=rank, strict=False)
+
+        # Multiple taxa with the same name, check if the parent_id of any of
+        # them can be resolved
+        if isinstance(taxon_id, set):
+            # print taxon_id
+            taxon_ids = taxon_id
+            taxon_id = None
+            for t_id in taxon_ids:
+                if self[t_id].parent_id == parent_id:
+                    taxon_id = t_id
+
+            if taxon_id is None:
+                raise KeyError(
+                    "Multiple taxa ({}, {}) are in the taxonomy but cannot be associated with the parent_id ({}) provided".format(
+                        taxon_name,
+                        rank,
+                        parent_id
+                    )
+                )
 
         if taxon_id is None:
             try:
@@ -809,6 +840,7 @@ class UniprotTaxonomy(object):
                 taxon_name = lineage[rank]
             except KeyError:
                 continue
+
             if not isinstance(taxon_name, str):
                 continue
 
@@ -821,6 +853,26 @@ class UniprotTaxonomy(object):
             parent_ids.append(taxon_id)
 
         return taxon_id
+
+    def drop_taxon(self, taxon_id):
+        """
+        .. versionadded:: 0.3.1
+
+        Drops a taxon and all taxa below it in the taxonomy. Also reset the
+        name map for conistency.
+
+        Arguments:
+            taxon_id (int): taxon_id to drop from the taxonomy
+        """
+        drop_keys = []
+        for leaf_id in self._taxa:
+            if self.is_ancestor(leaf_id, taxon_id):
+                drop_keys.append(leaf_id)
+
+        for taxon_id in drop_keys:
+            del self._taxa[taxon_id]
+
+        self._name_map = {}
 
     def __getitem__(self, taxon_id):
         """
