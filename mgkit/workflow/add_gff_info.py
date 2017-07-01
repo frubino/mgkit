@@ -1123,6 +1123,15 @@ class HDFDict(object):
     def __init__(self, file_name, table):
         self._hdf = pandas.HDFStore(file_name, mode='r')
         self._table = table
+        if not self._table in self._hdf:
+            utils.exit_script(
+                "Table ({}) not found in file ({})".format(
+                    table,
+                    file_name
+                ),
+                3
+            )
+            self._hdf.close()
 
     def __getitem__(self, key):
         df = self._hdf.select(self._table, 'index=key')
