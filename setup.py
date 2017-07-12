@@ -43,6 +43,7 @@ extras_require = {
     'htseq': ['HTSeq>=0.6.0'],
     'db': ['semidbm>=0.5.1', 'pymongo>=3.1.1'],
     'R': 'rpy2>=2.3.8',
+    'pytables': 'tables>=3.4.2',
     'extra_scripts': [
         'pysam>=0.8.2.1',
     ],
@@ -86,8 +87,7 @@ setup(
             'translate_seq = mgkit.workflow.nuc2aa:main',
             'fastq_utils = mgkit.workflow.fastq_utils:main [htseq]',
             'fastq-utils = mgkit.workflow.fastq_utils:main [htseq]',
-            'taxon_utils = mgkit.workflow.taxon_utils:main',
-            'taxon-utils = mgkit.workflow.taxon_utils:main',
+            'taxon-utils = mgkit.workflow.taxon_utils:main [pytables]',
             'json2gff = mgkit.workflow.json2gff:main',
             'fasta-utils = mgkit.workflow.fasta_utils:main',
             'sampling-utils = mgkit.workflow.sampling_utils:main',

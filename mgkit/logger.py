@@ -25,6 +25,8 @@ def config_log(level=logging.DEBUG, output=sys.stderr):
         fmt = logging.Formatter(fmt=INFO_FMT)
 
     log_handler.setFormatter(fmt)
+    log_handler.setLevel(level)
+
     logging.getLogger().addHandler(log_handler)
     logging.getLogger().setLevel(level)
 
@@ -53,6 +55,8 @@ def config_log_to_file(level=logging.DEBUG, output=None):
     else:
         fmt = logging.Formatter(fmt=INFO_FMT)
 
+    log_handler.setLevel(level)
     log_handler.setFormatter(fmt)
+
     logging.getLogger().addHandler(log_handler)
     logging.getLogger().setLevel(level)
