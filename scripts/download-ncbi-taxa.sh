@@ -25,10 +25,5 @@ if [ `echo "$TYPE" | tr '[:lower:]' '[:upper:]'` = "PROT" ];
 fi
 
 TABFILE=ncbi-$TYPE-taxa.gz
-NCBI_TMP=ncbi-$TYPE-tmp
 
-wget -c -O $NCBI_TMP ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/$FILE
-
-gunzip -c $NCBI_TMP | tail -n+2 | cut -f 1,3 | gzip > $TABFILE
-
-rm $NCBI_TMP
+wget --progress=dot -O - ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/$FILE | gunzip -c | tail -n+2 | cut -f 1,3 | gzip > $TABFILE
