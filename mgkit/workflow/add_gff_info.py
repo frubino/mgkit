@@ -1158,7 +1158,7 @@ def addtaxa_command(options):
     elif options.hdf_table is not None:
         try:
             gene_ids = HDFDict(options.hdf_table[0], options.hdf_table[1])
-        except ValueError, e:
+        except ValueError as e:
             utils.exit_script(
                 str(e),
                 3
