@@ -327,9 +327,10 @@ class HDFDict(object):
         the dictionary cannot be modified and exception:`ValueError` will be
         raised if the table is not in the file
     """
-    def __init__(self, file_name, table):
+    def __init__(self, file_name, table, cast=int):
         self._hdf = pandas.HDFStore(file_name, mode='r')
         self._table = table
+        self._cast = cast
         if not self._table in self._hdf:
             raise ValueError(
                 "Table ({}) not found in file ({})".format(
@@ -343,4 +344,4 @@ class HDFDict(object):
         df = self._hdf.select(self._table, 'index=key')
         if df.empty:
             raise KeyError('Key not found {}'.format(key))
-        return df.taxon_id
+        return self._cast(df.values)
