@@ -3,6 +3,7 @@ Dictionary utils
 
 """
 import numpy
+import pandas
 
 
 def merge_dictionaries(dicts):
@@ -312,3 +313,34 @@ class cache_dict_file(object):
             raise KeyError
         self._dict[key] = value
         return key, value
+
+
+class HDFDict(object):
+    """
+    .. versionadded:: 0.3.1
+
+    Used a table in a HDFStore (from pandas) as a dictionary. The table must be
+    indexed to perform well. Read only.
+
+    .. note::
+
+        the dictionary cannot be modified and exception:`ValueError` will be
+        raised if the table is not in the file
+    """
+    def __init__(self, file_name, table):
+        self._hdf = pandas.HDFStore(file_name, mode='r')
+        self._table = table
+        if not self._table in self._hdf:
+            raise ValueError(
+                "Table ({}) not found in file ({})".format(
+                    table,
+                    file_name
+                )
+            )
+            self._hdf.close()
+
+    def __getitem__(self, key):
+        df = self._hdf.select(self._table, 'index=key')
+        if df.empty:
+            raise KeyError('Key not found {}'.format(key))
+        return df.taxon_id

@@ -254,7 +254,6 @@ import functools
 import pysam
 import json
 import pickle
-import pandas
 import progressbar
 import mgkit
 from . import utils
@@ -267,7 +266,7 @@ from ..io import gff, blast, fasta, compressed_handle, open_file
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
 from ..net import pfam
-from ..utils.dictionary import cache_dict_file
+from ..utils.dictionary import cache_dict_file, HDFDict
 
 
 LOG = logging.getLogger(__name__)
@@ -1119,27 +1118,6 @@ def parse_hdf5_arg(argument):
     return (file_name, table)
 
 
-class HDFDict(object):
-    def __init__(self, file_name, table):
-        self._hdf = pandas.HDFStore(file_name, mode='r')
-        self._table = table
-        if not self._table in self._hdf:
-            utils.exit_script(
-                "Table ({}) not found in file ({})".format(
-                    table,
-                    file_name
-                ),
-                3
-            )
-            self._hdf.close()
-
-    def __getitem__(self, key):
-        df = self._hdf.select(self._table, 'index=key')
-        if df.empty:
-            raise KeyError('Key not found {}'.format(key))
-        return df.taxon_id
-
-
 def addtaxa_command(options):
 
     LOG.info(
@@ -1178,7 +1156,13 @@ def addtaxa_command(options):
             )
         )
     elif options.hdf_table is not None:
-        gene_ids = HDFDict(options.hdf_table[0], options.hdf_table[1])
+        try:
+            gene_ids = HDFDict(options.hdf_table[0], options.hdf_table[1])
+        except ValueError, e:
+            utils.exit_script(
+                str(e),
+                3
+            )
         annotations = gff.parse_gff(options.input_file)
     else:
         # in case a dictionary is supplied, it's expected to fit in memory,
