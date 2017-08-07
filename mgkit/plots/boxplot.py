@@ -140,8 +140,8 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None,
         plot_data['caps'][idx].set_color(colours['caps'])
 
     for flier in plot_data['fliers']:
-        flier.set_color(
-            colours['whiskers']
+        flier.set_markerfacecolor(
+            colours['fliers']
             # data_colours[tx] if data_colours else colours['fliers']
         )
 
