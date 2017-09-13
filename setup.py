@@ -2,6 +2,7 @@ import sys
 import os
 # import ez_setup
 # ez_setup.use_setuptools()
+import setuptools
 from distutils.extension import Extension
 
 try:
@@ -11,13 +12,15 @@ except KeyError:
     USE_CYTHON = False
 
 ext = '.pyx' if USE_CYTHON else '.c'
-extensions = [Extension("mgkit.utils._sequence", ["mgkit/utils/_sequence" + ext])]
+extensions = [
+    Extension("mgkit.utils._sequence", ["mgkit/utils/_sequence" + ext])
+]
 
 if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
-__VERSION__ = "0.3.0"
+__VERSION__ = "0.3.1"
 
 from setuptools import setup, find_packages
 
@@ -113,5 +116,5 @@ setup(
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
     ],
-    ext_modules=extensions
+    ext_modules=extensions,
 )

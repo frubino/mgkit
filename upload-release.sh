@@ -1,9 +1,8 @@
 #!/bin/sh
 
-python setup.py sdist bdist_wheel bdist upload
-python setup.py upload_docs
+python setup.py sdist bdist_wheel
+twine upload dist/*
 
 cd docs/build/
 zip -r html-docs.zip html/*
 cd ../../
-
