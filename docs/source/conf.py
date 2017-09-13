@@ -56,12 +56,12 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 blockdiag_antialias = True
 blockdiag_html_image_format = 'SVG'
 blockdiag_latex_image_format = 'PDF'
-try:
-    blockdiag_fontpath = subprocess.check_output(
-        "locate FreeMonoBold.ttf", shell=True
-    ).strip()
-except:
-    pass
+import urllib2
+response = urllib2.urlopen(
+    'https://github.com/opensourcedesign/fonts/raw/master/gnu-freefont_freemono/FreeMono.ttf'
+)
+open('FreeMono.ttf', 'w').write(response.read())
+blockdiag_fontpath = 'FreeMono.ttf'
 
 #graphviz
 graphviz_output_format = 'svg'
