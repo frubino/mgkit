@@ -17,7 +17,7 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
-__VERSION__ = "0.3.0"
+__VERSION__ = "0.3.1"
 
 from setuptools import setup, find_packages
 
