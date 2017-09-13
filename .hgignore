@@ -7,7 +7,6 @@ docs/source/_themes
 docs/build
 dist
 build
-docs/source/api
 docs/source/examples/plots/*_files/
 docs/source/examples/plots/*.rst
 .ipynb_checkpoints/
