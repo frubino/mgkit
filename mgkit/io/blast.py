@@ -4,7 +4,6 @@ Blast routines and parsers
 """
 
 import logging
-import collections
 
 from . import gff
 from . import open_file
@@ -13,106 +12,6 @@ from ..utils.common import deprecated
 NUM_LINES = 10 ** 6
 
 LOG = logging.getLogger(__name__)
-
-
-@deprecated
-def _parse_blast_tab(f_handle, gid_col=1, score_col=11, num_lines=NUM_LINES):
-    """
-    .. deprecated:: 0.1.12
-        Use the more general version :func:`parse_blast_tab`
-
-    Parses blast output tab format, taking the best hit (first one) for each
-    KO id (ko_idx). Returns a dictionary with ko_idx as key and the GID and bit
-    score as value.
-
-    :param file f_handle: file handle for the blast ouput
-    :param int gid_col: index for the column which has the gid value
-    :param int score_col: index for the column which has the bit score value
-    :param int num_lines: number of lines after which a status message is
-        logged; defaults to :data:`NUM_LINES`
-
-    :return dict: dictionary for hits
-    """
-
-    hits = {}
-
-    for idx, line in enumerate(f_handle):
-        if line.startswith('#'):
-            continue
-
-        if (idx + 1) % num_lines == 0:
-            LOG.info("Parsed %d lines", idx + 1)
-
-        cols = line.strip().split('\t')
-
-        ko_id = cols[0].strip()
-        if ko_id in hits:
-            continue
-
-        gene_id = cols[gid_col].split('|')[1]
-
-        score = cols[score_col]
-
-        hits[ko_id] = (int(gene_id), float(score))
-
-    return hits
-
-
-@deprecated
-def _parse_gi_taxa_table(f_handle, hits, num_lines=NUM_LINES):
-    """
-    .. deprecated:: 0.1.13
-
-    Integrates hits dictionary with taxonomic data, parsing the gi taxa table
-    from NCBI. Taxon IDs from NCBI are the same as Uniprot taxonomy.
-
-    ftp://ftp.ncbi.nih.gov/pub/taxonomy/gi_taxid_prot.zip
-
-    :param file f_handle: the handle for the taxa table from NCBI
-    :param dict hits: dictionary with hits data returned by
-        :func:`parse_blast_tab`.
-    :param int num_lines: number of lines after which a status message is
-        logged; defaults to :data:`NUM_LINES`
-
-    :return: dictionary which has ko_idx as key and a namedtuple which has
-        ko_id, gi, score, taxon_id.
-    """
-    gi_ko = {}
-
-    for ko_id, (gene_id, score) in hits.iteritems():
-        try:
-            gi_ko[gene_id].append(ko_id)
-        except KeyError:
-            gi_ko[gene_id] = [ko_id]
-
-    # print sum(len(v) for v in gi_ko.itervalues())
-
-    blast_hit = collections.namedtuple('BlastHit', "ko_id gi score taxon_id")
-
-    gi_taxa_dict = {}
-
-    for idx, line in enumerate(f_handle):
-
-        if (idx + 1) % num_lines == 0:
-            LOG.info("Parsed %d lines, number of found KO: %d",
-                     idx + 1, len(gi_taxa_dict))
-
-        gene_id, taxon_id = line.strip().split()
-        gene_id, taxon_id = int(gene_id), int(taxon_id)
-
-        if gene_id in gi_ko:
-            for ko_id in gi_ko[gene_id]:
-                hit = blast_hit(
-                    ko_id=ko_id,
-                    gi=gene_id,
-                    score=hits[ko_id][1],
-                    taxon_id=taxon_id
-                )
-                # if ko_id in gi_taxa_dict:
-                #     print "!"*30
-                gi_taxa_dict[ko_id] = hit
-
-    return gi_taxa_dict
 
 
 def add_blast_result_to_annotation(annotation, gi_taxa_dict, taxonomy,
@@ -348,35 +247,6 @@ def parse_fragment_blast(file_handle, bitscore=40.0):
     for uid, hits in uidmap.iteritems():
         # returns the hit with the max bitscore and max identity
         yield uid, hits
-
-
-@deprecated
-def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
-    """
-    .. versionadded:: 0.1.13
-
-    .. deprecated:: 0.2.6
-
-    Parses the taxonomy files from the `ncbi ftp
-    <ftp://ftp.ncbi.nih.gov/pub/taxonomy/>`_; the file names are
-    `gi_taxid_prot*` for the protein db and `gi_taxid_nucl*` for the nucleotide
-    db. It contains two columns: the first is the GID and the second is its
-    correspondent taxonomy ID.
-
-    Arguments:
-        file_handle (str, file): file name or open file handle
-        gids (None, list): if it's not `None` only the GIDs included in the
-            passed `gids` list will be returned
-        num_lines (None, int): number of which a message is logged. If None,
-            no message is logged
-
-    Yields:
-        tuple: the first element is the GID and the second is the taxonomy ID,
-        converted into an integer.
-
-    """
-    return parse_accession_taxa_table(file_handle, acc_ids=gids, key=0,
-                                      value=1, num_lines=num_lines)
 
 
 def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
