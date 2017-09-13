@@ -808,7 +808,7 @@ class UniprotTaxonomy(object):
         passed.
 
         Arguments:
-            lineage (**dict): the lineage as a keyword arguments
+            lineage (dict): the lineage as a keyword arguments
 
         Returns:
             int: the taxon_id of the last element in the lineage

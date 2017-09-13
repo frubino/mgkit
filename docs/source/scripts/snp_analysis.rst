@@ -1,7 +1,7 @@
 .. _snp-parser:
 
-SNPs analysis
-=============
+snp_parser - SNPs analysis
+==========================
 
 Overview
 --------

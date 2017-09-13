@@ -1,7 +1,7 @@
 .. _fasta-utils:
 
-Fasta Utilities
-===============
+fasta-utils - Fasta Utilities
+=============================
 
 Overview
 --------

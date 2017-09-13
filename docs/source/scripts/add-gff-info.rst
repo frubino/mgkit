@@ -1,7 +1,7 @@
 .. _add-gff-info:
 
-Add informations to GFF annotations
-===================================
+add-gff-info - Add informations to GFF annotations
+==================================================
 
 Overview
 --------

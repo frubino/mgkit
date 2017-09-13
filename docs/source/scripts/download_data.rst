@@ -1,7 +1,7 @@
 .. _download-data:
 
-Download Taxonomy from NCBI
-===========================
+download-data - Download Taxonomy from NCBI
+===========================================
 
 A bash script called **download-taxonomy.sh** is installed with MGKit. The script downloads the required file (`taxdump.tar.gz <ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz>`_) form the NCBI ftp taxonomy directory, using **wget**.
 

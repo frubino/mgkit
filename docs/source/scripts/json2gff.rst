@@ -1,7 +1,7 @@
 .. _json2gff:
 
-Convert JSON to GFF
-===================
+json2gff - Convert JSON to GFF
+==============================
 
 Overview
 --------

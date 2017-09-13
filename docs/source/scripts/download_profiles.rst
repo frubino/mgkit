@@ -1,7 +1,7 @@
 .. _script-download-profiles:
 
-Download Custom Profiles
-========================
+download-profiles - Download Custom Profiles
+============================================
 
 .. automodule:: mgkit.workflow.download_profiles
 

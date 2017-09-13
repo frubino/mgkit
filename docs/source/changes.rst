@@ -1,6 +1,75 @@
 Changes
 =======
 
+0.3.1
+-----
+
+This release adds several scripts and commands. Successive releases 0.3.x releases will be used to fix bugs and refine the APIs and CLI. Most importantly, since the publishing of the first paper using the framework, the releases will go torward the removal of as much deprecated code as possible. At the same time, a general review of the code to be able to run on Python3 (probably via the *six* package) will start. The general idea is to reach as a full removal of legacy code in 0.4.0, while full Python3 compatibility is the aim of 0.5.0, which also means dropping dependencies that are not compatible with Python3.
+
+Added
+*****
+
+* :func:`mgkit.graphs.from_kgml` to make a graph from a KGML file (allows for directionality)
+* :func:`mgkit.graphs.add_module_compounds`: updates a graph with compounds information as needed
+* :func:`mgkit.kegg.parse_reaction`: parses a reaction equation from Kegg
+* added `--no-frame` option to :ref:`hmmer2gff`, to use non translated protein sequences. Also changed the :func:`mgkit.io.gff.from_hmmer` function to enable this behaviour
+* added options `--num-gt` and `--num-lt` to the *values* command of :ref:`filter-gff` to filter based on `>` and `<` inequality, in addition to `>=` and `<=`
+* added *uid* as command in :ref:`fasta-utils` to make unique fasta headers
+* methods to make :class:`mgkit.db.mongo.GFFDB` to behave like a dictionary (an annotation *uid* can be used as a key to retrieve it, instead of a query), this includes the possibility to iterate over it, but what is yielded are the values, not the keys (i.e. :class:`mgkit.io.gff.Annotation` instances, not *uid*)
+* added :func:`mgkit.counts.func.from_gff` to load count data stored inside a GFF, as is the case when the *counts* command of :ref:`add-gff-info` is used'
+* added :meth:`mgkit.kegg.KeggClientRest.conv` and :meth:`mgkit.kegg.KeggClientRest.find` operations to :class:`mgkit.kegg.KeggClientRest`
+* :class:`mgkit.kegg.KeggClientRest` now caches calls to several methods. The cache can be written to disk using :meth:`mgkit.kegg.KeggClientRest.write_cache` or emptied via :meth:`mgkit.kegg.KeggClientRest.empty_cache`
+* added :func:`mgkit.utils.dictionary.merge_dictionaries` to merge multiple dictionaries where the keys contain different values
+* added a Docker file to make a preconfigured mgkit/jupyter build
+* added C functions (using `Cython <www.cython.org>`_) for tetramer/kmer counting. The C functions are the default, with the pure python implementation having a *_* appended to their names. This is because the Cython functions cannot have docstrings
+* added :func:`mgkit.io.gff.annotation_coverage_sorted`
+* added :meth:`mgkit.io.gff.Annotation.to_dict`
+* added :func:`mgkit.plots.utils.legend_patches` to create matplotlib patches, to be in legends
+* added scripts download IDs to taxa tables from NCBI/Uniprot
+* added :func:`mgkit.io.utils.group_tuples_by_key`
+* added *cov* command to :ref:`get-gff-info` and :ref:`filter-gff`
+* added :func:`mgkit.io.fasta.load_fasta_prodigal`, to load the fasta file from prodigal for called genes (tested on aminoacids)
+* added option to output a JSON file to the *lca* command in ref:`taxon-utils` and *cov* command in :ref:`get-gff-info`
+* added a bash script, *sort-gff.sh* to help sort a GFF
+* added :meth:`mgkit.taxon.UniprotTaxonomy.get_lineage` which simplifies the use of :func:`mgkit.taxon.get_lineage`
+* added :func:`mgkit.io.fastq.load_fastq` as a simple parser for fastq files
+* added a new script, :ref:`sampling-utils`
+* added :func:`mgkit.utils.common.union_ranges` and :func:`mgkit.utils.common.complement_ranges`
+* added *to_hdf* command to :ref:`taxon-utils` to create a HDF5 file to lookup taxa tables from NCBI/Uniprot
+* added `--hdf-table` option to *addtaxa* command in :ref:`add-gff-info`
+* :meth:`mgkit.taxon.UniprotTaxonomy.add_taxon`, :meth:`mgkit.taxon.UniprotTaxonomy.add_lineage` and :meth:`mgkit.taxon.UniprotTaxonomy.drop_taxon`
+
+Changed
+*******
+
+* changed *domain* to *superkingdom* as for NCBI taxonomy in :meth:`mgkit.taxon.UniprotTaxonomy.read_from_gtdb_taxonomy`
+* updated scripts documentation to include installed but non advertised scripts (like :ref:`translate_seq`)
+* :class:`mgkit.kegg.KeggReaction` was reworked to only store the equation information
+* some commands in :ref:`fastq-utils` did not support standard in/out, also added the script usage to the script details
+* :ref:`translate_seq` now supports standard in/out
+* added *haplotypes* parameter to :func:`mgkit.snps.funcs.combine_sample_snps`
+* an annotation from :class:`mgkit.db.mongo.GFFDB` now doesn't include the lineage, because it conflicts with the string used in a GFF file
+* an :meth:`mgkit.io.gff.Annotation.coverage` now returns a `float` instead od a `int`
+* moved code from package :mod:`mgkit.io` to :mod:`mgkit.io.utils`
+* changed behaviour of :func:`mgkit.utils.common.union_range`
+* removed :func:`mgkit.utills.common.range_substract_`
+* added *progressbar2* as installation requirement
+* changed how :meth:`mgkit.taxon.UniprotTaxonomy.find_by_name`
+
+Fixed
+*****
+
+Besides smaller fixes:
+
+* :func:`mgkit.plots.abund.draw_circles` behaviour when `sizescale` doesn't have the same shape as `order`
+* parser is now correct for :ref:`taxon-utils`, to include the `Krona <https://github.com/marbl/Krona/wiki>`_ options
+* ondition when a blast output is empty, hence *lineno* is not initialised when a message is logged
+
+Deprecated
+**********
+
+* :ref:`translate_seq` will be removed in version 0.4.0, instead use the similar command in :ref:`fasta-utils`
+
 0.3.0
 -----
 

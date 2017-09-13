@@ -1,11 +1,20 @@
 """
-Interleave/deinterleave paired-end fastq files.
+Commands
+--------
 
-.. versionchanged:: 0.3.0
-    added *convert* command to FASTA
+* Interleave/deinterleave paired-end fastq files.
+* Converts to FASTA
+* sort 2 files to sync the headers
+* randomise (untested)
+
+Changes
+-------
 
 .. versionchanged:: 0.3.1
     added stdin/stdout defaults for some commands
+
+.. versionchanged:: 0.3.0
+    added *convert* command to FASTA
 
 """
 from __future__ import division

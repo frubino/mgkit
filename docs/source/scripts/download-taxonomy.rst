@@ -1,5 +1,5 @@
-Download Taxonomy
-=================
+download-taxonomy.sh Download Taxonomy
+======================================
 
 A bash script called **download-taxonomy.sh** is installed along with MGKit. This script download the relevant files from NCBI using *wget*, and save the taxonomy file that can be used with MGKit to a file called **taxonomy.pickle**.
 

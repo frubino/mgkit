@@ -443,6 +443,7 @@ class KeggClientRest(object):
         <database> = pathway | module | ko | genome | <org> | compound | glycan |
                      reaction | rclass | enzyme | disease | drug | dgroup | environ |
                      genes | ligand
+
         <org> = KEGG organism code or T number
 
         http://rest.kegg.jp/find/<database>/<query>/<option>
@@ -1451,6 +1452,19 @@ class KeggModule(object):
 def parse_reaction(line, prefix=('C', 'G')):
     """
     .. versionadded:: 0.3.1
+
+    Parses a reaction equation from Kegg, returning the left and right
+    components. Needs testing
+
+    Arguments:
+        line (str): reaction string
+
+    Returns:
+        tuple: left and right components as `sets`
+
+    Raises:
+        ValueError: if the
+
     """
     line = line.replace('EQUATION', '').strip()
     if '<=>' in line:

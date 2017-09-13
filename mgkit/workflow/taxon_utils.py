@@ -4,8 +4,8 @@ taxonomy, without the need to write ad-hoc code for functionality that
 can be part of a workflow. One example is access to the the last common
 ancestor function contained in the :mod:`mgkit.taxon`.
 
-lca and lca_line commands
-*************************
+Last Common Ancestor (lca and lca_line)
+***************************************
 
 These commands expose the functionality of
 :func:`last_common_ancestor_multiple`, making it accessible via the command
@@ -44,7 +44,7 @@ that line. The list of *taxon_ids* is separated by semicolon ";".
 Krona Output
 ############
 
-**Added in 0.3.0**
+.. versionadded:: 0.3.0
 
 The *lca* command supports the writing of a file compatible with Krona. The
 output file can be used with the *ktImportText/ImportText.pl* script included
@@ -86,9 +86,22 @@ in NCBI taxonomy (also Uniprot).
 
     Annotations with no taxon_id are not included in the output of both filters
 
+Convert Taxa Tables to HDF5
+***************************
+
+This command is used to convert the taxa tables download from Uniprot and NCBI,
+using the scripts mentioned in :ref:`download-data`,
+`download-uniprot-taxa.sh` and `download-ncbi-taxa` into a HDF5 file that can
+be used with the *addtaxa* command in :ref:`add-gff-info`.
+
+The advantage is a faster lookup of the IDs. The other is a smaller memory
+footprint when a great number of annotations are kept in memory.
 
 Changes
 *******
+
+.. versionchanged:: 0.3.1
+    added *to_hdf* command
 
 .. versionchanged:: 0.3.1
     added *-j* option to *lca*, which outputs a JSON file with the LCA results

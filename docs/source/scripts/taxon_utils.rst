@@ -1,7 +1,7 @@
 .. _taxon-utils:
 
-Taxonomy Utilities
-==================
+taxon-utils - Taxonomy Utilities
+================================
 
 Overview
 --------

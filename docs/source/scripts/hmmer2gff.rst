@@ -1,7 +1,7 @@
 .. _hmmer2gff:
 
-Convert HMMER output to GFF
-===========================
+hmmer2gff - Convert HMMER output to GFF
+=======================================
 
 Overview
 --------

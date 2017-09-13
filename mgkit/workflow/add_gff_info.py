@@ -167,16 +167,21 @@ it expect three different type of inputs:
     * *GI-Taxa* table from NCBI (e.g. gi_taxid_nucl.dmp, )
     * tab separated table
     * dictionary
+    * HDF5
 
 The first two are tab separated files, where on each line, the first column is
 the *gene_id* that is found in the first column, while the second if the
 *taxon_id*.
 
-The last option is a serialised Python *dict*/hash table, whose keys are the
+The third option is a serialised Python *dict*/hash table, whose keys are the
 *gene_id* and the value is that gene corresponding *taxon_id*. The serialised
 formats accepted are msgpack, json and pickle. The *msgpack* module must be
 importable. The option to use json and msgpack allow to integrate this script
 with other languages without resorting to a text file.
+
+The last option is a HDF5 created using the *to_hdf* command in
+:ref:`taxon-utils`. This requires `pandas` installed and `pytables` and it
+provides faster lookup of IDs in the table.
 
 While the default is to look for the *gene_id* attribute in the GFF annotation,
 another attribute can be specified, using the **-gene-attr** option.
