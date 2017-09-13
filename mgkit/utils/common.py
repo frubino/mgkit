@@ -4,6 +4,8 @@ Utility functions
 from __future__ import division
 import itertools
 import operator
+import functools
+import warnings
 
 
 def average_length(a1s, a1e, a2s, a2e):
@@ -39,6 +41,9 @@ def union_range(start1, end1, start2, end2):
     """
     .. versionadded:: 0.1.12
 
+    .. versionchanged:: 0.3.1
+        changed behaviour, since the intervals are meant to be closed
+
     If two numeric ranges overlap, it returns the new range, otherwise None is
     returned. Works on both int and float numbers, even mixed.
 
@@ -49,18 +54,117 @@ def union_range(start1, end1, start2, end2):
         end2 (numeric): end of range 2
 
     Returns:
-        (tuple or None): union of the ranges or None if the ranges don't overlap
+        (tuple or None): union of the ranges or None if the ranges don't
+        overlap
 
     Example:
         >>> union_range(10, 13, 1, 10)
         (1, 13)
         >>> union_range(1, 10, 11, 13)
+        (1, 13)
+        >>> union_range(1, 10, 12, 13)
         None
 
     """
-    if between(start2, start1, end1) or between(end2, start1, end1):
+    if between(start2, start1, end1) or \
+        between(end2, start1, end1) or \
+            (end1 + 1 == start2) or (end2 + 1 == start1):
         return min(start1, start2), max(end1, end2)
     return None
+
+
+def union_ranges(intervals):
+    """
+    .. versionadded:: 0.3.1
+
+    From a list of ranges, assumed to be closed, performs a union of all
+    elements.
+
+    Arguments:
+        intervals (intervals): iterable where each element is a closed range
+            (tuple)
+
+    Returns:
+        list: the list of ranges that are the union of all elements passed
+
+    Examples:
+        >>> union_ranges([(1, 2), (3, 7), (6, 12), (9, 17), (18, 20)])
+        [(1, 20)]
+        >>> union_ranges([(1, 2), (3, 7), (6, 12), (9, 14), (18, 20)])
+        [(1, 14), (18, 20)]
+    """
+    intervals = sorted(intervals)
+
+    union = [intervals.pop(0)]
+
+    for start2, end2 in intervals:
+        start1, end1 = union[-1]
+        new_range = union_range(start1, end1, start2, end2)
+        if new_range is None:
+            union.append(
+                (start2, end2)
+            )
+        else:
+            union[-1] = new_range
+    return union
+
+
+def complement_ranges(intervals, end=None):
+    """
+    .. versionadded:: 0.3.1
+
+    Perform a complement operation of the list of intervals, i.e. returning the
+    ranges (tuples) that are not included in the list of intervals.
+    :func:`union_ranges` is first called on the intervals.
+
+    .. note::
+
+        the `end` parameter is there for cases where the ranges passed don't
+        cover the whole space. Assuming a list of ranges from annotations on a
+        nucleotidic sequence, if the last range doesn't include the last
+        position of the sequence, passing end equal to the length of the
+        sequence will make the function include a last range that includes it
+
+    Arguments:
+        intervals (intervals): iterable where each element is a closed range
+            (tuple)
+        end (int): if the end of the complement intervals is supposed to be
+            outside the last range.
+
+    Returns:
+        list: the list of intervals that complement the ones passed.
+
+    Examples:
+        >>> complement_ranges([(1, 10), (11, 20), (25, 30)], end=100)
+        [(21, 24), (31, 100)]
+        >>> complement_ranges([(1, 10), (11, 20), (25, 30)])
+        [(21, 24)]
+        >>> complement_ranges([(0, 2), (3, 17), (18, 20)])
+        []
+        >>> complement_ranges([(0, 2), (3, 17), (18, 20)], end=100)
+        [(21, 100)]
+    """
+    intervals = union_ranges(intervals)
+
+    comp_intervals = []
+
+    if intervals[0][0] > 1:
+        comp_intervals.append((1, intervals[0][0] - 1))
+
+    for index in xrange(0, len(intervals) - 1):
+        new_start = intervals[index][1] + 1
+        new_end = intervals[index + 1][0] - 1
+        if new_start < new_end:
+            comp_intervals.append(
+                (new_start, new_end)
+            )
+
+    if end is not None:
+        start = intervals[-1][1] + 1
+        if end > start:
+            comp_intervals.append((start, end))
+
+    return comp_intervals
 
 
 def ranges_length(ranges):
@@ -96,6 +200,23 @@ def range_substract(start1, end1, start2, end2):
 
 
 def range_intersect(start1, end1, start2, end2):
+    """
+    .. versionadded:: 0.1.13
+
+    Given two ranges in the form *(start, end)*, it returns the range
+    that is the intersection of the two.
+
+    Arguments:
+        start1 (int): start position for the first range
+        end1 (int): end position for the first range
+        start2 (int): start position for the second range
+        end2 (int): end position for the second range
+
+    Returns:
+        (None, tuple): returns a tuple with the start and end position for
+        the intersection of the two ranges, or *None* if the intersection is
+        empty
+    """
     if between(start2, start1, end1) or between(end2, start1, end1) or \
        between(start1, start2, end2) or between(end1, start2, end2):
         return max(start1, start2), min(end1, end2)
@@ -111,15 +232,25 @@ def apply_func_window(func, data, window, step=0):
         yield func(data[index:index+window])
 
 
-def range_substract_(range1, ranges):
-    range1 = set(xrange(range1[0], range1[1] + 1))
-    range1.difference_update(
-        *(
-            xrange(x[0], x[1] + 1)
-            for x in ranges
-        )
-    )
+def deprecated(func):
+    '''
+    This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emitted
+    when the function is used.
 
-    for k, g in itertools.groupby(enumerate(range1), lambda (i, x): i - x):
-        group = map(operator.itemgetter(1), g)
-        yield min(group), max(group)
+    from https://wiki.python.org/moin/PythonDecoratorLibrary
+    '''
+
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.warn_explicit(
+            "Call to deprecated function {}.\n{}".format(
+                func.__name__,
+                func.__doc__
+            ),
+            category=DeprecationWarning,
+            filename=func.func_code.co_filename,
+            lineno=func.func_code.co_firstlineno + 1
+        )
+        return func(*args, **kwargs)
+    return new_func

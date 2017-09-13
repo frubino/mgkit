@@ -1,22 +1,58 @@
 from __future__ import division
-from nose.tools import *
+from nose.tools import eq_, ok_
 
 import numpy
 from mgkit.utils import sequence
 from mgkit.utils import trans_tables
 
 
-def test_reverse_aa_coord():
+def test_reverse_aa_coord1():
     res = []
-    exp = [(1, 3), (5, 7), (4, 6), (4, 8), (1, 4)]
+    exp = [(1, 3), (5, 7), (4, 6), (4, 8), (1, 4), (71, 91)]
 
     res.append(sequence.reverse_aa_coord(6, 8, 8))
     res.append(sequence.reverse_aa_coord(2, 4, 8))
     res.append(sequence.reverse_aa_coord(3, 5, 8))
     res.append(sequence.reverse_aa_coord(1, 5, 8))
     res.append(sequence.reverse_aa_coord(5, 8, 8))
+    res.append(sequence.reverse_aa_coord(10, 30, 100))
 
     eq_(res, exp)
+
+
+def test_get_variant_sequence1():
+    seq = 'ACTGATATATGCGCGCATCT'
+    snp = (1, 'C')
+
+    var = sequence.get_variant_sequence(seq, snp)
+
+    eq_(
+        var,
+        'CCTGATATATGCGCGCATCT'
+    )
+
+
+def test_get_variant_sequence2():
+    seq = 'ACTGATATATGCGCGCATCT'
+
+    var = sequence.get_variant_sequence(seq, (1, 'C'), (7, 'G'), (5, 'N'))
+
+    eq_(
+        var,
+        'CCTGNTGTATGCGCGCATCT'
+    )
+
+
+def test_get_variant_sequence3():
+    seq = 'ACTGATATATGCGCGCATCT'
+    snps = [(1, 'C'), (7, 'G'), (5, 'N')]
+
+    var = sequence.get_variant_sequence(seq, *snps)
+
+    eq_(
+        var,
+        'CCTGNTGTATGCGCGCATCT'
+    )
 
 
 def test_convert_aa_to_nuc_coord():
@@ -43,7 +79,11 @@ def test_translate_sequence1():
     seq = 'TTTAAAACCGGGGTC'
     trl = 'FKTGV'
 
-    tseq = sequence.translate_sequence(seq, start=0, tbl=trans_tables.UNIVERSAL)
+    tseq = sequence.translate_sequence(
+        seq,
+        start=0,
+        tbl=trans_tables.UNIVERSAL
+    )
 
     eq_(trl, tseq)
 
@@ -52,7 +92,11 @@ def test_translate_sequence2():
     seq = 'TTTAAAACCGGGGTC'
     trl = 'FKTGV'
 
-    tseq = sequence.translate_sequence(seq, start=1, tbl=trans_tables.UNIVERSAL)
+    tseq = sequence.translate_sequence(
+        seq,
+        start=1,
+        tbl=trans_tables.UNIVERSAL
+    )
 
     ok_(trl != tseq)
 
@@ -61,7 +105,11 @@ def test_translate_sequence3():
     seq = 'TTTAAAACCGGGGTC'
     trl = 'FKTGV'
 
-    tseq = sequence.translate_sequence(seq, start=2, tbl=trans_tables.UNIVERSAL)
+    tseq = sequence.translate_sequence(
+        seq,
+        start=2,
+        tbl=trans_tables.UNIVERSAL
+    )
 
     ok_(trl != tseq)
 
@@ -95,7 +143,7 @@ def test_put_gaps_in_nuc_seq4():
 
 
 def test_put_gaps_in_nuc_seq5():
-    #trim sequence by default
+    # trim sequence by default
     seq = 'TTTAAAACCGGGGTCAA'
     trl = '-FKTG-V-'
 
@@ -103,7 +151,7 @@ def test_put_gaps_in_nuc_seq5():
 
 
 def test_put_gaps_in_nuc_seq6():
-    #don't trim sequence by default
+    # don't trim sequence by default
     seq = 'TTTAAAACCGGGGTCAA'
     trl = '-FKTG-V-'
 
@@ -258,4 +306,146 @@ def test_sequence_composition3():
     eq_(
         sorted(sequence.sequence_composition(seq, chars=('A', 'C'))),
         [('A', 10), ('C', 4)]
+    )
+
+
+def test_get_kmers1():
+    seq = 'ACTG' * 2
+    eq_(
+        list(sequence._get_kmers(seq, 4)),
+        ['ACTG', 'CTGA', 'TGAC', 'GACT', 'ACTG']
+    )
+
+
+def test_get_kmers2():
+    seq = 'ACTG' * 2
+    eq_(
+        list(sequence._get_kmers(seq, 5)),
+        ['ACTGA', 'CTGAC', 'TGACT', 'GACTG']
+    )
+
+
+def test_sliding_window1():
+    seq = 'ACTG' * 5
+    eq_(
+        list(
+             sequence._sliding_window(seq, 4, 4)
+        ),
+        ['ACTG'] * 5
+    )
+
+
+def test_sliding_window2():
+    seq = 'ACTG' * 2
+    eq_(
+        list(
+             sequence._sliding_window(seq, 4, 2)
+        ),
+        ['ACTG', 'TGAC', 'ACTG']
+    )
+
+
+def test_sliding_window3():
+    seq = 'ACTG' * 2
+    eq_(
+        list(
+             sequence._sliding_window(seq, 4, 3)
+        ),
+        ['ACTG', 'GACT']
+    )
+
+
+def test_sequence_signature1():
+    seq = 'ACTG' * 2
+    count = sequence._sequence_signature(
+        seq,
+        4,
+        4,
+        4
+    )
+    eq_(
+        len(count),
+        2
+    )
+
+
+def test_sequence_signature2():
+    seq = 'ACTG' * 2
+    count = sequence._sequence_signature(
+        seq,
+        4,
+        4,
+        4
+    )
+    eq_(
+        count[0]['ACTG'],
+        1
+    )
+
+
+def test_sequence_signature3():
+    seq = 'ACTG' * 2
+    count = sequence._sequence_signature(
+        seq,
+        8,
+        4,
+        4
+    )
+    eq_(
+        count[0]['ACTG'],
+        2
+    )
+
+
+def test_sequence_signature4():
+    seq = 'ACTG' * 2
+    count = sequence._sequence_signature(
+        seq,
+        5,
+        4,
+        5
+    )
+    eq_(
+        len(count),
+        1
+    )
+
+
+def test_sequence_signature_cython():
+    seq = 'ACTG' * 2
+    countP = sequence._sequence_signature(
+        seq,
+        4,
+        4,
+        4
+    )
+    countC = sequence.sequence_signature(
+        seq,
+        4,
+        4,
+        4
+    )
+    eq_(
+        len(countP),
+        len(countC),
+    )
+
+
+def test_sliding_window_cython():
+    seq = 'ACTG' * 5
+    eq_(
+        list(
+             sequence._sliding_window(seq, 4, 4)
+        ),
+        list(
+             sequence.sliding_window(seq, 4, 4)
+        )
+    )
+
+
+def test_get_kmers_cython():
+    seq = 'ACTG' * 2
+    eq_(
+        list(sequence._get_kmers(seq, 4)),
+        list(sequence.get_kmers(seq, 4))
     )

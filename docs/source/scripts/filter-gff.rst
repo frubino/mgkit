@@ -1,5 +1,7 @@
-Filter GFF annotations
-======================
+.. _filter-gff:
+
+filter-gff - Filter GFF annotations
+===================================
 
 Overview
 --------

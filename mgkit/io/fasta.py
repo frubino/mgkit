@@ -45,8 +45,8 @@ def load_fasta(f_handle):
                 cur_seq = []
             # save previous name for loop's else clause
             last_name = cur_name
-            #fasta classico, prende tutti i caratteri tranne il primo ">"
-            #e il whitespace a destra
+            # classic fasta, all characters besides starting ">" and rightmost
+            # whitespace
             cur_name = line[1:].rstrip()
         else:
             cur_seq.append(line.rstrip())
@@ -56,10 +56,61 @@ def load_fasta(f_handle):
         if nseq != 0:
             if cur_name != last_name:
                 yield cur_name, ''.join(cur_seq).upper()
+                nseq += 1
         # case in which only one sequence is present
         else:
             yield cur_name, ''.join(cur_seq).upper()
+            nseq += 1
     f_handle.close()
+
+    LOG.info("Read %d fasta sequences", nseq)
+
+
+def load_fasta_rename(file_handle, name_func=None):
+    """
+    .. versionadded:: 0.3.1
+
+    Renames the header of the sequences using *name_func*, which is called on
+    each header. By default, the behaviour is to keep the header to the left of
+    the first space (BLAST behaviour).
+    """
+    if name_func is None:
+        name_func = lambda x: x.split(' ')[0]
+
+    for seq_id, seq in load_fasta(file_handle):
+        yield name_func(seq_id), seq
+
+
+def load_fasta_prodigal(file_handle):
+    """
+    .. versionadded:: 0.3.1
+
+    Reads a Prodigal aminoacid fasta file and yields a dictionary with
+    basic information about the sequences.
+
+    Arguments:
+        file_handle (str, file): passed to :func:`load_fasta`
+
+    Yields:
+        dict: dictionary with the information contained in the header, the last
+        of the attributes put into key *attr*, while the rest are transformed
+        to other keys: seq_id, seq, start, end (genomic), strand, ordinal of
+    """
+
+    for seq_id, seq in load_fasta(file_handle):
+        prod_seq_id, start, end, strand, attr = seq_id.split(' # ')
+        seq_id, idx = prod_seq_id.rsplit('_', 1)
+
+        yield dict(
+            prod_seq_id=prod_seq_id,
+            seq_id=seq_id,
+            seq=seq,
+            start=int(start),
+            end=int(end),
+            strand='+' if strand == '1' else '-',
+            idx=int(idx),
+            attr=attr
+        )
 
 
 def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
@@ -78,7 +129,7 @@ def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
 
     if wrap is not None:
         seq = '\n'.join(
-            seq[pos:pos+wrap]
+            seq[pos:pos + wrap]
             for pos in xrange(0, len(seq), wrap)
         )
 

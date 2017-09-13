@@ -3,13 +3,34 @@ Dictionary utils
 
 """
 import numpy
+import pandas
+
+
+def merge_dictionaries(dicts):
+    """
+    .. versionadded:: 0.3.1
+
+    Merges keys and values from a list/iterable of dictionaries. The resulting
+    dictionary's values are converted into sets, with the assumption that the
+    values are one of the following: float, str, int, bool
+    """
+    merged = {}
+    for d in dicts:
+        for key, value in d.iteritems():
+            if isinstance(value, (float, str, int, bool)):
+                value = [value]
+            try:
+                merged[key].update(value)
+            except KeyError:
+                merged[key] = set(value)
+    return merged
 
 
 def combine_dict(keydict, valuedict):
     """
     Combine two dictionaries when the values of keydict are iterables. The
-    combined dictionary has the same keys as keydict and the its values are sets
-    containing all the values associated to keydict values in valuedict.
+    combined dictionary has the same keys as keydict and the its values are
+    sets containing all the values associated to keydict values in valuedict.
 
     .. digraph:: keydict
         :alt: key1 -> [v1, v2, .., vN]
@@ -45,7 +66,7 @@ def combine_dict(keydict, valuedict):
             try:
                 comb_dict[key].update(valuedict[value])
             except KeyError:
-                #in case a value isn't in valuedict keys, silently pass
+                # in case a value isn't in valuedict keys, silently pass
                 pass
 
     return comb_dict
@@ -115,7 +136,7 @@ def link_ids(id_map, black_list=None):
             if e_id == s_id:
                 continue
             for s_id2 in s_cps:
-                if not black_list is None:
+                if black_list is not None:
                     if s_id2 in black_list:
                         continue
                 if s_id2 in e_cps:
@@ -242,3 +263,85 @@ def filter_nan(ratios):
         (key, [ratio for ratio in ratios[key] if not numpy.isnan(ratio)])
         for key in ratios
     )
+
+
+class cache_dict_file(object):
+    """
+    .. versionadded:: 0.3.0
+
+    Used to cache the result of a function that yields a tuple (key and value).
+    If the value is found in the internal dictionary (as the class behave), the
+    correspondent value is returned, otherwise the iterator is advanced until
+    the key is found.
+
+    Example:
+        >>> from mgkit.io.blast import parse_accession_taxa_table
+        >>> i = parse_accession_taxa_table('nucl_gb.accession2taxid.gz', key=0)
+        >>> d = cache_dict_file(i)
+        >>> d['AH001684']
+        4400
+    """
+    _iterator = None
+    _dict = None
+
+    def __init__(self, iterator, skip_lines=0):
+        """
+        Arguments:
+            iterator (iter): iterator used in building the dictionary
+            skip_lines (int): how many iterations to skip at the start
+        """
+        for index in xrange(skip_lines):
+            next(iterator)
+        self._iterator = iterator
+        self._dict = {}
+
+    def __getitem__(self, key):
+        try:
+            value = self._dict[key]
+        except KeyError:
+            while True:
+                nkey, nvalue = self.next()
+                if nkey == key:
+                    value = nvalue
+                    break
+        return value
+
+    def next(self):
+        try:
+            key, value = next(self._iterator)
+        except StopIteration:
+            raise KeyError
+        self._dict[key] = value
+        return key, value
+
+
+class HDFDict(object):
+    """
+    .. versionadded:: 0.3.1
+
+    Used a table in a HDFStore (from pandas) as a dictionary. The table must be
+    indexed to perform well. Read only.
+
+    .. note::
+
+        the dictionary cannot be modified and exception:`ValueError` will be
+        raised if the table is not in the file
+    """
+    def __init__(self, file_name, table, cast=int):
+        self._hdf = pandas.HDFStore(file_name, mode='r')
+        self._table = table
+        self._cast = cast
+        if not self._table in self._hdf:
+            raise ValueError(
+                "Table ({}) not found in file ({})".format(
+                    table,
+                    file_name
+                )
+            )
+            self._hdf.close()
+
+    def __getitem__(self, key):
+        df = self._hdf.select(self._table, 'index=key')
+        if df.empty:
+            raise KeyError('Key not found {}'.format(key))
+        return self._cast(df.values)

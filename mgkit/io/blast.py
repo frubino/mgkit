@@ -5,14 +5,17 @@ Blast routines and parsers
 
 import logging
 import collections
+
 from . import gff
 from . import open_file
+from ..utils.common import deprecated
 
-NUM_LINES = 10**6
+NUM_LINES = 10 ** 6
 
 LOG = logging.getLogger(__name__)
 
 
+@deprecated
 def _parse_blast_tab(f_handle, gid_col=1, score_col=11, num_lines=NUM_LINES):
     """
     .. deprecated:: 0.1.12
@@ -55,6 +58,7 @@ def _parse_blast_tab(f_handle, gid_col=1, score_col=11, num_lines=NUM_LINES):
     return hits
 
 
+@deprecated
 def _parse_gi_taxa_table(f_handle, hits, num_lines=NUM_LINES):
     """
     .. deprecated:: 0.1.13
@@ -132,7 +136,7 @@ def add_blast_result_to_annotation(annotation, gi_taxa_dict, taxonomy,
         return
 
     try:
-        #skips if the ID is not in the Uniprot Taxonomy
+        # skips if the ID is not in the Uniprot Taxonomy
         annotation.attributes.blast_taxon = taxonomy[hit.taxon_id].s_name
         annotation.attributes.blast_taxon_idx = hit.taxon_id
     except KeyError:
@@ -159,8 +163,8 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
 
     Yields:
         tuple: iterator of tuples with the first element being the query id
-            after key_func is applied, if requested and the second element of the
-            tuple is a tuple with the requested columns *ret_col*
+        after key_func is applied, if requested and the second element of
+        the tuple is a tuple with the requested columns *ret_col*
 
     .. table:: BLAST+ used with `-outfmt 6`, default columns
 
@@ -211,7 +215,9 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         getattr(file_handle, 'name', repr(file_handle))
     )
 
-    for line in file_handle:
+    lineno = 0
+
+    for lineno, line in enumerate(file_handle):
         if line.startswith('#'):
             continue
 
@@ -229,14 +235,22 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
 
         yield key, values
 
+    LOG.info('Read %d BLAST records', lineno + 1)
+
 
 def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
-                        name_func=None):
+                        name_func=None, feat_type='CDS', seq_lengths=None):
     """
     .. versionadded:: 0.1.12
 
     .. versionchanged:: 0.1.13
         added *name_func* argument
+
+    .. versionchanged:: 0.2.1
+        added *feat_type*
+
+    .. versionchanged:: 0.2.3
+        added *seq_lengths* and added subject *start* and *end* and *e-value*
 
     Parses BLAST results in tabular format using :func:`parse_blast_tab`,
     applying a basic bitscore filter. Returns the annotations associated with
@@ -252,6 +266,9 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
         name_func (func): function to convert the name of the database
             sequences. Defaults to `lambda x: x.split('|')[1]`, which can be
             be used with fasta files provided by Uniprot
+        feat_type (str): feature type in the GFF
+        seq_lengths (dict): dictionary with the sequences lengths, used to
+            deduct the frame of the '-' strand
 
     Yields:
         Annotation: instances of :class:`mgkit.io.gff.Annotation` instance of
@@ -261,21 +278,30 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
     if name_func is None:
         name_func = lambda x: x.split('|')[1]
 
-    #the second function extract the Uniprot ID from the sequence header
+    ret_col = (0, 1, 2, 6, 7, 8, 9, 10, 11)
+
+    # the second function extract the Uniprot ID from the sequence header
     value_funcs = (
         str,
         name_func,
         float,
         int,
         int,
+        int,
+        int,
+        float,
         float
     )
 
-    for seq_id, hit in parse_blast_tab(file_handle, value_funcs=value_funcs):
+    for seq_id, hit in parse_blast_tab(file_handle, ret_col=ret_col,
+                                       value_funcs=value_funcs):
         if hit[-1] < bitscore:
             continue
 
-        yield gff.from_nuc_blast(hit, db=db, dbq=dbq)
+        seq_len = None if seq_lengths is None else seq_lengths[seq_id]
+
+        yield gff.from_nuc_blast(hit, db=db, dbq=dbq, feat_type=feat_type,
+                                 seq_len=seq_len)
 
 
 def parse_fragment_blast(file_handle, bitscore=40.0):
@@ -320,13 +346,16 @@ def parse_fragment_blast(file_handle, bitscore=40.0):
             uidmap[uid] = [hit]
 
     for uid, hits in uidmap.iteritems():
-        #returns the hit with the max bitscore and max identity
+        # returns the hit with the max bitscore and max identity
         yield uid, hits
 
 
+@deprecated
 def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
     """
     .. versionadded:: 0.1.13
+
+    .. deprecated:: 0.2.6
 
     Parses the taxonomy files from the `ncbi ftp
     <ftp://ftp.ncbi.nih.gov/pub/taxonomy/>`_; the file names are
@@ -346,20 +375,94 @@ def parse_gi_taxa_table(file_handle, gids=None, num_lines=NUM_LINES):
         converted into an integer.
 
     """
+    return parse_accession_taxa_table(file_handle, acc_ids=gids, key=0,
+                                      value=1, num_lines=num_lines)
+
+
+def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
+                               num_lines=NUM_LINES, no_zero=True):
+    """
+    .. versionadded:: 0.2.5
+
+    .. versionchanged:: 0.3.0
+        added *no_zero*
+
+    This function superseeds :func:`parse_gi_taxa_table`, since NCBI is
+    deprecating the GIDs in favor of accessions like *X53318*. The new file can
+    be found at the NCBI `ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid`,
+    for DNA sequences (*nt* DB) *nucl_gb.accession2taxid.gz*.
+
+    The file contains 4 columns, the first one is the accession without its
+    version, the second one includes the version, the third column is the
+    taxonomic identifier and the fourth is either the old GID or **na**.
+
+    The column used as key is the *second*, since by default the fasta headers
+    used in NCBI DBs use the versioned identifier. To use the GID as key, the
+    *key* parameter can be set to 3, but if no identifier is found (*na* as per
+    the file README), the line is skipped.
+
+    Arguments:
+        file_handle (str, file): file name or open file handle
+        acc_ids (None, list): if it's not `None` only the keys included in the
+            passed `acc_ids` list will be returned
+        key (int): 0-based index for the column to use as accession. Defaults
+            to the versioned accession that is used in GenBank fasta files.
+        num_lines (None, int): number of which a message is logged. If None,
+            no message is logged
+        no_zero (bool): if True (default) a key with taxon_id of 0 is not yield
+
+    .. note::
+
+        GIDs are being phased out in September 2016:
+        http://www.ncbi.nlm.nih.gov/news/03-02-2016-phase-out-of-GI-numbers/
+
+    """
+
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
 
-    if gids is not None:
-        gids = set(gids)
+    LOG.info(
+        "Reading taxonomic information from file (%s)",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
+
+    if acc_ids is not None:
+        acc_ids = set(acc_ids)
+
+    zero_acc = 0
 
     for idx, line in enumerate(file_handle):
+
+        # skip header
+        if line.startswith('accession'):
+            continue
 
         if (num_lines is not None) and ((idx + 1) % num_lines == 0):
             LOG.info("Parsed %d lines", idx + 1)
 
-        gid, taxon_id = line.strip().split('\t')
+        line = line.strip().split('\t')
 
-        if (gids is not None) and (gid not in gids):
+        acc_id = line[key]
+
+        if (acc_ids is not None) and (acc_id not in acc_ids):
             continue
 
-        yield gid, int(taxon_id)
+        # this is the case if the column used as key is the fourth (GID) and
+        # the GID is not available for that accession. The best case is to skip
+        if acc_id.lower() == 'na':
+            continue
+
+        taxon_id = int(line[value])
+
+        # in cases where 0 is the organism (doesn't exist in the taxonomy)
+        if no_zero and (taxon_id == 0):
+            # LOG.warning("accession '%s' has taxon_id 0", acc_id)
+            zero_acc += 1
+            continue
+
+        yield acc_id, taxon_id
+
+    if no_zero and (zero_acc > 0):
+        LOG.warning("%d accessions have taxon_id 0", zero_acc)
+
+    LOG.info("Parsed %d lines", idx + 1)

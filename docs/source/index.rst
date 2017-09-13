@@ -12,11 +12,11 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   introduction
+
    install
 
-   tutorial
-
-   pipeline
+   pipeline/index
 
    scripts/index
 

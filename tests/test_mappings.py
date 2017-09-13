@@ -1,7 +1,7 @@
-from nose.tools import *
+from nose.tools import eq_, with_setup
 
 import functools
-from mgkit.mappings.taxon import *
+from mgkit.mappings.taxon import map_taxon_by_id_list
 from mgkit.taxon import is_ancestor
 
 import taxon_data

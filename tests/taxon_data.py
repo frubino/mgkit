@@ -5,7 +5,7 @@ from mgkit.taxon import UniprotTaxonomy
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
-data_dir = 'mg_data'
+data_dir = 'misc_data'
 data_file = 'taxonomy.pickle'
 
 try:

@@ -5,16 +5,25 @@ Code related to heatmaps.
 """
 import logging
 import numpy
-import scipy.spatial.distance as distance
-import scipy.cluster.hierarchy as hclust
 from .utils import get_grid_figure
+from .. import DependencyError
+
+try:
+    import scipy.spatial.distance as distance
+    import scipy.cluster.hierarchy as hclust
+except ImportError:
+    raise DependencyError('scipy')
 
 LOG = logging.getLogger(__name__)
 
 
 def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
-                fontsize=18, meshopts=None):
+                fontsize=18, meshopts=None, annot=False, annotopts=None):
     """
+
+    .. versionchanged:: 0.2.3
+        added *annot* and *annot_args* arguments
+
     A basic heatmap using :func:`matplotlib.pyplot.pcolormesh`. It expect a
     :class:`pandas.DataFrame`.
 
@@ -37,6 +46,10 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
         fontsize (int): font size to use for the labels
         meshopts (None, dict): additional options to pass to
             :func:`matplotlib.pyplot.pcolormesh`
+        annot (bool): if True the values of the matrix will be added
+        annot_args (None, dict): dictionary with the options for the
+            annotations. The option *format* is a function that returns the
+            formatted number, defaults to a number with no decimal part
 
     Returns:
         matplotlib.collections.QuadMesh: the return value of
@@ -53,6 +66,11 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
         'pos': 'right',
         'rotation': 'horizontal'
     }
+    annot_args = {
+        'fontsize': fontsize * 0.75,
+        'color': 'k',
+        'format': lambda x: "%.0f" % x
+    }
 
     if meshopts is not None:
         mesh_args.update(meshopts)
@@ -62,6 +80,9 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
 
     if yticks is not None:
         yticks_args.update(yticks)
+
+    if annotopts is not None:
+        annot_args.update(annotopts)
 
     mesh = ax.pcolormesh(data.values, cmap=cmap, norm=norm, **mesh_args)
 
@@ -80,12 +101,31 @@ def baseheatmap(data, ax, norm=None, cmap=None, xticks=None, yticks=None,
     ax.set_ylim(top=len(data))
     ax.set_xlim(right=len(data.columns))
 
+    if annot:
+        for y in range(data.shape[0]):
+            for x in range(data.shape[1]):
+                ax.text(
+                    x + 0.5,
+                    y + 0.5,
+                    annot_args['format'](data.iloc[y, x]),
+                    ha='center',
+                    va='center',
+                    fontsize=annot_args['fontsize'],
+                    color=annot_args['color']
+                )
+
     return mesh
 
 
 def grouped_spine(groups, labels, ax, which='y', spine='right',
-                  spine_opts=None):
+                  spine_opts=None, start=0):
     """
+    .. versionchanged:: 0.2.0
+        added *va*, *ha* keys to *spine_opts*, changed the label positioning
+
+    .. versionchanged:: 0.2.5
+        added *start* parameter
+
     Changes the spine of an heatmap axis given the groups of labels.
 
     .. note::
@@ -103,6 +143,7 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
             are *top* and *bottom*, if which is **y** *left* and *right* are
             accepted
         spine_opts (dict): additional options to pass to the spine class
+        start (int): the start coordinate for the grouped spine. Defaults to 0
 
     """
     spine_args = dict(
@@ -111,7 +152,10 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
         group_lw=1.5,
         in_length=13,
         out_length=15,
-        fontsize=18
+        fontsize=18,
+        va='center',
+        ha='left',
+        rotation='horizontal'
     )
 
     if spine_opts is not None:
@@ -127,8 +171,12 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
         major_ticks.append(major_ticks[-1] + len(group))
 
         group_half = len(group) // 2
+        addendum = 0.5
+
+        if len(group) % 2 == 0:
+            addendum = 0.
         minor_ticks.append(
-            group_half + major_ticks[-2] + (0.5 if group_half % 2 == 0 else 0)
+            group_half + major_ticks[-2] + addendum
         )
 
     ax.spines[spine].set_visible(True)
@@ -141,10 +189,11 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
     else:
         axis = ax.xaxis
 
-    axis.set_ticks(major_ticks)
-    axis.set_ticks(minor_ticks, minor=True)
+    axis.set_ticks(numpy.array(major_ticks) + start)
+    axis.set_ticks(numpy.array(minor_ticks) + start, minor=True)
     axis.set_ticks_position(spine)
-    axis.set_ticklabels(labels, minor=True)
+    axis.set_ticklabels(labels, minor=True, va=spine_args['va'],
+                        ha=spine_args['ha'], rotation=spine_args['rotation'])
     axis.set_ticklabels([], minor=False)
     axis.set_tick_params(
         direction='in',
@@ -162,8 +211,12 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
     )
 
 
-def dendrogram(data, ax, method='complete', orientation='top'):
+def dendrogram(data, ax, method='complete', orientation='top', use_dist=True,
+               dist_func=distance.pdist):
     """
+    .. versionchanged:: 0.1.16
+        added *use_dist* and *dist_func* parameters
+
     Plots a dendrogram of the clustered rows of the given matrix; if the
     columns are to be clustered, the transposed matrix needs to be passed.
 
@@ -174,13 +227,20 @@ def dendrogram(data, ax, method='complete', orientation='top'):
             :func:`scipy.cluster.hierarchy.linkage` is used.
         orientation (str): direction for the plot. *top*, *bottom*, *left* and
             *right* are accepted; *top* will draw the leaves at the bottom.
+        use_dist (bool): if True, the function *dist_func* will be applied to
+            *data* to get a distance matrix
+        dist_func (func): distance function to be used
 
     Returns:
         The dendrogram plotted, as returned by
         :func:`scipy.cluster.hierarchy.dendrogram`
 
     """
-    pairwise_dists = distance.squareform(distance.pdist(data))
+    if use_dist:
+        data = dist_func(data)
+
+    pairwise_dists = distance.squareform(data)
+
     clusters = hclust.linkage(pairwise_dists, method=method)
 
     dendrogram = hclust.dendrogram(
@@ -190,6 +250,7 @@ def dendrogram(data, ax, method='complete', orientation='top'):
         orientation=orientation
     )
     ax.grid(False)
+    ax.set_axis_off()
     ax.set_axis_bgcolor('white')
     ax.set_xticks([])
     ax.set_yticks([])
@@ -219,7 +280,7 @@ def heatmap_clustered(data, figsize=(10, 5), cmap=None, norm=None):
         width_ratios=[0.25, 1],
         height_ratios=[0.25, 1]
     )
-    dendr = dendrogram(data, fig.add_subplot(gs[1, 0]), orientation='right')
+    dendr = dendrogram(data, fig.add_subplot(gs[1, 0]), orientation='left')
     dendc = dendrogram(data.T, fig.add_subplot(gs[0, 1]))
 
     baseheatmap(

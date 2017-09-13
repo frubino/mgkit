@@ -41,6 +41,11 @@ BLACK_LIST_IDS = [
 DEFAULT_SNP_FILTER = {
     'min_cov': MIN_COV,
     'black_list': BLACK_LIST_IDS,
+    'include_only': [
+        mgkit.taxon.ARCHAEA,
+        mgkit.taxon.BACTERIA,
+        mgkit.taxon.FUNGI,
+    ] + mgkit.taxon.PROTISTS.values(),
     'func': mgkit.taxon.is_ancestor
 }
 """

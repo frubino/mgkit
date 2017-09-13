@@ -1,14 +1,14 @@
-from nose.tools import *
+from nose.tools import eq_, with_setup, raises
 import random
 
-from mgkit.taxon import is_ancestor, lowest_common_ancestor, NoLcaFound
+from mgkit.taxon import is_ancestor, last_common_ancestor, NoLcaFound
 
 import taxon_data
 
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_is_ancestor1():
-    #prevotella ruminicola, 839
+    # prevotella ruminicola, 839
     taxon_id = 839
     anc_id = taxon_data.TAXONOMY.find_by_name('prevotella')[0]
     eq_(
@@ -19,7 +19,7 @@ def test_is_ancestor1():
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_is_ancestor2():
-    #any prevotella species
+    # any prevotella species
     taxon_id = random.choice(
         [
             taxon_obj.taxon_id
@@ -43,38 +43,38 @@ def test_is_ancestor3():
 
 
 @with_setup(setup=taxon_data.setup_taxon_data)
-def test_lowest_common_ancestor1():
+def test_last_common_ancestor1():
     eq_(
-        lowest_common_ancestor(taxon_data.TAXONOMY, 838, 1485),
+        last_common_ancestor(taxon_data.TAXONOMY, 838, 1485),
         2
     )
 
 
 @with_setup(setup=taxon_data.setup_taxon_data)
-def test_lowest_common_ancestor2():
+def test_last_common_ancestor2():
     eq_(
-        lowest_common_ancestor(taxon_data.TAXONOMY, 1263, 1485),
+        last_common_ancestor(taxon_data.TAXONOMY, 1263, 1485),
         186802
     )
 
 
 @with_setup(setup=taxon_data.setup_taxon_data)
-def test_lowest_common_ancestor3():
+def test_last_common_ancestor3():
     eq_(
-        lowest_common_ancestor(taxon_data.TAXONOMY, 2172, 1485),
+        last_common_ancestor(taxon_data.TAXONOMY, 2172, 1485),
         131567
     )
 
 
 @with_setup(setup=taxon_data.setup_taxon_data)
-def test_lowest_common_ancestor4():
+def test_last_common_ancestor4():
     eq_(
-        lowest_common_ancestor(taxon_data.TAXONOMY, 1385, 1485),
+        last_common_ancestor(taxon_data.TAXONOMY, 1385, 1485),
         1239
     )
 
 
 @raises(NoLcaFound)
 @with_setup(setup=taxon_data.setup_taxon_data)
-def test_lowest_common_ancestor_fail1():
-    lowest_common_ancestor(taxon_data.TAXONOMY, 256318, 1485)
+def test_last_common_ancestor_fail1():
+    last_common_ancestor(taxon_data.TAXONOMY, 256318, 1485)

@@ -9,7 +9,7 @@ from . import open_file
 
 LOG = logging.getLogger(__name__)
 
-NUM_LINES = 10**7
+NUM_LINES = 10 ** 7
 
 
 MAPPINGS = {
@@ -50,11 +50,21 @@ def parse_uniprot_mappings(file_handle, gene_ids=None, mappings=None,
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
 
+    LOG.info(
+        "Loading Uniprot Mappings from file (%s)",
+        getattr(file_handle, 'name', repr(file_handle))
+    )
+
     if gene_ids is not None:
         gene_ids = set(gene_ids)
+        LOG.info("Mappings for %d gene_ids will be returned", len(gene_ids))
 
     if mappings is not None:
         mappings = set(mappings)
+        LOG.info(
+            "Mappings to '%s' will be returned",
+            ', '.join(mappings)
+        )
 
     for idx, line in enumerate(file_handle):
 
@@ -70,6 +80,8 @@ def parse_uniprot_mappings(file_handle, gene_ids=None, mappings=None,
             continue
 
         yield gene_id, mapping, map_id
+
+    LOG.info("Read %d lines", idx + 1)
 
 
 def uniprot_mappings_to_dict(file_handle, gene_ids, mappings):

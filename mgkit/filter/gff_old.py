@@ -7,8 +7,8 @@ import operator
 import itertools
 from ..utils.common import average_length, between
 
-#------------------------------------------------
-#old filter code, most of it should be deprecated
+# ------------------------------------------------
+# old filter code, most of it should be deprecated
 
 
 def choose_by_score(ann1, ann2):
@@ -19,11 +19,11 @@ def choose_by_score(ann1, ann2):
 def choose_annotation(ann1, ann2, threshold, only_same_gene=False,
                       only_same_strand=True, score_func=choose_by_score):
     "Choos one annotation, based on the score"
-    #if we don't want to exclude overlaps from different strands
+    # if we don't want to exclude overlaps from different strands
     if only_same_strand:
         if ann1.attributes.frame[0] != ann2.attributes.frame[0]:
             return None, None
-    #if we want to filter only genes that have the same id
+    # if we want to filter only genes that have the same id
     if only_same_gene:
         if ann1.attributes.ko != ann2.attributes.ko:
             return None, None
@@ -38,10 +38,10 @@ def choose_annotation(ann1, ann2, threshold, only_same_gene=False,
     a2e_in_a1 = between(a2e, a1s, a1e)
     a1_a2_avg = average_length(a1s, a1e, a2s, a2e)
 
-    #A1 included in A2 o A2 included in A1
+    # A1 included in A2 o A2 included in A1
     if (a1s_in_a2 & a1e_in_a2) | (a2s_in_a1 & a2e_in_a1):
         return score_func(ann1, ann2)
-    #A1 and A2 overlap
+    # A1 and A2 overlap
     elif a1e_in_a2 & (a1s < a2s):
         overlap = a1e - a2s + 1
         if overlap / a1_a2_avg > threshold:
@@ -51,7 +51,7 @@ def choose_annotation(ann1, ann2, threshold, only_same_gene=False,
         if overlap / a1_a2_avg > threshold:
             return score_func(ann1, ann2)
 
-    #In case no condition was met
+    # In case no condition was met
     return None, None
 
 
@@ -96,7 +96,7 @@ def filter_overlapping(annotations, threshold, same_gene, both_strands,
     return winners - losers  # [x for x in set(winners) if x not in losers]
 
 
-#Filters return True if annotation passes a filter and False otherwise
+# Filters return True if annotation passes a filter and False otherwise
 def filter_by_score(threshold, annotation):
     "Filter based on the score of the annotation"
     return True if annotation.score <= threshold else False
@@ -166,4 +166,4 @@ def filter_by_hit_length(ko_len, perc, annotation):
     return hit >= perc
 
 
-#---------------------------------------
+# ---------------------------------------

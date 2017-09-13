@@ -2,11 +2,17 @@
 Module dealing with BAM/SAM files
 """
 
-import numpy
 import logging
 import itertools
-import pandas
-import pysam
+
+from . import DependencyError
+
+try:
+    import pandas
+    import numpy
+    import pysam
+except ImportError:
+    raise DependencyError('numpy, pysam, pandas')
 
 LOG = logging.getLogger(__name__)
 
@@ -77,7 +83,7 @@ def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
     covered = {}
 
     for file_name in files:
-        #pysam 0.8.1 changed Samfile to AlignmentFile
+        # pysam 0.8.1 changed Samfile to AlignmentFile
         alg_file = pysam.AlignmentFile(file_name, 'rb')
 
         if progress and (Bar is not None):
@@ -113,7 +119,7 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
     """
     Adds coverage information to annotations, using BAM files.
 
-    Thee coverage information is added for each sample as a 'sample_cov' and the
+    The coverage information is added for each sample as a 'sample_cov' and the
     total coverage as as 'cov' attribute in the annotations.
 
     .. note::
@@ -139,9 +145,9 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
                 annotation.start,
                 annotation.end
             )
-            #adds the results of the coverage to the total coverage
-            #uses the add method of a Series to make sure that possible
-            #nan values are filled with 0 before the sum
+            # adds the results of the coverage to the total coverage
+            # uses the add method of a Series to make sure that possible
+            # nan values are filled with 0 before the sum
             try:
                 tot_coverage[annotation.uid] = sample_coverage.add(
                     tot_coverage[annotation.uid],
@@ -168,3 +174,109 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
             'cov',
             0 if numpy.isnan(cov_mean) else int(cov_mean)
         )
+
+
+def read_samtools_depth(file_handle, num_seqs=10000):
+    """
+    .. versionadded:: 0.3.0
+
+    Reads a samtools *depth* file, returning a generator that yields the
+    array of each base coverage on a per-sequence base.
+
+    .. note::
+
+        The information on position is not used, to use numpy and save memory.
+        samtools *depth* should be called with the `-aa` option::
+
+             `samtools depth -aa bamfile`
+
+        This options will output both base position with 0 coverage and
+        sequneces with no aligned reads
+
+    Arguments:
+        file_handle (file): file handle of the coverage file
+        num_seqs (int): number of sequence that fires a log message
+
+    Yields:
+        tuple: the first element is the sequence identifier and the second one
+        is the *numpy* array with the positions
+    """
+    curr_key = ''
+    curr_cov = []
+    LOG.info(
+        'Reading coverage from file (%s)',
+        getattr(file_handle, 'name', repr(file_handle))
+    )
+    line_no = 0
+    for line in file_handle:
+        name, pos, cov = line.strip().split('\t')
+        cov = int(cov)
+        if curr_key == name:
+                curr_cov.append(cov)
+        else:
+            if curr_key == '':
+                curr_cov.append(cov)
+                curr_key = name
+            else:
+                line_no += 1
+                if line_no % num_seqs == 0:
+                    LOG.info('Read %d sequence coverage', line_no)
+                yield curr_key, numpy.array(curr_cov)
+                curr_key = name
+                curr_cov = [cov]
+    else:
+        yield curr_key, numpy.array(curr_cov)
+
+    LOG.info('Read a total of %d sequence coverage', line_no + 1)
+
+
+class SamtoolsDepth(object):
+    """
+    .. versionadded:: 0.3.0
+
+    A class used to cache the results of :func:`read_samtools_depth`, while
+    reading only the necessary data from a`samtools depth -aa` file.
+    """
+    file_handle = None
+    data = None
+
+    def __init__(self, file_handle, num_seqs=10**4):
+        """
+        Arguments:
+            file_handle (file): the file handle to pass to
+                :func:`read_samtools_depth`
+            num_seqs (int): number of sequence that fires a log message
+        """
+        self.file_handle = read_samtools_depth(file_handle, num_seqs=num_seqs)
+        self.data = {}
+
+    def region_coverage(self, seq_id, start, end):
+        """
+        Returns the mean coverage of a region. The *start* and *end* parameters
+        are expected to be 1-based coordinates, like the correspondent
+        attributes in :class:`mgkit.io.gff.Annotation` or
+        :class:`mgkit.io.gff.GenomicRange`.
+
+        If the sequence for which the coverage is requested is not found, the
+        *depth* file is read (and cached) until it is found.
+
+        Arguments:
+            seq_id (str): sequence for which to return mean coverage
+            start (int): start of the region
+            end (int): end of the region
+
+        Returns:
+            float: mean coverage of the requested region
+        """
+        try:
+            cov = self.data[seq_id][start-1:end]
+        except KeyError:
+            for key, value in self.file_handle:
+                self.data[key] = value
+                # if the key is the one requested, the loop is stopped and and
+                # the value is kept
+                if key == seq_id:
+                    cov = value[start-1:end]
+                    break
+
+        return cov.mean()

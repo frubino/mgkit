@@ -1,7 +1,9 @@
-from nose.tools import *
+from nose.tools import eq_
 
-from mgkit.utils.common import average_length, between, union_range
-from mgkit.utils.dictionary import *
+from mgkit.utils.common import average_length, between, union_range, \
+    range_intersect
+from mgkit.utils.dictionary import find_id_in_dict, combine_dict, \
+    reverse_mapping, link_ids, combine_dict_one_value, merge_dictionaries
 
 
 def test_avg_len1():
@@ -163,7 +165,7 @@ def test_union_range3():
 def test_union_range4():
     eq_(
         union_range(1, 10, 11, 13),
-        None
+        (1, 13)
     )
 
 
@@ -171,4 +173,70 @@ def test_union_range5():
     eq_(
         union_range(10.0, 13.0, 1, 10),
         (1, 13)
+    )
+
+
+def test_range_intersect1():
+    range1 = (10, 20)
+    range2 = (19, 30)
+    eq_(
+        range_intersect(*(range1 + range2)),
+        (19, 20)
+    )
+
+
+def test_range_intersect2():
+    range1 = (10, 20)
+    range2 = (15, 30)
+    eq_(
+        range_intersect(*(range1 + range2)),
+        (15, 20)
+    )
+
+
+def test_range_intersect3():
+    range1 = (10, 20)
+    range2 = (10, 20)
+    eq_(
+        range_intersect(*(range1 + range2)),
+        (10, 20)
+    )
+
+
+def test_range_intersect4():
+    range1 = (10, 20)
+    range2 = (12, 18)
+    eq_(
+        range_intersect(*(range1 + range2)),
+        (12, 18)
+    )
+
+
+def test_range_intersect_fail1():
+    range1 = (10, 20)
+    range2 = (30, 40)
+    eq_(
+        range_intersect(*(range1 + range2)),
+        None
+    )
+
+
+def test_merge_dictionaries():
+
+    res = merge_dictionaries(
+        [
+            {
+                1: xrange(5)
+            },
+            {
+                1: range(8)
+            },
+            {
+                1: 9
+            }
+        ]
+    )
+    eq_(
+        res,
+        {1: {0, 1, 2, 3, 4, 5, 6, 7, 9}}
     )

@@ -1,0 +1,27 @@
+{
+    #orientation = 'portrait';
+
+    default_fontsize=16;
+    default_textcolor = 'white';
+
+    class mgkit [color = "#e41a1c", width=160, height=80];
+    class data [color = "#4daf4a", width=160, height=80];
+    class software [color = "#377eb8", width=160, height=80];
+    class gff [color = "#984ea3", width=160, height=80];
+    class link-label [textcolor='black'];
+
+    Uniprot, Kegg, Taxonomy, eggNOG, Enzyme [class=data];
+    Kegg, Taxonomy, Uniprot, eggNOG, Enzyme [shape=flowchart.database];
+    snp-data [class=gff];
+    MGKit [class=mgkit];
+    MGKit [label="Diversity\nAnalysis"];
+    snp-data [label="SNPs\nData"];
+
+    Kegg <-> Uniprot [label= '1:m', class=link-label];
+    eggNOG <-> Uniprot [label= '1:m', class=link-label];
+    Enzyme <-> Uniprot [label= 'n:m', class=link-label];
+    Uniprot -> "MGKit";
+
+    Taxonomy -> MGKit;
+    snp-data -> MGKit;
+}

@@ -1,7 +1,99 @@
-#!/usr/bin/env python
 """
-This script downloads sequence data for each gene of interest (some are black
-listed because not relevant to the rumen microbiome) and all the specified taxa.
+Overview
+--------
+
+This script downloads sequence data for each gene of interest (ortholog) and
+all the specified taxa. The files that are downloaded with this script can then
+be used to create HMMER profiles, to search for similarity in a aminoacidic or
+nucleotidic sequence.
+
+Limitations
+-----------
+
+At the moment, the script uses Kegg Orthologs as the ortholog database.
+
+.. warning::
+
+    Some taxa may still black listed, because they are not relevant to the
+    rumen microbiome. If you find such thing to occur to you, please contact me
+    or open an issue on the repository.
+
+Required Data
+-------------
+
+The script requires data from Kegg Orthologs and Uniprot to be downloaded,
+before it can be used. The script **download_data** (:ref:`download-data`)
+automates the process.
+
+Workflow for Custom Profiles
+----------------------------
+
+.. blockdiag::
+
+    {
+        default_fontsize=16;
+        default_textcolor = 'white';
+        orientation = portrait;
+
+        class mgkit [color = "#e41a1c", width=160, height=80];
+        class data [color = "#4daf4a", width=160, height=80];
+        class software [color = "#377eb8", width=160, height=80];
+        class gff [color = "#984ea3", width=160, height=80];
+
+        aa_seqs [label = "AA Sequences", class = data];
+        aa_seqs_orig [label = "AA Sequences\\n(unknown)", class = data];
+        nuc_seqs [label = "Nucleotide\\nSequences", class = data];
+        alg_files [label = "Alignment\\nFiles", class = data];
+        profiles [label = "Custom\\nProfiles", class = data];
+        align [label = "Alignment\\n(clustalo)", class = software];
+        Results [class = data];
+        download_profiles, translate_seq [class = mgkit];
+        download_profiles [fontsize=14];
+        hmmbuild, hmmscan, nhmmscan [class = software];
+
+        download_profiles -> aa_seqs -> align -> alg_files -> hmmbuild;
+        hmmbuild -> profiles -> hmmscan -> Results;
+        nuc_seqs -> translate_seq -> aa_seqs_orig -> hmmscan;
+        profiles -> nhmmscan -> Results;
+        nuc_seqs -> nhmmscan;
+    }
+
+The process of building the profiles to be used with HMMER is a step that
+involves several tasks (illustrated in the Workflow above):
+
+    #. download of data
+    #. alignment of sequences
+    #. conversion in HMMER profiles.
+
+The first step involves, for all ortholog genes, to download all sequences
+available for each taxon level of interest: this will produce a series of file
+which contain the amino-acid sequences for each tuple gene-taxon. This sctipt,
+`download_profiles` can be used. The aminoacidic sequences downloaded are then
+aligned using Clustal Omega (or other) and for each alignment a profile is
+built.
+
+HMMER required the use of aminoacidic sequences, to be match against the
+profiles. The `translate_seq` script can be used to translate nucleotidic
+sequences into aminoacidic ones. However, the last version of HMMER should be
+able to match nucleotidic sequences, but it was not tested by us. The example
+Workflow above illustrate that.
+
+Building profiles in this way, by going through all ortholog genes and choosing
+the taxon level desired, opens the possibility of incrementally refining the
+profiling of a metagenome without having to rerun all profiles again, as only
+the new ones need to be run. Filtering the all the results is a much faster
+operation.
+
+Usage
+-----
+
+The default behaviour is to download all Kegg Orthologs for all taxa in the
+given taxonomy. Taxa can be filtered by both lineage (e.g. archaea, carnivora,
+etc.) and rank (e.g. genus, family, etc.). Another option is to specify the KO
+and taxa IDs to download.
+
+Taxa Filters
+************
 
 The way a taxon is specified is through a few different rules:
 
@@ -11,11 +103,11 @@ The way a taxon is specified is through a few different rules:
   is included in the lineage attribute in the taxonomy.
 
 As an example, if the rank chosen is genus, and the lineage option is
-set to archaea, only the taxa whose rank is genus and that belong to the archaea
-subtree will be downloaded:
+set to archaea, only the taxa whose rank is genus and that belong to the
+archaea subtree will be downloaded::
 
-`download_profiles -m email -r genus -l archaea mg_data/kegg.pickle
-mg_data/taxonomy.pickle`
+    $ download_profiles -m EMAIL -r genus -l archaea mg_data/kegg.pickle \\
+    -t mg_data/taxonomy.pickle
 
 This allows to customise the level of specificity that we want in profiling and
 make the process of downloading faster.
@@ -25,6 +117,30 @@ order or genus for the genes and then specifying a lineage of interest.
 Because each profile is indipendent from each other, it's useful to start the
 download with a certain rank and then run the profiling. During the profiling
 a new download can be started and so on.
+
+Specific Genes and Taxa
+***********************
+
+It is possible to download only specific taxa and KO and can be done using the
+`-i` and `-ko` respectively. When `-ko` is used, loading Kegg Data with `-k` is
+not required and it is up to the user to ensure the correct genes or taxa.
+
+An example to download only KO from 3 different taxa::
+
+    $ download_profiles -v -m EMAIL -ko K00016 -i 9611 9645 9682 \\
+    -t mg_data/taxonomy.pickle
+
+The same example using taxa filtering, instead (at the time of writing)::
+
+    $ download_profiles -v -m EMAIL -ko K00016 -r genus -l carnivora \\
+    -t mg_data/taxonomy.pickle
+
+Changes
+-------
+
+.. versionchanged:: 0.2.1
+    added `-ko` option, resolved issues caused by changes in library
+
 """
 
 import os
@@ -35,6 +151,7 @@ import logging
 import itertools
 import numpy
 import pickle
+import functools
 from cStringIO import StringIO
 import mgkit
 from mgkit.io.fasta import load_fasta
@@ -42,19 +159,13 @@ from mgkit import logger
 from mgkit import kegg
 from mgkit.net import uniprot
 from mgkit import taxon
-from ..filter.taxon import filter_taxonomy_by_lineage, filter_taxonomy_by_rank
 import mgkit.simple_cache
 from . import utils
 
 
-is_ancestor = mgkit.simple_cache.memoize(taxon.is_ancestor)
+is_ancestor = None
 
 LOG = logging.getLogger(__name__)
-
-
-class NotEnoughSeqs(Exception):
-    "Raised if only one sequence was downloaded"
-    pass
 
 
 def set_parser():
@@ -94,14 +205,14 @@ def set_parser():
     parser.add_argument(
         '-r',
         '--taxon-rank',
-        default='genus',
+        default=None,
         action='store',
         help='taxon rank to download'
     )
     parser.add_argument(
         '-l',
         '--lineage',
-        default='archaea',
+        default=None,
         action='store',
         help='lineage for filtering (e.g. archaea)'
     )
@@ -113,6 +224,14 @@ def set_parser():
         type=int,
         help='id(s) of taxa to download. If specified take precedence over ' +
         'lineage-rank'
+    )
+    parser.add_argument(
+        '-ko',
+        '--ko-id',
+        action='store',
+        nargs='+',
+        type=str,
+        help='KO id(s)to download. If specified option -k is not needed'
     )
     parser.add_argument(
         '-R',
@@ -128,14 +247,40 @@ def set_parser():
         action='store_true',
         help='Download all KO from Kegg - exclude blacklist'
     )
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 
 
-def load_data(kegg_data_name, taxon_data, length_data_name):
+def filter_taxonomy_by_lineage(taxonomy, taxon_ids, lineage):
+    LOG.info("Filtering taxa by lineage: %s", lineage)
+    lineage_id = taxonomy.find_by_name(lineage)
+
+    if len(lineage_id) > 1:
+        LOG.warning(
+            'More than one taxon has the "%s" (%s) name, %d (%s) will be used',
+            lineage,
+            ", ".join(str(taxon_id) for taxon_id in lineage_id),
+            lineage_id[0],
+            taxonomy[lineage_id[0]].s_name
+        )
+
+    lineage_id = lineage_id[0]
+
+    for taxon_id in taxon_ids:
+        if is_ancestor(taxon_id, lineage_id):
+            yield taxon_id
+
+
+def filter_taxonomy_by_rank(taxonomy, taxon_ids, rank):
+    LOG.info("Filtering taxa by rank: %s", rank)
+    for taxon_id in taxon_ids:
+        if taxonomy[taxon_id].rank == rank:
+            yield taxon_id
+
+
+def load_data(taxon_data, length_data_name):
     "Loads data for script"
-    kegg_data = kegg.KeggData(kegg_data_name)
     taxonomy = taxon.UniprotTaxonomy(taxon_data)
 
     try:
@@ -145,7 +290,7 @@ def load_data(kegg_data_name, taxon_data, length_data_name):
         LOG.info("Not found (%s), restarting", length_data_name)
         length_data = {}
 
-    return kegg_data, taxonomy, length_data
+    return taxonomy, length_data
 
 
 def choose_taxa(taxonomy, options):
@@ -154,13 +299,21 @@ def choose_taxa(taxonomy, options):
         taxon_ids = set(options.taxon_id)
         LOG.debug(taxon_ids)
     else:
-        taxon_ids = filter_taxonomy_by_rank(
-            taxonomy, options.taxon_rank.lower()
-        )
-        taxon_ids = filter_taxonomy_by_lineage(
-            taxon_ids, options.lineage.lower()
-        )
-        taxon_ids = set(x.taxon_id for x in taxon_ids)
+        taxon_ids = set(x.taxon_id for x in taxonomy)
+        LOG.info("Total number of taxa: %d", len(taxon_ids))
+        if options.taxon_rank is not None:
+            taxon_ids = set(
+                filter_taxonomy_by_rank(
+                    taxonomy, taxon_ids, options.taxon_rank.lower()
+                )
+            )
+            LOG.info("Number reduced to %d", len(taxon_ids))
+        if options.lineage is not None:
+            taxon_ids = set(
+                filter_taxonomy_by_lineage(
+                    taxonomy, taxon_ids, options.lineage.lower()
+                )
+            )
     LOG.info("The number of taxa to download is %d", len(taxon_ids))
     return taxon_ids
 
@@ -175,7 +328,7 @@ def choose_ko_ids(kegg_data, options):
         filt_ko = set(
             itertools.chain(
                 *(kegg_data[path_id].genes.keys()
-                  for path_id in kegg_data if not path_id in kegg.BLACK_LIST)
+                  for path_id in kegg_data if path_id not in kegg.BLACK_LIST)
             )
         )
         ko_ids = dict(
@@ -227,7 +380,7 @@ def filter_found_taxa(taxon_ids_found, taxon_ids, taxonomy):
             )
             continue
         for taxon_id in taxon_ids:
-            if is_ancestor(taxonomy, taxon_id_found, taxon_id):
+            if is_ancestor(taxon_id_found, taxon_id):
                 taxon_ids_download.add(taxon_id)
                 break
 
@@ -249,11 +402,13 @@ def download_ko_sequences(ko_id, taxon_ids, reviewed, contact):
             reviewed
         )
         if seqs.count('>') <= 1:
-            raise NotEnoughSeqs(
-                'Not enough Sequences ({0})'.format(
-                    seqs.count('>')
-                )
+            LOG.warning(
+                'Not enough Sequences (%d) for taxon %d',
+                seqs.count('>'),
+                taxon_id
             )
+            continue
+
         LOG.debug(
             "Downloaded %d sequences for taxon id: %d",
             seqs.count('>'),
@@ -307,14 +462,29 @@ def main():
 
     length_data_name = options.output_dir.rstrip('/') + '-length.pickle'
 
-    kegg_data, taxonomy, length_data = load_data(
-        options.kegg_data,
+    taxonomy, length_data = load_data(
         options.taxon_data,
         length_data_name
     )
 
+    global is_ancestor
+
+    is_ancestor = mgkit.simple_cache.memoize(
+        functools.partial(
+            taxon.is_ancestor,
+            taxonomy
+        )
+    )
+
     taxon_ids = choose_taxa(taxonomy, options)
-    ko_ids = choose_ko_ids(kegg_data, options)
+    if len(taxon_ids) == 0:
+        utils.exit_script("No taxa to download (0)", 3)
+
+    if options.ko_id:
+        ko_ids = set(ko_id.upper() for ko_id in options.ko_id)
+    else:
+        kegg_data = kegg.KeggData(options.kegg_data)
+        ko_ids = choose_ko_ids(kegg_data, options)
 
     for idx, ko_id in enumerate(sorted(ko_ids)):
         if ko_id in (key[0] for key in length_data):
@@ -340,12 +510,13 @@ def main():
                 reviewed,
                 contact
             )
-        except urllib2.HTTPError:
-            LOG.error("Couldn't download sequences for %s", ko_id)
+        except urllib2.HTTPError, error:
+            LOG.error(
+                "Couldn't download sequences for %s: %s",
+                ko_id,
+                str(error)
+            )
             ret_value = 1
-            continue
-        except NotEnoughSeqs, err:
-            LOG.info("%s", err)
             continue
 
         try:
@@ -354,8 +525,12 @@ def main():
         except IOError, error:
             LOG.error("Couldn't write sequences for %s", ko_id)
             LOG.error(str(error))
-            file_list = glob.glob(os.path.join(output_dir,
-                                  '{0}*'.format(ko_id)))
+            file_list = glob.glob(
+                os.path.join(
+                    output_dir,
+                    '{0}*'.format(ko_id)
+                )
+            )
             for fname in file_list:
                 LOG.error("-> %s", fname)
                 os.remove(fname)

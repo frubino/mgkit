@@ -1,10 +1,6 @@
 """
 This modules define classes and function related to manipulation of GFF/GTF
 files.
-
-Needs to be adapted for a more general GFF dialect. It incorporates data from
-metagenomic analysis right now. BaseGFF is the class to use for a more general
-approach.
 """
 from __future__ import print_function
 from __future__ import division
@@ -13,12 +9,22 @@ import random
 import itertools
 import logging
 import uuid
+import json
 import urllib
+# python 2.7 includes OrderedDict, older versions will use
+# the available as ordereddict in PyPI
+try:
+    # python >= 2.7
+    from collections import OrderedDict
+except ImportError:
+    # it's been added as requirement for installation
+    from ordereddict import OrderedDict
+
 import mgkit.io
 from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
 from ..utils.common import between, union_range, ranges_length
-from .. import taxon
+from ..utils.trans_tables import UNIVERSAL
 
 LOG = logging.getLogger(__name__)
 
@@ -60,15 +66,21 @@ def write_gff(annotations, file_handle, verbose=True):
 class GenomicRange(object):
     """
     Defines a genomic range
+
+    .. versionchanged:: 0.2.1
+        using __slots__ for better memory usage
     """
-    seq_id = 'None'
-    "Sequence ID"
-    strand = '+'
-    "Strand"
-    start = None
-    "Start of the range, 1-based"
-    end = None
-    "End of the range 1-based"
+
+    __slots__ = ('seq_id', 'strand', 'start', 'end')
+
+    # seq_id = 'None'
+    # "Sequence ID"
+    # strand = '+'
+    # "Strand"
+    # start = None
+    # "Start of the range, 1-based"
+    # end = None
+    # "End of the range 1-based"
 
     def __init__(self, seq_id='None', start=1, end=1, strand='+'):
         self.seq_id = seq_id
@@ -160,6 +172,26 @@ class GenomicRange(object):
     def __and__(self, other):
         return self.intersect(other)
 
+    def __contains__(self, pos):
+        """
+
+        .. versionchanged:: 0.2.3
+            a range or a subclass are accepted
+
+        .. versionadded:: 0.1.16
+
+        Tests if the position is inside the range of the GenomicRange
+
+        Pos is 1-based as :attr:`GenomicRange.start` and
+        :attr:`GenomicRange.end`
+        """
+        if isinstance(pos, int):
+            return between(pos, self.start, self.end)
+        elif isinstance(pos, GenomicRange):
+            pos = (pos.start, pos.end)
+        return (between(pos[0], self.start, self.end)) and \
+            (between(pos[1], self.start, self.end))
+
     def get_range(self):
         """
         .. versionadded:: 0.1.13
@@ -168,26 +200,51 @@ class GenomicRange(object):
         """
         return (self.start, self.end)
 
+    def get_relative_pos(self, pos):
+        """
+        .. versionadded:: 0.1.16
+
+        Given an absolute position (referred to the reference), convert the
+        position to a coordinate relative to the GenomicRange
+
+        Returns:
+            int: the position relative to the GenomicRange
+
+        Raises:
+            ValueError: if the position is not in the range
+        """
+        if pos not in self:
+            raise ValueError("Position {} not in GenomicRange".format(pos))
+        return pos - self.start + 1
+
 
 class Annotation(GenomicRange):
     """
     .. versionadded:: 0.1.12
 
+    .. versionchanged:: 0.2.1
+        using __slots__ for better memory usage
+
     Alternative implementation for an Annotation. When initialised, If *uid* is
     None, a unique id is added using `uuid.uuid4`.
     """
-    source = 'None'
-    "Annotation source"
-    feat_type = 'None'
-    "Annotation type (e.g. CDS, gene, exon, etc.)"
-    score = 0.0
-    "Score associated to the annotation"
-    phase = 0
-    "Annotation phase, (0, 1, 2)"
-    attr = None
-    "Dictionary with the key value pairs in the last column of a GFF/GTF"
 
-    def __init__(self, seq_id='None', start=1, end=1, strand='+', source='None', feat_type='None', score=0.0, phase=0, uid=None, **kwd):
+    __slots__ = ('source', 'feat_type', 'score', 'phase', 'attr')
+
+    # source = 'None'
+    # "Annotation source"
+    # feat_type = 'None'
+    # "Annotation type (e.g. CDS, gene, exon, etc.)"
+    # score = 0.0
+    # "Score associated to the annotation"
+    # phase = 0
+    # "Annotation phase, (0, 1, 2)"
+    # attr = None
+    # "Dictionary with the key value pairs in the last column of a GFF/GTF"
+
+    def __init__(self, seq_id='None', start=1, end=1, strand='+',
+                 source='None', feat_type='None', score=0.0, phase=0, uid=None,
+                 **kwd):
         super(Annotation, self).__init__(
             seq_id=seq_id,
             start=start,
@@ -211,6 +268,9 @@ class Annotation(GenomicRange):
         """
         .. versionadded:: 0.1.13
 
+        .. versionchanged:: 0.2.0
+            returns a *set* instead of a list
+
         Returns the EC values associated with the annotation, cutting them at
         the desired level.
 
@@ -218,16 +278,16 @@ class Annotation(GenomicRange):
             level (int): level of classification desired (between 1 and 4)
 
         Returns:
-            list: list of all EC numbers associated, at the desired level, if
-            none are found an empty list is returned
+            set: list of all EC numbers associated, at the desired level, if
+            none are found an empty set is returned
         """
         ec = self.attr.get('EC', None)
         if ec is None:
-            return []
+            return set()
 
         ec = ec.split(',')
 
-        return ['.'.join(x.split('.')[:level]) for x in ec]
+        return set(['.'.join(x.split('.')[:level]) for x in ec])
 
     def get_mapping(self, db):
         """
@@ -266,14 +326,36 @@ class Annotation(GenomicRange):
             ','.join(values)
         )
 
+    def get_mappings(self):
+        """
+        .. versionadded:: 0.2.1
+
+        Return a dictionary where the keys are the mapping DBs (lowercase) and
+        and the values are the mapping IDs for that DB
+        """
+        mappings = {}
+
+        for key in self.attr:
+            if key.startswith('map_'):
+                db = key.replace('map_', '').lower()
+                mappings[db] = self.get_mapping(db)
+
+        return mappings
+
     @property
     def taxon_id(self):
         """
+        .. versionchanged:: 0.3.1
+            if taxon_id is set to "None" as a string, it's converted to *None*
+
         taxon_id of the annotation
         """
         value = self.attr.get('taxon_id', None)
-
-        return None if value is None else int(value)
+        try:
+            value = int(value)
+        except (TypeError, ValueError):
+            value = None
+        return value
 
     @taxon_id.setter
     def taxon_id(self, value):
@@ -318,7 +400,7 @@ class Annotation(GenomicRange):
         """
         value = self.attr.get('uid', None)
         if value is None:
-            #old data where the unique id is marked as ko_idx
+            # old data where the unique id is marked as ko_idx
             value = self.attr.get('ko_idx', None)
 
         return value
@@ -333,7 +415,7 @@ class Annotation(GenomicRange):
         try:
             return float(self.attr['bitscore'])
         except KeyError:
-            #legacy for old data
+            # legacy for old data
             bitscore = self.attr.get('bit_score', None)
             return None if bitscore is None else float(bitscore)
 
@@ -347,12 +429,21 @@ class Annotation(GenomicRange):
         try:
             return self.attr['gene_id']
         except KeyError:
-            #legacy for old data
+            # legacy for old data
             return self.attr.get('ko', None)
 
     @gene_id.setter
     def gene_id(self, value):
         self.attr['gene_id'] = value
+
+    @property
+    def length(self):
+        """
+        .. versionchanged:: 0.2.0
+
+        Length of the annotation, uses `len(self)`
+        """
+        return len(self)
 
     @property
     def region(self):
@@ -363,6 +454,64 @@ class Annotation(GenomicRange):
         """
         return "{0}:{1}:{2}".format(self.seq_id, self.start, self.end)
 
+    @property
+    def counts(self):
+        """
+        .. versionadded:: 0.2.2
+
+        Returns the sample counts for the annotation
+        """
+        counts = {}
+
+        for key, value in self.attr.iteritems():
+            if key.startswith('counts_'):
+                key = key.replace('counts_', '')
+                counts[key] = float(value)
+
+        return counts
+
+    @counts.setter
+    def counts(self, counts):
+        """
+        .. versionadded:: 0.2.2
+
+        Sets the sample counts for the annotation
+
+        Arguments:
+            counts (dict): key is the sample name and the count for it
+        """
+        for key, value in counts.iteritems():
+            self.attr["counts_{}".format(key)] = value
+
+    @property
+    def fpkms(self):
+        """
+        .. versionadded:: 0.2.2
+
+        Returns the sample fpkms for the annotation
+        """
+        fpkms = {}
+
+        for key, value in self.attr.iteritems():
+            if key.startswith('fpkms_'):
+                key = key.replace('fpkms_', '')
+                fpkms[key] = float(value)
+
+        return fpkms
+
+    @fpkms.setter
+    def fpkms(self, fpkms):
+        """
+        .. versionadded:: 0.2.2
+
+        Sets the sample fpkms for the annotation
+
+        Arguments:
+            fpkms (dict): key is the sample name and the fpmk for it
+        """
+        for key, value in fpkms.iteritems():
+            self.attr["fpkms_{}".format(key)] = value
+
     def add_exp_syn_count(self, seq, syn_matrix=None):
         """
         .. versionadded:: 0.1.13
@@ -371,12 +520,12 @@ class Annotation(GenomicRange):
 
         Arguments:
             seq (str): sequence corresponding to the annotation seq_id
-            syn_matrix (None, dict): matrix that determines the return values.
-            Defaults to the one defined in the called function
-            :func:`mgkit.utils.sequnce.get_seq_expected_syn_count`
+                syn_matrix (None, dict): matrix that determines the return
+                values. Defaults to the one defined in the called function
+                :func:`mgkit.utils.sequnce.get_seq_expected_syn_count`.
 
         """
-        seq = seq[self.start-1:self.end]
+        seq = seq[self.start - 1:self.end]
 
         if self.strand == '-':
             seq = seq_utils.reverse_complement(seq)
@@ -420,14 +569,191 @@ class Annotation(GenomicRange):
 
         return "{0}\t{1}\n".format(values, attr_column)
 
+    def to_dict(self, exclude_attr=None):
+        """
+        .. versionadded:: 0.3.1
+
+        Return a dictionary representation of the Annotation.
+
+        Arguments:
+            exclude_attr (str,list): attributes to exclude from the dictionary,
+                can be either a single attribute (string) or a list of strings
+
+        Returns:
+            dict: dictionary with the annotation
+        """
+        var_names = (
+            'seq_id', 'source', 'feat_type', 'start', 'end',
+            'score', 'strand', 'phase'
+        )
+
+        dictionary = {}
+
+        for var_name in var_names:
+            dictionary[var_name] = getattr(self, var_name)
+
+        dictionary.update(self.attr)
+
+        if exclude_attr is not None:
+            if isinstance(exclude_attr, str):
+                exclude_attr = [exclude_attr]
+
+            for attr in exclude_attr:
+                del dictionary[attr]
+
+        return dictionary
+
+    def to_json(self):
+        """
+        .. versionadded:: 0.2.1
+
+        .. versionchanged:: 0.3.1
+            now :meth:`Annotation.to_dict` is used
+
+        Returns a json representation of the Annotation
+        """
+
+        return json.dumps(self.to_dict(), separators=(',', ':'))
+
+    def to_mongodb(self, lineage_func=None, indent=None):
+        """
+        .. versionadded:: 0.2.1
+
+        .. versionchanged:: 0.2.2
+            added handling of *counts_* and *fpkms_*
+
+        .. versionchanged:: 0.2.6
+            added *indent* parameter
+
+        Returns a MongoDB document that represent the Annotation.
+
+        Arguments:
+            lineage (func): function used to populate the lineage key, returns
+                a list of taxon_id
+            indent (int): the amount of indent to put in the record, None (the
+                default) is for the most compact - one line for the record
+
+        Returns:
+            str: the MongoDB document, with Annotation.uid as _id
+        """
+
+        # OrderedDict is necessary to keep the order of the keys
+        dictionary = OrderedDict()
+
+        # _id must be the first element
+        dictionary['_id'] = self.uid
+
+        var_names = (
+            'seq_id', 'source', 'feat_type', 'start', 'end', 'score', 'strand',
+            'phase', 'gene_id', 'taxon_id', 'bitscore', 'exp_nonsyn',
+            'exp_syn', 'length', 'dbq', 'coverage'
+        )
+
+        for var_name in var_names:
+            try:
+                dictionary[var_name] = getattr(self, var_name)
+            except AttributeNotFound:
+                pass
+
+        ec_ids = self.get_ec()
+        mappings = self.get_mappings()
+
+        # if one at least has values
+        if ec_ids:
+            mappings['ec'] = list(ec_ids)
+
+        if lineage_func is not None:
+            dictionary['lineage'] = lineage_func(self.taxon_id)
+
+        dictionary['map'] = mappings
+
+        counts = self.counts
+        if counts:
+            dictionary['counts'] = counts
+
+        fpkms = self.fpkms
+        if fpkms:
+            dictionary['fpkms'] = fpkms
+
+        # the rest of the dictionary should be put, excluding special keys:
+        # uid is used as _id in the document
+        # EC is put as a array, as is any mapping like map_KO
+        dictionary.update(
+            dict(
+                (key, value)
+                for key, value in self.attr.iteritems()
+                if (key not in var_names) and (key not in ('uid', 'EC')) and
+                (not key.startswith('map_')) and
+                (not key.startswith('counts_')) and
+                (not key.startswith('fpkms_'))
+            )
+        )
+
+        return json.dumps(dictionary, indent=indent, separators=(',', ':'))
+
     def to_file(self, file_handle):
         """
         Writes the GFF annotation to *file_handle*
         """
         file_handle.write(self.to_gff())
 
-    def to_gtf(self):
-        pass
+    def to_gtf(self, gene_id_attr='uid', sep=' '):
+        """
+        .. versionadded:: 0.1.15
+
+        .. versionchanged:: 0.1.16
+            added *gene_id_attr* parameter
+
+        .. versionchanged:: 0.2.2
+            added *sep* argument, default to a space, now
+
+        Simple conversion to a valid GTF. gene_id and transcript_id are set to
+        *uid* or the attribute specified using the *gene_id_attr* parameter.
+        It's written to be used with *SNPDat*.
+        """
+        var_names = (
+            'seq_id', 'source', 'feat_type', 'start', 'end',
+            'score', 'strand', 'phase'
+        )
+
+        values = '\t'.join(
+            str(getattr(self, var_name))
+            for var_name in var_names
+        )
+
+        # Keys that needs to be at the start of the attributes
+        gtf_attr = ['gene_id', 'transcript_id']
+
+        attr_keys = sorted(self.attr.keys())
+
+        # eliminate gene_id (always present in new ones)
+        try:
+            attr_keys.remove('gene_id')
+        except:
+            pass
+
+        # transcript_id don't always be there
+        try:
+            attr_keys.remove('transcript_id')
+        except ValueError:
+            pass
+
+        attr_values = [self.get_attr(gene_id_attr)] * 2 + [
+            self.attr[attr_key]
+            for attr_key in attr_keys
+        ]
+        attr_keys = gtf_attr + attr_keys
+
+        attr_column = '; '.join(
+            '{0}{1}"{2}"'.format(
+                key,
+                sep,
+                urllib.quote(value, ' ()/')
+            )
+            for key, value in itertools.izip(attr_keys, attr_values)
+        )
+
+        return "{0}\t{1}\n".format(values, attr_column)
 
     @property
     def sample_coverage(self):
@@ -443,7 +769,7 @@ class Annotation(GenomicRange):
         attributes = self.attr
 
         return dict(
-            (attribute.replace('_cov', ''), int(value))
+            (attribute.replace('_cov', ''), float(value))
             for attribute, value in attributes.iteritems()
             if attribute.endswith('_cov')
         )
@@ -475,8 +801,12 @@ class Annotation(GenomicRange):
         """
         .. versionadded:: 0.1.13
 
-        Generic method to get an attribute and convert it to a specific datatype
+        Generic method to get an attribute and convert it to a specific
+        datatype
         """
+        if attr == 'length':
+            return len(self)
+
         try:
             value = self.attr[attr]
         except KeyError:
@@ -499,10 +829,10 @@ class Annotation(GenomicRange):
 
         Return the total coverage for the annotation
 
-        :return int: coverage
+        :return float: coverage
         :raise AttributeNotFound: if no coverage attribute is found
         """
-        return self.get_attr('cov', int)
+        return self.get_attr('cov', float)
 
     @property
     def exp_syn(self):
@@ -522,20 +852,177 @@ class Annotation(GenomicRange):
         """
         return self.get_attr('exp_nonsyn', int)
 
-    def get_nuc_seq(self, seq, reverse=False):
+    def get_nuc_seq(self, seq, reverse=False, snp=None):
         """
         .. versionadded:: 0.1.13
+
+        .. versionchanged:: 0.1.16
+            added *snp* parameter
 
         Returns the nucleotidic sequence that the annotation covers. if the
         annotation's strand is *-*, and *reverse* is True, the reverse
         complement is returned.
+
+        Arguments:
+            seq (seq): chromosome/contig sequence
+            reverse (bool): if True and the strand is '-', a reverse complement
+                is returned
+            snp (tuple): first element is the position of the SNP relative to
+                the Annotation and the second element is the change
+
+        Returns:
+            str: nucleotide sequence with requested transformations
+
         """
-        ann_seq = seq[self.start-1:self.end]
+        ann_seq = seq[self.start - 1:self.end]
+        if snp is not None:
+            ann_seq = seq_utils.get_variant_sequence(ann_seq, snp)
 
         if (self.strand == '-') and reverse:
             ann_seq = seq_utils.reverse_complement(ann_seq)
 
         return ann_seq
+
+    def get_aa_seq(self, seq, start=0, tbl=None, snp=None):
+        """
+        .. versionadded:: 0.1.16
+
+        Returns a translated aminoacid sequence of the annotation. The snp
+        parameter is passed to :meth:`Annotation.get_nuc_seq`
+
+        Arguments:
+            seq (seq): chromosome/contig sequence
+            start (int): position (0-based) from where the correct occurs
+                (frame). If None, the phase attribute is used
+            tbl (dict): dictionary with the translation for each codon,
+                passed to :func:`mgkit.utils.sequence.translate_sequence`
+            snp (tuple): first element is the position of the SNP and the
+                second element is the change
+
+        Returns:
+            str: aminoacid sequence
+        """
+
+        if start is None:
+            start = self.phase
+
+        nuc_seq = self.get_nuc_seq(seq, reverse=True, snp=snp)
+        return seq_utils.translate_sequence(
+            nuc_seq,
+            start=start,
+            tbl=None,
+            reverse=False
+        )
+
+    def add_gc_content(self, seq):
+        """
+        Adds GC content information for an annotation. The formula is:
+
+        .. math::
+            :label: gc_content
+
+            \\frac {(G + C)}{(G + C + A + T)}
+
+        Modifies the instances of the annotation. gc_ratio will be added to its
+        attributes.
+
+        Arguments:
+            seq (str): nucleotide sequence referred in the GFF
+
+        """
+
+        ann_seq = self.get_nuc_seq(
+            seq,
+            reverse=True if self.strand == '-' else False
+        )
+
+        at_sum = (ann_seq.count('A') + ann_seq.count('T'))
+        gc_sum = (ann_seq.count('G') + ann_seq.count('C'))
+
+        gc_cont = gc_sum / (gc_sum + at_sum)
+
+        self.set_attr('gc_cont', gc_cont)
+
+    def add_gc_ratio(self, seq):
+        """
+        Adds GC content information for an annotation. The formula is:
+
+        .. math::
+            :label: gc_ratio
+
+            \\frac {(A + T)}{(G + C)}
+
+        Modifies the instances of the annotation. gc_ratio will be added to its
+        attributes.
+
+        Arguments:
+            seq (str): nucleotide sequence referred in the GFF
+
+        """
+
+        ann_seq = self.get_nuc_seq(
+            seq,
+            reverse=True if self.strand == '-' else False
+        )
+
+        at_sum = (ann_seq.count('A') + ann_seq.count('T'))
+        gc_sum = (ann_seq.count('G') + ann_seq.count('C'))
+
+        gc_ratio = at_sum / gc_sum
+
+        self.set_attr('gc_ratio', gc_ratio)
+
+    def is_syn(self, seq, pos, change, tbl=None, abs_pos=True, start=0):
+        """
+        .. versionadded:: 0.1.16
+
+        Return if a SNP is synonymous or non-synonymous.
+
+        Arguments:
+            seq (seq): reference sequence of the annotation
+            pos (int): position of the SNP on the reference (1-based index)
+            change (str): nucleotidic change
+            tbl (dict): dictionary with the translation table. Defaults to the
+                universal genetic code
+            abs_pos (bool): if True the *pos* is referred to the reference and
+                not a position relative to the annotation
+            start (int or None): phase to be used to get the start position of
+                the codon. if None, the Annotation phase will be used
+
+        Returns:
+            bool: True if the SNP is synonymous, false if it's non-synonymous
+        """
+        if abs_pos:
+            rel_pos = self.get_relative_pos(pos)
+        else:
+            rel_pos = pos
+
+        if start is None:
+            start = self.phase
+
+        if tbl is None:
+            tbl = UNIVERSAL
+
+        # codon number in the sequence
+        codon_index = (rel_pos - start - 1) // 3
+        # the position to slice the seq to get a codon (0-based). It takes into
+        # account the phase (start) and the codon index
+        seq_start = (self.start + start + (codon_index * 3) - 1)
+        # position in the codon using the relative position and the phase/frame
+        # the module will give 1, 2 or 0. -1 will shift the position correctly
+        codon_change = ((rel_pos - start) % 3) - 1
+
+        codon = seq[seq_start:seq_start+3]
+
+        var_codon = list(codon)
+        var_codon[codon_change] = change
+        var_codon = ''.join(var_codon)
+
+        if self.strand == '-':
+            codon = seq_utils.reverse_complement(codon)
+            var_codon = seq_utils.reverse_complement(var_codon)
+
+        return UNIVERSAL[codon] == UNIVERSAL[var_codon]
 
 
 def from_glimmer3(header, line, feat_type='CDS'):
@@ -600,14 +1087,18 @@ class DuplicateKeyError(Exception):
     pass
 
 
-def from_gff(line):
+def from_gff(line, strict=True):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.2.6
+        added *strict* parameter
 
     Parse GFF line and returns an :class:`Annotation` instance
 
     Arguments:
         line (str): GFF line
+        strict (bool): if True duplicate keys raise an exception
 
     Returns:
         Annotation: instance of :class:`Annotation` for the line
@@ -619,10 +1110,10 @@ def from_gff(line):
     line = line.rstrip()
     line = line.split('\t')
 
-    #in case the last column (attributes) is empty
+    # in case the last column (attributes) is empty
     if len(line) < 9:
         values = line
-        #bug in which the phase was not written
+        # bug in which the phase was not written
         if len(line[-1]) > 1:
             line.insert(-1, 0)
     else:
@@ -632,39 +1123,55 @@ def from_gff(line):
         'seq_id', 'source', 'feat_type', 'start', 'end',
         'score', 'strand', 'phase'
     )
-    #the phase sometimes can be set as unknown, using '-'. We prefer using 0
-    var_types = (str, str, str, int, int, float, str, lambda x: 0 if x == '' else int(x))
+    # the phase sometimes can be set as unknown, using '-'. We prefer using 0
+    var_types = (str, str, str, int, int, float, str,
+                 lambda x: 0 if x == '' else int(x))
 
     attr = {}
 
     for var, value, vtype in zip(var_names, values, var_types):
-        attr[var] = vtype(value)
+        try:
+            attr[var] = vtype(value)
+        except ValueError:
+            attr[var] = value
 
-    #in case the last column (attributes) is empty
+    # in case the last column (attributes) is empty
     if len(line) < 9:
         return Annotation(**attr)
 
     for pair in line[-1].split(';'):
         try:
-            #by default the key,value separator '=' is assumed to be used
+            # by default the key,value separator '=' is assumed to be used
             var, value = pair.strip().split('=', 1)
         except ValueError:
-            #in case it doesn't work, it is assumed to be a space
-            var, value = pair.strip().split(' ', 1)
+            # in case it doesn't work, it is assumed to be a space
+            if ' ' in pair.strip():
+                var, value = pair.strip().split(' ', 1)
+            else:
+                # case in which there's an attribute but no value, like a bool
+                var = pair.strip()
+                value = None
 
-        if var in attr:
+        if (var in attr) and strict:
             raise DuplicateKeyError("Duplicate attribute: {0}".format(var))
 
-        attr[var] = urllib.unquote(value.replace('"', ''))
+        # skips possible key/values generated by the line ending with a ';'
+        if not var:
+            continue
+
+        if value is not None:
+            value = urllib.unquote(value.replace('"', ''))
+        attr[var] = value
 
     return Annotation(**attr)
 
 
-def from_sequence(name, seq, feat_type='CDS', **kwd):
+def from_sequence(name, seq, feat_type='SEQUENCE', **kwd):
     """
     .. versionadded:: 0.1.12
 
-    Returns an instance of :class:`Annotation` for the full length of a sequence
+    Returns an instance of :class:`Annotation` for the full length of a
+    sequence
 
     Arguments:
         name (str): name of the sequence
@@ -714,8 +1221,8 @@ def from_aa_blast_frag(hit, parent_ann, aa_seqs):
         seq_id=parent_ann.seq_id,
         source='BLAST',
         feat_type='CDS',
-        start=start+parent_ann.start-1,
-        end=end+parent_ann.start-1,
+        start=start + parent_ann.start - 1,
+        end=end + parent_ann.start - 1,
         score=bitscore,
         strand=strand,
         phase=frame,
@@ -741,8 +1248,8 @@ def from_nuc_blast_frag(hit, parent_ann, db='NCBI-NT'):
         seq_id=parent_ann.seq_id,
         source='BLAST',
         feat_type='CDS',
-        start=start+parent_ann.start-1,
-        end=end+parent_ann.start-1,
+        start=start + parent_ann.start - 1,
+        end=end + parent_ann.start - 1,
         score=bitscore,
         strand=strand,
         phase=0,
@@ -772,9 +1279,16 @@ def annotate_sequence(name, seq, window=None):
         yield annotation
 
 
-def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
+def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False,
+                   **kwd):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.1.16
+        added *to_nuc* parameter
+
+    .. versionchanged:: 0.2.3
+        removed *to_nuc*, the hit can include the subject end/start and evalue
 
     Returns an instance of :class:`Annotation`
 
@@ -792,32 +1306,22 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
         Annotation: instance of :class:`Annotation`
     """
     seq_id = hit[0]
+    gene_id = hit[1]
     strand = '+'
     identity = hit[2]
     bitscore = hit[-1]
     start = hit[3]
     end = hit[4]
+    phase = 0
 
     if start > end:
         start, end = end, start
         strand = '-'
-        if seq_len is None:
-            phase = 0
-        else:
-            if (seq_len - end + 1) % 2 == 0:
-                phase = 1
-            elif (seq_len - end + 1) % 3 == 0:
-                phase = 2
-            else:
-                phase = 0
+        if seq_len is not None:
+            phase = (seq_len - end + 1) % 3
 
     if strand == '+':
-        if start % 2 == 0:
-            phase = 2
-        elif start % 3 == 0:
-            phase = 2
-        else:
-            phase = 0
+        phase = start % 3
 
     annotation = Annotation(
         seq_id=seq_id,
@@ -829,17 +1333,163 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, **kwd):
         strand=strand,
         phase=phase,
         db=db,
-        gene_id=hit[1],
+        gene_id=gene_id,
         identity=identity,
         bitscore=bitscore,
+        frame="{}{}".format('f' if strand == '+' else 'r', phase),
         **kwd
     )
+
+    # the hit includes subject end/start and evalue, as per new version of
+    # mgkit.io.blast.parse_uniprot_blast
+    if len(hit) == 9:
+        annotation.attr['evalue'] = hit[-2]
+        annotation.attr['subject_end'] = hit[-3]
+        annotation.attr['subject_start'] = hit[-4]
 
     return annotation
 
 
-def parse_gff(file_handle, gff_type=from_gff):
+def from_json(line):
     """
+        .. versionadded:: 0.2.1
+
+        Returns an Annotation from a json representation
+    """
+    return Annotation(**json.loads(line))
+
+
+def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
+               db='CUSTOM', custom_profiles=True, noframe=False):
+    """
+    .. versionadded:: 0.1.15
+        first implementation to move old scripts to new GFF specs
+
+    .. versionchanged:: 0.2.1
+        removed compatibility with old scripts
+
+    .. versionchanged:: 0.2.2
+        taxon_id and taxon_name are not saved for non-custom profiles
+
+    .. versionchanged:: 0.3.1
+        added support for non mgkit-translated sequences (*noframe*)
+
+    Parse HMMER results (one line), it won't parse commented lines (starting
+    with *#*)
+
+    Arguments:
+        line (str): HMMER domain table line
+        aa_seqs (dict): dictionary with amino-acid sequences (name->seq),
+            used to get the correct nucleotide positions
+        feat_type (str): string to be used in the 'feature type' column
+        source (str): string to be used in the 'source' column
+        custom_profiles (bool): if True, the profile name contains gene,
+            taxonomy and reviewed information in the form
+            KOID_TAXONID_TAXON-NAME(-nr)
+        noframe (bool): if True, the sequence is assumed to be in frame f0
+
+    Returns:
+        A :class:`Annotation` instance
+
+    .. note::
+
+        if `custom_profiles` is False, gene_id, taxon_id and taxon_name will
+        be equal to the profile name
+
+    """
+    line = line.split()
+    if noframe:
+        # no information on the frame is provided (already a protein, so f0)
+        frame = 'f0'
+        contig = line[0]
+    else:
+        contig, frame = line[0].rsplit('-', 1)
+
+    t_from = int(line[17])
+    t_to = int(line[18])
+    # first get coordinate if sequence is reversed
+    if frame.startswith('r'):
+        seq_len = len(aa_seqs[line[0]])
+        t_from, t_to = seq_utils.reverse_aa_coord(t_from, t_to, seq_len)
+    # necessary only if frame information available
+    if not noframe:
+        # converts in nucleotide coordinates
+        t_from, t_to = seq_utils.convert_aa_to_nuc_coord(
+            t_from,
+            t_to,
+            frame=int(frame[-1])
+        )
+
+    # maintains the aa coordinates
+    aa_from = int(line[17])
+    aa_to = int(line[18])
+    profile_name = line[3]
+    score = float(line[6])
+
+    if custom_profiles:
+        # KOID_TAXONID_TAXON-NAME(-nr)
+        reviewed = 'False' if profile_name.endswith('-nr') else 'True'
+        gene_id, taxon_id, taxon_name = profile_name.split('_')
+    else:
+        gene_id = profile_name
+        taxon_id = taxon_name = None
+
+    annotation = Annotation(
+        seq_id=contig,
+        source=source,
+        feat_type=feat_type,
+        start=t_from,
+        end=t_to,
+        score=score,
+        strand='-' if frame.startswith('r') else '+',
+        phase=int(frame[1]),
+        db=db,
+        gene_id=gene_id,
+        taxon_id=taxon_id,
+        bitscore=float(line[7]),
+
+        # custom for HMMER profiles
+        aa_from=aa_from,
+        aa_to=aa_to,
+        # stores the aa sequence
+        aa_seq=aa_seqs[line[0]][aa_from - 1:aa_to],
+        # evalue
+        evalue=score,
+
+        # maintains HMMER profile information:
+        # profile name
+        name=profile_name,
+        # both strand/phase (e.g r2)
+        frame=frame,
+        # old version of uid
+        # ko_idx=ko_idx,
+        # used in other old profiles, where the taxon name was used instead
+        # of a taxon ID
+        taxon_name=taxon_name
+    )
+    try:
+        annotation.attr['reviewed'] = reviewed
+    except UnboundLocalError:
+        pass
+
+    # removes the None values from non-custom profiles
+    if taxon_id is None:
+        del annotation.attr['taxon_id']
+
+    if taxon_name is None:
+        del annotation.attr['taxon_name']
+
+    return annotation
+
+
+def parse_gff(file_handle, gff_type=from_gff, strict=True):
+    """
+    .. versionchanged:: 0.2.6
+        added *strict* parameter
+
+    .. versionchanged:: 0.2.3
+        correctly handling of GFF with comments of appended sequences
+
     .. versionchanged:: 0.1.12
         added *gff_type* parameter
 
@@ -850,6 +1500,7 @@ def parse_gff(file_handle, gff_type=from_gff):
     Arguments:
         file_handle (str, file): file name or file handle to read from
         gff_type (class): class/function used to parse a GFF annotation
+        strict (bool): if True duplicate keys raise an exception
 
     Yields:
         Annotation: an iterator of :class:`Annotation` instances
@@ -862,9 +1513,22 @@ def parse_gff(file_handle, gff_type=from_gff):
         getattr(file_handle, 'name', repr(file_handle))
     )
 
-    for line in file_handle:
-        annotation = gff_type(line)
+    for index, line in enumerate(file_handle):
+        # the first is for GFF with comments and the second for
+        # GFF with the fasta file attached
+        if line.startswith('#'):
+            continue
+        if line.startswith('>'):
+            break
+
+        annotation = gff_type(line, strict=strict)
         yield annotation
+
+    LOG.info(
+        "Read %d line from file (%s)",
+        index + 1,
+        getattr(file_handle, 'name', repr(file_handle))
+    )
 
 
 def diff_gff(files, key_func=None):
@@ -890,7 +1554,8 @@ def diff_gff(files, key_func=None):
         return
 
     if key_func is None:
-        key_func = lambda x: (x.seq_id, x.strand, x.start, x.end, x.gene_id, x.bitscore)
+        key_func = lambda x: (x.seq_id, x.strand, x.start, x.end, x.gene_id,
+                              x.bitscore)
 
     gff_diff = {}
 
@@ -967,7 +1632,8 @@ def elongate_annotations(annotations):
         if union is None:
             ranges.add((ann1.start, ann1.end))
         else:
-            annotations = sorted(set(annotations) - used, key=lambda x: x.start)
+            annotations = sorted(set(annotations) - used,
+                                 key=lambda x: x.start)
             ranges.add(union)
 
     return ranges
@@ -977,18 +1643,18 @@ def annotation_coverage(annotations, seqs, strand=True):
     """
     .. versionadded:: 0.1.12
 
-    Given a list of annotations and a dictionary where the keys are the sequence
-    names referred in the annotations and the values are the sequences
-    themselves, returns a number which indicated how much the sequence length is
-    "covered" in annotations. If *strand* is True the coverage is strand
+    Given a list of annotations and a dictionary where the keys are the
+    sequence names referred in the annotations and the values are the sequences
+    themselves, returns a number which indicated how much the sequence length
+    is "covered" in annotations. If *strand* is True the coverage is strand
     specific.
 
     Arguments:
         annotations (iterable): iterable of :class:`Annotation` instances
-        seqs (dict): dictionary in which the keys are the sequence names and the
-            the values are the sequneces
-        strand (bool): if True, the values are strand specific (the annotations)
-            are grouped by (seq_id, strand) instead of seq_id
+        seqs (dict): dictionary in which the keys are the sequence names and
+            the values are the sequences
+        strand (bool): if True, the values are strand specific (the
+            annotations) are grouped by (seq_id, strand) instead of seq_id
 
     Yields:
         tuple: the first element is the key, (seq_id, strand) if *strand* is
@@ -1015,6 +1681,57 @@ def annotation_coverage(annotations, seqs, strand=True):
         covered = ranges_length(elongate_annotations(key_ann))
 
         yield key, covered / seq_len * 100
+
+
+def annotation_coverage_sorted(annotations, seqs, strand=True):
+    """
+    .. versionadded:: 0.3.1
+
+    Given a list of annotations and a dictionary where the keys are the
+    sequence names referred in the annotations and the values are the sequences
+    themselves, returns a number which indicated how much the sequence length
+    is "covered" in annotations. If *strand* is True the coverage is strand
+    specific.
+
+    .. note::
+
+        It differs from :func:`annotation_coverage` because it assumes the
+        annotations are correctly sorted and in the values yielded
+
+    Arguments:
+        annotations (iterable): iterable of :class:`Annotation` instances
+        seqs (dict): dictionary in which the keys are the sequence names and
+            the values are the sequences
+        strand (bool): if True, the values are strand specific (the
+            annotations) are grouped by (seq_id, strand) instead of seq_id
+
+    Yields:
+        tuple: the first element is the seq_id, the second the strand (if
+        strand is True, else it's set to *None*), and the third element is the
+        coverage.
+    """
+
+    if strand:
+        key_func = lambda x: (x.seq_id, x.strand)
+    else:
+        key_func = lambda x: x.seq_id
+
+    annotations = group_annotations_sorted(
+        annotations,
+        key_func=key_func
+    )
+
+    for ann in annotations:
+        seq_id = ann[0].seq_id
+        if strand:
+            ann_strand = ann[0].strand
+        else:
+            ann_strand = None
+        seq_len = len(seqs[seq_id])
+
+        covered = ranges_length(elongate_annotations(ann))
+
+        yield seq_id, ann_strand, covered / seq_len * 100
 
 
 def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
@@ -1053,7 +1770,8 @@ def group_annotations(annotations, key_func=lambda x: (x.seq_id, x.strand)):
     return grouped
 
 
-def group_annotations_sorted(annotations, key_func=lambda x: (x.seq_id, x.strand)):
+def group_annotations_sorted(annotations,
+                             key_func=lambda x: (x.seq_id, x.strand)):
     """
     .. versionadded:: 0.1.13
 
@@ -1091,58 +1809,6 @@ def group_annotations_sorted(annotations, key_func=lambda x: (x.seq_id, x.strand
         yield curr_ann
 
 
-def correct_old_annotations(annotations, taxonomy):
-    """
-    .. versionadded:: 0.1.13
-
-    Corrects old annotations containing a mix of taxonomic annotations (or none
-    at all), plus some misspelled taxa.
-
-    * BLAST assigned ID from `blast_taxon_idx` (a number)
-    * Profile assigned ID from `taxon_id` which can be in the forms:
-
-        * `id`
-        * `name.id`
-
-    * A taxon *name* in which case uses the provided  taxonomy to find its
-      ID and returns the first one matching or `None` if no taxonomy is
-      passed.
-
-    The taxon_id attribute is set to the correct one, prefferring the
-    blast_taxon_idx, then taxon_id, which can be attached to the taxon name and
-    as last resort tries to reverse lookup the taxon name.
-
-    :param taxonomy: taxonomy used to resolve the taxon name
-    """
-
-    LOG.debug('Correcting old annotations')
-
-    for annotation in annotations:
-        #a taxon id from blast
-        if ('blast_taxon_idx' in annotation.attr):
-            taxon_id = annotation.attr['blast_taxon_idx']
-        #a taxon id from profile
-        elif 'taxon_id' in annotation.attr:
-            taxon_id = annotation.taxon_id
-        #a taxon name is provided
-        else:
-            #if a taxon_name contains the id
-            if len(annotation.attr['taxon'].split('.')) == 2:
-                taxon_id = annotation.attr['taxon'].split('.')[1]
-            #if a taxon_name DOESN'T contains the id try to reverse
-            #it using the taxonomy (if provided), using the first matching ID
-            else:
-                taxon_name = annotation.attr['taxon'].replace('#', ' ')
-
-                if taxon_name in taxon.MISPELLED_TAXA:
-                    taxon_name = taxon.MISPELLED_TAXA[taxon_name]
-
-                taxon_id = taxonomy.find_by_name(taxon_name)[0]
-
-        if taxon_id is not None:
-            annotation.taxon_id = int(taxon_id)
-
-
 def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid,
                      reverse=False):
     """
@@ -1153,9 +1819,10 @@ def extract_nuc_seqs(annotations, seqs, name_func=lambda x: x.uid,
 
     Arguments:
         annotations (iterable): iterable of :class:`Annotation` instances
-        seqs (dict): dictionary with the sequences referenced in the annotations
-        name_func (func): function used to extract the sequence name to be used,
-            defaults to the uid of the annotation
+        seqs (dict): dictionary with the sequences referenced in the
+            annotations
+        name_func (func): function used to extract the sequence name to be
+            used, defaults to the uid of the annotation
         reverse (bool): if True the annotations on the *-* strand are reverse
             complemented
 
@@ -1205,6 +1872,9 @@ def split_gff_file(file_handle, name_mask, num_files=2):
     """
     .. versionadded:: 0.1.14
 
+    .. versionchanged:: 0.2.6
+        now accept a file object as sole input
+
     Splits a GFF, or a list of them, into a number of files. It is assured that
     annotations for the same sequence are kept in the same file, which is
     useful for cases like filtering, even when the annotations are from
@@ -1227,21 +1897,27 @@ def split_gff_file(file_handle, name_mask, num_files=2):
         >>> name_mask = 'split-file-{0}.gff'
         >>> split_gff_file(files, name_mask, 5)
     """
-    if isinstance(file_handle, str):
-        file_handle = [file_handle]
+    if not isinstance(file_handle, file):
+        if isinstance(file_handle, str):
+            file_handle = [file_handle]
 
-    file_handle = itertools.chain(
-        *(mgkit.io.open_file(x, 'r') for x in file_handle)
-    )
+        file_handle = itertools.chain(
+            *(mgkit.io.open_file(x, 'r') for x in file_handle)
+        )
 
     out_handles = [
-        open(name_mask.format(filen), 'w')
+        mgkit.io.open_file(name_mask.format(filen), 'w')
         for filen in xrange(num_files)
     ]
 
     seq_ids = {}
 
     for line in file_handle:
+        if line.startswith('#'):
+            continue
+        if line.startswith('>'):
+            break
+
         seq_id = line.split('\t')[0]
         try:
             out_handle = out_handles[seq_ids[seq_id]]
@@ -1251,3 +1927,278 @@ def split_gff_file(file_handle, name_mask, num_files=2):
             out_handle = out_handles[new_index]
 
         out_handle.write(line)
+
+
+def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
+                       include_taxa=None):
+    """
+    This function is useful if the number of annotations in a GFF is high or
+    there are memory constraints on the system. It returns a dictionary that
+    can be used with functions like
+    :func:`mgkit.counts.func.load_sample_counts`.
+
+    Arguments:
+        files (iterable, str): file name or list of paths of GFF files
+        taxonomy: taxonomy pickle file, needed if include_taxa is not None
+        exclude_ids (set, list): a list of gene_id to exclude from the
+            dictionary
+        include_taxa (int, iterable): a taxon_id or list thereof to be passed
+            to :meth:`mgkit.taxon.taxonomy.is_ancestor`, so only the taxa that
+            have the those taxon_id(s) as ancestor(s) are kept
+
+    Returns:
+        dict: dictionary where the key is :attr:`Annotation.uid` and the value
+        is a tuple (:attr:`Annotation.gene_id`, :attr:`Annotation.taxon_id`)
+
+    """
+    if isinstance(files, str):
+        files = [files]
+
+    infos = {}
+
+    for fname in files:
+        for annotation in parse_gff(fname):
+            # no information on taxa - exclude
+            if annotation.taxon_id is None:
+                continue
+            # to exclude ribosomial genes or any other kind
+            if exclude_ids is not None:
+                if annotation.gene_id in exclude_ids:
+                    continue
+            if (include_taxa is not None) and (taxonomy is not None):
+                if not taxonomy.is_ancestor(annotation.taxon_id, include_taxa):
+                    continue
+
+            infos[annotation.uid] = (annotation.gene_id, annotation.taxon_id)
+
+    return infos
+
+
+def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
+                      include_taxa=None):
+    """
+    This function is useful if the number of annotations in a GFF is high or
+    there are memory constraints on the system. It returns a dictionary that
+    can be used with functions like
+    :func:`mgkit.counts.func.load_sample_counts`.
+
+    Arguments:
+        files (iterable, str): file name or list of paths of GFF files
+        map_db (str): any kind mapping in the GFF, as passed to
+            :meth:`Annotation.get_mapping`
+        taxonomy: taxonomy pickle file, needed if include_taxa is not None
+        exclude_ids (set, list): a list of gene_id to exclude from the
+            dictionary
+        include_taxa (int, iterable): a taxon_id or list thereof to be passed
+            to :meth:`mgkit.taxon.taxonomy.is_ancestor`, so only the taxa that
+            have the those taxon_id(s) as ancestor(s) are kept
+
+    Returns:
+        dict: dictionary where the key is :attr:`Annotation.gene_id` and the
+        value is a list of mappings, as returned by
+        :meth:`Annotation.get_mapping`
+
+    """
+    infos = {}
+
+    for fname in files:
+        for annotation in parse_gff(fname):
+            # skips genes that are already in the mapping
+            if annotation.gene_id in infos:
+                continue
+            # exclude genes with no taxonomic information
+            if annotation.taxon_id is None:
+                continue
+
+            if exclude_ids is not None:
+                if annotation.gene_id in exclude_ids:
+                    continue
+
+            # skips non bacterial/achaeal genes
+            if (include_taxa is not None) and (taxonomy is not None):
+                if not taxonomy.is_ancestor(annotation.taxon_id, include_taxa):
+                    continue
+
+            infos[annotation.gene_id] = annotation.get_mapping(map_db)
+
+    return infos
+
+
+def parse_gff_files(files, strict=True):
+    """
+    .. versionadded:: 0.1.15
+
+    .. versionchanged:: 0.2.6
+        added *strict* parameter
+
+    Function that returns an iterator of annotations from multiple GFF files.
+
+    Arguments:
+        files (iterable, str): iterable of file names of GFF files, or a single
+            file name
+        strict (bool): if True duplicate keys raise an exception
+
+    Yields:
+        :class:`Annotation`: iterator of annotations
+    """
+    if isinstance(files, str):
+        files = [files]
+
+    return itertools.chain(*(parse_gff(file_name, strict=strict) for file_name in files))
+
+
+def get_annotation_map(annotations, key_func, value_func):
+    """
+    .. versionadded:: 0.1.15
+
+    Applies two functions to an iterable of annotations with an iterator
+    returned with the applied functions. Useful to build a dictionary
+
+    Arguments:
+        annotations (iterable): iterable of annotations
+        key_func (func): function that accept an annotation as argument and
+            returns one value, the first of the returned tuple
+        value_func (func): function that accept an annotation as argument and
+            returns one value, the second of the returned tuple
+
+    Yields:
+        tuple: a tuple where the first value is the result of *key_func* on
+        the passed annotation and the second is the value returned by
+        *value_func* on the same annotation
+    """
+    for annotation in annotations:
+        yield key_func(annotation), value_func(annotation)
+
+
+def convert_gff_to_gtf(file_in, file_out, gene_id_attr='uid'):
+    """
+    .. versionadded:: 0.1.16
+
+    Function that uses :meth:`Annotation.to_gtf` to convert a GFF into GTF.
+
+    Arguments:
+        file_in (str, file): either file name or file handle of a GFF file
+        file_out (str): file name to which write the converted annotations
+    """
+    LOG.info("Writing GTF file to %s", file_out)
+    file_out = open(file_out, 'w')
+    for annotation in parse_gff(file_in):
+        file_out.write(annotation.to_gtf())
+
+
+def from_mongodb(record, lineage=True):
+    """
+    .. versionadded:: 0.2.1
+
+    .. versionchanged:: 0.2.2
+        added handling of *counts_* and *fpkms_*
+
+    .. versionchanged:: 0.2.6
+        better handling of missing attributes and added *lineage* parameter
+
+    Returns a :class:`Annotation` instance from a MongoDB record (created)
+    using :meth:`Annotation.to_mongodb`. The actual record returned by pymongo
+    is a dictionary that is copied, manipulated and passed to the
+    :meth:`Annotation.__init__`.
+
+    Arguments:
+        record (dict): a dictionary with the full record from a MongoDB query
+        lineage (bool): indicates if the lineage information in the record
+            should be kept in the annotation
+
+    Returns:
+        Annotation: instance of :class:`Annotation` object
+    """
+    record = record.copy()
+
+    record['uid'] = record['_id']
+    del record['_id']
+
+    mappings = record['map'].copy()
+    del record['map']
+
+    try:
+        record['EC'] = ','.join(mappings['ec'])
+        del mappings['ec']
+    except KeyError:
+        pass
+
+    try:
+        for key in mappings:
+            record['map_{}'.format(key.upper())] = ','.join(mappings[key])
+    except KeyError:
+        pass
+
+    try:
+        counts = record['counts'].copy()
+        del record['counts']
+        for key in counts:
+            record['counts_{}'.format(key)] = counts[key]
+    except KeyError:
+        pass
+
+    try:
+        fpkms = record['fpkms'].copy()
+        del record['fpkms']
+        for key in fpkms:
+            record['fpkms_{}'.format(key)] = fpkms[key]
+    except KeyError:
+        pass
+
+    if ('lineage' in record) and (not lineage):
+        del record['lineage']
+
+    return Annotation(**record)
+
+
+def from_prodigal_frag(main_gff, blast_gff, attr='ID', split_func=None):
+    """
+    .. versionadded:: 0.2.6
+        *experimental*
+
+    Reads the GFF given in output by PRODIGAL and the resulting GFF from using
+    BLAST (or other software) on the aa or nucleotide file output by PRODIGAL.
+
+    It then integrates the two outputs, so to the PRODIGAL GFF is added the
+    information from the the output of the gene prediction software used.
+
+    Arguments:
+        main_gff (file): GFF file from PRODIGAL
+        blast_gff (file): GFF with the returned annotations
+        attr (str): attribute in the PRODIGAL GFF that is used to identify an
+            annotation
+        split_func (func): function to rename the headers from the predicted
+            sequences back to their parent sequence
+
+    Yields:
+        annotation: annotation for each *blast_gff* back translated
+
+    """
+    if split_func is None:
+        split_func = lambda x: tuple(x.rsplit('_', 1))
+
+    prodigal_gff = {}
+    for annotation in parse_gff(main_gff, strict=False):
+        key = (
+            annotation.seq_id,
+            split_func(annotation.get_attr(attr))[1]
+        )
+        prodigal_gff[key] = (
+            annotation.start,
+            annotation.end,
+            annotation.strand,
+            annotation.get_attr(attr)
+        )
+    for annotation in parse_gff(blast_gff):
+        key = split_func(annotation.seq_id)
+        annotation.set_attr('prodigal_start', annotation.start)
+        annotation.set_attr('prodigal_end', annotation.end)
+        annotation.set_attr('prodigal_strand', annotation.strand)
+
+        start, end, strand, p_id = prodigal_gff[key]
+
+        annotation.seq_id = key[0]
+        annotation.start = start
+        annotation.end = end
+        annotation.set_attr('prodigal_ID', p_id)
+        yield annotation

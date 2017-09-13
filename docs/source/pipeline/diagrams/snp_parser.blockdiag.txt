@@ -1,0 +1,23 @@
+{
+    orientation = 'portrait';
+
+    default_fontsize=16;
+    default_textcolor = 'white';
+
+    class mgkit [color = "#e41a1c", width=160, height=80];
+    class data [color = "#4daf4a", width=160, height=80];
+    class software [color = "#377eb8", width=160, height=80];
+    class gff [color = "#984ea3", width=160, height=80];
+
+    Alignments, "VCF files" [stacked, class=data];
+    Assembly [class=data];
+    "VCF Merge", "SNPs Calling" [class=software];
+    snp_parser, "Add Information" [class=mgkit];
+    GFF [class=gff];
+
+    Alignments -> "Add Information" -> GFF -> snp_parser;
+    Assembly -> "Add Information";
+
+    "Alignments" -> "SNPs Calling" -> "VCF files" -> "VCF Merge" -> snp_parser;
+
+}

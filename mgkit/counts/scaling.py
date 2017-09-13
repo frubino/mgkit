@@ -2,9 +2,14 @@
 Scaling functions for counts
 """
 
-from scipy import stats
-import numpy
-import pandas
+from .. import DependencyError
+
+try:
+    from scipy import stats
+    import numpy
+    import pandas
+except ImportError:
+    raise DependencyError('numpy, scipy, pandas')
 
 
 def scale_factor_deseq(dataframe):
@@ -14,30 +19,31 @@ def scale_factor_deseq(dataframe):
     Returns the scale factor according to he deseq paper. The columns of the
     dataframe are the samples.
 
-    size factor :math:`\\hat{s}_{j}` from deseq paper
+    size factor :math:`\\hat{s}_{j}` for sample *j* (from DESeq paper).
 
     .. math::
 
-        \\hat{s}_{j} =
+        \\hat{s}_{j} = median_{i} (
         \\frac
             {k_{ij}}
             {
                 \\left (
-                \prod_{v=1}^{m}
+                \\prod_{v=1}^{m}
                     k_{iv}
                 \\right )^{1/m}
            }
+        )
 
     """
-    #calc the genes geometric mean over all samples
+    # calc the genes geometric mean over all samples
     gmean = dataframe.apply(stats.gmean, axis=1)
-    #keeps only the genes whose geometric mean is > 0
+    # keeps only the genes whose geometric mean is > 0
     gmean = gmean[gmean > 0]
 
     sample_factors = {}
 
-    #calc the scaling factor for each sample
-    for sample, genes in dataframe.iterkv():
+    # calc the scaling factor for each sample
+    for sample, genes in dataframe.iteritems():
 
         scale_factor = numpy.median(genes.loc[gmean.index] / gmean)
 
@@ -73,4 +79,4 @@ def scale_rpkm(dataframe, gene_len):
     gene_len = gene_len[dataframe.index]
     tot_reads = dataframe.sum().sum()
 
-    return 10**9 * dataframe.div(gene_len * tot_reads, axis='index')
+    return (10 ** 9) * dataframe.div(gene_len * tot_reads, axis='index')

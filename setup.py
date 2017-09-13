@@ -1,20 +1,34 @@
 import sys
+import os
 # import ez_setup
 # ez_setup.use_setuptools()
+import setuptools
+from distutils.extension import Extension
 
-__VERSION__ = "0.1.14"
+try:
+    USE_CYTHON = os.environ['USE_CYTHON']
+    USE_CYTHON = True
+except KeyError:
+    USE_CYTHON = False
+
+ext = '.pyx' if USE_CYTHON else '.c'
+extensions = [
+    Extension("mgkit.utils._sequence", ["mgkit/utils/_sequence" + ext])
+]
+
+if USE_CYTHON:
+    from Cython.Build import cythonize
+    extensions = cythonize(extensions)
+
+__VERSION__ = "0.3.1"
 
 from setuptools import setup, find_packages
 
 install_requires = [
-    'numpy>=1.9.1',
-    'pysam>=0.8.1',
-    'HTSeq>=0.6.1p1',
-    'pandas>=0.15.1',
-    'scipy>=0.14.0',
-    #'matplotlib>=1.4.0',
+    'numpy>=1.9.2',
+    'pandas>=0.18',
+    'progressbar2',
     #'goatools',
-    # 'networkx>=1.9',
 ]
 
 with open('README.rst') as file:
@@ -22,10 +36,27 @@ with open('README.rst') as file:
 
 if sys.version_info < (2, 7):
     install_requires.append('argparse>=1.1')
+    install_requires.append('ordereddict>=1.1')
 
 if sys.version_info < (3, 4):
     #support for enum backported from Python 3.4
     install_requires.append('enum34')
+
+extras_require = {
+    'htseq': ['HTSeq>=0.6.0'],
+    'db': ['semidbm>=0.5.1', 'pymongo>=3.1.1'],
+    'R': 'rpy2>=2.3.8',
+    'pytables': 'tables>=3.4.2',
+    'extra_scripts': [
+        'pysam>=0.8.2.1',
+    ],
+}
+
+extras_require['full'] = [
+    'scipy>=0.15.1',
+    'matplotlib>=1.5',
+    'msgpack-python>=0.4.6'
+] + extras_require['db'] + extras_require['extra_scripts']
 
 setup(
     name="mgkit",
@@ -38,25 +69,31 @@ setup(
     # package_dir={'mgkit': 'mgkit'},
     install_requires=install_requires,
     scripts=[
-        'bin/snp_analysis.py',
+        # 'bin/snp_analysis.py',
+        'scripts/download-taxonomy.sh',
+        'scripts/download-uniprot-taxa.sh',
+        'scripts/download-ncbi-taxa.sh',
+        'scripts/sort-gff.sh',
     ],
-    tests_require=['nose>=1.3', 'yanc'],
-    extras_require={
-        'R': 'rpy2>=2.3.8',
-    },
+    tests_require=['nose>=1.3.4', 'yanc'],
+    extras_require=extras_require,
     entry_points={
         'console_scripts': [
-            'download_data = mgkit.workflow.download_data:main',
+            'download_data = mgkit.workflow.download_data:main [extra_scripts]',
             'download_profiles = mgkit.workflow.download_profiles:main',
-            'filter_gff = mgkit.workflow.filter_gff_old:main',
-            'filter-gff = mgkit.workflow.filter_gff:main',
-            'add-gff-info = mgkit.workflow.add_gff_info:main',
+            'filter-gff = mgkit.workflow.filter_gff:main [extra_scripts]',
+            'add-gff-info = mgkit.workflow.add_gff_info:main [extra_scripts]',
+            'get-gff-info = mgkit.workflow.extract_gff_info:main [db]',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'blast2gff = mgkit.workflow.blast2gff:main',
-            'snp_parser = mgkit.workflow.snp_parser:main',
+            'snp_parser = mgkit.workflow.snp_parser:main [htseq,full]',
             'translate_seq = mgkit.workflow.nuc2aa:main',
-            'fastq_utils = mgkit.workflow.fastq_utils:main',
-            'add_coverage_to_gff = mgkit.workflow.add_coverage:main',
+            'fastq_utils = mgkit.workflow.fastq_utils:main [htseq]',
+            'fastq-utils = mgkit.workflow.fastq_utils:main [htseq]',
+            'taxon-utils = mgkit.workflow.taxon_utils:main [pytables]',
+            'json2gff = mgkit.workflow.json2gff:main',
+            'fasta-utils = mgkit.workflow.fasta_utils:main',
+            'sampling-utils = mgkit.workflow.sampling_utils:main',
         ],
         # 'R': ['R = mgkit.utils:r_func [R]']
     },
@@ -78,5 +115,6 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
-    ]
+    ],
+    ext_modules=extensions,
 )

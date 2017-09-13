@@ -42,14 +42,17 @@ least one entry wasn't found.
 SUPPRESSED = "suppressed at the submitter's request on"
 
 NONE_FOUND = r"ERROR 12.+?.\n?"
-"Regular expression to check if no entry was found, used by :exc:`NoEntryFound`"
+"""
+Regular expression to check if no entry was found, used by :exc:`NoEntryFound`
+"""
 
 LOG = logging.getLogger(__name__)
 "Log instance for this module"
 
 
-def get_sequences_by_ids(embl_ids, contact=None, out_format='fasta', num_req=10,
-                         embl_db=EMBL_DBID, compress=True, strict=False):
+def get_sequences_by_ids(embl_ids, contact=None, out_format='fasta',
+                         num_req=10, embl_db=EMBL_DBID, compress=True,
+                         strict=False):
     """
     Downloads entries using EBI REST API. It can download one entry at a
     time or accept an iterable and all sequences will be downloaded in batches
@@ -138,19 +141,19 @@ def get_sequences_by_ids(embl_ids, contact=None, out_format='fasta', num_req=10,
 
     entries = ''.join(entries)
 
-    #check for suppressed entries
+    # check for suppressed entries
     entries = '\n'.join(
         line for line in entries.split('\n')
         if line.find(SUPPRESSED) == -1
     )
 
     if error_re.search(entries):
-        #if there's no sequences or we want all sequences to be downloaded
+        # if there's no sequences or we want all sequences to be downloaded
         if entries.find('>') == -1:
             raise NoEntryFound("No entry found")
         elif strict:
             raise EntryNotFound("At least one Entry was not found")
-        #in case there's at least one sequence that was retrieved
+        # in case there's at least one sequence that was retrieved
         else:
             entries = ''.join(error_re.split(entries))
             LOG.debug("At least one Entry was not found")
@@ -158,7 +161,8 @@ def get_sequences_by_ids(embl_ids, contact=None, out_format='fasta', num_req=10,
     return entries
 
 
-def dbfetch(embl_ids, db='embl', contact=None, out_format='seqxml', num_req=10):
+def dbfetch(embl_ids, db='embl', contact=None, out_format='seqxml',
+            num_req=10):
     """
     .. versionadded:: 0.1.12
 
@@ -208,9 +212,13 @@ def dbfetch(embl_ids, db='embl', contact=None, out_format='seqxml', num_req=10):
 
 
 def datawarehouse_search(query, domain='sequence', result='sequence_release',
-                         display='fasta', offset=0, length=100000, contact=None,
-                         download='gzip', url=URL_DATAWAREHOUSE):
+                         display='fasta', offset=0, length=100000,
+                         contact=None, download='gzip', url=URL_DATAWAREHOUSE,
+                         fields=None):
     """
+    .. versionchanged:: 0.2.3
+        added *fields* parameter to retrieve tab separated information
+
     .. versionadded:: 0.1.13
 
     Perform a datawarehouse search on EMBL dbs. Instructions on the query
@@ -226,10 +234,13 @@ def datawarehouse_search(query, domain='sequence', result='sequence_release',
         display (str): display option (format to retrieve the entries)
         offset (int): the offset of the search results, defaults to the first
         length (int): number of results to retrieve at the specified offset
+            and the limit is automatically set a 100,000 records for query
         contact (str): email of the user
         download (str): type of response. Gzip responses are automatically
             decompressed
         url (str): base URL for the resource
+        fields (None, iterable): must be an iterable of fields to be returned
+            if display is set to *report*
 
     Returns:
         str: the raw request
@@ -241,22 +252,48 @@ def datawarehouse_search(query, domain='sequence', result='sequence_release',
         >>> query = 'tax_tree(1485) AND mol_type="rRNA"'
         >>> result = 'sequence_release'
         >>> display = 'fasta'
-        >>> data = embl.datawarehouse_search(query, result=result, display=display)
+        >>> data = embl.datawarehouse_search(query, result=result,
+        ... display=display)
         >>> len(data)
         35919
 
+        Each entry taxon_id from the same data can be retrieved using *report*
+        as the *display* option and *fields* an iterable of fields to just
+        ('accession', tax_id'):
+
+        >>> query = 'tax_tree(1485) AND mol_type="rRNA"'
+        >>> result = 'sequence_release'
+        >>> display = 'report'
+        >>> fields = ('accession', 'tax_id')
+        >>> data = embl.datawarehouse_search(query, result=result,
+            display=display, fields=fields)
+
     """
 
+    params = {
+        'query': query,
+        'domain': domain,
+        'result': result,
+        'display': display,
+        'offset': offset,
+        'length': length,
+        'download': download
+    }
+
+    # if display='report', fields can be used to display, but download needs to
+    # be 'txt'
+    if display == 'report':
+        params['download'] = download = 'txt'
+        try:
+            params['fields'] = ','.join(fields)
+        except TypeError:
+            raise ValueError(
+                "the 'fields' parameter must be an iteratble if display is "
+                "equal to 'report'"
+                )
+
     params = urllib.urlencode(
-        {
-            'query': query,
-            'domain': domain,
-            'result': result,
-            'display': display,
-            'offset': offset,
-            'length': length,
-            'download': download
-        }
+        params
     )
 
     data = cStringIO.StringIO(url_read(url, params, agent=contact))
@@ -265,5 +302,3 @@ def datawarehouse_search(query, domain='sequence', result='sequence_release',
         data = gzip.GzipFile(fileobj=data)
 
     return data.read()
-
-#query: 'tax_tree({0}) AND mol_type="rRNA"'

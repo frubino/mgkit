@@ -1,7 +1,7 @@
 """
 Translate nucleotidic sequence in amino acidic sequences
 """
-
+import sys
 import argparse
 import logging
 import itertools
@@ -29,12 +29,16 @@ def set_parser():
         'input_file',
         action='store',
         help='input file with aa sequences',
+        nargs='?',
+        default='-',
         type=argparse.FileType('r')
     )
     parser.add_argument(
         'output_file',
         action='store',
         help='output file with aa sequences',
+        nargs='?',
+        default=sys.stdout,
         type=argparse.FileType('w')
     )
     parser.add_argument(
@@ -64,7 +68,7 @@ def set_parser():
         type=int,
         help='Number of sequences to read/write at a time'
     )
-    utils.add_basic_options(parser)
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
 
@@ -107,7 +111,7 @@ def main():
     "Main function"
     options = set_parser().parse_args()
 
-    #configs log and set log level
+    # configs log and set log level
     logger.config_log(options.verbose)
 
     trans_table = load_trans_table(options.trans_table)

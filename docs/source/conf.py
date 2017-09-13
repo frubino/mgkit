@@ -21,7 +21,9 @@ import sys, os, subprocess
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.3'
+
+# highlight_language = "python"
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -30,30 +32,36 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
-    'sphinx.ext.pngmath',
+    # 'sphinx.ext.imgmath', #either this or mathjax
     'sphinx.ext.viewcode',
     'sphinx.ext.graphviz',
     'sphinxcontrib.actdiag',
     'sphinxcontrib.blockdiag',
-    'sphinxcontrib.napoleon',
+    'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinxarg.ext',
-    #, 'rst2pdf.pdfbuilder'
+    #'sphinxcontrib.bibtex',
+    'sphinxcontrib.programoutput',
 ]
 
 # additional themes
-import sphinx_rtd_theme
 #import sphinx_bootstrap_theme
+#import sphinx_readable_theme
+#import solar_theme
+import sphinx_rtd_theme
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 #blockdiag extension
 blockdiag_antialias = True
 blockdiag_html_image_format = 'SVG'
-blockdiag_tex_image_format = 'PDF'
-blockdiag_fontpath = subprocess.check_output(
-    "locate FreeMonoBold.ttf", shell=True
-).strip()
+blockdiag_latex_image_format = 'PDF'
+import urllib2
+response = urllib2.urlopen(
+    'https://github.com/opensourcedesign/fonts/raw/master/gnu-freefont_freemono/FreeMono.ttf'
+)
+open('FreeMono.ttf', 'w').write(response.read())
+blockdiag_fontpath = 'FreeMono.ttf'
 
 #graphviz
 graphviz_output_format = 'svg'
@@ -79,8 +87,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Metagenomic framework'
-copyright = u'2013, Francesco Rubino'
+project = u'MGKit: Metagenomic framework'
+copyright = u'2013-2015, Francesco Rubino'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -88,7 +96,7 @@ copyright = u'2013, Francesco Rubino'
 #
 # The short X.Y version.
 
-__VERSION__ = '0.1.14'
+__VERSION__ = '0.3.1'
 
 version = __VERSION__
 # The full version, including alpha/beta/rc tags.
@@ -133,10 +141,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-if on_rtd:
-    html_theme = 'default'
-else:
-    html_theme = 'sphinx_rtd_theme' #'solar' 'bootstrap' 'graphite'
+html_theme = 'sphinx_rtd_theme' # 'readable' 'sphinx_rtd_theme' 'solar_theme' 'bootstrap' 'graphite'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -144,13 +149,9 @@ else:
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['./_themes/']
+html_theme_path = ['./_themes/', sphinx_rtd_theme.get_html_theme_path()]
 #bootstrap theme
-#html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
-if not on_rtd:
-  html_theme_path.append(
-    sphinx_rtd_theme.get_html_theme_path()
-)
+#html_theme_path = [solar_theme.theme_path] #sphinx_bootstrap_theme.get_html_theme_path()
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -222,7 +223,7 @@ htmlhelp_basename = 'Metagenomicframeworkdoc'
 
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+'papersize': 'a4paper',
 
 # The font size ('10pt', '11pt' or '12pt').
 #'pointsize': '10pt',
@@ -319,12 +320,12 @@ pdf_style_path = ['.', '_styles']
 # Create a compressed PDF
 # Use True/False or 1/0
 # Example: compressed=True
-#pdf_compressed = False
+pdf_compressed = False
 # A colon-separated list of folders to search for fonts. Example:
-# pdf_font_path = ['/usr/share/fonts', '/usr/share/texmf-dist/fonts/']
+pdf_font_path = ['/usr/share/fonts', '/usr/share/texmf-dist/fonts/']
 
 # Language to be used for hyphenation support
-#pdf_language = "en_GB"
+pdf_language = "en_GB"
 
 # Mode for literal blocks wider than the frame. Can be
 # overflow, shrink or truncate
@@ -333,7 +334,7 @@ pdf_style_path = ['.', '_styles']
 # Section level that forces a break page.
 # For example: 1 means top-level sections start in a new page
 # 0 means disabled
-#pdf_break_level = 0
+pdf_break_level = 1
 
 # When a section starts in a new page, force it to be 'even', 'odd',
 # or just use 'any'
@@ -345,7 +346,7 @@ pdf_style_path = ['.', '_styles']
 # verbosity level. 0 1 or 2
 #pdf_verbosity = 0
 # If false, no index is generated.
-#pdf_use_index = True
+pdf_use_index = True
 # If false, no modindex is generated.
 pdf_use_modindex = True
 # If false, no coverpage is generated.

@@ -18,9 +18,9 @@ def map_taxon_by_id_list(taxon_id, map_ids, func):
             can be mapped.
 
     Example:
-        If mapping a taxon (Prevotella ruminicola) to Prevotella or Clostridium,
-        using as `func` :func:`mgkit.taxon.is_ancestor` and taxonomy is an
-        instance of :class:`mgkit.taxon.UniprotTaxonomy`.
+        If mapping a taxon (Prevotella ruminicola) to Prevotella or
+        Clostridium, using as `func` :func:`mgkit.taxon.is_ancestor` and
+        taxonomy is an instance of :class:`mgkit.taxon.UniprotTaxonomy`.
 
         >>> import functools
         >>> from mgkit.taxon import is_ancestor

@@ -3,7 +3,13 @@ Some test functions to filter sequences
 """
 from __future__ import division
 
-import numpy
+from .. import DependencyError
+
+try:
+    import numpy
+except ImportError:
+    raise DependencyError('numpy')
+
 # from numpy import sum
 # import pandas
 # from scipy.stats import itemfreq
@@ -20,8 +26,8 @@ import numpy
 #     return qualities.prod(axis=1).sum()
 
 
-#direct use: first (0.033ms loop)
-#in trim_by_ee: first (15.9s)
+# direct use: first (0.033ms loop)
+# in trim_by_ee: first (15.9s)
 def expected_error_rate(qualities):
     """
     Calculate the expected error rate for an array of qualities (converted to

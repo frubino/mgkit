@@ -12,8 +12,8 @@ def filter_genesyn_by_taxon_id(gene_syn, taxonomy=None, filter_list=None,
                                exclude=False, func=None):
     """
     Checks if the `taxon_id` attribute of `gene_syn` is the `filter_list`.
-    Excelude reverses the result. If func is supplied, it's used to traverse the
-    `taxonomy`.
+    Excelude reverses the result. If func is supplied, it's used to traverse
+    the `taxonomy`.
 
     Arguments:
         gene_syn: :class:`~mgkit.snps.GeneSyn` instance
@@ -94,8 +94,9 @@ def filter_genesyn_by_coverage(gene_syn, min_cov=None):
 
 def get_default_filters(taxonomy, **kwargs):
     """
-    Retuns a list of filters that are used by default. it needs a valid taxonomy
-    and gets the default arguments from :data:`mgkit.consts.DEFAULT_SNP_FILTER`.
+    Retuns a list of filters that are used by default. it needs a valid
+    taxonomy and gets the default arguments from
+    :data:`mgkit.consts.DEFAULT_SNP_FILTER`.
     """
     filter_opts = consts.DEFAULT_SNP_FILTER.copy()
     filter_opts.update(kwargs)
@@ -107,8 +108,8 @@ def get_default_filters(taxonomy, **kwargs):
     filter_black_list = functools.partial(
         filter_genesyn_by_taxon_id,
         taxonomy=taxonomy,
-        filter_list=filter_opts['black_list'],
-        exclude=True,
+        filter_list=filter_opts['include_only'],
+        exclude=False,
         func=filter_opts['func']
     )
     return [filter_coverage, filter_black_list]

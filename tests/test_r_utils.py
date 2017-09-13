@@ -1,4 +1,4 @@
-from nose.tools import *
+# from nose.tools import *
 from nose import SkipTest
 
 try:

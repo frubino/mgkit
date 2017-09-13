@@ -29,7 +29,10 @@ Used to get the description for the higher level enzyme classes from the file
 def parse_expasy_file(file_name):
     """
     Used to load enzyme descriptions from the file *enzclass.txt* on
-    `expasy <http://expasy.org>`_
+    `expasy <http://expasy.org>`_.
+
+    The FTP url for enzclass.txt is:
+    `<ftp://ftp.expasy.org/databases/enzyme/enzclass.txt>`_
     """
     labels = {}
 
@@ -115,3 +118,68 @@ def change_mapping_level(ec_map, level=3):
         yield gene_id, set(
             get_enzyme_level(ec_id, level=level) for ec_id in ec_list
         )
+
+
+def get_mapping_level(ec_map, level=3):
+    """
+    .. versionadded:: 0.3.0
+
+    Given a dictionary, whose values are iterable of EC numbers, returns an
+    iterator that can be used to build a dictionary with the same top level
+    keys and the values are sets of the transformed EC numbers.
+
+    Arguments:
+        ec_map (dict): dictionary genes to EC
+        level (int): number from 1 to 4, to specify the level of the mapping,
+            passed to :func:`get_enzyme_level`
+
+    Yields:
+        tuple: a tuple (gene_id, set(ECs)), which can be passed to *dict* to
+        make a dictionary
+    """
+    for gene_id, ec_list in ec_map.iteritems():
+
+        if not ec_list:
+            continue
+
+        if isinstance(ec_list, str):
+            ec_list = [ec_list]
+
+        yield gene_id, set(
+            get_enzyme_level(ec_id, level=level) for ec_id in ec_list
+        )
+
+
+def get_enzyme_full_name(ec_id, ec_names, sep=', '):
+    """
+    .. versionadded:: 0.2.1
+
+    From a EC identifiers and a dictionary of names builds a comma separated
+    name (by default) that identifies the function of the enzyme.
+
+    Arguments:
+        ec_id (str): EC identifier
+        ec_names (dict): a dictionary of names that can be produced using
+            :func:`parse_expasy_file`
+        sep (str): string used to join the names
+
+    Returns:
+        str: the enzyme classification name
+    """
+
+    name_list = []
+
+    while True:
+        try:
+            name_list.append(
+                ec_names[ec_id]
+            )
+        except KeyError:
+            pass
+
+        ec_id = '.'.join(ec_id.split('.')[:-1])
+
+        if not ec_id:
+            break
+
+    return sep.join(reversed(name_list))

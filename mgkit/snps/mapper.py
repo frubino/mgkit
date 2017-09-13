@@ -44,7 +44,7 @@ def map_taxon_id_to_rank(taxon_id, rank=None, taxonomy=None,
     """
     ranked_taxon = taxonomy.get_ranked_taxon(taxon_id, rank=rank)
 
-    #in case we don't want to include higher taxa
+    # in case we don't want to include higher taxa
     if (ranked_taxon.rank != rank) and (not include_higher):
         return
 

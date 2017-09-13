@@ -66,7 +66,7 @@ def group_annotation_by_mapping(annotations, mapping, attr='ko'):
         try:
             categories = mapping[getattr(annotation.attributes, attr)]
         except KeyError:
-            #not included in the categories
+            # not included in the categories
             continue
         for categ in categories:
             grouped[categ].append(annotation)

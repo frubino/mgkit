@@ -1,5 +1,7 @@
-Convert BLAST output to GFF
-===========================
+.. _blast2gff:
+
+blast2gff - Convert BLAST output to GFF
+=======================================
 
 Overview
 --------

@@ -1,5 +1,11 @@
 """
 Module containing functions related to sequence data
+
+.. note::
+
+    For those functions without a docstring, look at the same with a
+    underscore ('_') prepended.
+
 """
 from __future__ import division  # add check to use only on python 2.x
 
@@ -7,8 +13,14 @@ import itertools
 import logging
 import random
 import numpy
+import pandas
+
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
+import collections
+from ..io import fasta
+from ._sequence import get_kmers, sliding_window, sequence_signature, \
+    signatures_matrix
 
 LOG = logging.getLogger(__name__)
 
@@ -101,8 +113,8 @@ def translate_sequence(sequence, start=0, tbl=None, reverse=False):
 def put_gaps_in_nuc_seq(nuc_seq, aa_seq, trim=True):
     """
     Match the gaps in an amino-acid aligned sequence to its original nucleotide
-    sequence. If the nucleotide sequence is not a multiple of 3, the trim option
-    by default trim those bases from the output.
+    sequence. If the nucleotide sequence is not a multiple of 3, the trim
+    option by default trim those bases from the output.
 
     :param str nuc_seq: original nucleotide sequence
     :param str aa_seq: aligned amino-acid sequence
@@ -149,7 +161,10 @@ def get_syn_matrix(trans_table=None, nuc_list=None):
     if nuc_list is None:
         nuc_list = REV_COMP
 
-    syn_matrix = dict((codon, {'syn': 0, 'nonsyn': 0}) for codon in trans_table)
+    syn_matrix = dict(
+        (codon, {'syn': 0, 'nonsyn': 0})
+        for codon in trans_table
+    )
 
     for codon1 in trans_table:
         for frame in range(0, 3):
@@ -158,7 +173,7 @@ def get_syn_matrix(trans_table=None, nuc_list=None):
                 codon2[frame] = nuc
                 codon2 = ''.join(codon2)
 
-                #skips if its the same
+                # skips if its the same
                 if codon1 == codon2:
                     continue
 
@@ -181,7 +196,10 @@ def get_syn_matrix_all(trans_table=None):
     if trans_table is None:
         trans_table = TRANS_TABLE
 
-    syn_matrix = dict((codon, {'syn': 0, 'nonsyn': 0}) for codon in trans_table)
+    syn_matrix = dict(
+        (codon, {'syn': 0, 'nonsyn': 0})
+        for codon in trans_table
+    )
 
     for codon1, codon2 in itertools.permutations(trans_table, 2):
         if trans_table[codon1] == trans_table[codon2]:
@@ -219,6 +237,37 @@ def get_seq_expected_syn_count(seq, start=0, syn_matrix=None):
     return seq_syn, seq_nonsyn
 
 
+def get_variant_sequence(seq, *snps):
+    """
+    .. versionadded:: 0.1.16
+
+    Return a sequence changed in the positions requested.
+
+    Arguments:
+        seq (str): a sequence
+        *snps (tuple): each argument passed is a tuple with the first element
+            as a position in the sequence (1-based index) and the second
+            element is the character to substitute in the sequence
+
+    Returns:
+        str: string with the changed characters
+
+    Example:
+        >>> get_variant_sequence('ACTGATATATGCGCGCATCT', (1, 'C'))
+        'CCTGNTGTATGCGCGCATCT'
+
+    .. note::
+
+        It is used for nucleotide sequences, but it is valid to use any string
+    """
+    seq = list(seq)
+
+    for pos, change in snps:
+        seq[pos - 1] = change
+
+    return ''.join(seq)
+
+
 def convert_aa_to_nuc_coord(start, end, frame=0):
     """
     Converts aa coordinates to nucleotidic ones. The coordinates must be from
@@ -235,7 +284,7 @@ def convert_aa_to_nuc_coord(start, end, frame=0):
 
     .. note::
 
-        the coordinates a assumed to be 1-based indices
+        the coordinates are assumed to be 1-based indices
 
     """
     start = (start - 1) * 3 + 1  # gets the first base of the codon
@@ -252,7 +301,7 @@ def reverse_aa_coord(start, end, seq_len):
     Arguments:
         start (int): start of the annotation
         end (int): end of the annotation
-        seq_len (int): aa sequence lenght
+        seq_len (int): aa sequence length
 
     Returns:
         tuple: reversed (from strand - to strand +) coordinates. The first
@@ -262,19 +311,16 @@ def reverse_aa_coord(start, end, seq_len):
     .. note::
 
         * start and end are 1-based indices
-        * refer to :class:`GFFKegg.from_hmmer` code for details
 
     """
-    feat_len = end - start + 1  # length of the feature
-    tmp_start = seq_len - end + 1
-    tmp_end = tmp_start + feat_len - 1
 
-    return tmp_start, tmp_end
+    return (seq_len - end + 1, seq_len - start + 1)
 
 
 def calc_n50(seq_lengths):
     """
-    Calculate the N50 statistics for a :class:`numpy.array` of sequence lengths.
+    Calculate the N50 statistics for a :class:`numpy.array` of sequence
+    lengths.
 
     The algorithm finds in the supplied array the element (contig length) for
     which the sum all contig lengths equal or greater than it is equal to half
@@ -341,12 +387,19 @@ class Alignment(object):
         "Get the length of the alignment"
         return len(self._seqs[0])
 
-    def get_consensus(self):
+    def get_consensus(self, nucl=True):
         """
+        .. versionchanged:: 0.1.16
+            added *nucl* parameter
+
         The consensus sequence is constructed by checking the nucleotide that
         has the maximum number of counts for each position in the alignment.
 
-        :return str: consensus sequence
+        Arguments:
+            nucl (bool): specify if the alignment is nucleotidic
+
+        Returns:
+            str: consensus sequence
         """
 
         cons_seq = []
@@ -354,10 +407,14 @@ class Alignment(object):
 
         for pos in range(0, self.get_seq_len()):
             site = self.get_position(pos)
-            nuc_pos = max(
-                ((site.count(nuc), nuc) for nuc in nucs),
-                key=lambda x: x[0]
-            )[1]
+            if nucl:
+                nuc_pos = max(
+                    ((site.count(nuc), nuc) for nuc in nucs),
+                    key=lambda x: x[0]
+                )[1]
+            else:
+                nuc_pos = max(collections.Counter(x for x in site if x != '-'))
+
             cons_seq.append(nuc_pos)
         return ''.join(cons_seq)
 
@@ -458,9 +515,9 @@ def check_snp_in_seq(ref_seq, pos, change, start=0, trans_table=None):
 
     :return bool: True if it is a synonymous change, False if non-synonymous
     """
-    #pos is expected to be a 1 based index
-    #returns true if snp is synonymous
-    #start is expected to be 0 based
+    # pos is expected to be a 1 based index
+    # returns true if snp is synonymous
+    # start is expected to be 0 based
     if trans_table is None:
         trans_table = TRANS_TABLE
 
@@ -510,7 +567,7 @@ def sequence_gc_content(sequence):
     Calculate GC content information for an annotation. The formula is:
 
     .. math::
-        :label: ge_content
+        :label: gc_content
 
         \\frac {(G + C)}{(G + C + A + T)}
 
@@ -548,3 +605,165 @@ def sequence_composition(sequence, chars=tuple(REV_COMP)):
 
     for nuc in chars:
         yield nuc, sequence.count(nuc)
+
+
+def get_contigs_info(file_name, pp=False):
+    """
+    .. versionchanged:: 0.2.4
+       file_name can be a *dict* name->seq or a list of sequences
+
+    .. versionadded:: 0.2.1
+
+    Given a file name for a fasta file with sequences, a dictionary of
+    name->seq, or a list of sequences, returns the following information in a
+    tuple, or a string if *pp* is True:
+
+    - number of sequences
+    - total base pairs
+    - max length
+    - min length
+    - average length
+    - N50 statistic
+
+    Arguments:
+        file_name (str): fasta file to open
+        pp (bool): if True, a formatted string is returned
+
+    Returns:
+        str, tuple: the returned value depends on the value of *pp*, if True a
+        formatted string is returned, otherwise the tuple with all values is.
+    """
+
+    if isinstance(file_name, dict):
+        seqs = list(file_name.itervalues())
+        file_name = 'dictionary'
+    elif isinstance(file_name, list):
+        seqs = list(file_name)
+        file_name = 'list'
+    else:
+        seqs = list(seq for name, seq in fasta.load_fasta(file_name))
+
+    lengths = numpy.array([len(x) for x in seqs])
+
+    info = (
+        len(seqs),
+        lengths.sum(),
+        lengths.max(),
+        lengths.min(),
+        lengths.mean(),
+        calc_n50(lengths),
+    )
+
+    if pp:
+        info_str = '{}: {} contigs, {} bp, max {}, min {}, avg {:.2f}, n50 {}'
+        info = info_str.format(
+            file_name, *info
+        )
+
+    return info
+
+
+def _sliding_window(seq, size, step=None):
+    """
+    .. versionadded:: 0.2.6
+
+    Returns a generator, with every iteration yielding a subsequence of size
+    *size*, with a step of *step*.
+
+    Arguments:
+        seq (str): sequnece
+        size (int): size of the sliding window
+        step (int, None): the step to use in the sliding window. If *None*,
+            half of the sequence length is used
+
+    Yields:
+        str: a subsequence of size *size* and step *step*
+    """
+    for index in xrange(0, len(seq) - size + 1, size // 2 if step is None else step):
+        yield seq[index:index+size]
+
+
+def _get_kmers(seq, k):
+    """
+    .. versionadded:: 0.2.6
+
+    Returns a generator, with every iteration yielding a kmer of size *k*
+
+    Arguments:
+        seq (str): sequence
+        k (int): kmer size
+
+    Yields:
+        str: a portion of *seq*, of size *k* with a step of *1*
+    """
+    for index in xrange(0, len(seq) - k + 1):
+        yield seq[index:index+k]
+
+
+def _sequence_signature(seq, w_size, k_size=4, step=None):
+    """
+    .. versionadded:: 0.2.6
+
+    Returns the signature of a sequence, based on a kmer length, over a sliding
+    window. Each sliding window signature is placed in order into a list, with
+    each element being a :class:`collections.Counter` instance whose keys are
+    the kmer found in that window.
+
+    Arguments:
+        seq (str): sequence for which to get the signature
+        w_size (int): size of the sliding window size
+        k_size (int): size of the kmer to use :func:`get_kmers`
+        step (int): step to use in :func:`sliding_window`
+
+    Returns:
+        list: a list of :class:`collections.Counter` instances, for each
+        window used
+    """
+    kmer_counts = []
+    for subseq in sliding_window(seq, w_size, step):
+        kmer_counts.append(
+            collections.Counter(kmer for kmer in get_kmers(subseq, k_size) if 'N' not in kmer)
+        )
+    return kmer_counts
+
+
+def _signatures_matrix(seqs, w_size, k_size=4, step=None):
+    """
+    .. versionadded:: 0.2.6
+
+    Return a matrix (pandas.DataFrame) where the columns are the kmer found in
+    all sequences *seqs* and the rows are the a MultiIndex with the first level
+    being the sequnce name and the second the index of the sliding window for
+    which a signature was computed.
+
+    Arguments:
+        seqs (iterable): iterable that yields a tuple, with the first element
+            being the sequence name and the second the sequence itself
+        w_size (int): size of the sliding window size
+        k_size (int): size of the kmer to use :func:`get_kmers`
+        step (int): step to use in :func:`sliding_window`, defaults to half of
+            the window size
+
+    Returns:
+        pandas.DataFrame: a DataFrame where the columns are the kmers and the
+        rows are the signatures of each contigs/windows.
+    """
+
+    def flatten_contigs(data):
+        for name, windows in data.iteritems():
+            for index, window in enumerate(windows):
+                yield (name, index), dict(window)
+
+    step = w_size // 2 if step is None else step
+
+    kmer_counts = {}
+
+    for name, seq in seqs:
+        sign = sequence_signature(seq, w_size, k_size, step=step)
+        kmer_counts[name] = sign
+
+    return pandas.DataFrame(
+        dict(
+            flatten_contigs(kmer_counts)
+        )
+    ).T.fillna(0)

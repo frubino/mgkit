@@ -1,264 +1,852 @@
-from nose.tools import *
-
-import misc_data
+from nose.tools import eq_, ok_, with_setup, raises
 
 from mgkit.io import gff
+from mgkit.utils import sequence
+import misc_data
 
 
-# def test_gffattributesdict_init():
-#     ann1 = gff.GFFAttributesDict(ko_idx='test', cov=3)
-#     ann2 = gff.GFFAttributesDict()
-#     ann2.ko_idx = 'test'
-#     ann2.cov = 3
-#     eq_(ann1, ann2)
+@with_setup(setup=misc_data.setup_gff_data)
+def test_fromgff1():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        "KMSRIGKLPITVPAGVTVTVDENNLVTVKGPKGTLSQQVNPDITLKQEGNILTLERPTDSKPHKA" +
+        "MHGL",
+        ann.attr['aa_seq']
+    )
 
 
-# def test_gffattributesdict_setattr():
-#     ann1 = gff.GFFAttributesDict()
-#     ann2 = gff.GFFAttributesDict()
-#     ann1['ko_idx'] = 'test'
-#     ann1['cov'] = 3
-#     ann2.ko_idx = 'test'
-#     ann2.cov = 3
-#     eq_(ann1, ann2)
+@with_setup(setup=misc_data.setup_gff_data)
+def test_fromgff2():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(3, ann.start)
 
 
-# def test_gffattributesdict_getattr():
-#     ann1 = gff.GFFAttributesDict(ko_idx='test', cov=3)
-#     ann2 = gff.GFFAttributesDict(ko_idx='test', cov=3)
-#     eq_(ann1['ko_idx'], ann2.ko_idx)
+@with_setup(setup=misc_data.setup_gff_data)
+def test_fromgff3():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(209, ann.end)
 
 
-# def test_gffattributesdict_hash():
-#     ann1 = gff.GFFAttributesDict(ko_idx='test', cov=3)
-#     ann2 = gff.GFFAttributesDict()
-#     ann2.ko_idx = 'test'
-#     ann2.cov = 3
-#     eq_(hash(ann1), hash(ann2))
+@with_setup(setup=misc_data.setup_gff_data)
+def test_uid_fromgff_nouid1():
+    # a uid is always created with fromgff, if not found, takes precedence over
+    # ko_idx
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    ok_(
+        len(ann.uid) != len('K02933.12503')
+    )
 
 
-# def test_gffattributesdict_hash2():
-#     ann1 = gff.GFFAttributesDict(ko_idx='test', cov=3)
-#     ann2 = gff.GFFAttributesDict()
-#     ann2.ko_idx = 'test'
-#     ann2.cov = 3
-#     ann1.calc_hash()
-#     ann2.calc_hash()
-#     eq_(ann1._hash, ann2._hash)
+def test_uid_fromgff_nouid2():
+    # a uid is always created with fromgff, if not found, must be random, not
+    # the same as another
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    ok_(
+        ann.uid != '32ea1cc8-9e76-4310-8d1c-8e7890734a6b'
+    )
 
 
-# def test_gffattributesdict_hash3():
-#     ann1 = gff.GFFAttributesDict(ko_idx='test', cov=3)
-#     ann2 = gff.GFFAttributesDict(ko_idx='test', cov=3)
-#     ann1.calc_hash()
-#     ann2.calc_hash()
-#     ann2['cov'] = 9
-#     eq_(ann1._hash, ann2._hash)
+def test_uid_fromgff_uid1():
+    # a uid is not created with fromgff, if present
+    line = misc_data.GFF_FILE[1]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.uid, '32ea1cc8-9e76-4310-8d1c-8e7890734a6b'
+    )
 
 
-# def test_gffattributesdict_to_string():
-#     ann1 = gff.GFFAttributesDict(ko_idx='test', cov=3)
-#     eq_(ann1.to_string(), 'cov="3";ko_idx="test"')
+def test_Annotation_dbq():
+    # a dbq value is always an int
+    # the same as another
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.dbq, 10
+    )
 
 
-# @with_setup(setup=misc_data.setup_gff_data)
-# def test_basegffdict_parse_line():
+def test_Annotation_get_ec1():
+    # a list is returned
+    line = misc_data.GFF_FILE[1]
 
-#     line = misc_data.GFF_FILE[0]
+    ann = gff.from_gff(line)
 
-#     ann = gff.BaseGFFDict(line)
-
-#     eq_(
-#         "KMSRIGKLPITVPAGVTVTVDENNLVTVKGPKGTLSQQVNPDITLKQEGNILTLERPTDSKPHKAMHGL",
-#         ann.attributes.aa_seq
-#     )
+    eq_(
+        ann.get_ec(), set(['1.1.-', '2.2.3.4'])
+    )
 
 
-# @with_setup(setup=misc_data.setup_gff_data)
-# def test_basegffdict_parse_line2():
+def test_Annotation_get_ec2():
+    # a level can be specified
+    line = misc_data.GFF_FILE[1]
 
-#     line = misc_data.GFF_FILE[0]
+    ann = gff.from_gff(line)
 
-#     ann = gff.BaseGFFDict(line)
-
-#     eq_(209, ann.feat_to)
-
-
-# @with_setup(setup=misc_data.setup_gff_data)
-# def test_basegffdict_calc_hash():
-
-#     line = misc_data.GFF_FILE[0]
-
-#     ann1 = gff.BaseGFFDict(line)
-#     ann2 = gff.BaseGFFDict(line)
-
-#     eq_(hash(ann1), hash(ann2))
+    eq_(
+        ann.get_ec(level=2), set(['1.1', '2.2'])
+    )
 
 
-# @with_setup(setup=misc_data.setup_gff_data)
-# def test_basegffdict_calc_hash2():
+def test_Annotation_get_ec2__duplicates():
+    # a level can be specified
+    line = misc_data.GFF_FILE[1]
 
-#     line1 = misc_data.GFF_FILE[0]
-#     line2 = misc_data.GFF_FILE[1]
+    ann = gff.from_gff(line)
+    ann.attr['EC'] = ann.attr['EC'] + ',2.2.3.1'
 
-#     ann1 = gff.BaseGFFDict(line1)
-#     ann2 = gff.BaseGFFDict(line2)
-
-#     assert hash(ann1) != hash(ann2)
-
-
-# @with_setup(setup=misc_data.setup_gff_data)
-# def test_basegffdict_to_string():
-
-#     line = misc_data.GFF_FILE[0]
-
-#     ann1 = gff.BaseGFFDict(line)
-#     ann2 = gff.BaseGFFDict(ann1.to_string())
-
-#     eq_(hash(ann1), hash(ann2))
+    eq_(
+        ann.get_ec(level=2), set(['1.1', '2.2'])
+    )
 
 
-# @with_setup(setup=misc_data.setup_nucseq_data)
-# @with_setup(setup=misc_data.setup_aaseq_data)
-# @with_setup(setup=misc_data.setup_hmmer_data)
-# def test_gffkegg_from_hmmer():
-#     checks = (
-#         'contig-1442648',
-#         'K00001_4479_poaceae',
-#         693,
-#         894,
-#         'K00001',
-#         '4479',
-#         'poaceae'
-#     )
-#     ann = gff.GFFKegg.from_hmmer(
-#         misc_data.HMMER_FILE[0], misc_data.AA_SEQS, misc_data.NUC_SEQS
-#     )
+def test_Annotation_get_ec3():
+    # if no EC information is present, an empty list is returned
+    line = misc_data.GFF_FILE[0]
 
-#     eq_(
-#         (
-#             ann.seq_id,
-#             ann.attributes.name,
-#             ann.attributes.aa_from,
-#             ann.attributes.aa_to,
-#             ann.attributes.ko,
-#             ann.attributes.taxon_id,
-#             ann.attributes.taxon
-#         ),
-#         checks
-#     )
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.get_ec(), set([])
+    )
 
 
-# @with_setup(setup=misc_data.setup_nucseq_data)
-# @with_setup(setup=misc_data.setup_aaseq_data)
-# @with_setup(setup=misc_data.setup_hmmer_data)
-# def test_gffkegg_to_gff():
-#     ann = gff.GFFKegg.from_hmmer(
-#         misc_data.HMMER_FILE[0], misc_data.AA_SEQS, misc_data.NUC_SEQS
-#     )
-#     ann.attributes.ko_idx = 'K00001.1'
-#     ann = ann.to_gtf()
+def test_Annotation_get_mapping1():
+    # a list is returned
+    line = misc_data.GFF_FILE[2]
 
-#     eq_(
-#         (ann.attributes.gene_id, ann.attributes.transcript_id),
-#         ('K00001.1', 'K00001.1')
-#     )
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.get_mapping('test'), ['12345']
+    )
 
 
-# @with_setup(setup=misc_data.setup_nucseq_data)
-# @with_setup(setup=misc_data.setup_aaseq_data)
-# @with_setup(setup=misc_data.setup_hmmer_data)
-# def test_gffkegg_get_taxon_id1():
-#     ann = gff.GFFKegg.from_hmmer(
-#         misc_data.HMMER_FILE[0], misc_data.AA_SEQS, misc_data.NUC_SEQS
-#     )
-#     ann.attributes.taxon_id = 12
-#     ann.attributes.blast_taxon_idx = 1
-#     eq_(ann.get_taxon_id(), 1)
+def test_Annotation_get_mapping2():
+    # an empty list is returned if not mapping is found
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.get_mapping('test'), []
+    )
 
 
-# @with_setup(setup=misc_data.setup_nucseq_data)
-# @with_setup(setup=misc_data.setup_aaseq_data)
-# @with_setup(setup=misc_data.setup_hmmer_data)
-# def test_gffkegg_get_taxon_id2():
-#     ann = gff.GFFKegg.from_hmmer(
-#         misc_data.HMMER_FILE[0], misc_data.AA_SEQS, misc_data.NUC_SEQS
-#     )
-#     ann.attributes.taxon_id = 12
-#     ann.attributes.blast_taxon_idx = 1
-#     eq_(ann.get_taxon_id(prefer_blast=False), 12)
+def test_Annotation_add_exp_syn_count():
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    ann.add_exp_syn_count(misc_data.NUC_SEQS['contig-1327918'])
+
+    eq_(
+        (141, 480),
+        (ann.exp_syn, ann.exp_nonsyn)
+    )
 
 
-# def test_gff_glimmer3_line1():
-#     header = 'sequence0001'
-#     line = 'orf00001       66      611  +3     6.08'
-#     annotation = gff.from_glimmer3(header, line)
+def test_Annotation_add_gc_content():
+    line = misc_data.GFF_FILE[0]
 
-#     eq_(
-#         (
-#             annotation.seq_id,
-#             annotation.start,
-#             annotation.end,
-#             annotation.score,
-#             annotation.strand,
-#             annotation.phase,
-#             annotation.attr['orf_id'],
-#             annotation.attr['frame']
-#         ),
-#         (
-#             header,
-#             66,
-#             611,
-#             6.08,
-#             '+',
-#             2,
-#             'orf00001',
-#             '+3'
-#         )
-#     )
+    ann = gff.from_gff(line)
+
+    ann.add_gc_content(misc_data.NUC_SEQS['contig-1327918'])
+
+    eq_(
+        0.5314009661835749,
+        ann.get_attr('gc_cont', float)
+    )
 
 
-# def test_gff_glimmer3_line2():
-#     header = 'sequence0001'
-#     line = 'orf00001       66      11  -2     6.08'
-#     annotation = gff.from_glimmer3(header, line)
+def test_Annotation_add_gc_ratio():
+    line = misc_data.GFF_FILE[0]
 
-#     eq_(
-#         (
-#             annotation.start,
-#             annotation.end,
-#             annotation.strand,
-#             annotation.phase,
-#             annotation.attr['frame']
-#         ),
-#         (
-#             11,
-#             66,
-#             '-',
-#             1,
-#             '-2'
-#         )
-#     )
+    ann = gff.from_gff(line)
+
+    ann.add_gc_ratio(misc_data.NUC_SEQS['contig-1327918'])
+
+    eq_(
+        0.8818181818181818,
+        ann.get_attr('gc_ratio', float)
+    )
 
 
-# @with_setup(setup=misc_data.setup_nucseq_data)
-# def test_gff_from_sequence1():
-#     annotation = gff.from_sequence(
-#         'contig-110637',
-#         misc_data.NUC_SEQS['contig-110637']
-#     )
-#     eq_(
-#         (
-#             annotation.seq_id,
-#             annotation.start,
-#             annotation.end,
-#         ),
-#         (
-#             'contig-110637',
-#             1,
-#             len(misc_data.NUC_SEQS['contig-110637'])
-#         )
-#     )
+def test_Annotation_to_gff():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.attr, gff.from_gff(ann.to_gff()).attr
+    )
+
+
+def test_Annotation_to_gtf1():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.uid, gff.from_gff(ann.to_gtf()).attr['transcript_id']
+    )
+
+
+def test_Annotation_to_gtf2():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.gene_id, gff.from_gff(
+            ann.to_gtf(gene_id_attr='ko')
+        ).attr['transcript_id']
+    )
+
+
+def test_Annotation_sample_coverage():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        int(ann.attr['t1_b3_cov']), ann.sample_coverage['t1_b3']
+    )
+
+
+def test_Annotation_get_number_of_samples1():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.get_number_of_samples(min_cov=0), 14
+    )
+
+
+def test_Annotation_get_number_of_samples2():
+
+    line = misc_data.GFF_FILE[0]
+
+    ann = gff.from_gff(line)
+
+    eq_(
+        ann.get_number_of_samples(min_cov=15), 8
+    )
+
+
+def test_Annotation_get_nuc_seq1():
+    ann = gff.Annotation(start=1, end=40, strand='+')
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_nuc_seq(seq),
+        seq
+    )
+
+
+def test_Annotation_get_nuc_seq2():
+    ann = gff.Annotation(start=2, end=40, strand='+')
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_nuc_seq(seq),
+        seq[1:]
+    )
+
+
+def test_Annotation_get_nuc_seq3():
+    ann = gff.Annotation(start=2, end=39, strand='+')
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_nuc_seq(seq),
+        seq[1:-1]
+    )
+
+
+def test_Annotation_get_nuc_seq_reverse1():
+    ann = gff.Annotation(start=1, end=40, strand='-')
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_nuc_seq(seq),
+        seq
+    )
+
+
+def test_Annotation_get_nuc_seq_reverse2():
+    ann = gff.Annotation(start=2, end=39, strand='-')
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_nuc_seq(seq, reverse=True),
+        sequence.reverse_complement(seq[1:-1])
+    )
+
+
+def test_Annotation_get_nuc_seq_snp():
+    ann = gff.Annotation(start=2, end=39, strand='+')
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_nuc_seq(seq, snp=(2, 'C')),
+        sequence.get_variant_sequence(seq[1:-1], (2, 'C'))
+    )
+
+
+def test_Annotation_get_aa_seq():
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_aa_seq(seq),
+        sequence.translate_sequence(
+            ann.get_nuc_seq(seq, reverse=True),
+            start=0,
+            reverse=False
+        )
+    )
+
+
+def test_Annotation_get_aa_seq__start1():
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_aa_seq(seq, start=None),
+        sequence.translate_sequence(
+            ann.get_nuc_seq(seq, reverse=True),
+            start=ann.phase,
+            reverse=False
+        )
+    )
+
+
+def test_Annotation_get_aa_seq__start2():
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=1)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_aa_seq(seq, start=None),
+        sequence.translate_sequence(
+            ann.get_nuc_seq(seq, reverse=True),
+            start=ann.phase,
+            reverse=False
+        )
+    )
+
+
+def test_Annotation_get_aa_seq__snp():
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=1)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.get_aa_seq(seq, start=None, snp=(1, 'C')),
+        sequence.translate_sequence(
+            ann.get_nuc_seq(seq, reverse=True, snp=(1, 'C')),
+            start=ann.phase,
+            reverse=False
+        )
+    )
+
+
+def test_Annotation_is_syn1_3():
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 3, 'C'),
+        True
+    )
+
+
+def test_Annotation_is_syn1_1():
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 1, 'C'),
+        False
+    )
+
+
+def test_Annotation_is_syn2_1():
+    # second position on reference, first base in codon
+    ann = gff.Annotation(start=2, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 2, 'A'),
+        False
+    )
+
+
+def test_Annotation_is_syn2_2():
+    # second position on reference, second base in codon
+    ann = gff.Annotation(start=2, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 3, 'A'),
+        False
+    )
+
+
+def test_Annotation_is_syn2_3():
+    # second position on reference, third base in codon
+    ann = gff.Annotation(start=2, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 4, 'A'),
+        True
+    )
+
+
+def test_Annotation_is_syn3_1():
+    # first position on reference, second codon, first base in codon
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 4, 'A'),
+        False
+    )
+
+
+def test_Annotation_is_syn3_2():
+    # first position on reference, second codon, second base in codon
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 5, 'T'),
+        False
+    )
+
+
+def test_Annotation_is_syn3_3():
+    # first position on reference, second codon, third base in codon
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 6, 'T'),
+        True
+    )
+
+
+def test_Annotation_is_syn4_1():
+    # first position on reference, third codon, first base in codon
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 7, 'A'),
+        False
+    )
+
+
+def test_Annotation_is_syn4_2():
+    # first position on reference, third codon, second base in codon
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 8, 'T'),
+        False
+    )
+
+
+def test_Annotation_is_syn4_3():
+    # first position on reference, third codon, third base in codon
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 9, 'T'),
+        False
+    )
+
+
+def test_Annotation_is_syn__start1_1():
+    # first position on reference, second codon, first base in codon, phase=1
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 5, 'G', start=1),
+        False
+    )
+
+
+def test_Annotation_is_syn__start1_2():
+    # first position on reference, second codon, second base in codon, phase=1
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 6, 'A', start=1),
+        False
+    )
+
+
+def test_Annotation_is_syn__start1_3():
+    # first position on reference, second codon, third base in codon, phase=1
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=0)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 6, 'A', start=1),
+        False
+    )
+
+
+def test_Annotation_is_syn__start2_1():
+    # first position on reference, second codon, first base in codon, phase=1
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=1)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 6, 'A', start=None),
+        False
+    )
+
+
+def test_Annotation_is_syn__start3_1():
+    # first position on reference, third codon, third base in codon, phase=1
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=1)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 10, 'T', start=None),
+        True
+    )
+
+
+def test_Annotation_is_syn__start3_2():
+    # first position on reference, third codon, second base in codon, phase=1
+    ann = gff.Annotation(start=1, end=40, strand='+', phase=1)
+    seq = 'ACTG' * 10
+
+    eq_(
+        ann.is_syn(seq, 9, 'C', start=None),
+        False
+    )
+
+
+@with_setup(setup=misc_data.setup_aaseq_data)
+@with_setup(setup=misc_data.setup_hmmer_data)
+def test_from_hmmer():
+    checks = (
+        'contig-1442648',
+        'K00001_4479_poaceae',
+        693,
+        894,
+        'K00001',
+        4479,
+        'poaceae'
+    )
+    ann = gff.from_hmmer(
+        misc_data.HMMER_FILE[0], misc_data.AA_SEQS
+    )
+
+    eq_(
+        (
+            ann.seq_id,
+            ann.attr['name'],
+            ann.attr['aa_from'],
+            ann.attr['aa_to'],
+            ann.gene_id,
+            ann.taxon_id,
+            ann.attr['taxon_name']
+        ),
+        checks
+    )
+
+
+def test_gff_glimmer3_line1():
+    header = 'sequence0001'
+    line = 'orf00001       66      611  +3     6.08'
+    annotation = gff.from_glimmer3(header, line)
+
+    eq_(
+        (
+            annotation.seq_id,
+            annotation.start,
+            annotation.end,
+            annotation.score,
+            annotation.strand,
+            annotation.phase,
+            annotation.attr['orf_id'],
+            annotation.attr['frame']
+        ),
+        (
+            header,
+            66,
+            611,
+            6.08,
+            '+',
+            2,
+            'orf00001',
+            '+3'
+        )
+    )
+
+
+def test_gff_glimmer3_line2():
+    header = 'sequence0001'
+    line = 'orf00001       66      11  -2     6.08'
+    annotation = gff.from_glimmer3(header, line)
+
+    eq_(
+        (
+            annotation.start,
+            annotation.end,
+            annotation.strand,
+            annotation.phase,
+            annotation.attr['frame']
+        ),
+        (
+            11,
+            66,
+            '-',
+            1,
+            '-2'
+        )
+    )
+
+
+@with_setup(setup=misc_data.setup_nucseq_data)
+def test_gff_from_sequence1():
+    annotation = gff.from_sequence(
+        'contig-110637',
+        misc_data.NUC_SEQS['contig-110637']
+    )
+    eq_(
+        (
+            annotation.seq_id,
+            annotation.start,
+            annotation.end,
+        ),
+        (
+            'contig-110637',
+            1,
+            len(misc_data.NUC_SEQS['contig-110637'])
+        )
+    )
+
+
+def test_genomicrange_contains1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        1 in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        20 in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains3():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        30 in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains4():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        31 in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_tuple1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        (25, 30) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_tuple2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        (25, 31) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_tuple3():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        (19, 30) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_tuple4():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        (30, 25) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_genomicrange1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.GenomicRange(start=25, end=30) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_genomicrange2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.GenomicRange(start=30, end=25) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_genomicrange3():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.GenomicRange(start=19, end=30) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_genomicrange4():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.GenomicRange(start=25, end=31) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_annotation1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.Annotation(start=25, end=30) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_annotation2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.Annotation(start=30, end=25) in gen_range1,
+        True
+    )
+
+
+def test_genomicrange_contains_annotation3():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.Annotation(start=19, end=30) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_contains_annotation4():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gff.Annotation(start=25, end=31) in gen_range1,
+        False
+    )
+
+
+def test_genomicrange_get_relative_pos1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gen_range1.get_relative_pos(20),
+        1
+    )
+
+
+def test_genomicrange_get_relative_pos2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gen_range1.get_relative_pos(30),
+        11
+    )
+
+
+def test_genomicrange_get_relative_pos3():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    eq_(
+        gen_range1.get_relative_pos(25),
+        6
+    )
+
+
+@raises(ValueError)
+def test_genomicrange_get_relative_pos_fail1():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    gen_range1.get_relative_pos(19)
+
+
+@raises(ValueError)
+def test_genomicrange_get_relative_pos_fail2():
+    gen_range1 = gff.GenomicRange(start=20, end=30)
+
+    gen_range1.get_relative_pos(31)
 
 
 def test_genomicrange_union1():
@@ -330,7 +918,7 @@ def test_genomicrange_union4():
     gen_range2 = gff.GenomicRange()
     gen_range2.seq_id = 'seq1'
     gen_range2.strand = '+'
-    gen_range2.start = 20
+    gen_range2.start = 21
     gen_range2.end = 30
 
     gen_range_u = gen_range2.union(gen_range1)
@@ -389,7 +977,7 @@ def test_genomicrange_union_fail3():
     gen_range1.end = 20
     gen_range2 = gff.GenomicRange()
     gen_range2.seq_id = 'seq1'
-    gen_range2.strand = '+'
+    gen_range2.strand = '-'
     gen_range2.start = 21
     gen_range2.end = 30
 

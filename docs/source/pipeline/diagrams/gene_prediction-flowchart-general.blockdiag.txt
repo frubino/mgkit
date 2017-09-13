@@ -1,0 +1,27 @@
+{
+    orientation = portrait;
+
+    default_textcolor = "white";
+    default_fontsize = 16;
+
+    class mgkit [color = "#e41a1c", width=160, height=80];
+    class data [color = "#4daf4a", width=160, height=80];
+    class software [color = "#377eb8", width=160, height=80];
+    class gff [color = "#984ea3", width=160, height=80];
+
+    "Functional\n Prediction" [class = software, shape = flowchart.input, stacked];
+    "Taxonomic\n Prediction" [class = software, shape = flowchart.input];
+
+    "Convert to\nGFF" [class = mgkit];
+    "Filter\nGFF" [class = mgkit];
+    "Extract\nSequences" [class = mgkit];
+    "Add Taxonomy\nInformation" [class = mgkit];
+    "Complete\nAnnotations" [class = mgkit];
+
+    "Draft GFF" [class = gff];
+    "Final GFF" [class = gff];
+    "Functional\n Prediction"  -> "Convert to\nGFF" -> "Filter\nGFF" -> "Draft GFF";
+    "Draft GFF" -> "Extract\nSequences" -> "Taxonomic\n Prediction" -> "Add Taxonomy\nInformation" -> "Draft GFF";
+    "Draft GFF" -> "Complete\nAnnotations" -> "Final GFF";
+    "Filter\nGFF" -> "Draft GFF" [folded];
+}

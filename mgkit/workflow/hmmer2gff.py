@@ -1,6 +1,43 @@
-#!/usr/bin/env python
 """
-Script to convert HMMER results files (domain table) to a GFF file
+Script to convert HMMER results files (domain table) to a GFF file, the name of
+the profiles are expected to be now in the form
+*GENEID_TAXONID_TAXON-NAME(-nr)* by default, but any other profile name is
+accepted.
+
+The profiles tested are those made from Kegg Orthologs, from the
+`download_profiles` script. If the `--no-custom-profiles` options is used,
+the script can be used with any profile name. The profile name will be used
+for `gene_id`, `taxon_id` and `taxon_name` in the GFF file.
+
+It is possible to use seuqnces not translated using mgkit, no information on
+the frame is assumed, so this script can be used against a protein DB. For
+example Uniprot can be searched for profiles, in which case the **--no-frame**
+options must be used.
+
+.. note::
+
+    for GENEID, old documentation points to KOID, it is the same
+
+.. warning::
+
+    The compatibility with old data has been **removed**, meaning that old
+    experiments must use the scripts from those versions. It is possible to use
+    multiple environments, with `virtualenv` for this purpose. An examples is
+    given in :ref:`install-ref`.
+
+Changes
+*******
+
+.. versionchanged:: 0.1.15
+    adapted to new GFF module and specs
+
+.. versionchanged:: 0.2.1
+    added options to customise output and filters and old restrictions
+
+.. versionchanged:: 0.3.1
+    added *--no-frame* option for non mgkit-translated proteins, sequence
+    headers are handled the same way as HMMER (truncated at the first space)
+
 """
 
 import sys
@@ -9,8 +46,6 @@ import argparse
 from mgkit import logger
 from mgkit.io import gff
 from mgkit.io import fasta
-from mgkit import kegg
-from mgkit.taxon import MISPELLED_TAXA
 from . import utils
 
 LOG = logging.getLogger(__name__)
@@ -23,8 +58,6 @@ def set_parser():
     parser = argparse.ArgumentParser(
         description='Convert HMMER data to GFF file',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    utils.add_basic_options(parser)
 
     group = parser.add_argument_group('File options')
     group.add_argument(
@@ -44,39 +77,59 @@ def set_parser():
         nargs='?',
         type=argparse.FileType('w'), default=sys.stdout
     )
+
+    group = parser.add_argument_group('Filters')
+    group.add_argument(
+        '-t',
+        '--discard',
+        action='store',
+        type=float,
+        default=0.05,
+        help='Evalue over which an hit will be discarded'
+    )
+    group.add_argument(
+        '-d',
+        '--disable-evalue',
+        action='store_true',
+        default=False,
+        help='Disable Evalue filter'
+    )
+
+    group = parser.add_argument_group('GFF')
+    group.add_argument(
+        '-c',
+        '--no-custom-profiles',
+        action='store_false',
+        default=True,
+        help='Profiles names are not in the custom format'
+    )
+    group.add_argument(
+        '-db',
+        '--database',
+        action='store',
+        default='CUSTOM',
+        help='Database from which the profiles are generated " +" (e.g. PFAM)'
+    )
+    group.add_argument(
+        '-f',
+        '--feature-type',
+        action='store',
+        default='gene',
+        help='Type of feature (e.g. gene)'
+    )
     group.add_argument(
         '-n',
-        '--nuc-file',
-        type=argparse.FileType('r'),
-        required=False,
-        help="Fasta file containing contigs from assembler"
+        '--no-frame',
+        action='store_true',
+        default=False,
+        help='Set if the sequences were not translated with translate_seq'
     )
 
     group = parser.add_argument_group('Misc')
-    group.add_argument('-q', '--quiet', action='store_const',
-                       const=logging.WARNING, default=logging.DEBUG,
-                       help='only show warnings or errors')
 
-    group.add_argument('-t', '--discard', action='store', type=float,
-                       default=0.05,
-                       help='Evalue over which an hit will be discarded')
-    group.add_argument('-k', '--ko-descriptions',
-                       help='pickle file containing KO descriptions')
+    utils.add_basic_options(parser, manual=__doc__)
 
     return parser
-
-
-def get_seq_data(f_handle):
-    """
-    Load reference sequences.
-    """
-    # LOG.info('Loading contigs data from file %s', f_handle.name)
-
-    seq_data = dict(
-        (name, seq) for name, seq in fasta.load_fasta(f_handle)
-    )
-
-    return seq_data
 
 
 def get_aa_data(f_handle):
@@ -85,27 +138,28 @@ def get_aa_data(f_handle):
     """
     # LOG.info('Loading aa data from file %s', f_handle.name)
 
-    aa_seqs = dict((name, seq) for name, seq in fasta.load_fasta(f_handle))
+    aa_seqs = dict(
+        (name.split(' ')[0], seq)
+        for name, seq in fasta.load_fasta(f_handle)
+    )
 
     return aa_seqs
 
 
-def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
-                               ko_names=None, nuc_seqs=None):
+def parse_domain_table_contigs(options):
     """
     Parse the HMMER result file
     """
-    LOG.info('Parsing HMMER data from file %s', f_handle.name)
-    LOG.info('Writing GFF data to file %s', f_out.name)
+    aa_seqs = get_aa_data(options.aa_file)
+
+    LOG.info('Parsing HMMER data from file %s', options.hmmer_file.name)
+    LOG.info('Writing GFF data to file %s', options.output_file.name)
 
     count_dsc = 0
     count_tot = 0
-    count_mis = 0
     count_skp = 0
 
-    ko_counts = {}
-
-    for idx, line in enumerate(f_handle):
+    for idx, line in enumerate(options.hmmer_file):
 
         if line.startswith('#'):
             continue
@@ -115,11 +169,13 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
         count_tot += 1
 
         try:
-            annotation = gff.GFFKegg.from_hmmer(
+            annotation = gff.from_hmmer(
                 line,
                 aa_seqs,
-                nuc_seqs=nuc_seqs,
-                ko_counts=ko_counts
+                feat_type=options.feature_type,
+                db=options.database,
+                custom_profiles=options.no_custom_profiles,
+                noframe=options.no_frame,
             )
         except ZeroDivisionError:
             LOG.error(
@@ -129,35 +185,19 @@ def parse_domain_table_contigs(f_handle, aa_seqs, f_out, discard,
             count_skp += 1
             continue
 
-        if annotation.score > discard:
-            count_dsc += 1
-            continue
-        try:
-            annotation.attributes.description = ko_names[
-                annotation.attributes.ko
-            ]
-        except (KeyError, TypeError):
-            annotation.attributes.description = ''
+        # if disable_evalue is True, skips filter
+        if not options.disable_evalue:
+            if annotation.score > options.discard:
+                count_dsc += 1
+                continue
 
-        #correct mispelled taxa: profiles4
-        try:
-            annotation.attributes.taxon = MISPELLED_TAXA[
-                annotation.attributes.taxon
-            ]
-            LOG.debug("Fixed mispelled taxon %s", annotation.attributes.taxon)
-            count_mis += 1
-        except KeyError:
-            #not mispelled
-            pass
-
-        f_out.write(str(annotation))
+        annotation.to_file(options.output_file)
 
     LOG.info(
-        "Read %d lines, discared %d, skipped %d, mispelled %d",
+        "Read %d lines, discarded %d, skipped %d",
         count_tot,
         count_dsc,
-        count_skp,
-        count_mis
+        count_skp
     )
 
 
@@ -166,24 +206,11 @@ def main():
     Main loop
     """
     options = set_parser().parse_args()
-    logger.config_log(options.quiet)
-    log = logging.getLogger(__name__)
-    if options.nuc_file is not None:
-        seq_data = get_seq_data(options.nuc_file)
-    else:
-        seq_data = None
-    aa_data = get_aa_data(options.aa_file)
+    logger.config_log(options.verbose)
 
-    if options.ko_descriptions:
-        log.info("Loading KO descriptions from file %s",
-                 options.ko_descriptions)
-        kegg_data = kegg.KeggData(options.ko_descriptions)
-        ko_names = kegg_data.get_ko_names()
-    else:
-        ko_names = None
-
-    parse_domain_table_contigs(options.hmmer_file, aa_data, options.output_file,
-                               options.discard, ko_names, nuc_seqs=seq_data)
+    parse_domain_table_contigs(
+        options
+    )
 
 if __name__ == '__main__':
     main()

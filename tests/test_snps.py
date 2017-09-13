@@ -1,43 +1,24 @@
-from nose.tools import *
+from nose.tools import eq_, ok_
 
-from mgkit.snps.classes import GeneSyn
+from mgkit.snps.classes import GeneSNP, SNPType
 from mgkit.snps.funcs import combine_sample_snps, flat_sample_snps
 
 import numpy
 
 
-def test_genesyn_init1():
-    gs = GeneSyn(
-        gid='A',
-        taxon=1
-    )
-    eq_(
-       (gs.gid, gs.taxon),
-       (gs.gene_id, gs.taxon_id)
-    )
-
-
-def test_genesyn_init2():
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1
-    )
-    eq_(
-       (gs.gid, gs.taxon),
-       (gs.gene_id, gs.taxon_id)
-    )
-
-
 def test_genesyn_calc_ratio1():
-    #syn and nonsyn > 0
-    gs = GeneSyn(
+    # syn and nonsyn > 0
+    gs = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=2,
         exp_syn=4,
-        nonsyn=3,
         exp_nonsyn=6,
     )
+    gs.add_snp(1, 'A', SNPType.syn)
+    gs.add_snp(1, 'A', SNPType.syn)
+    gs.add_snp(1, 'A', SNPType.nonsyn)
+    gs.add_snp(1, 'A', SNPType.nonsyn)
+    gs.add_snp(1, 'A', SNPType.nonsyn)
     eq_(
         gs.calc_ratio(),
         1.0
@@ -45,13 +26,11 @@ def test_genesyn_calc_ratio1():
 
 
 def test_genesyn_calc_ratio2():
-    #syn = nonsyn = 0, haplotypes=True
-    gs = GeneSyn(
+    # syn = nonsyn = 0, haplotypes=True
+    gs = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=0,
         exp_syn=4,
-        nonsyn=0,
         exp_nonsyn=6,
     )
     eq_(
@@ -60,38 +39,16 @@ def test_genesyn_calc_ratio2():
     )
 
 
-def test_genesyn_calc_ratio3a():
-    #syn = nonsyn = 0
-    #enough coverage
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1,
-        syn=0,
-        exp_syn=4,
-        nonsyn=0,
-        exp_nonsyn=6,
-        coverage=4
-    )
-    eq_(
-        gs.calc_ratio(min_cov=4),
-        0.0
-    )
-
-
 def test_genesyn_add1():
-    #checks if the conserved gene_id and taxon_id is from the first instance
-    gs1 = GeneSyn(
+    # checks if the conserved gene_id and taxon_id is from the first instance
+    gs1 = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=0,
         exp_syn=4,
-        nonsyn=0,
         exp_nonsyn=6
     )
-    gs2 = GeneSyn(
-        syn=0,
+    gs2 = GeneSNP(
         exp_syn=4,
-        nonsyn=0,
         exp_nonsyn=6,
         coverage=4
     )
@@ -103,22 +60,26 @@ def test_genesyn_add1():
 
 
 def test_genesyn_add2():
-    #checks if the values (syn, nonsyn, exp_syn, exp_nonsyn) are added
-    gs1 = GeneSyn(
+    # checks if the values (syn, nonsyn, exp_syn, exp_nonsyn) are added
+    gs1 = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=3,
         exp_syn=4,
-        nonsyn=1,
         exp_nonsyn=6
     )
-    gs2 = GeneSyn(
-        syn=1,
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.nonsyn)
+    gs2 = GeneSNP(
         exp_syn=3,
-        nonsyn=2,
         exp_nonsyn=5,
         coverage=4
     )
+    gs2.add_snp(1, 'A', SNPType.syn)
+    gs2.add_snp(1, 'A', SNPType.nonsyn)
+    gs2.add_snp(1, 'A', SNPType.nonsyn)
+
     gs1.add(gs2)
     eq_(
         (gs1.exp_syn, gs1.exp_nonsyn, gs1.syn, gs1.nonsyn),
@@ -127,23 +88,27 @@ def test_genesyn_add2():
 
 
 def test_genesyn_add3():
-    #checks if the values if coverage is correctly added
-    #coverage in gs2 is not None, in gs1 is None
-    gs1 = GeneSyn(
+    # checks if the values if coverage is correctly added
+    # coverage in gs2 is not None, in gs1 is None
+    gs1 = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=3,
         exp_syn=4,
-        nonsyn=1,
         exp_nonsyn=6
     )
-    gs2 = GeneSyn(
-        syn=1,
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.nonsyn)
+    gs2 = GeneSNP(
         exp_syn=3,
-        nonsyn=2,
         exp_nonsyn=5,
         coverage=5
     )
+    gs2.add_snp(1, 'A', SNPType.syn)
+    gs2.add_snp(1, 'A', SNPType.nonsyn)
+    gs2.add_snp(1, 'A', SNPType.nonsyn)
+
     gs1.add(gs2)
     eq_(
         gs1.coverage,
@@ -152,24 +117,28 @@ def test_genesyn_add3():
 
 
 def test_genesyn_add4():
-    #checks if the values if coverage is correctly added
-    #coverage in gs2 is not None, in gs1 is not None
-    gs1 = GeneSyn(
+    # checks if the values if coverage is correctly added
+    # coverage in gs2 is not None, in gs1 is not None
+    gs1 = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=3,
         exp_syn=4,
-        nonsyn=1,
         exp_nonsyn=6,
         coverage=2
     )
-    gs2 = GeneSyn(
-        syn=1,
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.nonsyn)
+    gs2 = GeneSNP(
         exp_syn=3,
-        nonsyn=2,
         exp_nonsyn=5,
         coverage=5
     )
+    gs2.add_snp(1, 'A', SNPType.syn)
+    gs2.add_snp(1, 'A', SNPType.nonsyn)
+    gs2.add_snp(1, 'A', SNPType.nonsyn)
+
     gs1.add(gs2)
     eq_(
         gs1.coverage,
@@ -178,22 +147,27 @@ def test_genesyn_add4():
 
 
 def test_genesyn_add5():
-    #checks if the values if coverage is correctly added
-    #coverage in gs2 is None, in gs1 is None
-    gs1 = GeneSyn(
+    # checks if the values of coverage is correctly added
+    # coverage in gs2 is None, in gs1 is None
+    gs1 = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=3,
         exp_syn=4,
-        nonsyn=1,
         exp_nonsyn=6,
     )
-    gs2 = GeneSyn(
-        syn=1,
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.syn)
+    gs1.add_snp(1, 'A', SNPType.nonsyn)
+    gs2 = GeneSNP(
         exp_syn=3,
-        nonsyn=2,
         exp_nonsyn=5,
+        coverage=None
     )
+    gs2.add_snp(1, 'A', SNPType.syn)
+    gs2.add_snp(1, 'A', SNPType.nonsyn)
+    gs2.add_snp(1, 'A', SNPType.nonsyn)
+
     gs1.add(gs2)
     eq_(
         gs1.coverage,
@@ -202,264 +176,154 @@ def test_genesyn_add5():
 
 
 def test_genesyn_calc_ratio3b():
-    #syn = nonsyn = 0
-    #coverage is None
-    gs = GeneSyn(
+    # syn = nonsyn = 0
+    # coverage is None
+    gs = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=0,
         exp_syn=4,
-        nonsyn=0,
         exp_nonsyn=6,
     )
     ok_(numpy.isnan(gs.calc_ratio()))
 
 
 def test_genesyn_calc_ratio3c():
-    #syn = nonsyn = 0
-    #coverage is < min_cov
-    gs = GeneSyn(
+    # syn = nonsyn = 0
+    gs = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=0,
         exp_syn=4,
-        nonsyn=0,
         exp_nonsyn=6,
-        coverage=2
     )
-    ok_(numpy.isnan(gs.calc_ratio(min_cov=4)))
+    ok_(numpy.isnan(gs.calc_ratio()))
+
+
+def test_genesyn_calc_ratio3d():
+    # syn = nonsyn = 0, haplotypes = True
+    gs = GeneSNP(
+        gene_id='A',
+        taxon_id=1,
+        exp_syn=4,
+        exp_nonsyn=6,
+    )
+    eq_(0, gs.calc_ratio(haplotypes=True))
 
 
 def test_genesyn_calc_ratio4a():
-    #nonsyn != 0, syn > 0
-    #flag_value=True
-    gs = GeneSyn(
+    # nonsyn > 0, syn = 0
+    # flag_value=True
+    gs = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=0,
         exp_syn=4,
-        nonsyn=1,
         exp_nonsyn=6,
-        coverage=2
     )
+    gs.add_snp(1, 'A', SNPType.nonsyn)
     eq_(
-        gs.calc_ratio(flag_value=True),
+        gs.calc_ratio_flag(),
         -1
     )
 
 
 def test_genesyn_calc_ratio4b():
-    #nonsyn != 0, syn > 0
-    #flas_value=False
-    gs = GeneSyn(
+    # nonsyn = 0, syn > 0
+    # flag_value=True
+    gs = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=0,
         exp_syn=4,
-        nonsyn=1,
         exp_nonsyn=6,
-        coverage=2
     )
-    ok_(numpy.isnan(gs.calc_ratio()))
-
-
-def test_genesyn_calc_ratio5a():
-    #nonsyn = 0, syn != 0
-    #flag_value=True
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1,
-        syn=1,
-        exp_syn=4,
-        nonsyn=0,
-        exp_nonsyn=6,
-        coverage=2
-    )
+    gs.add_snp(1, 'A', SNPType.syn)
     eq_(
-        gs.calc_ratio(flag_value=True),
+        gs.calc_ratio_flag(),
         -2
     )
 
 
-def test_genesyn_calc_ratio5b():
-    #nonsyn = 0, syn != 0
-    #flas_value=False
-    gs = GeneSyn(
+def test_genesyn_calc_ratio4c():
+    # nonsyn = 0, syn > 0
+    # flag_value=True
+    gs = GeneSNP(
         gene_id='A',
         taxon_id=1,
-        syn=1,
         exp_syn=4,
-        nonsyn=0,
         exp_nonsyn=6,
-        coverage=2
-    )
-    ok_(numpy.isnan(gs.calc_ratio()))
-
-
-def test_genesyn_calc_ratio6a():
-    #nonsyn = syn = 0
-    #flag_value=True
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1,
-        syn=0,
-        exp_syn=4,
-        nonsyn=0,
-        exp_nonsyn=6,
-        coverage=2
     )
     eq_(
-        gs.calc_ratio(flag_value=True),
+        gs.calc_ratio_flag(),
         -3
     )
 
 
-def test_genesyn_calc_ratio6b():
-    #nonsyn = syn = 0
-    #flas_value=False
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1,
-        syn=0,
-        exp_syn=4,
-        nonsyn=0,
-        exp_nonsyn=6,
-        coverage=2
-    )
-    ok_(numpy.isnan(gs.calc_ratio()))
-
-
-def test_genesyn_calc_ratio7a():
-    #exp_nonsyn or exp_syn = 0
-    #or any other case
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1,
-        syn=0,
-        exp_syn=4,
-        nonsyn=0,
-        exp_nonsyn=0,
-        coverage=2
-    )
-    ok_(numpy.isnan(gs.calc_ratio()))
-
-
-def test_genesyn_calc_ratio7b():
-    #exp_nonsyn or exp_syn = 0
-    #or any other case
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1,
-        syn=0,
-        exp_syn=0,
-        nonsyn=0,
-        exp_nonsyn=6,
-        coverage=2
-    )
-    ok_(numpy.isnan(gs.calc_ratio()))
-
-
-def test_genesyn_calc_ratio7c():
-    #exp_nonsyn or exp_syn = 0
-    #or any other case
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1,
-        syn=0,
-        exp_syn=0,
-        nonsyn=0,
-        exp_nonsyn=0,
-        coverage=2
-    )
-    ok_(numpy.isnan(gs.calc_ratio()))
-
-
-def test_genesyn_pickle_dump():
-    gs = GeneSyn(
-        gene_id='A',
-        taxon_id=1,
-        syn=1,
-        exp_syn=2,
-        nonsyn=3,
-        exp_nonsyn=4,
-        coverage=2
-    )
-    eq_(
-        gs.__getstate__(),
-        {
-            'gene_id': 'A',
-            'taxon_id': 1,
-            'syn': 1,
-            'exp_syn': 2,
-            'nonsyn': 3,
-            'exp_nonsyn': 4,
-            'coverage': 2,
-            'taxon_root': '',
-        }
-    )
-
-
-def test_genesyn_pickle_load():
-    state = {
-        'gene_id': 'A',
-        'taxon_id': 1,
-        'syn': 1,
-        'exp_syn': 2,
-        'nonsyn': 3,
-        'exp_nonsyn': 4,
-        'coverage': 2,
-        'taxon_root': '',
-    }
-    gs = GeneSyn()
-    gs.__setstate__(state)
-    eq_(
-        gs.__getstate__(),
-        state
-    )
-
 SNP_DATA = {
     'sample1': {
-        'gene1': GeneSyn(
+        'gene1': GeneSNP(
             gene_id='gene1',
             taxon_id=839,  # prevotella ruminicola
             exp_syn=6,
             exp_nonsyn=4,
-            syn=3,
-            nonsyn=2
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         ),  # pN/pS = 1.0
-        'gene2': GeneSyn(
+        'gene2': GeneSNP(
             gene_id='gene2',
             taxon_id=838,  # prevotella genus
             exp_syn=3,
             exp_nonsyn=4,
-            syn=3,
-            nonsyn=2
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         )  # pN/pS = 2.0
     },
     'sample2': {
-        'gene1': GeneSyn(
+        'gene1': GeneSNP(
             gene_id='gene1',
             taxon_id=839,  # prevotella ruminicola
             exp_syn=3,
             exp_nonsyn=4,
-            syn=3,
-            nonsyn=2
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         ),  # pN/pS = 1.0
-        'gene2': GeneSyn(
+        'gene2': GeneSNP(
             gene_id='gene2',
             taxon_id=838,  # prevotella genus
             exp_syn=6,
             exp_nonsyn=4,
-            syn=3,
-            nonsyn=2
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         ),  # pN/pS = 2.0
-        'gene3': GeneSyn(
+        'gene3': GeneSNP(
             gene_id='gene3',
             taxon_id=838,  # prevotella genus
             exp_syn=3,
             exp_nonsyn=4,
-            syn=3,
-            nonsyn=2
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         )  # pN/pS = 2.0
     }
 
@@ -468,43 +332,66 @@ SNP_DATA = {
 
 SNP_DATA2 = {
     'sample1': {
-        'gene1': GeneSyn(
+        'gene1': GeneSNP(
             gene_id='gene1',
             taxon_id=839,  # prevotella ruminicola
             exp_syn=6,
             exp_nonsyn=4,
-            syn=3,
-            nonsyn=2,
-            coverage=4
+            coverage=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         ),  # pN/pS = 1.0
-        'gene2': GeneSyn(
+        'gene2': GeneSNP(
             gene_id='gene2',
             taxon_id=838,  # prevotella genus
             exp_syn=3,
             exp_nonsyn=4,
-            syn=3,
-            nonsyn=2,
-            coverage=4
+            coverage=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         )  # pN/pS = 2.0
     },
     'sample2': {
-        'gene1': GeneSyn(
+        'gene1': GeneSNP(
             gene_id='gene1',
             taxon_id=839,  # prevotella ruminicola
             exp_syn=3,
             exp_nonsyn=4,
-            syn=4,
-            nonsyn=2,
-            coverage=4
+            coverage=4,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         ),  # pN/pS = 1.0
-        'gene2': GeneSyn(
+        'gene2': GeneSNP(
             gene_id='gene2',
             taxon_id=838,  # prevotella genus
             exp_syn=6,
             exp_nonsyn=4,
-            syn=5,
-            nonsyn=2,
-            coverage=3
+            coverage=3,
+            snps=[
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.syn),
+                (1, 'A', SNPType.nonsyn),
+                (1, 'A', SNPType.nonsyn),
+            ]
         )  # pN/pS = 2.0
     }
 
@@ -534,7 +421,7 @@ def test_flat_sample_snps2():
 
 
 def test_combine_sample_min_num1():
-    #check if min_num is working
+    # check if min_num is working
     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
     eq_(
         df.shape,
@@ -543,7 +430,7 @@ def test_combine_sample_min_num1():
 
 
 def test_combine_sample_snps_min_num2():
-    #check if min_num is working
+    # check if min_num is working
     df = combine_sample_snps(SNP_DATA, 2, [lambda x: x])
     eq_(
         df.shape,
@@ -552,7 +439,7 @@ def test_combine_sample_snps_min_num2():
 
 
 def test_combine_sample_snps_values():
-    #check if values are correct is working
+    # check if values are correct is working
     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
     eq_(
         (df.min().min(), df.max().max()),
@@ -561,7 +448,7 @@ def test_combine_sample_snps_values():
 
 
 def test_combine_sample_snps_index1():
-    #check index_type
+    # check index_type
     df = combine_sample_snps(SNP_DATA, 1, [lambda x: x])
     eq_(
         df.index.tolist(),
@@ -570,7 +457,7 @@ def test_combine_sample_snps_index1():
 
 
 def test_combine_sample_snps_index2():
-    #check index_type
+    # check index_type
     df = combine_sample_snps(
         SNP_DATA,
         1,
@@ -584,7 +471,7 @@ def test_combine_sample_snps_index2():
 
 
 def test_combine_sample_snps_index3():
-    #check index_type
+    # check index_type
     df = combine_sample_snps(
         SNP_DATA,
         1,

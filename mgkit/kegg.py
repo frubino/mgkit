@@ -4,10 +4,13 @@ Module containing classes and functions to access Kegg data
 
 import logging
 import pickle
+import random
 import re
 import itertools
 from .utils import dictionary as dict_utils
+from .utils.common import deprecated
 from .net import uniprot, url_read
+from .io import open_file
 
 
 LOG = logging.getLogger(__name__)
@@ -53,55 +56,41 @@ class KeggCompound(object):
 
 
 class KeggReaction(object):
-    "Kegg Reaction"
-    # __slots__ = ('rn_id', 'description', 'cp_in', 'cp_out')
+    """
+    .. versionchanged:: 0.3.1
+        reworked, only stores the equation
 
-    def __init__(self, rn_id=None, description='', cp_in=None, cp_out=None):
-        self.rn_id = rn_id
-        self.description = description
-        self.cp_in = cp_in if not cp_in is None else {}
-        self.cp_out = cp_out if not cp_out is None else {}
+    Kegg Reaction, used for parsing the equation line
+    """
 
-    def __eq__(self, other):
+    rn_id = None
+    left_cp = None
+    right_cp = None
+
+    def __init__(self, entry):
         """
-        >>> KeggReaction('test') == KeggReaction('test')
-        True
-        >>> KeggReaction('test') == 1
-        False
+
+        Raises:
+            ValueError: if no EQUATION line is found
         """
-        if not isinstance(other, KeggReaction):
-            return False
-        return self.rn_id == other.rn_id
-
-    def __ne__(self, other):
-        """
-        >>> KeggReaction('test') != KeggReaction('test1')
-        True
-        >>> KeggReaction('test') != 1
-        True
-        """
-        return not self == other
-
-    def __hash__(self):
-        return hash(self.rn_id)
-
-    def __str__(self):
-        return "{0}: {1} - CPIN ({2}) CPOUT ({3})".format(
-            self.rn_id, self.description, len(self.cp_in), len(self.cp_out)
-        )
-
-    def __repr__(self):
-        return str(self)
+        entry = entry.splitlines()
+        self.rn_id = entry[0].split()[1]
+        for line in entry:
+            if line.startswith('EQUATION'):
+                break
+        if line.startswith('///'):
+            raise ValueError('No Equation in Entry')
+        self.left_cp, self.right_cp = parse_reaction(line)
 
 
 class KeggOrtholog(object):
     "Kegg Ortholog gene"
-    #__slots__ = ('ko_id', 'description', 'reactions')
+    # __slots__ = ('ko_id', 'description', 'reactions')
 
     def __init__(self, ko_id=None, description='', reactions=None):
         self.ko_id = ko_id
         self.description = description.replace(';', '')
-        self.reactions = reactions if not reactions is None else {}
+        self.reactions = reactions if reactions is not None else {}
 
     def __eq__(self, other):
         """
@@ -153,7 +142,7 @@ class KeggPathway(object):
     def __init__(self, path_id=None, description=None, genes=None):
         self.path_id = path_id
         self.description = description
-        self.genes = genes if not genes is None else {}
+        self.genes = genes if genes is not None else {}
 
     def __eq__(self, other):
         """
@@ -205,10 +194,14 @@ class KeggPathway(object):
 
 class KeggClientRest(object):
     """
+    .. versionchanged:: 0.3.1
+        added a *cache* attribute for some methods
+
     Kegg REST client
 
-    The class includes methods and data to use the REST API provided by Kegg. At
-    the moment it provides methods to for 'link', 'list' and 'get' operations,
+    The class includes methods and data to use the REST API provided by Kegg.
+    At the moment it provides methods to for 'link', 'list' and 'get'
+    operations,
 
     `Kegg REST API <http://www.kegg.jp/kegg/rest/keggapi.html>`_
 
@@ -228,10 +221,67 @@ class KeggClientRest(object):
     )
     id_prefix = {'C': 'cpd', 'k': 'map', 'K': 'ko', 'R': 'rn', 'm': 'path'}
 
-    ####### Kegg primitives #######
+    cache = None
 
-    def link_ids(self, target, ids, strip=True, max_len=50):
+    def __init__(self, cache=None):
         """
+        .. versionadded:: 0.3.1
+
+        The "cache" parameter is a file name for the cached data wrote using
+        :meth:`KeggClientRest.write_cache`.
+        """
+
+        if cache is None:
+            self.empty_cache()
+        else:
+            self.load_cache(cache)
+
+    def empty_cache(self, methods=None):
+        """
+        .. versionadded:: 0.3.1
+
+        Empties the cache completely or for a specific method(s)
+
+        Arguments:
+            methods (iterable, str): string or iterable of strings that are
+                part of the cache. If None the cache is fully emptied
+        """
+
+        if methods is None:
+            methods = ('link_ids', 'get_entry', 'get_ids_names')
+        else:
+            if isinstance(methods, str):
+                methods = [methods]
+
+        if self.cache is None:
+            self.cache = {}
+
+        for method in methods:
+            self.cache[method] = {}
+
+    def load_cache(self, file_handle):
+        """
+        .. versionadded:: 0.3.1
+
+        Loads the cache from file
+        """
+        self.cache = pickle.load(open_file(file_handle, 'r'))
+
+    def write_cache(self, file_handle):
+        """
+        .. versionadded:: 0.3.1
+
+        Write the cache to file
+        """
+        pickle.dump(self.cache, open_file(file_handle, 'w'))
+
+    # Kegg primitives #
+
+    def link_ids(self, target, kegg_ids, max_len=50):
+        """
+        .. versionchanged:: 0.3.1
+            removed *strip* and cached the results
+
         The method abstract the use of the 'link' operation in the Kegg API
 
         The target parameter can be one of the following::
@@ -248,39 +298,67 @@ class KeggClientRest(object):
             request, should not exceed 50
         :return dict: dictionary mapping requested id to target id(s)
         """
-        if isinstance(ids, str):
-            ids = [ids]
-        if isinstance(ids, (set, frozenset)):
-            ids = list(ids)
+        if isinstance(kegg_ids, str):
+            kegg_ids = [kegg_ids]
 
-        data = []
-        for idx in range(0, len(ids), max_len):
-            if len(ids) > max_len:
+        if isinstance(kegg_ids, (list, dict)):
+            kegg_ids = set(kegg_ids)
+
+        try:
+            mapping = self.cache['link_ids'][target]
+            LOG.debug('Cached Call')
+        except KeyError:
+            LOG.debug('Empty Cache')
+            mapping = {}
+            self.cache['link_ids'][target] = mapping
+
+        download_ids = kegg_ids - set(mapping)
+        LOG.debug(
+            'Number of cached items (%d/%d)',
+            len(kegg_ids) - len(download_ids),
+            len(kegg_ids)
+        )
+
+        while download_ids:
+            try:
+                sample_ids = set(random.sample(download_ids, max_len))
+            except ValueError:
+                # download_ids size is less than max_len
+                sample_ids = download_ids.copy()
+            if len(kegg_ids) > max_len:
                 LOG.info(
-                    "Downloading links - range %d-%d",
-                    idx + 1, idx + max_len
+                    "Downloading links - %d out of %d",
+                    len(kegg_ids) - len(download_ids), len(kegg_ids)
                 )
             url = "{0}link/{1}/{2}".format(
-                self.api_url, target, '+'.join(ids[idx:idx+max_len])
+                self.api_url, target, '+'.join(sample_ids)
             )
-            t_data = url_read(url, agent=self.contact)
-            t_data = t_data.split('\n')
-            data.extend(t_data)
+            data = url_read(url, agent=self.contact)
+            data = data.split('\n')
 
-        mapping = {}
-        for line in data:
-            if not line:
-                continue
-            source, target = line.split()
-            if strip:
+            for line in data:
+                if not line:
+                    continue
+                source, linked = line.split('\t')
                 source = source.split(':')[1]
-                target = target.split(':')[1]
-            try:
-                mapping[source].append(target)
-            except KeyError:
-                mapping[source] = [target]
+                linked = linked.split(':')[1]
 
-        return mapping
+                try:
+                    mapping[source].append(linked)
+                except KeyError:
+                    mapping[source] = [linked]
+
+            download_ids = download_ids - sample_ids
+
+        # Empty (Not Found) elements, set to None
+        for kegg_id in kegg_ids - set(mapping):
+            mapping[kegg_id] = None
+
+        return {
+            kegg_id: list(value)
+            for kegg_id, value in mapping.iteritems()
+            if (kegg_id in kegg_ids) and (value is not None)
+        }
 
     def list_ids(self, k_id):
         """
@@ -298,29 +376,193 @@ class KeggClientRest(object):
         """
         url = "{0}list/{1}".format(self.api_url, k_id)
         data = url_read(url, agent=self.contact)
-        #leave out the last \n
+        # leave out the last \n
         return data[:-1]
 
     def get_entry(self, k_id, option=None):
         """
+        .. versionchanged:: 0.3.1
+            this is now cached
+
         The method abstract the use of the 'get' operation in the Kegg API
 
         :param str k_id: kegg id of the resource to get
         :param str option: optional, to specify a format
         """
-        url = "{0}get/{1}/{2}".format(
-            self.api_url,
-            k_id,
-            '' if option is None else option
-        )
-        data = url_read(url, agent=self.contact)
+        try:
+            data = self.cache['get_entry'][(k_id, option)]
+        except KeyError:
+            url = "{0}get/{1}/{2}".format(
+                self.api_url,
+                k_id,
+                '' if option is None else option
+            )
+            data = url_read(url, agent=self.contact)
+            self.cache['get_entry'][(k_id, option)] = data
+
         return data
 
-    ####### names #######
+    def link(self, target, source, options=None):
+        """
+        .. versionadded:: 0.2.0
+
+        Implements "link" operation in Kegg REST
+
+        http://www.genome.jp/linkdb/
+        """
+        url = "http://rest.genome.jp/link/{0}/{1}/{2}".format(
+            target,
+            source,
+            '' if options is None else options
+        )
+
+        LOG.debug(url)
+
+        data = url_read(url, agent=self.contact)
+
+        mappings = {}
+        for line in data.splitlines():
+            source_id, target_id, _ = line.rstrip().split('\t')
+            source_id = source_id.split(':')[1]
+            target_id = target_id.split(':')[1]
+            try:
+                mappings[source_id].add(target_id)
+            except KeyError:
+                mappings[source_id] = set([target_id])
+
+        return mappings
+
+    def find(self, query, database, options=None, strip=True):
+        """
+        .. versionadded:: 0.3.1
+
+        Kegg Help:
+
+        http://rest.kegg.jp/find/<database>/<query>
+
+        <database> = pathway | module | ko | genome | <org> | compound | glycan |
+                     reaction | rclass | enzyme | disease | drug | dgroup | environ |
+                     genes | ligand
+
+        <org> = KEGG organism code or T number
+
+        http://rest.kegg.jp/find/<database>/<query>/<option>
+
+        <database> = compound | drug
+        <option> = formula | exact_mass | mol_weight
+
+        Examples:
+            >>> kc = KeggClientRest()
+            >>> kc.find('CH4', 'compound')
+            {'C01438': 'Methane; CH4'}
+            >>> kc.find('K00844', 'genes', strip=False)
+            {'tped:TPE_0072': 'hexokinase; K00844 hexokinase [EC:2.7.1.1]',
+            ...
+            >>> kc.find('174.05', 'compound', options='exact_mass')
+            {'C00493': '174.052823',
+             'C04236': '174.052823',
+             'C16588': '174.052823',
+             'C17696': '174.052823',
+             'C18307': '174.052823',
+             'C18312': '174.052823',
+             'C21281': '174.052823'}
+        """
+
+        url = 'http://rest.kegg.jp/find/{}/{}/{}'.format(
+            database,
+            query,
+            '' if options is None else options
+        )
+
+        LOG.debug(url)
+
+        data = url_read(url, agent=self.contact)
+
+        mappings = {}
+        for line in data.splitlines():
+            target_id, description = line.rstrip().split('\t')
+
+            if strip:
+                target_id = target_id.split(':')[1]
+
+            mappings[target_id] = description
+
+        return mappings
+
+    def conv(self, target_db, source_db, strip=True):
+        """
+        .. versionadded:: 0.3.1
+
+        Kegg Help:
+
+        http://rest.kegg.jp/conv/<target_db>/<source_db>
+
+        (<target_db> <source_db>) = (<kegg_db> <outside_db>) | (<outside_db> <kegg_db>)
+
+        For gene identifiers:
+        <kegg_db> = <org>
+        <org> = KEGG organism code or T number
+        <outside_db> = ncbi-proteinid | ncbi-geneid | uniprot
+
+        For chemical substance identifiers:
+        <kegg_db> = drug | compound | glycan
+        <outside_db> = pubchem | chebi
+        http://rest.kegg.jp/conv/<target_db>/<dbentries>
+
+        For gene identifiers:
+        <dbentries> = database entries involving the following <database>
+        <database> = <org> | genes | ncbi-proteinid | ncbi-geneid | uniprot
+        <org> = KEGG organism code or T number
+
+        For chemical substance identifiers:
+        <dbentries> = database entries involving the following <database>
+        <database> = drug | compound | glycan | pubchem | chebi
+
+        Examples:
+            >>> kc = KeggClientRest()
+            >>> kc.conv('ncbi-geneid', 'eco')
+            {'eco:b0217': {'ncbi-geneid:949009'},
+             'eco:b0216': {'ncbi-geneid:947541'},
+             'eco:b0215': {'ncbi-geneid:946441'},
+             'eco:b0214': {'ncbi-geneid:946955'},
+             'eco:b0213': {'ncbi-geneid:944903'},
+            ...
+            >>> kc.conv('ncbi-proteinid', 'hsa:10458+ece:Z5100')
+            {'10458': {'NP_059345'}, 'Z5100': {'AAG58814'}}
+        """
+
+        url = 'http://rest.kegg.jp/conv/{}/{}/'.format(
+            target_db,
+            source_db,
+        )
+
+        LOG.debug(url)
+
+        data = url_read(url, agent=self.contact)
+
+        mappings = {}
+        for line in data.splitlines():
+            source_id, target_id = line.rstrip().split('\t')
+
+            if strip:
+                target_id = target_id.split(':')[1]
+                source_id = source_id.split(':')[1]
+
+            try:
+                mappings[source_id].add(target_id)
+            except KeyError:
+                mappings[source_id] = set([target_id])
+
+        return mappings
+
+    # names #
 
     def get_ids_names(self, target='ko', strip=True):
         """
         .. versionadded:: 0.1.13
+
+        .. versionchanged:: 0.3.1
+            the call is now cached
 
         Returns a dictionary with the names/description of all the id of a
         specific target, (ko, path, cpd, etc.)
@@ -328,6 +570,13 @@ class KeggClientRest(object):
         If strip=True the id will stripped of the module abbreviation (e.g.
         md:M00002->M00002)
         """
+
+        if strip:
+            try:
+                return self.cache['get_ids_names'][target].copy()
+            except KeyError:
+                LOG.debug('No cached values for "%s"', target)
+
         id_names = {}
 
         for line in self.list_ids(target).splitlines():
@@ -335,8 +584,13 @@ class KeggClientRest(object):
             if strip:
                 kegg_id = kegg_id.split(':')[1]
             id_names[kegg_id] = name
+
+        if strip:
+            self.cache['get_ids_names'][target] = id_names.copy()
+
         return id_names
 
+    @deprecated
     def get_names(self, k_type, strip=True):
         """
         .. deprecated:: 0.1.13
@@ -349,6 +603,7 @@ class KeggClientRest(object):
         """
         return self.get_ids_names(target=k_type, strip=strip)
 
+    @deprecated
     def get_compound_names(self, ids=None):
         """
         .. deprecated:: 0.1.13
@@ -359,6 +614,7 @@ class KeggClientRest(object):
 
         return self.get_ids_names('cpd')
 
+    @deprecated
     def get_kos_descriptions(self, rex=False):
         """
         .. deprecated:: 0.1.13
@@ -383,6 +639,7 @@ class KeggClientRest(object):
 
         return pathways
 
+    @deprecated
     def get_compounds_descriptions(self):
         """
         .. deprecated:: 0.1.13
@@ -392,6 +649,7 @@ class KeggClientRest(object):
         """
         return self.get_ids_names('cpd')
 
+    @deprecated
     def get_reactions_descriptions(self):
         """
         .. deprecated:: 0.1.13
@@ -401,7 +659,7 @@ class KeggClientRest(object):
         """
         return self.get_ids_names('reaction')
 
-    ####### end names #######
+    # end names #
 
     def get_reaction_equations(self, ids, max_len=10):
         "Get the equation for the reactions"
@@ -498,7 +756,7 @@ class KeggData(object):
     def get_ko_rn_links(self, path_filter=None, description=False):
         rn_links = {}
         for path_id in self:
-            if not path_filter is None:
+            if path_filter is not None:
                 if path_id != path_filter:
                     continue
             for ko_id in self[path_id]:
@@ -514,7 +772,7 @@ class KeggData(object):
     def get_rn_cp_links(self, path_filter=None, description=False):
         rn_links = {}
         for path_id in self:
-            if not path_filter is None:
+            if path_filter is not None:
                 if path_id != path_filter:
                     continue
             for ko_id in self[path_id]:
@@ -537,7 +795,7 @@ class KeggData(object):
     def get_ko_cp_links(self, path_filter=None, description=False):
         ko_links = {}
         for path_id in self:
-            if not path_filter is None:
+            if path_filter is not None:
                 if path_id != path_filter:
                     continue
             for ko_id in self[path_id]:
@@ -548,7 +806,9 @@ class KeggData(object):
                     if description:
                         cp_set.update(
                             "{0}: {1}".format(
-                            cp.cp_id, cp.description)
+                                cp.cp_id,
+                                cp.description
+                            )
                             for cp in itertools.chain(
                                 rn.cp_in.itervalues(), rn.cp_out.itervalues()
                             )
@@ -569,8 +829,12 @@ class KeggData(object):
                     cp_dict = getattr(rn, 'cp_' + direction)
                     if description:
                         for cp_obj in cp_dict.itervalues():
-                            cp.add("{0}: {1}".format(
-                                   cp_obj.cp_id, cp_obj.description))
+                            cp.add(
+                                "{0}: {1}".format(
+                                    cp_obj.cp_id,
+                                    cp_obj.description
+                                )
+                            )
                     else:
                         cp.update(cp_dict.keys())
                 cp_links[ko_id] = cp
@@ -609,7 +873,7 @@ class KeggData(object):
         if black_list is None:
             black_list = self.pathways.keys()
         else:
-            #keeps only path_ids that are not in the black_list
+            # keeps only path_ids that are not in the black_list
             black_list = set(self.pathways.keys()) - set(black_list)
 
         return dict(
@@ -868,7 +1132,7 @@ BLACK_LIST = [
     'ko05130',  # Pathogenic Escherichia coli infection
     'ko05131',  # Shigellosis
 
-    #troppo grandi
+    # Too big
     'ko01100',  # Metabolic pathways
     'ko01110',  # Biosynthesis of secondary metabolites
     'ko01120',  # Microbial metabolism in diverse environments
@@ -927,7 +1191,7 @@ def download_data(fname='kegg.pickle', contact=None):
             try:
                 name = ko_names[ko_id]
             except KeyError:
-                #in this case the actual entry for this gene doesn't exists
+                # in this case the actual entry for this gene doesn't exists
                 LOG.warning(
                     "KO %s not found in the descriptions, skipping", ko_id
                 )
@@ -1014,10 +1278,17 @@ class KeggModule(object):
     _reactions = None
     reactions = None
 
-    def __init__(self, entry=None):
+    def __init__(self, entry=None, old=False):
+        """
+        .. versionchanged:: 0.3.0
+            added *old* parameter, to use the old parser
+        """
         if entry is None:
             return
-        self.parse_entry(entry)
+        if old:
+            self.parse_entry(entry)
+        else:
+            self.parse_entry2(entry)
 
     def parse_entry(self, entry):
         """
@@ -1047,41 +1318,163 @@ class KeggModule(object):
 
         self.reactions = [
             self.parse_reaction(reaction, ko_ids)
-            for ko_ids, reaction in zip(entryd['DEFINITION'][0].split(' '), entryd['REACTION'])
+            for ko_ids, reaction in zip(
+                entryd['DEFINITION'][0].split(' '),
+                entryd['REACTION']
+            )
         ]
+        self._orthologs = entryd['DEFINITION'][0].split(' ')
+        self._reactions = entryd['REACTION']
+
+    def parse_entry2(self, entry):
+        """
+        .. versionadded:: 0.3.0
+
+        Parses a Kegg module entry and change the instance values. By default
+        the reactions IDs are NOT substituted with the KO IDs.
+        """
+        entryd = {}
+        curr_field = ''
+        for line in entry.splitlines():
+            if line.startswith(' '):
+                entryd[curr_field].append(line.strip())
+            elif line.startswith('///'):
+                continue
+            else:
+                curr_field = line.split(' ')[0]
+                entryd[curr_field] = []
+                entryd[curr_field].append(line.replace(curr_field, '').strip())
+
+        self.entry = re.search(r"(M\d{5})\s+.+", entryd['ENTRY'][0]).group(1)
+        self.name = entryd['NAME'][0]
+
+        self.classes = entryd['CLASS'][0].split('; ')
+        self.compounds = [
+            re.search(r"(C\d{5})\s+.+", line).group(1)
+            for line in entryd['COMPOUND']
+        ]
+
+        self.reactions = []
+
+        for reaction in entryd['REACTION']:
+            reaction = self.parse_reaction(reaction, ko_ids=None)
+            self.reactions.append(reaction)
+
         self._orthologs = entryd['DEFINITION'][0].split(' ')
         self._reactions = entryd['REACTION']
 
     @staticmethod
     def parse_reaction(line, ko_ids=None):
         """
-        parses the lines with the reactions and substitute reaction IDs with the
-        corresponding KO IDs if provided
+        .. versionchanged:: 0.3.0
+            cleaned the parsing
+
+        parses the lines with the reactions and substitute reaction IDs with
+        the corresponding KO IDs if provided
         """
 
-        #line = 'R00294,R02492,R09446,R09808,R09809  C00533 -> C00887'
-        #ko_ids = '(K00370+K00371+K00374+K00373,K02567+K02568)'
-        #some reaction lines have only one space
+        # line = 'R00294,R02492,R09446,R09808,R09809  C00533 -> C00887'
+        # ko_ids = '(K00370+K00371+K00374+K00373,K02567+K02568)'
+        # some reaction lines have only one space
         rn_ids, reaction = line.replace('  ', ' ').split(' ', 1)
-        rn_ids = rn_ids.split(',')
+        rn_ids = tuple(x.strip() for x in rn_ids.replace('+', ',').split(','))
         comp1, comp2 = reaction.split(' -> ')
+        comp1 = comp1.replace('(spontaneous)', '')
+        comp2 = comp2.replace('(spontaneous)', '')
+        comp1 = tuple(x.strip() for x in comp1.replace('+', ',').split(','))
+        comp2 = tuple(x.strip() for x in comp2.replace('+', ',').split(','))
         if ko_ids is not None:
             rn_ids = ko_ids.replace('+', ',').replace('-', ',').replace('(', '').replace(')', '').split(',')
-        return tuple(rn_ids), (comp1, comp2)
+        return rn_ids, (comp1, comp2)
 
     @property
     def first_cp(self):
         "Returns the first compound in the module"
-        return self.compounds[0]
+        return self.reactions[0][1][0][0]
 
     @property
     def last_cp(self):
         "Returns the first compound in the module"
-        return self.compounds[-1]
+        return self.reactions[-1][-1][-1][0]
 
-    def to_edges(self):
-        "Returns the reactions as edges that can be supplied to a graph"
-        for ko_ids, (comp1, comp2) in self.reactions:
-            for ko_id in ko_ids:
-                yield (comp1, ko_id)
-                yield (ko_id, comp2)
+    def to_edges(self, id_only=None):
+        """
+        .. versionchanged:: 0.3.0
+            added id_only and changed to reflect changes in :attr:`reactions`
+
+        Returns the reactions as edges that can be supplied to make graph.
+
+        Arguments:
+            id_only (None, iterable): if None the returned edges are for the
+                whole module, if an iterable (converted to a :class:`set`),
+                only edges for those reactions are returned
+
+        Yield:
+            tuple: the elements are the compounds and reactions in the module
+        """
+
+        if id_only is not None:
+            id_only = set(id_only)
+
+        for rn_ids, (comp1s, comp2s) in self.reactions:
+            for rn_id in rn_ids:
+                if (id_only is not None) and (rn_id not in id_only):
+                    continue
+                for comp1 in comp1s:
+                    yield (comp1, rn_id)
+                for comp2 in comp2s:
+                    yield (rn_id, comp2)
+
+    def find_submodules(self):
+        """
+        .. versionadded:: 0.3.0
+
+        Returns the possible submodules, as a list of tuples where the elements
+        are the first and last compounds in a submodule
+        """
+        sub_modules = []
+        sub_module = None
+        for rn_ids, (left_cpds, right_cpds) in self.reactions:
+            if sub_module is None:
+                sub_module = [left_cpds, right_cpds]
+                continue
+
+            if set(sub_module[1]) & set(left_cpds):
+                sub_module[1] = right_cpds
+            else:
+                sub_modules.append((sub_module[0][0], sub_module[-1][-1]))
+                sub_module = [left_cpds, right_cpds]
+        else:
+            sub_modules.append((sub_module[0][0], sub_module[-1][-1]))
+        return sub_modules
+
+
+def parse_reaction(line, prefix=('C', 'G')):
+    """
+    .. versionadded:: 0.3.1
+
+    Parses a reaction equation from Kegg, returning the left and right
+    components. Needs testing
+
+    Arguments:
+        line (str): reaction string
+
+    Returns:
+        tuple: left and right components as `sets`
+
+    Raises:
+        ValueError: if the
+
+    """
+    line = line.replace('EQUATION', '').strip()
+    if '<=>' in line:
+        line = line.replace(' ', '').split('<=>')
+        left = set(x if x.startswith('C') else x[1:] for x in line[0].split('+'))
+        right = set(x if x.startswith('C') else x[1:] for x in line[1].split('+'))
+        return left, right
+    elif '=>' in line:
+        raise ValueError('>>>')
+    elif '<=' in line:
+        raise ValueError('<<<')
+    else:
+        raise ValueError('???')
