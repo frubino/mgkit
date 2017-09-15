@@ -2,101 +2,11 @@ from nose.tools import ok_, eq_, with_setup
 import random
 import functools
 
-from mgkit.filter.taxon import filter_taxonomy_by_rank, \
-    filter_taxonomy_by_lineage, filter_taxon_by_id_list
+from mgkit.filter.taxon import filter_taxon_by_id_list
 from mgkit.taxon import is_ancestor
 # from _utils import skip_test
 
 import taxon_data
-
-
-@with_setup(setup=taxon_data.setup_taxon_data)
-def test_taxon_lineage1():
-    taxa = filter_taxonomy_by_lineage(taxon_data.TAXONOMY, 'archaea')
-    ok_(
-        all(
-            'archaea' in taxon.lineage
-            for taxon in taxa
-        )
-    )
-
-
-@with_setup(setup=taxon_data.setup_taxon_data)
-def test_taxon_lineage2():
-    taxa = filter_taxonomy_by_lineage(taxon_data.TAXONOMY, 'bacteria')
-    ok_(
-        all(
-            'bacteria' in taxon.lineage
-            for taxon in taxa
-        )
-    )
-
-
-@with_setup(setup=taxon_data.setup_taxon_data)
-def test_taxon_lineage3():
-    taxa = filter_taxonomy_by_lineage(taxon_data.TAXONOMY, 'archaea')
-    ok_(
-        all(
-            'bacteria' not in taxon.lineage
-            for taxon in taxa
-        )
-    )
-
-
-@with_setup(setup=taxon_data.setup_taxon_data)
-def test_taxon_lineage4():
-    taxa = filter_taxonomy_by_lineage(taxon_data.TAXONOMY, 'bacteria')
-    ok_(
-        all(
-            'archaea' not in taxon.lineage
-            for taxon in taxa
-        )
-    )
-
-
-@with_setup(setup=taxon_data.setup_taxon_data)
-def test_taxon_rank1():
-    taxa = filter_taxonomy_by_rank(taxon_data.TAXONOMY, 'genus')
-    ok_(
-        all(
-            taxon.rank == 'genus'
-            for taxon in taxa
-        )
-    )
-
-
-@with_setup(setup=taxon_data.setup_taxon_data)
-def test_taxon_rank2():
-    taxa = filter_taxonomy_by_rank(taxon_data.TAXONOMY, 'genus')
-    ok_(
-        all(
-            taxon.rank != 'order'
-            for taxon in taxa
-        )
-    )
-
-
-@with_setup(setup=taxon_data.setup_taxon_data)
-def test_taxon_rank3():
-    taxa = filter_taxonomy_by_rank(taxon_data.TAXONOMY, 'phylum')
-    ok_(
-        all(
-            taxon.rank == 'phylum'
-            for taxon in taxa
-        )
-    )
-
-
-@with_setup(setup=taxon_data.setup_taxon_data)
-def test_taxon_rank4():
-    taxa = filter_taxonomy_by_rank(taxon_data.TAXONOMY, 'phylum')
-    ok_(
-        all(
-            taxon.rank != 'order'
-            for taxon in taxa
-        )
-    )
-
 
 @with_setup(setup=taxon_data.setup_taxon_data)
 def test_taxon_id_list1():
