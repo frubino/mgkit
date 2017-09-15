@@ -9,42 +9,6 @@ from ..taxon import is_ancestor
 import functools
 
 
-def filter_taxonomy_by_lineage(taxa, lineage):
-    """
-    .. deprecated:: 0.2.1
-
-    Filters iterable based on UniprotTaxon lineage attribute, returns only taxa
-    that have the specified value in tha lineage list
-
-    :param iterable taxa: iterable of :class:`~mgkit.taxon.UniprotTaxon`
-        instances
-    :param str lineage: string with a taxon name (e.g. archaea, bacteria, etc.)
-
-    :return: generator of :class:`UniprotTaxon` instances
-    """
-    for taxon in taxa:
-        if lineage in taxon.lineage:
-            yield taxon
-
-
-def filter_taxonomy_by_rank(taxa, rank):
-    """
-    .. deprecated:: 0.2.1
-
-    Filters iterable based on UniprotTaxon rank attribute, returns only taxa
-    that belong to that taxon level
-
-    :param iterable taxa: iterable of :class:`~mgkit.taxon.UniprotTaxon`
-        instances
-    :param str rank: string for the rank (e.g. 'genus')
-
-    :return: generator of :class:`UniprotTaxon` instances
-    """
-    for taxon in taxa:
-        if taxon.rank == rank:
-            yield taxon
-
-
 def filter_taxon_by_id_list(taxon_id, filter_list=None, exclude=False,
                             func=None):
     """

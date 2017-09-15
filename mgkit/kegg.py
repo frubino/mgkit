@@ -590,42 +590,6 @@ class KeggClientRest(object):
 
         return id_names
 
-    @deprecated
-    def get_names(self, k_type, strip=True):
-        """
-        .. deprecated:: 0.1.13
-            use :meth:`KeggClientRest.get_ids_names`
-
-        Returns a dictionary kegg_id->description for the specified kegg module.
-
-        If strip=True the id will stripped of the module abbreviation (e.g.
-        md:M00002->M00002)
-        """
-        return self.get_ids_names(target=k_type, strip=strip)
-
-    @deprecated
-    def get_compound_names(self, ids=None):
-        """
-        .. deprecated:: 0.1.13
-            use :meth:`KeggClientRest.get_ids_names`
-        """
-        if ids is not None:
-            return self.get_compound_names(ids)
-
-        return self.get_ids_names('cpd')
-
-    @deprecated
-    def get_kos_descriptions(self, rex=False):
-        """
-        .. deprecated:: 0.1.13
-            use :meth:`KeggClientRest.get_ids_names`
-
-        Get all KOs descriptions
-
-        """
-
-        return self.get_ids_names(target='ko')
-
     def get_ortholog_pathways(self):
         """
         Gets ortholog pathways, replace 'map' with 'ko' in the id
@@ -638,26 +602,6 @@ class KeggClientRest(object):
             pathways[kegg_id] = name
 
         return pathways
-
-    @deprecated
-    def get_compounds_descriptions(self):
-        """
-        .. deprecated:: 0.1.13
-            use *get_compound_names* instead
-
-        Get compound descriptions
-        """
-        return self.get_ids_names('cpd')
-
-    @deprecated
-    def get_reactions_descriptions(self):
-        """
-        .. deprecated:: 0.1.13
-            use *get_compound_names* instead
-
-        Get reaction descriptions
-        """
-        return self.get_ids_names('reaction')
 
     # end names #
 

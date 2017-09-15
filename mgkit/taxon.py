@@ -691,29 +691,6 @@ class UniprotTaxonomy(object):
             for taxon in self
         )
 
-    def get_taxon_root(self, taxon_id, roots=TAXON_ROOTS):
-        """
-        .. deprecated:: 0.2.6
-
-        Given a :class:`UniprotTaxon` instance and the associated taxonomy, returns
-        the correct root taxon the supplied taxon belongs to.
-
-        :param int taxon_id: taxon id or instance of :class:`UniprotTaxon`
-        :param iterable roots: list of root taxa scientific names
-
-        :return: root :class:`UniprotTaxon` instance
-        """
-
-        if isinstance(taxon_id, int):
-            taxon = self[taxon_id]
-        else:
-            raise ValueError("Not a valid taxon_id: {0}".format(taxon_id))
-
-        while taxon.s_name not in roots:
-            taxon = self[taxon.parent_id]
-
-        return taxon
-
     def get_lineage(self, taxon_id, names=False, only_ranked=True, with_last=True):
         """
         .. versionadded:: 0.3.1
