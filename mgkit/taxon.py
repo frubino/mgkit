@@ -894,51 +894,6 @@ class UniprotTaxonomy(object):
         return "{} - {} taxa".format(self.__class__, len(self))
 
 
-def group_by_root(taxa, roots=TAXON_ROOTS, only_names=False, replace_space='#'):
-    """
-    .. deprecated:: 0.2.6
-
-    Returns a dictionary containing as keys the root taxa and as values a list
-    of taxa belonging to that group (checks lineage attribute of
-    :class:`UniprotTaxon` instances)
-
-    :param iterable taxa: iterable of :class:`UniprotTaxon` instances
-    :param roots: root taxa to be used to construct the dictionary, defaults to
-        the 5 defined in :data:`TAXON_ROOTS`
-    :param bool only_names: boolean that specify what data type to return for
-        values, if True returns strings (taxa names), if False
-        :class:`UniprotTaxon` instances
-    :param str replace_space: if only_names is True replaces spaces with the
-        choosen character
-
-    :return: a dictionary root->[taxa_ids]
-    """
-    groups = dict(
-        (root, []) for root in roots
-    )
-    if not only_names:
-        taxa.gen_name_map()
-        for root in roots:
-            groups[root].append(taxa.find_by_name(root)[0])
-
-    for taxon in taxa:
-        for root in roots:
-            if root in taxon.lineage:
-                groups[root].append(
-                    taxon.s_name.replace(
-                        ' ', replace_space) if only_names else taxon.taxon_id
-                )
-                break
-
-    return groups
-
-
-def load_taxonomy_map(taxon_file):
-    "Loads taxonomy from file and return a map root_taxon->taxa"
-    taxonomy = UniprotTaxonomy(taxon_file)
-    return group_by_root(taxonomy, only_names=True)
-
-
 def get_ancestor_map(leaf_ids, anc_ids, taxonomy):
     """
     This function returns a dictionary where every leaf taxon is associated
