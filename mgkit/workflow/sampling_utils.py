@@ -18,6 +18,30 @@ last parameter on the command line. By defult a Fasta is expected, unless the
 
 The *-p* parameter specifies the prefix to be used, and if the output files can
 be gzipped using the *-z* parameter.
+
+*sync* command
+--------------
+
+Used to keep in sync forward and reverse read files in paired-end FASTQ files.
+The scenario is that the *sample* command was used to resample a FASTQ file,
+usually the forward, but the reverse is also needed. In this case, the resampled
+file, called *master* file is passed to the *-m* option and the input file is
+the file that is to synced. The input file is scanned until the same header is
+found in the master file and when that happens, the sequence is written. Then
+the next sequence in the master file is read and the process repeated until all
+sequence in the master file are found in the input file. This implies having
+the 2 files sorted in the same way, which is what the *sample* command does.
+
+.. note::
+
+    the old casava format is not supported by this command
+
+Changes
+-------
+
+.. versionchanged:: 0.3.3
+    added *sync* commnad
+
 """
 from __future__ import division
 import argparse
@@ -52,8 +76,71 @@ def set_parser():
     set_sample_parser(parser_sample)
     utils.add_basic_options(parser_sample, manual=__doc__)
 
+    parser_fq_sync = subparsers.add_parser(
+        'sync',
+        help='Syncs a FASTQ'
+    )
+
+    set_fq_sync_parser(parser_fq_sync)
+    utils.add_basic_options(parser_fq_sync, manual=__doc__)
+
     return parser
 
+
+def set_fq_sync_parser(parser):
+    parser.add_argument(
+        '-m',
+        '--master-file',
+        type=argparse.FileType('r'),
+        required=True,
+        help=''
+    )
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        type=argparse.FileType('r'),
+        default='-',
+        help='Input FASTQ file, defaults to stdin'
+    )
+    parser.add_argument(
+        'output_file',
+        nargs='?',
+        type=argparse.FileType('w'),
+        default='-',
+        help='Input FASTQ file, defaults to stdout'
+    )
+    parser.set_defaults(func=fq_sync_command)
+
+
+def compare_header(header1, header2, header_type=None):
+
+    if header_type is None:
+        return header1[-1] == header2[-1]
+    else:
+        return header1.split(' ')[0] == header2.split(' ')[0]
+
+def fq_sync_command(options):
+
+    master_file = fastq.load_fastq(options.master_file, num_qual=False)
+    master_header = next(master_file)[0]
+
+    header_type = fastq.choose_header_type(master_header)
+
+    written_count = 0
+
+    for header, seq, qual in fastq.load_fastq(options.input_file, num_qual=False):
+
+        if compare_header(master_header, header, header_type):
+            fastq.write_fastq_sequence(
+                options.output_file, header, seq, qual
+            )
+            written_count += 1
+            try:
+                master_header = next(master_file)[0]
+            except StopIteration:
+                break
+
+    LOG.info("Wrote %d FASTQ sequences", written_count)
 
 def set_sample_parser(parser):
     parser.add_argument(
