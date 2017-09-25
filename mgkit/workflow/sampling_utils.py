@@ -22,19 +22,20 @@ be gzipped using the *-z* parameter.
 *sync* command
 --------------
 
-Used to keep in sync forward and reverse read files in paired-end FASTQ files.
+Used to keep in sync forward and reverse read files in paired-end FASTQ.
 The scenario is that the *sample* command was used to resample a FASTQ file,
-usually the forward, but the reverse is also needed. In this case, the resampled
-file, called *master* file is passed to the *-m* option and the input file is
-the file that is to synced. The input file is scanned until the same header is
-found in the master file and when that happens, the sequence is written. Then
-the next sequence in the master file is read and the process repeated until all
+usually the forward, but we need the reverse as well. In this case, the resampled
+file, called *master* is passed to the *-m* option and the input file is
+the file that is to be synced (reverse). The input file is scanned until the same header is
+found in the master file and when that happens, the sequence is written. The
+next sequence is then read from the master file and the process is repeated until all
 sequence in the master file are found in the input file. This implies having
 the 2 files sorted in the same way, which is what the *sample* command does.
 
 .. note::
 
-    the old casava format is not supported by this command
+    the old casava format is not supported by this command at the moment, as
+    it's unusual to find it in SRA or other repository as well.
 
 Changes
 -------

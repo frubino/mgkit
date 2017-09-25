@@ -111,6 +111,9 @@ def convert_seqid_to_new(seq_id):
 
 def convert_seqid_to_old(seq_id, index_as_seq=True):
     """
+
+    .. deprecated:: 0.3.3
+
     Convert old seq_id format for Illumina reads to the new found in Casava
     until 1.8, which marks the new format.
 
@@ -255,3 +258,20 @@ def load_fastq(file_handle, num_qual=False):
         yield header1, seq, qualities
 
     LOG.info("Read %d fastq sequences", sequence_count)
+
+
+def load_fastq_rename(file_handle, num_qual=False, name_func=None):
+    """
+    .. versionadded:: 0.3.3
+
+    Mirrors the same functionality in :func:`mgkit.io.fasta.load_fasta_rename`.
+    Renames the header of the sequences using *name_func*, which is called on
+    each header. By default, the behaviour is to keep the header to the left of
+    the first space (BLAST behaviour).
+    """
+
+    if name_func is None:
+        name_func = lambda header: header.split(' ')[0]
+
+    for header, seq, qual in load_fastq(file_handle, num_qual=num_qual):
+        yield name_func(header), seq, qual
