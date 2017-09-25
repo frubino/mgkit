@@ -28,8 +28,8 @@ CASAVA_HEADER_NEW = r"""(?P<machine>[\w-]+):
         [_ ](?P<mate>\d): # underscore for data from from www.ebi.ac.uk/ena/
         (?P<filter>[YN]):
         (?P<bits>\d+):
-        (?P<index>[ACTGN]+)"""
-"New casava header regex"
+        (?P<index>[ACTGN+]+)"""
+"New casava header regex, including indices for both forward and reverse"
 
 CASAVA_KHMER = r"""
     (?P<machine>[\w-]+):
