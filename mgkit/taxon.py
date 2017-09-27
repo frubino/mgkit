@@ -322,7 +322,7 @@ class UniprotTaxonomy(object):
             file_handle = open_file(file_handle)
 
         LOG.info(
-            "Reading GTDB taxonomy from file",
+            "Reading GTDB taxonomy from file (%s)",
             getattr(file_handle, 'name', repr(file_handle))
         )
 
