@@ -799,6 +799,9 @@ class Annotation(GenomicRange):
 
     def get_attr(self, attr, conv=str):
         """
+        .. versionchanged:: 0.3.3
+            added *seq_id* as special attribute, in addition do *length*
+
         .. versionadded:: 0.1.13
 
         Generic method to get an attribute and convert it to a specific
@@ -806,6 +809,9 @@ class Annotation(GenomicRange):
         """
         if attr == 'length':
             return len(self)
+
+        if attr == 'seq_id':
+            return self.seq_id
 
         try:
             value = self.attr[attr]
