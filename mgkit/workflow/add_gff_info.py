@@ -1206,14 +1206,15 @@ def addtaxa_command(options):
         annotations = bar(annotations)
 
     for annotation in annotations:
+        gene_id = annotation.get_attr(options.gene_attr, str)
         try:
-            taxon_id = gene_ids[annotation.get_attr(options.gene_attr, str)]
+            taxon_id = gene_ids[gene_id]
             annotation.taxon_id = taxon_id
             annotation.set_attr('taxon_db', options.taxon_db)
         except KeyError:
             LOG.error(
                 "No Taxon ID for GENE - %s",
-                annotation.attr[options.gene_attr]
+                gene_id
             )
             taxon_id = None
             if options.skip_no_taxon:
