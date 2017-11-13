@@ -2159,6 +2159,10 @@ def from_mongodb(record, lineage=True):
 
 def from_prodigal_frag(main_gff, blast_gff, attr='ID', split_func=None):
     """
+
+    .. versionchanged:: 0.3.3
+        fixed a bug for the strand, also the code is tested
+
     .. versionadded:: 0.2.6
         *experimental*
 
@@ -2206,5 +2210,6 @@ def from_prodigal_frag(main_gff, blast_gff, attr='ID', split_func=None):
         annotation.seq_id = key[0]
         annotation.start = start
         annotation.end = end
+        annotation.strand = strand
         annotation.set_attr('prodigal_ID', p_id)
         yield annotation
