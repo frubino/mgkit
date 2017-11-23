@@ -13,7 +13,11 @@ except ImportError:
     raise DependencyError('statsmodels, scipy, pandas')
 
 
-def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05):
+def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05,
+                        delta=0.):
+    """
+    Performance increase with the value of *delta*.
+    """
     data = pd.DataFrame(
         {
             'endog': endog,
@@ -30,7 +34,8 @@ def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05):
             is_sorted=False,
             frac=frac,
             it=it,
-            return_sorted=True
+            return_sorted=True,
+            delta=delta
         )
         boots.append(pd.DataFrame({
             'endog': lw[:, 1],
@@ -44,7 +49,7 @@ def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05):
     q2 = boots.groupby('exog').quantile(
         1 - alpha, interpolation='nearest'
     ).sort_index()
-    return q1, q2
+    return q1.endog, q2.endog
 
 
 def fit_lowess_interpolate(endog, exog, frac=.2, it=3, kind='slinear'):
@@ -67,3 +72,12 @@ def fit_lowess_interpolate(endog, exog, frac=.2, it=3, kind='slinear'):
         lw[:, 1],
         kind=kind,
     )
+
+
+def variance_to_alpha(mu, func):
+    """
+    Based on the variance defined in the Negative Binomial in statsmodels
+
+    var = mu + alpha * (mu ** 2)
+    """
+    return (func(mu) - mu) / (mu ** 2)
