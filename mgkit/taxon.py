@@ -706,6 +706,23 @@ class UniprotTaxonomy(object):
             with_last=with_last
         )
 
+    def get_lineage_string(self, taxon_id, only_ranked=True, with_last=True,
+                           sep=';'):
+        """
+        .. versionadded:: 0.3.3
+
+        Generates a lineage string
+        """
+
+        return sep.join(
+            self.get_lineage(
+                taxon_id,
+                only_ranked=only_ranked,
+                with_last=with_last,
+                names=True
+            )
+        )
+
     def add_taxon(self, taxon_name, common_name='', rank='no rank', parent_id=None):
         """
         .. versionadded:: 0.3.1
