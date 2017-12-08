@@ -317,6 +317,9 @@ class cache_dict_file(object):
 
 class HDFDict(object):
     """
+    .. versionchanged:: 0.3.3
+        added *cache* in __init__
+
     .. versionadded:: 0.3.1
 
     Used a table in a HDFStore (from pandas) as a dictionary. The table must be
@@ -327,7 +330,7 @@ class HDFDict(object):
         the dictionary cannot be modified and exception:`ValueError` will be
         raised if the table is not in the file
     """
-    def __init__(self, file_name, table, cast=int):
+    def __init__(self, file_name, table, cast=int, cache=False):
         self._hdf = pandas.HDFStore(file_name, mode='r')
         self._table = table
         self._cast = cast
@@ -340,8 +343,23 @@ class HDFDict(object):
             )
             self._hdf.close()
 
-    def __getitem__(self, key):
+        if cache:
+            self.__getitem__ = self._getitem_cache
+            self._cache = {}
+        else:
+            self.__getitem__ = self._getitem_hdf
+
+    def _getitem_cache(self, key):
+        value = self._cache.get(key, None)
+        if value is None:
+            value = self._getitem_hdf(key)
+            self._cache[key] = value
+            return value
+
+    def _getitem_hdf(self, key):
         df = self._hdf.select(self._table, 'index=key')
         if df.empty:
             raise KeyError('Key not found {}'.format(key))
         return self._cast(df.values)
+
+    __getitem__ = _getitem_hdf
