@@ -42,6 +42,7 @@ def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05,
             'exog': lw[:, 0]
         }))
 
+    alpha = alpha / 2
     boots = pd.concat(boots)
     q1 = boots.groupby('exog').quantile(
         alpha, interpolation='nearest'
