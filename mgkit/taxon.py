@@ -271,7 +271,7 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
 class UniprotTaxonomy(object):
     """
     Class that contains the whole Uniprot taxonomy. Defines some methods to
-    easy access of taxonomy.
+    easy access of taxonomy. Follows the conventions of NCBI Taxonomy.
 
     Defines:
 
@@ -288,6 +288,28 @@ class UniprotTaxonomy(object):
         self._name_map = {}
         if fname:
             self.load_data(fname)
+
+    def parse_gtdb_lineage(lineage, sep=';'):
+        """
+        .. versionadded:: 0.3.3
+
+        Parse a GTDB lineage, one that defines the rank as a single letter,
+        followed by **__** for each taxon name. Taxa are separated by semicolon
+        by default. Also the **domain** rank is renamed into **superkingdom**
+        to allow mixing of taxonomies.
+
+        Returns:
+            dict: dictionary with the parsed lineage, which can be passed to
+            :meth:`UniprotTaxonomy.add_lineage`
+        """
+        lineage_dict = {}
+        ranks = dict(d='superkingdom', f='family', p='phylum', o='order', g='genus', s='species', c='class')
+        for taxon_name in lineage.split(sep):
+            rank, taxon_name = taxon_name.split('__')
+            if not taxon_name:
+             continue
+            lineage_dict[ranks[rank]] = taxon_name
+        return lineage_dict
 
     def read_from_gtdb_taxonomy(self, file_handle, use_gtdb_name=True, sep='\t'):
         """
