@@ -19,6 +19,13 @@ last parameter on the command line. By defult a Fasta is expected, unless the
 The *-p* parameter specifies the prefix to be used, and if the output files can
 be gzipped using the *-z* parameter.
 
+*sample_stream* command
+-----------------------
+
+It works in the same way as *sample*, however the file is sampled only once and
+the output is the stdout by default. This can be convenient if streams are a
+preferred way to sample the file.
+
 *sync* command
 --------------
 
@@ -35,13 +42,13 @@ the 2 files sorted in the same way, which is what the *sample* command does.
 .. note::
 
     the old casava format is not supported by this command at the moment, as
-    it's unusual to find it in SRA or other repository as well.
+    it's unusual to find it in SRA or other repositories as well.
 
 Changes
 -------
 
 .. versionchanged:: 0.3.3
-    added *sync* commnad
+    added *sync* and *sample_stream* commnads
 
 """
 from __future__ import division
@@ -71,7 +78,7 @@ def set_parser():
 
     parser_sample = subparsers.add_parser(
         'sample',
-        help='Sample a Fasta/FastQ'
+        help='Sample a Fasta/FastQ multiple times'
     )
 
     set_sample_parser(parser_sample)
@@ -84,6 +91,14 @@ def set_parser():
 
     set_fq_sync_parser(parser_fq_sync)
     utils.add_basic_options(parser_fq_sync, manual=__doc__)
+
+    stream_parser_sample = subparsers.add_parser(
+        'sample_stream',
+        help='Sample a Fasta/FastQ one time'
+    )
+
+    set_stream_sample_parser(stream_parser_sample)
+    utils.add_basic_options(stream_parser_sample, manual=__doc__)
 
     return parser
 
@@ -180,18 +195,18 @@ def set_sample_parser(parser):
         help='The input file is a fastq file'
     )
     parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input FASTA file, defaults to stdin'
-    )
-    parser.add_argument(
         '-z',
         '--gzip',
         action='store_true',
         default=False,
         help='gzip output files'
+    )
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        type=argparse.FileType('r'),
+        default='-',
+        help='Input FASTA/FASTQ file, defaults to stdin'
     )
     parser.set_defaults(func=sample_command)
 
@@ -247,6 +262,78 @@ def sample_command(options):
             if dist.rvs():
                 write_func(output['h'], *seq)
                 output['c'] += 1
+
+
+def set_stream_sample_parser(parser):
+    parser.add_argument(
+        '-r',
+        '--prob',
+        type=float,
+        default=10**-3,
+        help='Probability of picking a sequence'
+    )
+    parser.add_argument(
+        '-x',
+        '--max-seq',
+        type=int,
+        default=10**5,
+        help='Maximum number of sequences'
+    )
+    parser.add_argument(
+        '-q',
+        '--fastq',
+        default=False,
+        action='store_true',
+        help='The input file is a fastq file'
+    )
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        type=argparse.FileType('r'),
+        default='-',
+        help='Input FASTA file, defaults to stdin'
+    )
+    parser.add_argument(
+        'output_file',
+        nargs='?',
+        type=argparse.FileType('w'),
+        default='-',
+        help='Output FASTA/FASTQ file, defaults to stdout'
+    )
+    parser.set_defaults(func=stream_sample_command)
+
+
+def stream_sample_command(options):
+
+    if (options.prob > 1) or (options.prob <= 0):
+        utils.exit_script(
+            "The probability value ({}) is outside the correct range" +
+            " (0 < p <= 1)",
+            1
+        )
+
+    dist = scipy.stats.binom(1, options.prob)
+
+    LOG.info(
+        "Probability of picking a sequence (%.5f), max number of seqs %d",
+        options.prob,
+        options.max_seq
+    )
+
+    load_func = fastq.load_fastq if options.fastq else fasta.load_fasta
+    write_func = fastq.write_fastq_sequence if options.fastq else fasta.write_fasta_sequence
+
+    count = 0
+
+    for index, seq in enumerate(load_func(options.input_file)):
+        # reached the maximum number of sequences for all samples
+        if count >= options.max_seq:
+            LOG.info('Read the first %d sequences', index + 1)
+            break
+
+        if dist.rvs():
+            write_func(options.output_file, *seq)
+            count += 1
 
 
 def main():
