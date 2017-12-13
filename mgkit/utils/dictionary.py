@@ -330,7 +330,7 @@ class HDFDict(object):
         the dictionary cannot be modified and exception:`ValueError` will be
         raised if the table is not in the file
     """
-    def __init__(self, file_name, table, cast=int, cache=False):
+    def __init__(self, file_name, table, cast=int, cache=True):
         self._hdf = pandas.HDFStore(file_name, mode='r')
         self._table = table
         self._cast = cast

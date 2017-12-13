@@ -288,7 +288,7 @@ class UniprotTaxonomy(object):
         self._name_map = {}
         if fname:
             self.load_data(fname)
-
+    @staticmethod
     def parse_gtdb_lineage(lineage, sep=';'):
         """
         .. versionadded:: 0.3.3
