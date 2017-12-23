@@ -142,6 +142,10 @@ def convert_seqid_to_old(seq_id, index_as_seq=True):
 
 def write_fastq_sequence(file_handle, name, seq, qual, write_mode='a'):
     """
+
+    .. versionchanged:: 0.3.3
+        if *qual* is not a string it's converted to chars (phred33)
+
     Write a fastq sequence to file. If the *file_handle* is a string, the file
     will be opened using *write_mode*.
 
@@ -152,6 +156,9 @@ def write_fastq_sequence(file_handle, name, seq, qual, write_mode='a'):
     """
     if isinstance(file_handle, str):
         file_handle = open(file_handle, write_mode)
+
+    if not isinstance(qual, str):
+        qual = ''.join(chr(q + 33) for q in qual)
 
     file_handle.write(
         "@{name}\n{seq}\n+\n{qual}\n".format(
