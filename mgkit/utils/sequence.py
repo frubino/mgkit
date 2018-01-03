@@ -565,6 +565,9 @@ def sequence_gc_ratio(sequence):
 
 def sequence_gc_content(sequence):
     """
+    .. versionchanged:: 0.3.3
+        in case of `ZeroDivisionError` returns .5
+
     .. versionadded:: 0.1.13
 
     Calculate GC content information for an annotation. The formula is:
@@ -585,7 +588,10 @@ def sequence_gc_content(sequence):
     at_sum = (sequence.count('A') + sequence.count('T'))
     gc_sum = (sequence.count('G') + sequence.count('C'))
 
-    return gc_sum / (gc_sum + at_sum)
+    try:
+        return gc_sum / (gc_sum + at_sum)
+    except ZeroDivisionError:
+        return .5
 
 
 def sequence_composition(sequence, chars=tuple(REV_COMP)):
@@ -859,7 +865,7 @@ def extrapolate_model(quals, frac=.5):
     )
     lowess = lowess(numpy.arange(exog.max()) + 1)
     dist = numpy.hstack([
-        qual - lowess
+        qual - lowess[:len(qual)]
         for qual in quals
     ])
     dist = stats.gamma.freeze(*stats.gamma.fit(dist))

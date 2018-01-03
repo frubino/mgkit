@@ -120,6 +120,7 @@ def set_random_seq_parser(parser):
         '-n',
         '--num-seqs',
         default=1000,
+        type=int,
         help='Number of sequences to generate'
     )
     parser.add_argument(
