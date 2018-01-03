@@ -14,6 +14,9 @@ import logging
 import random
 import numpy
 import pandas
+from scipy import stats
+from scipy import interpolate
+import statsmodels.api as sm
 
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
@@ -767,3 +770,112 @@ def _signatures_matrix(seqs, w_size, k_size=4, step=None):
             flatten_contigs(kmer_counts)
         )
     ).T.fillna(0)
+
+
+def random_sequences_codon(n=1, length=150, codons=UNIVERSAL.keys(),
+                           p=None, frame=None):
+    """
+    .. versionadded:: 0.3.3
+
+
+    """
+    sample_size = (length // 3) + (1 if length % 3 != 0 else 0) + 1
+    codons = numpy.array(codons)
+
+    if frame is not None:
+        if  (frame < 0) or (frame > 2):
+            frame = 0
+        sframe = frame
+
+    for i in xrange(n):
+
+        if frame is None:
+            sframe = numpy.random.randint(0, 4)
+
+        yield ''.join(
+            numpy.random.choice(codons, size=sample_size, replace=True, p=p)
+        )[sframe:length+sframe]
+
+
+def random_sequences(n=1, length=150, p=None):
+    """
+    .. versionadded:: 0.3.3
+
+
+    """
+    nucl = numpy.array(['A', 'C', 'T', 'G'])
+
+    for i in xrange(n):
+
+        yield ''.join(
+            numpy.random.choice(nucl, size=length, replace=True, p=p)
+        )
+
+
+def qualities_model_decrease(length=150, scale=None, loc=35):
+    """
+    .. versionadded:: 0.3.3
+
+    The model is a decreasing one, from 35 and depends on the length of the
+    sequence.
+    """
+    if scale is None:
+        scale = 2. / (length / 150)
+    return loc - (numpy.log(numpy.arange(length) + 1) * (length / 150)), stats.norm.freeze(loc=0, scale=scale)
+
+
+def qualities_model_constant(length=150, scale=1, loc=35):
+    """
+    .. versionadded:: 0.3.3
+
+    Model with constant quality
+    """
+    return numpy.ones(length) * loc, stats.norm.freeze(scale=scale)
+
+
+def extrapolate_model(quals, frac=.5):
+    """
+    .. versionadded:: 0.3.3
+
+    Extrapolate a quality model from a list of qualities. It uses internally
+    a LOWESS as the base, which is used to estimate the noise as a gamma
+    distribution.
+    """
+    if not isinstance(quals, list):
+        quals = list(quals)
+
+    endog = numpy.hstack(quals)
+    exog = numpy.hstack(
+        [numpy.arange(len(qual)) + 1 for qual in quals]
+    )
+
+    lowess = sm.nonparametric.lowess(endog, exog, frac=frac)
+    lowess = interpolate.interp1d(
+        lowess[:, 0],
+        lowess[:, 1],
+        kind='nearest',
+        bounds_error=False,
+        fill_value='extrapolate'
+    )
+    lowess = lowess(numpy.arange(exog.max()) + 1)
+    dist = numpy.hstack([
+        qual - lowess
+        for qual in quals
+    ])
+    dist = stats.gamma.freeze(*stats.gamma.fit(dist))
+    return lowess, dist
+
+
+def random_qualities(n=1, length=150, model=None):
+    """
+    .. versionadded:: 0.3.3
+    """
+    if model is None:
+        model = qualities_model_decrease(length=length)
+
+    base, dist = model
+
+    for x in xrange(n):
+        qual = numpy.round(base + dist.rvs(size=length)).astype(int)
+        qual[qual > 40] = 40
+        yield qual
