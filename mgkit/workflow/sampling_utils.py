@@ -54,10 +54,14 @@ Changes
 from __future__ import division
 import argparse
 import logging
+import itertools
+import uuid
+import numpy
 import scipy.stats
 
 import mgkit
 from . import utils
+from ..utils import sequence
 from mgkit.io import fasta, fastq, open_file
 
 LOG = logging.getLogger(__name__)
@@ -78,7 +82,7 @@ def set_parser():
 
     parser_sample = subparsers.add_parser(
         'sample',
-        help='Sample a Fasta/FastQ multiple times'
+        help='Sample a FastA/Q multiple times'
     )
 
     set_sample_parser(parser_sample)
@@ -86,21 +90,192 @@ def set_parser():
 
     parser_fq_sync = subparsers.add_parser(
         'sync',
-        help='Syncs a FASTQ'
+        help='Syncs a FastQ'
     )
 
     set_fq_sync_parser(parser_fq_sync)
     utils.add_basic_options(parser_fq_sync, manual=__doc__)
 
-    stream_parser_sample = subparsers.add_parser(
+    stream_sample_parser = subparsers.add_parser(
         'sample_stream',
-        help='Sample a Fasta/FastQ one time'
+        help='Sample a FastA/Q one time'
     )
 
-    set_stream_sample_parser(stream_parser_sample)
-    utils.add_basic_options(stream_parser_sample, manual=__doc__)
+    set_stream_sample_parser(stream_sample_parser)
+    utils.add_basic_options(stream_sample_parser, manual=__doc__)
+
+    random_seq_parser = subparsers.add_parser(
+        'rand_seq',
+        help='Generates random FastA/Q sequences'
+    )
+
+    set_random_seq_parser(random_seq_parser)
+    utils.add_basic_options(random_seq_parser, manual=__doc__)
 
     return parser
+
+
+def set_random_seq_parser(parser):
+    parser.add_argument(
+        '-n',
+        '--num-seqs',
+        default=1000,
+        help='Number of sequences to generate'
+    )
+    parser.add_argument(
+        '-gc',
+        '--gc-content',
+        default=.5,
+        type=float,
+        help='GC content (defaults to .5 out of 1)'
+    )
+    parser.add_argument(
+        '-i',
+        '--infer-params',
+        default=None,
+        type=argparse.FileType('r'),
+        help='Infer parameters GC content and Quality model from file'
+    )
+    parser.add_argument(
+        '-r',
+        '--coding-prop',
+        default=0.,
+        type=float,
+        help='Proportion of coding sequences'
+    )
+    parser.add_argument(
+        '-l',
+        '--length',
+        default=150,
+        type=int,
+        help='Sequence length'
+    )
+    parser.add_argument(
+        '-d',
+        '--const-model',
+        default=False,
+        action='store_true',
+        help='Use a model with constant qualities + noise'
+    )
+    parser.add_argument(
+        '-x',
+        '--dist-loc',
+        default=30.,
+        type=float,
+        help='Use as the starting point quality'
+    )
+    parser.add_argument(
+        '-q',
+        '--fastq',
+        default=False,
+        action='store_true',
+        help='The output file is a FastQ file'
+    )
+    parser.add_argument(
+        'output_file',
+        nargs='?',
+        type=argparse.FileType('w'),
+        default='-',
+        help='Output FastA/Q file, defaults to stdout'
+    )
+    parser.set_defaults(func=rand_sequence_command)
+
+
+def infer_parameters(file_handle, fastq_bool):
+    LOG.info('Inferring parameters from file')
+
+    if fastq_bool:
+        it = fastq.load_fastq(file_handle, num_qual=True)
+        quals = []
+    else:
+        it = fasta.load_fasta(file_handle)
+
+    gc_content = []
+
+    length = 0
+
+    for record in it:
+        length = max(length, len(record[1]))
+        gc_content.append(
+            sequence.sequence_gc_content(record[1])
+        )
+        if fastq_bool:
+            quals.append(record[2])
+
+    if fastq_bool:
+        model = sequence.extrapolate_model(quals)
+    else:
+        model = None
+
+    gc_content = numpy.mean(gc_content)
+
+    return length, gc_content, model
+
+
+def rand_sequence_command(options):
+
+    if options.infer_params:
+        length, gc_content, model = infer_parameters(
+            options.infer_params,
+            options.fastq
+        )
+    else:
+        model = None
+        length = options.length
+        gc_content = options.gc_content
+
+    # A C T G
+    prob = [
+        (1 - gc_content) / 2.,
+        gc_content / 2.
+    ] * 2
+
+    LOG.info(
+        '%d Sequences, with a length of %d - coding proportion: %.1f',
+        options.num_seqs,
+        length,
+        options.coding_prop
+    )
+    LOG.info("Probability A %.2f, C %.2f, T %.2f, G %.2f", *prob)
+
+    if (not options.infer_params) and options.fastq:
+        if options.const_model:
+            LOG.info("Using constant model with loc=%.1f", options.dist_loc)
+            model = sequence.qualities_model_constant(
+                length=length,
+                loc=options.dist_loc
+            )
+        else:
+            LOG.info("Using decrease model with loc=%.1f", options.dist_loc)
+            model = sequence.qualities_model_decrease(
+                length=length,
+                loc=options.dist_loc
+            )
+
+    num_coding = numpy.round(options.num_seqs * options.coding_prop).astype(int)
+    seq_it = itertools.chain(
+        sequence.random_sequences_codon(n=num_coding, length=length),
+        sequence.random_sequences(
+            n=options.num_seqs - num_coding,
+            length=length,
+            p=prob
+        )
+    )
+    if options.fastq:
+        qual_it = sequence.random_qualities(
+            n=options.num_seqs,
+            length=length,
+            model=model
+        )
+    else:
+        qual_it = itertools.repeat(options.num_seqs)
+
+    for seq, qual in itertools.izip(seq_it, qual_it):
+        seq_id = str(uuid.uuid4())
+        if options.fastq:
+            fastq.write_fastq_sequence(options.output_file, seq_id, seq, qual)
+        else:
+            fasta.write_fasta_sequence(options.output_file, seq_id, seq)
 
 
 def set_fq_sync_parser(parser):
