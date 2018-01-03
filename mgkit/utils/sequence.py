@@ -844,7 +844,7 @@ def extrapolate_model(quals, frac=.5):
     .. versionadded:: 0.3.3
 
     Extrapolate a quality model from a list of qualities. It uses internally
-    a LOWESS as the base, which is used to estimate the noise as a gamma
+    a LOWESS as the base, which is used to estimate the noise as a normal
     distribution.
     """
     if not isinstance(quals, list):
@@ -868,7 +868,7 @@ def extrapolate_model(quals, frac=.5):
         qual - lowess[:len(qual)]
         for qual in quals
     ])
-    dist = stats.gamma.freeze(*stats.gamma.fit(dist))
+    dist = stats.norm.freeze(*stats.norm.fit(dist))
     return lowess, dist
 
 

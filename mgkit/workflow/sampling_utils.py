@@ -58,6 +58,7 @@ import itertools
 import uuid
 import numpy
 import scipy.stats
+import pickle
 
 import mgkit
 from . import utils
@@ -173,6 +174,13 @@ def set_random_seq_parser(parser):
         help='The output file is a FastQ file'
     )
     parser.add_argument(
+        '-m',
+        '--save-model',
+        default=None,
+        type=str,
+        help='Save inferred qualities model to a pickle file'
+    )
+    parser.add_argument(
         'output_file',
         nargs='?',
         type=argparse.FileType('w'),
@@ -220,6 +228,8 @@ def rand_sequence_command(options):
             options.infer_params,
             options.fastq
         )
+        if options.save_model is not None:
+            pickle.dump(dict(lw=model[0], dist=model[1].args, dist_family='norm'), open_file(options.save_model, 'w'))
     else:
         model = None
         length = options.length
