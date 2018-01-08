@@ -718,6 +718,16 @@ class UniprotTaxonomy(object):
         .. versionadded:: 0.3.1
 
         Proxy for :func:`get_lineage`, with changed defaults
+
+        Arguments:
+            taxon_id (int): taxon_id to return the lineage
+            names (bool): if the elements of the list are converted into the
+                scientific names
+            only_ranked (bool): only return the ranked taxa
+            with_last (bool): include the taxon_id passed to the list
+
+        Returns:
+            list: the lineage of the passed taxon_id as a list of IDs or names
         """
 
         return get_lineage(
@@ -729,12 +739,28 @@ class UniprotTaxonomy(object):
         )
 
     def get_lineage_string(self, taxon_id, only_ranked=True, with_last=True,
-                           sep=';'):
+                           sep=';', rank=None):
         """
         .. versionadded:: 0.3.3
 
-        Generates a lineage string
+        Generates a lineage string, with the possibility of getting another
+        ranked taxon (via :meth:`UniprotTaxonomy.get_ranked_taxon`) to another
+        rank, such as *phylum*.
+
+        Arguments
+            taxon_id (int): taxon_id to return the lineage
+            only_ranked (bool): only return the ranked taxa
+            with_last (bool): include the taxon_id passed to the list
+            sep (str): separator used to join the lineage string
+            rank (int or None): if None the full lineage is returned, otherwise
+                the lineage will be cut to the specified rank
+
+        Returns:
+            str: lineage string
         """
+
+        if rank is not None:
+            taxon_id = self.get_ranked_taxon(taxon_id, rank=rank).taxon_id
 
         return sep.join(
             self.get_lineage(
