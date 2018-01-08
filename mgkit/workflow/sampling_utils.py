@@ -44,11 +44,26 @@ the 2 files sorted in the same way, which is what the *sample* command does.
     the old casava format is not supported by this command at the moment, as
     it's unusual to find it in SRA or other repositories as well.
 
+*rand_seq* command
+------------------
+
+Generate random FastA/Q sequences, allowing the specification of GC content and
+number of sequences being coding or random. If the output format chosen is
+FastQ, qualities are generated using a decreasing model with added noise. A
+constant model can be specified instead with a switch. Parameters such GC,
+length and the type of model can be infered by passing a FastA/Q file, with
+the quality model fit using a LOWESS (using :func:`mgkit.utils.sequence.extrapolate_model`).
+The noise in that case is model as the a normal distribution fitted from the
+qualities along the sequence deviating from the fitted LOWSS and scaled back by
+half to avoid too drastic changes in the qualities. Also the qualities are
+clipped at 40 to avoid compatibility problems with FastQ readers. If inferred,
+the model can be saved (as a pickle file) and loaded back for analysis
+
 Changes
 -------
 
 .. versionchanged:: 0.3.3
-    added *sync* and *sample_stream* commnads
+    added *sync*, *sample_stream* and *rand_seq* commnads
 
 """
 from __future__ import division

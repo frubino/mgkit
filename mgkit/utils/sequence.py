@@ -896,6 +896,8 @@ def extrapolate_model(quals, frac=.5, scale_adj=.5):
             corresponding sequence
         frac (float): fraction of the data used for the LOWESS fit (uses
             statsmodels)
+        scale_adj (float): value by which the scale of the normal distribution
+            will be multiplied. Defaults to halving the scale
 
     Returns:
         tuple: the first element is the qualities fit with a LOWESS, the second
