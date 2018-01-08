@@ -839,7 +839,7 @@ def qualities_model_constant(length=150, scale=1, loc=35):
     return numpy.ones(length) * loc, stats.norm.freeze(scale=scale)
 
 
-def extrapolate_model(quals, frac=.5):
+def extrapolate_model(quals, frac=.5, scale_adj=.5):
     """
     .. versionadded:: 0.3.3
 
@@ -868,7 +868,9 @@ def extrapolate_model(quals, frac=.5):
         qual - lowess[:len(qual)]
         for qual in quals
     ])
-    dist = stats.norm.freeze(*stats.norm.fit(dist))
+    dist_args = stats.norm.fit(dist)
+    dist_args = (dist_args[0], dist_args[1] * scale_adj)
+    dist = stats.norm(*distargs)
     return lowess, dist
 
 
