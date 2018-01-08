@@ -12,6 +12,7 @@ from __future__ import division  # add check to use only on python 2.x
 import itertools
 import logging
 import random
+import collections
 import numpy
 import pandas
 from scipy import stats
@@ -20,7 +21,6 @@ import statsmodels.api as sm
 
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
-import collections
 from ..io import fasta
 from ._sequence import get_kmers, sliding_window, sequence_signature, \
     signatures_matrix
@@ -783,7 +783,23 @@ def random_sequences_codon(n=1, length=150, codons=UNIVERSAL.keys(),
     """
     .. versionadded:: 0.3.3
 
+    Returns an iterator of nucleotidic sequences, based on a defined genetic
+    code (passed as parameter, defaults to the universal one). The sequence if
+    first sampled with replacement from the codon list, with a number of codons
+    that covers the length chosen plus an additional one to allow a frame shift
+    as set by *frame*
 
+    Arguments:
+        n (int): number of sequences to yield
+        length (int): length of the sequences
+        codons (iterable): codons used when generating the sequences
+        p (tuple): probability of each codon occurence, in the same order as
+            *codons*
+        frame (int or None): used to define a specific frame shift occuring in
+            the sequence (0 to 2) or a random one (if *None*)
+
+    Yields:
+        str: string representing a nucleotidic sequence
     """
     sample_size = (length // 3) + (1 if length % 3 != 0 else 0) + 1
     codons = numpy.array(codons)
@@ -807,7 +823,17 @@ def random_sequences(n=1, length=150, p=None):
     """
     .. versionadded:: 0.3.3
 
+    Returns an iterator of random squences, where each nucleotide probability
+    can be customised in the order (A, C, T, G)
 
+    Arguments:
+        n (int): number of sequences to yield
+        length (int): length of each sequence
+        p (tuple): tuple with the probability of a nucleotide to occur, in the
+            order A, C, T, G
+
+    Yields:
+        str: string representing a nucleotidic sequence
     """
     nucl = numpy.array(['A', 'C', 'T', 'G'])
 
@@ -824,6 +850,15 @@ def qualities_model_decrease(length=150, scale=None, loc=35):
 
     The model is a decreasing one, from 35 and depends on the length of the
     sequence.
+
+    Arguments:
+        length (int): length of the qualities
+        scale (float): base level of the qualities
+        loc (float): loc parameter of the normal distribution
+
+    Return:
+        tuple: first element is sequence qualities, the second element contains
+        the distribution used to randomise them
     """
     if scale is None:
         scale = 2. / (length / 150)
@@ -835,6 +870,15 @@ def qualities_model_constant(length=150, scale=1, loc=35):
     .. versionadded:: 0.3.3
 
     Model with constant quality
+
+    Arguments:
+        length (int): length of the qualities
+        scale (float): base level of the qualities
+        loc (float): loc parameter of the normal distribution
+
+    Return:
+        tuple: first element is sequence qualities, the second element contains
+        the distribution used to randomise them
     """
     return numpy.ones(length) * loc, stats.norm.freeze(scale=scale)
 
@@ -846,6 +890,16 @@ def extrapolate_model(quals, frac=.5, scale_adj=.5):
     Extrapolate a quality model from a list of qualities. It uses internally
     a LOWESS as the base, which is used to estimate the noise as a normal
     distribution.
+
+    Arguments:
+        quals (list): list of arrays of qualities, sorted by position in the
+            corresponding sequence
+        frac (float): fraction of the data used for the LOWESS fit (uses
+            statsmodels)
+
+    Returns:
+        tuple: the first element is the qualities fit with a LOWESS, the second
+        element is the distribution
     """
     if not isinstance(quals, list):
         quals = list(quals)
@@ -877,6 +931,15 @@ def extrapolate_model(quals, frac=.5, scale_adj=.5):
 def random_qualities(n=1, length=150, model=None):
     """
     .. versionadded:: 0.3.3
+
+    Arguments:
+        n (int): number of quality arrays to yield
+        length (int): length of the quality array
+        model (tuple): a tuple specifying the qualities and error distribution,
+            if *None* :func:`qualities_model_decrease` is used
+
+    Yields:
+        numpy.array: numpy array of qualities, with the maximum value of 40
     """
     if model is None:
         model = qualities_model_decrease(length=length)
