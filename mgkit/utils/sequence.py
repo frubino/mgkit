@@ -926,7 +926,7 @@ def extrapolate_model(quals, frac=.5, scale_adj=.5):
     ])
     dist_args = stats.norm.fit(dist)
     dist_args = (dist_args[0], dist_args[1] * scale_adj)
-    dist = stats.norm(*distargs)
+    dist = stats.norm(*dist_args)
     return lowess, dist
 
 
