@@ -14,7 +14,9 @@ Rubino, F. and Creevey, C.J. 2014. MGkit: Metagenomic Framework For The Study Of
 
 a citation is also available using the :func:`mgkit.cite()` function or using the `--cite` option on all scripts included. For example:
 
-.. command-output:: blast2gff --cite
+.. code-block:: bash
+
+    blast2gff --cite
 
 Links
 -----

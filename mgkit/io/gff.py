@@ -925,7 +925,7 @@ class Annotation(GenomicRange):
         Adds GC content information for an annotation. The formula is:
 
         .. math::
-            :label: gc_content
+            :label: gc_content_gff
 
             \\frac {(G + C)}{(G + C + A + T)}
 
@@ -954,7 +954,7 @@ class Annotation(GenomicRange):
         Adds GC content information for an annotation. The formula is:
 
         .. math::
-            :label: gc_ratio
+            :label: gc_ratio_gff
 
             \\frac {(A + T)}{(G + C)}
 

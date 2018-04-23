@@ -747,7 +747,7 @@ class UniprotTaxonomy(object):
         ranked taxon (via :meth:`UniprotTaxonomy.get_ranked_taxon`) to another
         rank, such as *phylum*.
 
-        Arguments
+        Arguments:
             taxon_id (int): taxon_id to return the lineage
             only_ranked (bool): only return the ranked taxa
             with_last (bool): include the taxon_id passed to the list
