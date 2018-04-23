@@ -8,7 +8,6 @@ Submodules
 
    mgkit.filter.common
    mgkit.filter.gff
-   mgkit.filter.gff_old
    mgkit.filter.lists
    mgkit.filter.reads
    mgkit.filter.taxon

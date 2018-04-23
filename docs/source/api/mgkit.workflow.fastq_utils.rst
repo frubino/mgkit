@@ -1,5 +1,5 @@
-mgkit.workflow.fastq_utils module
-=================================
+mgkit.workflow.fastq\_utils module
+==================================
 
 .. automodule:: mgkit.workflow.fastq_utils
     :members:

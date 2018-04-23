@@ -1,5 +1,5 @@
-mgkit.workflow.sampling_utils module
-====================================
+mgkit.workflow.sampling\_utils module
+=====================================
 
 .. automodule:: mgkit.workflow.sampling_utils
     :members:

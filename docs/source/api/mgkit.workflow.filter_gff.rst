@@ -1,5 +1,5 @@
-mgkit.workflow.filter_gff module
-================================
+mgkit.workflow.filter\_gff module
+=================================
 
 .. automodule:: mgkit.workflow.filter_gff
     :members:

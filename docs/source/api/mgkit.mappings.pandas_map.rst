@@ -1,5 +1,5 @@
-mgkit.mappings.pandas_map module
-================================
+mgkit.mappings.pandas\_map module
+=================================
 
 .. automodule:: mgkit.mappings.pandas_map
     :members:

@@ -1,5 +1,5 @@
-mgkit.workflow.fasta_utils module
-=================================
+mgkit.workflow.fasta\_utils module
+==================================
 
 .. automodule:: mgkit.workflow.fasta_utils
     :members:
