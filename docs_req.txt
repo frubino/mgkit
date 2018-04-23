@@ -15,3 +15,7 @@ networkx>=1.9.1
 reportlab>=3.2.0
 jupyter-console
 statsmodels>=0.8
+HTSeq
+pymongo
+semidbm
+
