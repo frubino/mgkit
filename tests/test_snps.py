@@ -465,7 +465,8 @@ def test_combine_sample_snps_index2():
         index_type='gene'
     )
     eq_(
-        df.index.tolist(),
+        # Can't expect the list to be sorted
+        sorted(df.index.tolist()),
         ['gene1', 'gene2', 'gene3']
     )
 

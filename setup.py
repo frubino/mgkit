@@ -28,6 +28,15 @@ install_requires = [
     'numpy>=1.9.2',
     'pandas>=0.18',
     'progressbar2',
+    'HTSeq>=0.9.1',
+    'semidbm>=0.5.1',
+    'pymongo>=3.1.1',
+    'tables>=3.4.2',
+    'pysam>=0.14',
+    'scipy>=0.15.1',
+    'matplotlib>=2',
+    'msgpack-python>=0.4.6',
+    'statsmodels>=0.8',
 ]
 
 with open('README.rst') as file:
@@ -40,21 +49,6 @@ if sys.version_info < (2, 7):
 if sys.version_info < (3, 4):
     #support for enum backported from Python 3.4
     install_requires.append('enum34')
-
-extras_require = {
-    'htseq': ['HTSeq>=0.6.0'],
-    'db': ['semidbm>=0.5.1', 'pymongo>=3.1.1'],
-    'pytables': 'tables>=3.4.2',
-    'extra_scripts': [
-        'pysam>=0.8.2.1',
-    ],
-}
-
-extras_require['full'] = [
-    'scipy>=0.15.1',
-    'matplotlib>=1.5',
-    'msgpack-python>=0.4.6'
-] + extras_require['db'] + extras_require['extra_scripts']
 
 setup(
     name="mgkit",
@@ -74,20 +68,19 @@ setup(
         'scripts/sort-gff.sh',
     ],
     tests_require=['nose>=1.3.4', 'yanc'],
-    extras_require=extras_require,
     entry_points={
         'console_scripts': [
-            'download_data = mgkit.workflow.download_data:main [extra_scripts]',
+            'download_data = mgkit.workflow.download_data:main',
             'download_profiles = mgkit.workflow.download_profiles:main',
-            'filter-gff = mgkit.workflow.filter_gff:main [extra_scripts]',
-            'add-gff-info = mgkit.workflow.add_gff_info:main [extra_scripts]',
-            'get-gff-info = mgkit.workflow.extract_gff_info:main [db]',
+            'filter-gff = mgkit.workflow.filter_gff:main',
+            'add-gff-info = mgkit.workflow.add_gff_info:main',
+            'get-gff-info = mgkit.workflow.extract_gff_info:main',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'blast2gff = mgkit.workflow.blast2gff:main',
-            'snp_parser = mgkit.workflow.snp_parser:main [htseq,full]',
+            'snp_parser = mgkit.workflow.snp_parser:main',
             'translate_seq = mgkit.workflow.nuc2aa:main',
-            'fastq-utils = mgkit.workflow.fastq_utils:main [htseq]',
-            'taxon-utils = mgkit.workflow.taxon_utils:main [pytables]',
+            'fastq-utils = mgkit.workflow.fastq_utils:main',
+            'taxon-utils = mgkit.workflow.taxon_utils:main',
             'json2gff = mgkit.workflow.json2gff:main',
             'fasta-utils = mgkit.workflow.fasta_utils:main',
             'sampling-utils = mgkit.workflow.sampling_utils:main',
