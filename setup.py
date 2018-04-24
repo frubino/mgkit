@@ -73,7 +73,7 @@ setup(
         'scripts/download-ncbi-taxa.sh',
         'scripts/sort-gff.sh',
     ],
-    tests_require=['nose>=1.3.4', 'yanc'],
+    tests_require=['nose>=1.3.4', 'yanc', 'pytest>=3.5'],
     entry_points={
         'console_scripts': [
             'download_data = mgkit.workflow.download_data:main',
