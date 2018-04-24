@@ -175,6 +175,12 @@ def ranges_length(ranges):
     are numbers with the first being less than or equal to the second, the
     function sums the lengths of all ranges.
 
+    .. warning::
+
+        it's supposed to be used on intervals that were first passed to
+        functions like :func:`union_ranges`. If values overlap, there the sum
+        will be wrong
+
     Arguments:
         ranges (iterable): each element is a tuple like *(1, 10)*
 

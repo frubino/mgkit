@@ -1,37 +1,7 @@
 from nose.tools import eq_
 
-from mgkit.utils.common import average_length, between, union_range, \
-    range_intersect
 from mgkit.utils.dictionary import find_id_in_dict, combine_dict, \
     reverse_mapping, link_ids, combine_dict_one_value, merge_dictionaries
-
-
-def test_avg_len1():
-    eq_(average_length(1, 200, 3, 132), 165.0)
-
-
-def test_avg_len2():
-    eq_(average_length(4, 2245, 3, 13223), 7731.5)
-
-
-def test_between1():
-    eq_(between(1, 0, 10), True)
-
-
-def test_between2():
-    eq_(between(1, 2, 10), False)
-
-
-def test_between3():
-    eq_(between(1, 1, 10), True)
-
-
-def test_between4():
-    eq_(between(11, 1, 10), False)
-
-
-def test_between5():
-    eq_(between(10, 1, 10), True)
 
 
 def test_combine_dict1():
@@ -138,86 +108,6 @@ def test_find_id_in_dict():
     eq_(
         sorted(find_id_in_dict('v1', map_dict)),
         ['k3', 'k4']
-    )
-
-
-def test_union_range1():
-    eq_(
-        union_range(1, 10, 2, 13),
-        (1, 13)
-    )
-
-
-def test_union_range2():
-    eq_(
-        union_range(1, 10, 10, 13),
-        (1, 13)
-    )
-
-
-def test_union_range3():
-    eq_(
-        union_range(10, 13, 1, 10),
-        (1, 13)
-    )
-
-
-def test_union_range4():
-    eq_(
-        union_range(1, 10, 11, 13),
-        (1, 13)
-    )
-
-
-def test_union_range5():
-    eq_(
-        union_range(10.0, 13.0, 1, 10),
-        (1, 13)
-    )
-
-
-def test_range_intersect1():
-    range1 = (10, 20)
-    range2 = (19, 30)
-    eq_(
-        range_intersect(*(range1 + range2)),
-        (19, 20)
-    )
-
-
-def test_range_intersect2():
-    range1 = (10, 20)
-    range2 = (15, 30)
-    eq_(
-        range_intersect(*(range1 + range2)),
-        (15, 20)
-    )
-
-
-def test_range_intersect3():
-    range1 = (10, 20)
-    range2 = (10, 20)
-    eq_(
-        range_intersect(*(range1 + range2)),
-        (10, 20)
-    )
-
-
-def test_range_intersect4():
-    range1 = (10, 20)
-    range2 = (12, 18)
-    eq_(
-        range_intersect(*(range1 + range2)),
-        (12, 18)
-    )
-
-
-def test_range_intersect_fail1():
-    range1 = (10, 20)
-    range2 = (30, 40)
-    eq_(
-        range_intersect(*(range1 + range2)),
-        None
     )
 
 
