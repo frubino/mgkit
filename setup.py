@@ -31,13 +31,19 @@ install_requires = [
     'HTSeq>=0.9.1',
     'semidbm>=0.5.1',
     'pymongo>=3.1.1',
-    'tables>=3.4.2',
     'pysam>=0.14',
     'scipy>=0.15.1',
     'matplotlib>=2',
     'msgpack-python>=0.4.6',
     'statsmodels>=0.8',
 ]
+
+# Build of documentation fails on RTD when pytables is
+# required
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+if not on_rtd:
+    install_requires.append('tables>=3.4.2')
+
 
 with open('README.rst') as file:
     long_description = file.read()
