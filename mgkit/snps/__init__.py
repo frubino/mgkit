@@ -10,6 +10,6 @@ SNPs data package
 from .conv_func import get_rank_dataframe, get_gene_map_dataframe
 from .funcs import combine_sample_snps
 
-import filter
-import funcs
-import conv_func
+from . import filter
+from . import funcs
+from . import conv_func
