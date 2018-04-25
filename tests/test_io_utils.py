@@ -1,3 +1,5 @@
+import pytest
+import mgkit.io.utils
 from mgkit.io.utils import open_file
 
 def test_open_file_text(tmpdir):
@@ -36,6 +38,10 @@ def test_open_file_bz2(tmpdir):
     assert open_file(file_name, mode='r').read() == test_string
 
 
+@pytest.mark.skipif(
+    mgkit.io.utils.lzma is None,
+    reason="lzma module not installed"
+)
 def test_open_file_xz(tmpdir):
     test_string = b'test\n'
     file_name = tmpdir.join('test-open.xz').strpath
