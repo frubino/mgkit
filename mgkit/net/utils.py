@@ -62,4 +62,4 @@ def url_read(url, data=None, compress=True, agent=None):
         the request
     :return: the response data
     """
-    return url_open(url, data, compress, agent).read()
+    return url_open(url, data, compress, agent).read().decode('utf8')
