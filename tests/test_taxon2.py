@@ -88,3 +88,23 @@ def test_last_common_ancestor_multiple_fail1(taxonomy):
 def test_last_common_ancestor_multiple_fail2(taxonomy):
     with pytest.raises(NoLcaFound):
         last_common_ancestor_multiple(taxonomy, [5, 8, 10])
+
+
+def test_taxonomy_serialise_pickle(taxonomy, tmpdir):
+    file_name = tmpdir.join('tx.pickle').strpath
+
+    taxonomy.save_data(file_name)
+
+    tx2 = Taxonomy(file_name)
+
+    assert taxonomy._taxa == tx2._taxa
+
+
+def test_taxonomy_serialise_msgpack(taxonomy, tmpdir):
+    file_name = tmpdir.join('tx.msgpack').strpath
+
+    taxonomy.save_data(file_name)
+
+    tx2 = Taxonomy(file_name)
+
+    assert taxonomy._taxa == tx2._taxa
