@@ -535,7 +535,7 @@ class Taxonomy(object):
             except ImportError:
                 raise DependencyError('msgpack')
             merged = []
-            for taxon_id, taxon in msgpack.Unpacker(file_handle, use_list=False):
+            for taxon_id, taxon in msgpack.Unpacker(file_handle, use_list=False, raw=False):
                 taxon = TaxonTuple(*taxon)
                 # if it's a merged taxon_id keep it and don't add it
                 if taxon_id != taxon.taxon_id:
