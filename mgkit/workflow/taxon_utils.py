@@ -334,7 +334,7 @@ def lca_contig_command(options):
             getattr(options.no_lca, 'name', repr(options.no_lca))
         )
 
-    taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+    taxonomy = taxon.Taxonomy(options.taxonomy)
 
     if options.reference is not None:
         seqs = dict(fasta.load_fasta(options.reference))
@@ -468,7 +468,7 @@ def lca_line_command(options):
             getattr(options.no_lca, 'name', repr(options.no_lca))
         )
 
-    taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+    taxonomy = taxon.Taxonomy(options.taxonomy)
 
     for line in options.input_file:
         taxon_ids = [
@@ -594,7 +594,7 @@ def filter_taxa_command(options):
         getattr(options.output_file, 'name', repr(options.output_file))
     )
 
-    taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+    taxonomy = taxon.Taxonomy(options.taxonomy)
 
     exclude = False
 

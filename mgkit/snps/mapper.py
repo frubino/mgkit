@@ -29,7 +29,7 @@ def map_taxon_id_to_rank(taxon_id, rank=None, taxonomy=None,
     """
     Given a taxon_id, returns an iterator with only the element that correspond
     to the requested rank. If the taxon returned by
-    :class:`mgkit.taxon.UniprotTaxonomy.get_ranked_taxon` has a different rank
+    :class:`mgkit.taxon.Taxonomy.get_ranked_taxon` has a different rank
     than requested, the iterator will be empty if `include_higher` is False
     and the returned taxon ID if True.
 

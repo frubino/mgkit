@@ -229,7 +229,7 @@ def map_taxon_id_to_rank(taxonomy, rank, taxon_id, include_higher=True):
     Maps a *taxon_id* to the request taxon rank. Returns *None* if
     *include_higher* is False and the found rank is not the one requested.
 
-    Internally uses :meth:`mgkit.taxon.UniprotTaxonomy.get_ranked_taxon`
+    Internally uses :meth:`mgkit.taxon.Taxonomy.get_ranked_taxon`
 
     Arguments:
         taxonomy: taxonomy instance

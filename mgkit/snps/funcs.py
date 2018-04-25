@@ -26,7 +26,7 @@ def build_rank_matrix(dataframe, taxonomy=None, taxon_rank=None):
 
     :param dataframe: :class:`pandas.Series` instance with a MultiIndex
         (gene-taxon)
-    :param taxonomy: :class:`taxon.UniprotTaxonomy` instance with the full
+    :param taxonomy: :class:`taxon.Taxonomy` instance with the full
         taxonomy
     :param str taxon_rank: taxon rank to limit the specifity of the taxa
         included

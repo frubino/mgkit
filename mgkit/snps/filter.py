@@ -18,7 +18,7 @@ def filter_genesyn_by_taxon_id(gene_syn, taxonomy=None, filter_list=None,
     Arguments:
         gene_syn: :class:`~mgkit.snps.GeneSyn` instance
         taxonomy: a valid taxonomy (instance of
-            :class:`~mgkit.taxon.UniprotTaxonomy`)
+            :class:`~mgkit.taxon.Taxonomy`)
         filter_list (iterable): list of taxon IDs to include/exclude
         exclude (bool): if the filter is reversed
         func (func): :func:`~mgkit.taxon.is_ancestor`

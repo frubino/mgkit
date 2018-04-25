@@ -86,13 +86,16 @@ TAXON_RANKS = (
 )
 "Taxonomy ranks included in the pickled data"
 
-UniprotTaxonTuple = collections.namedtuple(
+TaxonTuple = collections.namedtuple(
     'UniprotTaxonTuple',
     ('taxon_id', 's_name', 'c_name', 'rank', 'lineage', 'parent_id')
 )
 """
 A representation of a Uniprot Taxon
 """
+
+# To be deprecated to avoid confusion
+UniprotTaxonTuple = TaxonTuple
 
 
 def parse_uniprot_taxon(line, light=True):
@@ -154,7 +157,7 @@ def parse_ncbi_taxonomy_merged_file(file_handle):
     Returns:
         dict: dictionary with merged_id -> taxon_id
     """
-    file_handle = open_file(file_handle)
+    file_handle = open_file(file_handle, 'r')
 
     LOG.info(
         "Reading NCBI taxonomy merged file %s",
@@ -187,7 +190,7 @@ def parse_ncbi_taxonomy_names_file(file_handle, name_classes=('scientific name',
         dict: dictionary with merged_id -> taxon_id
     """
 
-    file_handle = open_file(file_handle)
+    file_handle = open_file(file_handle, 'r')
 
     LOG.info(
         "Reading NCBI taxonomy names file %s",
@@ -228,10 +231,10 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
             :func:`parse_ncbi_taxonomy_names_file`)
 
     Yields:
-        UniprotTaxonTuple: UniprotTaxonTuple instance
+        TaxonTuple: TaxonTuple instance
     """
 
-    file_handle = open_file(file_handle)
+    file_handle = open_file(file_handle, 'r')
 
     LOG.info(
         "Reading NCBI taxonomy nodes file %s",
@@ -258,7 +261,7 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
             s_name = names.get('scientific name', '')
             c_name = names.get('common name', '')
 
-        yield UniprotTaxonTuple(
+        yield TaxonTuple(
             taxon_id,
             s_name,
             c_name,
@@ -268,7 +271,7 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
         )
 
 
-class UniprotTaxonomy(object):
+class Taxonomy(object):
     """
     Class that contains the whole Uniprot taxonomy. Defines some methods to
     easy access of taxonomy. Follows the conventions of NCBI Taxonomy.
@@ -300,7 +303,7 @@ class UniprotTaxonomy(object):
 
         Returns:
             dict: dictionary with the parsed lineage, which can be passed to
-            :meth:`UniprotTaxonomy.add_lineage`
+            :meth:`Taxonomy.add_lineage`
         """
         lineage_dict = {}
         ranks = dict(d='superkingdom', f='family', p='phylum', o='order', g='genus', s='species', c='class')
@@ -325,7 +328,7 @@ class UniprotTaxonomy(object):
         Arguments:
             file_handle (file): file with the taxonomy
             use_gtdb_name (bool): if True, the names are kept as-is in the
-                *s_name* attribute of :class:`UniprotTaxonTuple` and the
+                *s_name* attribute of :class:`TaxonTuple` and the
                 "cleaned" version in *c_name* (e.g. f__Ammonifexaceae ->
                 Ammonifexaceae). If False, the values are switched
             sep (str): separator between the columns of the file
@@ -341,7 +344,7 @@ class UniprotTaxonomy(object):
 
         """
         if isinstance(file_handle, str):
-            file_handle = open_file(file_handle)
+            file_handle = open_file(file_handle, 'r')
 
         LOG.info(
             "Reading GTDB taxonomy from file (%s)",
@@ -404,7 +407,7 @@ class UniprotTaxonomy(object):
                 if use_gtdb_name:
                     taxon_name, common_name = common_name, taxon_name
 
-                self[taxon_id] = UniprotTaxonTuple(
+                self[taxon_id] = TaxonTuple(
                     taxon_id,
                     taxon_name,
                     common_name,
@@ -522,7 +525,7 @@ class UniprotTaxonomy(object):
         """
 
         if isinstance(file_handle, str):
-            file_handle = open_file(file_handle)
+            file_handle = open_file(file_handle, 'rb')
 
         LOG.info("Loading taxonomy from file %s", file_handle.name)
 
@@ -533,7 +536,7 @@ class UniprotTaxonomy(object):
                 raise DependencyError('msgpack')
             merged = []
             for taxon_id, taxon in msgpack.Unpacker(file_handle, use_list=False):
-                taxon = UniprotTaxonTuple(*taxon)
+                taxon = TaxonTuple(*taxon)
                 # if it's a merged taxon_id keep it and don't add it
                 if taxon_id != taxon.taxon_id:
                     merged.append((taxon_id, taxon.taxon_id))
@@ -567,7 +570,7 @@ class UniprotTaxonomy(object):
         """
 
         if isinstance(file_handle, str):
-            file_handle = open_file(file_handle, 'w')
+            file_handle = open_file(file_handle, 'wb')
 
         LOG.info("Saving taxonomy to file %s", file_handle.name)
 
@@ -678,7 +681,7 @@ class UniprotTaxonomy(object):
             value
         :param bool roots: if True, uses :data:`TAXON_ROOTS` to solve the root
             taxa
-        :return: instance of :class:`UniprotTaxon` for the rank found.
+        :return: instance of :class:`TaxonTuple` for the rank found.
         """
 
         if isinstance(taxon_id, int):
@@ -744,7 +747,7 @@ class UniprotTaxonomy(object):
         .. versionadded:: 0.3.3
 
         Generates a lineage string, with the possibility of getting another
-        ranked taxon (via :meth:`UniprotTaxonomy.get_ranked_taxon`) to another
+        ranked taxon (via :meth:`Taxonomy.get_ranked_taxon`) to another
         rank, such as *phylum*.
 
         Arguments:
@@ -822,7 +825,7 @@ class UniprotTaxonomy(object):
             except ValueError:
                 taxon_id = 1
 
-            self[taxon_id] = UniprotTaxonTuple(
+            self[taxon_id] = TaxonTuple(
                 taxon_id,
                 taxon_name,
                 common_name,
@@ -959,6 +962,9 @@ class UniprotTaxonomy(object):
         return "{} - {} taxa".format(self.__class__, len(self))
 
 
+UniprotTaxonomy = Taxonomy
+
+
 def get_ancestor_map(leaf_ids, anc_ids, taxonomy):
     """
     This function returns a dictionary where every leaf taxon is associated
@@ -987,7 +993,7 @@ def is_ancestor(taxonomy, taxon_id, anc_id):
 
     Determine if the given taxon id (taxon_id) has anc_id as ancestor.
 
-    :param :class:`UniprotTaxonomy` taxonomy: taxonomy used to test
+    :param :class:`Taxonomy` taxonomy: taxonomy used to test
     :param int taxon_id: leaf taxon to test
     :param int anc_id: ancestor taxon to test against
 
@@ -1027,7 +1033,7 @@ def last_common_ancestor(taxonomy, taxon_id1, taxon_id2):
     is in the same module, called *lowest_common_ancestor* for compatibility.
 
     Arguments:
-        taxonomy: :class:`UniprotTaxonomy` instance used to test
+        taxonomy: :class:`Taxonomy` instance used to test
         taxon_id1 (int): first taxon ID
         taxon_id2 (int): second taxon ID
 
@@ -1062,7 +1068,7 @@ def distance_taxa_ancestor(taxonomy, taxon_id, anc_id):
     at the ancestor.
 
     Arguments:
-        taxonomy: :class:`UniprotTaxonomy` instance
+        taxonomy: :class:`Taxonomy` instance
         taxon_id (int): taxonomic identifier
         anc_id (int): taxonomic identifier of the ancestor
 
@@ -1089,7 +1095,7 @@ def distance_two_taxa(taxonomy, taxon_id1, taxon_id2):
     steps it takes to traverse the taxonomy until their last common ancestor.
 
     Arguments:
-        taxonomy: :class:`UniprotTaxonomy` instance
+        taxonomy: :class:`Taxonomy` instance
         taxon_id1 (int): taxonomic identifier of first taxon
         taxon_id2 (int): taxonomic identifier of second taxon
 
@@ -1113,7 +1119,7 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
     two element combinations of *taxon_ids*.
 
     Arguments:
-        taxonomy: :class:`UniprotTaxonomy` instance
+        taxonomy: :class:`Taxonomy` instance
         taxon_ids (iterable): list taxonomic identifiers
 
     Returns:
@@ -1148,7 +1154,7 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
     Returns the lineage of a taxon_id, as a list of taxon_id or taxa names
 
     Arguments:
-        taxonomy: a :class:`UniprotTaxonomy` instance
+        taxonomy: a :class:`Taxonomy` instance
         taxon_id (int): taxon_id whose lineage to return
         names (bool): if True, the returned list contains the names of the taxa
             instead of the taxon_id
@@ -1194,7 +1200,7 @@ def last_common_ancestor_multiple(taxonomy, taxon_ids):
     *taxon_id* is returned.
 
     Arguments:
-        taxonomy: instance of :class:`UniprotTaxonomy`
+        taxonomy: instance of :class:`Taxonomy`
         taxon_ids (iterable): an iterable that yields taxon_id
 
     Returns:

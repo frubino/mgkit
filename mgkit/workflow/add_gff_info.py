@@ -731,7 +731,7 @@ def taxonomy_command(options):
         )
         if options.taxonomy is None:
             utils.exit_script('A taxonomy file is required', 1)
-        options.taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+        options.taxonomy = taxon.Taxonomy(options.taxonomy)
 
     uid_gid_map = dict(
         itertools.chain(
@@ -1199,7 +1199,7 @@ def addtaxa_command(options):
         )
 
     if options.taxonomy is not None:
-        taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+        taxonomy = taxon.Taxonomy(options.taxonomy)
 
     if options.hdf_table is not None:
         bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)

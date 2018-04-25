@@ -167,7 +167,7 @@ def main():
     LOG.info("Downloading Uniprot Taxonomy data")
     taxonomy_path = os.path.join(options.output_dir, options.taxonomy)
     if not os.path.exists(taxonomy_path):
-        taxonomy = mgkit.taxon.UniprotTaxonomy()
+        taxonomy = mgkit.taxon.Taxonomy()
         taxonomy.read_taxonomy(mgkit.net.url_open(TAXONONY_URL))
         taxonomy.save_data(taxonomy_path)
 

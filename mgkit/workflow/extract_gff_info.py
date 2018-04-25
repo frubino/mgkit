@@ -223,7 +223,7 @@ def mongodb_command(options):
     lineage_func = None
 
     if options.taxonomy is not None:
-        taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+        taxonomy = taxon.Taxonomy(options.taxonomy)
         lineage_func = functools.partial(
             taxon.get_lineage,
             taxonomy

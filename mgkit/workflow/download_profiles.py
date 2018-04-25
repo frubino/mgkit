@@ -281,7 +281,7 @@ def filter_taxonomy_by_rank(taxonomy, taxon_ids, rank):
 
 def load_data(taxon_data, length_data_name):
     "Loads data for script"
-    taxonomy = taxon.UniprotTaxonomy(taxon_data)
+    taxonomy = taxon.Taxonomy(taxon_data)
 
     try:
         LOG.info("Using profile's length data (%s)", length_data_name)
