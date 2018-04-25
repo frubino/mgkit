@@ -2,7 +2,7 @@ import pytest
 
 from mgkit.utils.dictionary import find_id_in_dict, combine_dict, \
     reverse_mapping, link_ids, combine_dict_one_value, merge_dictionaries, \
-    split_dictionary_by_value
+    split_dictionary_by_value, apply_func_to_values
 
 
 @pytest.fixture
@@ -116,3 +116,11 @@ def test_merge_dictionaries():
 )
 def test_split_dictionary_by_value(threshold, key_filter, result_dict1, result_dict2):
     assert split_dictionary_by_value(valuedict(), threshold, sum, key_filter) == (result_dict1, result_dict2)
+
+
+def test_apply_func_to_values():
+    d = {
+        1: ('vg', 'vt')
+    }
+
+    assert apply_func_to_values(d, lambda x: x[0]) == {1: {'v'}}
