@@ -1,12 +1,16 @@
 """
 Various utilities to help read and process files
 """
+import sys
 import logging
 import gzip
 import bz2
 
 try:
-    import lzma
+    if sys.version_info >= (3, 3):
+        import lzma
+    else:
+        from backports import lzma
 except ImportError:
     lzma = None
 
@@ -89,7 +93,7 @@ def open_file(file_name, mode='r'):
     elif file_name.endswith('.bz2'):
         file_handle = bz2.BZ2File(file_name, mode)
     elif file_name.endswith('.xz'):
-        if lzma:
+        if lzma is None:
             raise UnsupportedFormat("Cannot import lzma module")
         else:
             file_handle = lzma.LZMAFile(file_name, mode)
