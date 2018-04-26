@@ -122,8 +122,7 @@ def test_Annotation_add_gc_content(gff_file, nucseq):
 
 def test_Annotation_add_gc_ratio(gff_file, nucseq):
     ann = gff.from_gff(gff_file[0])
-    ann.add_gc_content(nucseq['contig-1327918'])
 
-    ann.add_gc_ratio(misc_data.NUC_SEQS['contig-1327918'])
+    ann.add_gc_ratio(nucseq['contig-1327918'])
 
     assert 0.8818181818181818 == ann.get_attr('gc_ratio', float)

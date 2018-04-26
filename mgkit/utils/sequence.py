@@ -9,11 +9,11 @@ Module containing functions related to sequence data
 """
 from __future__ import division  # add check to use only on python 2.x
 
+import sys
 import itertools
 import logging
 import random
 import collections
-from string import maketrans
 import numpy
 import pandas
 from scipy import stats
@@ -53,8 +53,11 @@ def make_reverse_table(tbl=None):
         trans_table[ord(nuc)] = rev
     return ''.join(trans_table)
 
-
-REV_COMP_ASCII = maketrans('ATCG', 'TAGC')
+if sys.version_info < (3, 0):
+    from string import maketrans
+    REV_COMP_ASCII = maketrans('ATCG', 'TAGC')
+else:
+    REV_COMP_ASCII = REV_COMP
 
 
 def reverse_complement_old(seq, tbl=None):
