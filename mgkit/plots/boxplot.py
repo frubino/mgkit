@@ -6,17 +6,14 @@ Code related to boxplots
 from __future__ import division
 
 import logging
+import numpy
 from .. import DependencyError
 from ..utils.common import deprecated
 from .colors import float_to_hex_color
 
-try:
-    import numpy
-    import matplotlib.pyplot as plt
-except ImportError:
-    raise DependencyError('numpy, matplotlib')
-
 LOG = logging.getLogger(__name__)
+
+from matplotlib.patches import Polygon
 
 try:
     import seaborn as sns
@@ -122,7 +119,7 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None,
         )
         if fill_box:
             box_coord = zip(box.get_xdata(), box.get_ydata())
-            polygon = plt.Polygon(
+            polygon = Polygon(
                 box_coord,
                 facecolor=data_colours[category] if data_colours else colours['boxes']
             )
@@ -320,7 +317,7 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
         )
         if fill_box:
             box_coord = zip(box.get_xdata(), box.get_ydata())
-            polygon = plt.Polygon(
+            polygon = Polygon(
                 box_coord,
                 facecolor=data_colours[row_id] if data_colours else colours['boxes']
             )

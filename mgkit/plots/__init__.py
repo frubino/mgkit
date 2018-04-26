@@ -6,7 +6,6 @@ import colors
 import heatmap
 import boxplot
 import utils
-import unused
 
 from colors import *
 from heatmap import *
