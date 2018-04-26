@@ -53,7 +53,7 @@ def make_reverse_table(tbl=None):
         trans_table[ord(nuc)] = rev
     return ''.join(trans_table)
 
-if sys.version_info < (3, 0):
+if sys.version_info <= (2, 7):
     from string import maketrans
     REV_COMP_ASCII = maketrans('ATCG', 'TAGC')
 else:
