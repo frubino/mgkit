@@ -81,7 +81,9 @@ def reverse_complement(seq, tbl=REV_COMP_ASCII):
 
     :return str: returns the reverse complement of a nucleotide sequence
     """
-    return seq[::-1].translate(REV_COMP)
+    if isinstance(seq, unicode):
+        tbl = REV_COMP
+    return seq[::-1].translate(tbl)
 
 
 def translate_sequence(sequence, start=0, tbl=None, reverse=False):

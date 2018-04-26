@@ -3,7 +3,7 @@ import mgkit.io.utils
 from mgkit.io.utils import open_file
 
 def test_open_file_text(tmpdir):
-    test_string = 'test\n'
+    test_string = u'test\n'
     file_name = tmpdir.join('test-open').strpath
     handle = open_file(file_name, mode='w')
     handle.write(test_string)

@@ -5,45 +5,6 @@ from mgkit.utils import sequence
 import misc_data
 
 
-def test_Annotation_add_exp_syn_count():
-    line = misc_data.GFF_FILE[0]
-
-
-    ann = gff.from_gff(line)
-    ann.add_exp_syn_count(misc_data.NUC_SEQS['contig-1327918'])
-
-    eq_(
-        (141, 480),
-        (ann.exp_syn, ann.exp_nonsyn)
-    )
-
-
-def test_Annotation_add_gc_content():
-    line = misc_data.GFF_FILE[0]
-
-    ann = gff.from_gff(line)
-
-    ann.add_gc_content(misc_data.NUC_SEQS['contig-1327918'])
-
-    eq_(
-        0.5314009661835749,
-        ann.get_attr('gc_cont', float)
-    )
-
-
-def test_Annotation_add_gc_ratio():
-    line = misc_data.GFF_FILE[0]
-
-    ann = gff.from_gff(line)
-
-    ann.add_gc_ratio(misc_data.NUC_SEQS['contig-1327918'])
-
-    eq_(
-        0.8818181818181818,
-        ann.get_attr('gc_ratio', float)
-    )
-
-
 def test_Annotation_to_gff():
 
     line = misc_data.GFF_FILE[0]
