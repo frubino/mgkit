@@ -9,7 +9,6 @@ import logging
 from .. import DependencyError
 
 try:
-    # import matplotlib.pyplot as plt
     from matplotlib import figure
     from matplotlib.gridspec import GridSpec
     from matplotlib import patches as mpatches
