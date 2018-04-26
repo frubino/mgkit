@@ -264,6 +264,9 @@ class Annotation(GenomicRange):
         else:
             self.uid = uid
 
+    def __hash__(self):
+        return hash(self.uid)
+
     def get_ec(self, level=4):
         """
         .. versionadded:: 0.1.13
