@@ -13,6 +13,7 @@ import itertools
 import logging
 import random
 import collections
+from string import maketrans
 import numpy
 import pandas
 from scipy import stats
@@ -53,7 +54,7 @@ def make_reverse_table(tbl=None):
     return ''.join(trans_table)
 
 
-REV_COMP_ASCII = make_reverse_table()
+REV_COMP_ASCII = maketrans('ATCG', 'TAGC')
 
 
 def reverse_complement_old(seq, tbl=None):
@@ -80,7 +81,7 @@ def reverse_complement(seq, tbl=REV_COMP_ASCII):
 
     :return str: returns the reverse complement of a nucleotide sequence
     """
-    return seq[::-1].translate(tbl)
+    return seq[::-1].translate(REV_COMP)
 
 
 def translate_sequence(sequence, start=0, tbl=None, reverse=False):
