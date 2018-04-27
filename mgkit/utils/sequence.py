@@ -84,8 +84,10 @@ def reverse_complement(seq, tbl=REV_COMP_ASCII):
 
     :return str: returns the reverse complement of a nucleotide sequence
     """
-    # Python 2.7 hack with unicode
-    if isinstance(seq, unicode):
+    # Python 2.7 hack with unicode, make sure futurize doesn't change to str
+    # since on Python 3 the first condition won't be true, the second won't be
+    # evaluated
+    if (sys.version_info[0] == 2) and isinstance(seq, unicode):
         tbl = REV_COMP
     return seq[::-1].translate(tbl)
 
