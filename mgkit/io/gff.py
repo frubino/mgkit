@@ -528,10 +528,13 @@ class Annotation(GenomicRange):
                 :func:`mgkit.utils.sequnce.get_seq_expected_syn_count`.
 
         """
-        seq = seq[self.start - 1:self.end]
 
-        if self.strand == '-':
-            seq = seq_utils.reverse_complement(seq)
+        seq = self.get_nuc_seq(seq, reverse=self.strand == '-')
+
+        # seq = seq[self.start - 1:self.end]
+        #
+        # if self.strand == '-':
+        #     seq = seq_utils.reverse_complement(seq)
 
         syn_count, nonsyn_count = seq_utils.get_seq_expected_syn_count(
             seq,

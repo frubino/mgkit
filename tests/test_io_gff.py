@@ -1,16 +1,17 @@
 import pytest
 
 from mgkit.io import gff, fasta
+from mgkit.io import open_file
 
 @pytest.fixture
 def nucseq(shared_datadir):
     return dict(
-        fasta.load_fasta((shared_datadir / 'test-seq-nuc.fa').open())
+        fasta.load_fasta(str(shared_datadir / 'test-seq-nuc.fa'))
     )
 
 @pytest.fixture
 def gff_file(shared_datadir):
-    return (shared_datadir / 'test.gff').open().readlines()
+    return open_file(str(shared_datadir / 'test.gff')).readlines()
 
 
 def test_fromgff1(gff_file):
@@ -108,9 +109,11 @@ def test_Annotation_get_mapping2(gff_file):
 def test_Annotation_add_exp_syn_count(gff_file, nucseq):
 
     ann = gff.from_gff(gff_file[0])
+    print "full seq"
+    print nucseq['contig-1327918'][ann.start - 1:ann.end]
     ann.add_exp_syn_count(nucseq['contig-1327918'])
 
-    assert (147, 474) == (ann.exp_syn, ann.exp_nonsyn)
+    assert (141, 480) == (ann.exp_syn, ann.exp_nonsyn)
 
 
 def test_Annotation_add_gc_content(gff_file, nucseq):
