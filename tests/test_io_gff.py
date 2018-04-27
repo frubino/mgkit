@@ -10,9 +10,32 @@ def nucseq(shared_datadir):
         fasta.load_fasta(str(shared_datadir / 'test-seq-nuc.fa'))
     )
 
+
+@pytest.fixture
+def aaseq(shared_datadir):
+    return dict(
+        fasta.load_fasta(str(shared_datadir / 'test-seq-aa.fa'))
+    )
+
+
 @pytest.fixture
 def gff_file(shared_datadir):
     return open_file(str(shared_datadir / 'test.gff')).readlines()
+
+
+@pytest.fixture
+def hmmer_file(shared_datadir):
+    return open_file(str(shared_datadir / 'test-hmmer-dom.txt')).readlines()
+
+
+@pytest.fixture
+def glimmer_file(shared_datadir):
+    return open_file(str(shared_datadir / 'glimmer3.txt')).readlines()
+
+
+@pytest.fixture
+def keggmod_file(shared_datadir):
+    return open_file(str(shared_datadir / 'kmod-entry1.txt')).readlines()
 
 
 def test_fromgff1(gff_file):
@@ -391,3 +414,140 @@ def test_Annotation_is_syn__start3_2():
     seq = 'ACTG' * 10
 
     assert not ann.is_syn(seq, 9, 'C', start=None)
+
+
+def test_from_hmmer(hmmer_file, aaseq):
+    checks = (
+        'contig-1442648',
+        'K00001_4479_poaceae',
+        693,
+        894,
+        'K00001',
+        4479,
+        'poaceae'
+    )
+    ann = gff.from_hmmer(
+        hmmer_file[0], aaseq
+    )
+
+    assert (
+            ann.seq_id,
+            ann.attr['name'],
+            ann.attr['aa_from'],
+            ann.attr['aa_to'],
+            ann.gene_id,
+            ann.taxon_id,
+            ann.attr['taxon_name']
+        ) == checks
+
+
+def test_gff_glimmer3_line1():
+    header = 'sequence0001'
+    line = 'orf00001       66      611  +3     6.08'
+    annotation = gff.from_glimmer3(header, line)
+
+    assert (
+            annotation.seq_id,
+            annotation.start,
+            annotation.end,
+            annotation.score,
+            annotation.strand,
+            annotation.phase,
+            annotation.attr['orf_id'],
+            annotation.attr['frame']
+        ) == (
+            header,
+            66,
+            611,
+            6.08,
+            '+',
+            2,
+            'orf00001',
+            '+3'
+        )
+
+
+def test_gff_glimmer3_line2():
+    header = 'sequence0001'
+    line = 'orf00001       66      11  -2     6.08'
+    annotation = gff.from_glimmer3(header, line)
+
+    assert (
+            annotation.start,
+            annotation.end,
+            annotation.strand,
+            annotation.phase,
+            annotation.attr['frame']
+        ) == (
+            11,
+            66,
+            '-',
+            1,
+            '-2'
+        )
+
+
+def test_gff_from_sequence1(nucseq):
+    annotation = gff.from_sequence(
+        'contig-110637',
+        nucseq['contig-110637']
+    )
+    assert (
+            annotation.seq_id,
+            annotation.start,
+            annotation.end,
+        ) == (
+            'contig-110637',
+            1,
+            len(nucseq['contig-110637'])
+        )
+
+
+@pytest.mark.parametrize(
+    "start,end,coords,result",
+    [
+        (20, 30, 1, False),
+        (20, 30, 20, True),
+        (20, 30, 30, True),
+        (20, 30, 25, True),
+        (20, 30, (25, 30), True),
+        (20, 30, (25, 31), False),
+        (20, 30, (19, 30), False),
+        (20, 30, (30, 25), True),
+    ]
+)
+def test_genomicrange_contains(start, end, coords, result):
+    gen_range1 = gff.GenomicRange(start=start, end=end)
+
+    assert (coords in gen_range1) == result
+
+
+@pytest.mark.parametrize(
+    "coords1,coords2,result",
+    [
+        ((20, 30), (25, 30), True),
+        ((20, 30), (30, 25), True),
+        ((20, 30), (19, 30), False),
+        ((20, 30), (25, 31), False),
+    ]
+)
+def test_genomicrange_contains(coords1, coords2, result):
+    gen_range1 = gff.GenomicRange(start=coords1[0], end=coords1[1])
+    gen_range2 = gff.GenomicRange(start=coords2[0], end=coords2[1])
+
+    assert (gen_range2 in gen_range1) == result
+
+
+@pytest.mark.parametrize(
+    "coords1,coords2,result",
+    [
+        ((20, 30), (25, 30), True),
+        ((20, 30), (30, 25), True),
+        ((20, 30), (19, 30), False),
+        ((20, 30), (25, 31), False),
+    ]
+)
+def test_genomicrange_contains_annotation1(coords1, coords2, result):
+    gen_range1 = gff.GenomicRange(start=coords1[0], end=coords1[1])
+
+    assert (gff.Annotation(start=coords2[0], end=coords2[1]) in gen_range1) == result
