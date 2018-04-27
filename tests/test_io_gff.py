@@ -109,8 +109,6 @@ def test_Annotation_get_mapping2(gff_file):
 def test_Annotation_add_exp_syn_count(gff_file, nucseq):
 
     ann = gff.from_gff(gff_file[0])
-    print "full seq"
-    print nucseq['contig-1327918'][ann.start - 1:ann.end]
     ann.add_exp_syn_count(nucseq['contig-1327918'])
 
     assert (141, 480) == (ann.exp_syn, ann.exp_nonsyn)
