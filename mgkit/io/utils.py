@@ -76,7 +76,15 @@ def open_file(file_name, mode='r'):
     """
     .. versionadded:: 0.1.12
 
+    .. versionchanged:: 0.3.4
+        using *io.open* on Python3, *open* on Python2
+
     Opens a file using the extension as a guide to which module to use.
+
+    .. note::
+
+        Unicode makes for a slower `.translate` method in Python2, so it's
+        best to use the `open` builtin.
 
     Arguments:
         file_name (str): file name
@@ -99,7 +107,10 @@ def open_file(file_name, mode='r'):
         else:
             file_handle = lzma.LZMAFile(file_name, mode)
     else:
-        file_handle = io.open(file_name, mode)
+        if sys.version_info[0] == 2:
+            file_handle = open(file_name, mode)
+        else:
+            file_handle = io.open(file_name, mode)
 
     return file_handle
 

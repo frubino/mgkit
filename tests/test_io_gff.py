@@ -5,12 +5,12 @@ from mgkit.io import gff, fasta
 @pytest.fixture
 def nucseq(shared_datadir):
     return dict(
-        fasta.load_fasta((shared_datadir / 'test-seq-nuc.fa').open(encoding='utf8'))
+        fasta.load_fasta((shared_datadir / 'test-seq-nuc.fa').open())
     )
 
 @pytest.fixture
 def gff_file(shared_datadir):
-    return (shared_datadir / 'test.gff').open(encoding='utf8').readlines()
+    return (shared_datadir / 'test.gff').open().readlines()
 
 
 def test_fromgff1(gff_file):
@@ -114,6 +114,7 @@ def test_Annotation_add_exp_syn_count(gff_file, nucseq):
 
 
 def test_Annotation_add_gc_content(gff_file, nucseq):
+
     ann = gff.from_gff(gff_file[0])
     ann.add_gc_content(nucseq['contig-1327918'])
 
@@ -121,8 +122,8 @@ def test_Annotation_add_gc_content(gff_file, nucseq):
 
 
 def test_Annotation_add_gc_ratio(gff_file, nucseq):
-    ann = gff.from_gff(gff_file[0])
 
+    ann = gff.from_gff(gff_file[0])
     ann.add_gc_ratio(nucseq['contig-1327918'])
 
     assert 0.8818181818181818 == ann.get_attr('gc_ratio', float)

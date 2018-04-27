@@ -53,11 +53,12 @@ def make_reverse_table(tbl=None):
         trans_table[ord(nuc)] = rev
     return ''.join(trans_table)
 
-if sys.version_info < (3, 0):
+# The maketrans function is not available on Python3
+if sys.version_info[0] == 2:
     from string import maketrans
     REV_COMP_ASCII = maketrans('ATCG', 'TAGC')
 else:
-    REV_COMP_ASCII = REV_COMP
+    REV_COMP_ASCII = u''.maketrans(REV_COMP)
 
 def reverse_complement_old(seq, tbl=None):
     """
@@ -83,6 +84,7 @@ def reverse_complement(seq, tbl=REV_COMP_ASCII):
 
     :return str: returns the reverse complement of a nucleotide sequence
     """
+    # Python 2.7 hack with unicode
     if isinstance(seq, unicode):
         tbl = REV_COMP
     return seq[::-1].translate(tbl)

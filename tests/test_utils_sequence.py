@@ -183,4 +183,3 @@ def test_sequence_composition1():
 def test_sequence_composition2():
     seq = 'A' * 10 + 'C' * 4 + 'T' * 5 + 'G' * 11 + 'N' * 2
     assert sorted(sequence_composition(seq, chars=None)) == [('A', 10), ('C', 4), ('G', 11), ('N', 2), ('T', 5)]
-    
