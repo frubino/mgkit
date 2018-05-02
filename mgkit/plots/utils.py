@@ -8,12 +8,8 @@ import logging
 
 from .. import DependencyError
 
-try:
-    from matplotlib import figure
-    from matplotlib.gridspec import GridSpec
-    from matplotlib import patches as mpatches
-except ImportError:
-    raise DependencyError('matplotlib')
+from matplotlib.gridspec import GridSpec
+from matplotlib import patches as mpatches
 
 LOG = logging.getLogger(__name__)
 
@@ -33,7 +29,8 @@ def get_single_figure(dpi=300, figsize=(10, 20), aspect='auto'):
     Returns:
         tuple: the figure and axes objects
     """
-    fig = figure.Figure(dpi=dpi, figsize=figsize)
+    import matplotlib.pyplot
+    fig = matplotlib.pyplot.figure(dpi=dpi, figsize=figsize)
     ax = fig.add_subplot(111, aspect=aspect)
     return fig, ax
 
@@ -53,7 +50,8 @@ def get_grid_figure(rows, cols, dpi=300, figsize=(10, 20), **kwd):
     Returns:
         tuple: the figure and axes objects
     """
-    fig = figure.Figure(dpi=dpi, figsize=figsize)
+    import matplotlib.pyplot
+    fig = matplotlib.pyplot.figure(dpi=dpi, figsize=figsize)
     gs = GridSpec(rows, cols, **kwd)
     return fig, gs
 
