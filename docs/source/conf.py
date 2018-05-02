@@ -35,7 +35,6 @@ extensions = [
     # 'sphinx.ext.imgmath', #either this or mathjax
     'sphinx.ext.viewcode',
     'sphinx.ext.graphviz',
-    'sphinxcontrib.actdiag',
     'sphinxcontrib.blockdiag',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
