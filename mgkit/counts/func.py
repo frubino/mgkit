@@ -8,6 +8,7 @@ import logging
 import itertools
 import functools
 from collections import Counter
+from future import viewitems
 
 from mgkit.filter import taxon as tx_filters
 from mgkit.io import open_file
@@ -46,9 +47,13 @@ def load_htseq_counts(file_handle, conv_func=int):
 
     """
 
-    LOG.info("Loading HTSeq-count file %s", str(file_handle))
+    if isinstance(file_handle, str):
+        file_handle = open_file(file_handle, 'r')
 
-    for line in open_file(file_handle, 'r'):
+    if getattr(file_handle, 'name', None) is not None:
+        LOG.info("Loading HTSeq-count file %s", file_handle.name)
+
+    for line in file_handle:
         gene_id, count = line.rstrip().split('\t')
 
         if line.startswith('__') or (gene_id in SKIP):
@@ -79,7 +84,7 @@ def batch_load_htseq_counts(count_files, samples=None, cut_name=None):
     """
     counts = {}
 
-    iterator = itertools.izip_longest(
+    iterator = itertools.zip_longest(
         count_files,
         [] if samples is None else samples
     )
@@ -295,7 +300,7 @@ def load_sample_counts(info_dict, counts_iter, taxonomy, inc_anc=None,
         filtered and mapped counts
     """
     if isinstance(info_dict, dict):
-        if isinstance(info_dict[info_dict.keys()[0]], tuple):
+        if isinstance(info_dict[list(info_dict.keys())[0]], tuple):
             info_func = functools.partial(get_uid_info, info_dict)
         else:
             info_func = functools.partial(get_uid_info_ann, info_dict)
@@ -723,7 +728,7 @@ def from_gff(annotations, samples, ann_func=None, sample_func=None):
     }
 
     for annotation in annotations:
-        for sample, count in annotation.counts.iteritems():
+        for sample, count in viewitems(annotation.counts):
             sample = sample_func(sample)
             if sample not in counters:
                 continue
