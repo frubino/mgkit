@@ -4,13 +4,12 @@
 GLM models with metagenomes and metatranscriptomes. Experimental
 """
 
-try:
-    import statsmodels.api as sm
-    from scipy import interpolate
-    from scipy import optimize
-    import pandas as pd
-except ImportError:
-    raise DependencyError('statsmodels, scipy, pandas')
+from __future__ import division
+from builtins import range
+import statsmodels.api as sm
+from scipy import interpolate
+from scipy import optimize
+import pandas as pd
 
 
 def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05,
@@ -26,7 +25,7 @@ def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05,
     ).sort_values(by=['exog', 'endog'], ascending=True)
 
     boots = []
-    for idx in xrange(num):
+    for idx in range(num):
         sample = data.sample(n=data.index.size, replace=True)
         lw = sm.nonparametric.lowess(
             sample.endog,

@@ -2,14 +2,10 @@
 Scaling functions for counts
 """
 
-from .. import DependencyError
-
-try:
-    from scipy import stats
-    import numpy
-    import pandas
-except ImportError:
-    raise DependencyError('numpy, scipy, pandas')
+from __future__ import division
+from scipy import stats
+import numpy
+import pandas
 
 
 def scale_factor_deseq(dataframe):
@@ -43,7 +39,7 @@ def scale_factor_deseq(dataframe):
     sample_factors = {}
 
     # calc the scaling factor for each sample
-    for sample, genes in dataframe.iteritems():
+    for sample, genes in dataframe.items():
 
         scale_factor = numpy.median(genes.loc[gmean.index] / gmean)
 
