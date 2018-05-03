@@ -4,23 +4,19 @@ Module dealing with BAM/SAM files
 
 import logging
 import itertools
-
-from . import DependencyError
-
 try:
-    import pandas
-    import numpy
-    import pysam
+    # In Python2
+    from itertools import izip as zip
 except ImportError:
-    raise DependencyError('numpy, pysam, pandas')
+    pass
+from builtins import object
+import pandas
+import numpy
+import pysam
+import progressbar
+from future.utils import viewitems
 
 LOG = logging.getLogger(__name__)
-
-try:
-    from progress.bar import Bar
-except ImportError:
-    LOG.debug("Could not import progress module")
-    Bar = None
 
 
 def get_region_coverage(bam_file, seq_id, feat_from, feat_to):
@@ -86,15 +82,9 @@ def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
         # pysam 0.8.1 changed Samfile to AlignmentFile
         alg_file = pysam.AlignmentFile(file_name, 'rb')
 
-        if progress and (Bar is not None):
-            bar = Bar(
-                file_name,
-                max=len(annotations),
-                suffix='%(percent)d%% - %(eta_td)s'
-            )
-            bar.width = 64
-        else:
-            bar = None
+        if progress:
+            bar = progressbar.ProgressBar(max_value=len(annotations))
+            annotations = bar(annotations)
 
         for uid, seq_id, start, end in annotations:
             cov = get_region_coverage(alg_file, seq_id, start, end)
@@ -104,14 +94,8 @@ def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
             except KeyError:
                 covered[uid] = cov
 
-            if bar is not None:
-                bar.next()
-
-        if bar is not None:
-            bar.finish()
-
     return dict(
-        (uid, len(cov[cov >= min_cov])) for uid, cov in covered.iteritems()
+        (uid, len(cov[cov >= min_cov])) for uid, cov in viewitems(covered)
     )
 
 
@@ -136,7 +120,7 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
 
     tot_coverage = {}
 
-    for bam_file, sample in itertools.izip(bam_files, samples):
+    for bam_file, sample in zip(bam_files, samples):
         LOG.info("Adding coverage for sample %s", sample)
         for index, annotation in enumerate(annotations):
             sample_coverage = get_region_coverage(
