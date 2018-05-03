@@ -8,12 +8,8 @@ of annotations using the *semidbm* package
 import logging
 
 from ..io import gff
-from .. import DependencyError
 
-try:
-    import semidbm
-except ImportError:
-    raise DependencyError('semidbm')
+import semidbm
 
 LOG = logging.getLogger(__name__)
 
