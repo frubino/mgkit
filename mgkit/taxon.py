@@ -2,14 +2,19 @@
 This module gives access to Uniprot taxonomy data. It also defines classes
 to filter, order and group data by taxa
 """
-
+from builtins import object
+from functools import reduce
 import logging
-import cPickle
+import sys
+if sys.version_info[0] == 2:
+    import cPickle as pickle
+else:
+    import pickle
 import itertools
 import collections
+from future.utils import viewitems, viewvalues
 from .io import open_file
 from . import DependencyError
-# from .utils.common import deprecated
 
 
 LOG = logging.getLogger(__name__)
@@ -449,7 +454,7 @@ class Taxonomy(object):
         if merged_file is not None:
             merged_taxa = parse_ncbi_taxonomy_merged_file(merged_file)
 
-            for merged_id, taxon_id in merged_taxa.iteritems():
+            for merged_id, taxon_id in viewitems(merged_taxa):
                 self[merged_id] = self[taxon_id]
 
     def read_taxonomy(self, f_handle, light=True):
@@ -548,7 +553,7 @@ class Taxonomy(object):
                 self[merged_id] = self[taxon_id]
 
         else:
-            self._taxa = cPickle.load(file_handle)
+            self._taxa = pickle.load(file_handle)
 
     def save_data(self, file_handle):
         """
@@ -579,12 +584,12 @@ class Taxonomy(object):
                 import msgpack
             except ImportError:
                 raise DependencyError('msgpack')
-            for taxon_id, taxon in self._taxa.iteritems():
+            for taxon_id, taxon in viewitems(self._taxa):
                 file_handle.write(
                     msgpack.packb((taxon_id, taxon))
                 )
         else:
-            cPickle.dump(self._taxa, file_handle, -1)
+            pickle.dump(self._taxa, file_handle, -1)
 
     def find_by_name(self, s_name, rank=None, strict=True):
         """
@@ -864,7 +869,7 @@ class Taxonomy(object):
         """
         lineage = {
             key.rstrip('_'): value
-            for key, value in lineage.iteritems()
+            for key, value in viewitems(lineage)
         }
         extra_nodes = set(lineage) - set(TAXON_RANKS)
         if len(extra_nodes) > 1:
@@ -936,7 +941,7 @@ class Taxonomy(object):
         """
         Defines iterable behavior. Returns a generator for UniprotTaxon instances
         """
-        for taxon in self._taxa.itervalues():
+        for taxon in viewvalues(self._taxa):
             yield taxon
 
     def __len__(self):

@@ -2,6 +2,7 @@
 Dictionary utils
 
 """
+from future.utils import viewitems
 import numpy
 import pandas
 
@@ -16,7 +17,7 @@ def merge_dictionaries(dicts):
     """
     merged = {}
     for d in dicts:
-        for key, value in d.iteritems():
+        for key, value in viewitems(d):
             if isinstance(value, (float, str, int, bool)):
                 value = [value]
             try:
@@ -130,9 +131,9 @@ def link_ids(id_map, black_list=None):
     """
     id_to_id = {}
 
-    for s_id, s_cps in id_map.iteritems():
+    for s_id, s_cps in viewitems(id_map):
         id_links = set()
-        for e_id, e_cps in id_map.iteritems():
+        for e_id, e_cps in viewitems(id_map):
             if e_id == s_id:
                 continue
             for s_id2 in s_cps:
@@ -157,7 +158,7 @@ def reverse_mapping(map_dict):
     """
     rev_map = {}
 
-    for key, value_ids in map_dict.iteritems():
+    for key, value_ids in viewitems(map_dict):
         for value_id in value_ids:
             try:
                 rev_map[value_id].add(key)
@@ -234,7 +235,7 @@ def apply_func_to_values(dictionary, func):
     """
     return dict(
         (key, set(func(value) for value in values))
-        for key, values in dictionary.iteritems()
+        for key, values in viewitems(dictionary)
     )
 
 
@@ -249,7 +250,7 @@ def filter_ratios_by_numbers(ratios, min_num):
     :return dict: filtered dictionary
     """
     return dict(
-        (key, values) for key, values in ratios.iteritems()
+        (key, values) for key, values in viewitems(ratios)
         if len(values) >= min_num
     )
 
