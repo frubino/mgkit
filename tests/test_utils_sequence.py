@@ -8,7 +8,8 @@ from mgkit.utils.sequence import reverse_aa_coord, get_variant_sequence, \
     convert_aa_to_nuc_coord, reverse_complement, translate_sequence, \
     put_gaps_in_nuc_seq, get_seq_expected_syn_count, Alignment, \
     get_seq_number_of_syn, sequence_gc_ratio, sequence_gc_content, \
-    sequence_composition
+    sequence_composition, _get_kmers, _sliding_window, _sequence_signature, \
+    sequence_signature, sliding_window, get_kmers
 
 
 @pytest.mark.parametrize(
@@ -183,3 +184,79 @@ def test_sequence_composition1():
 def test_sequence_composition2():
     seq = 'A' * 10 + 'C' * 4 + 'T' * 5 + 'G' * 11 + 'N' * 2
     assert sorted(sequence_composition(seq, chars=None)) == [('A', 10), ('C', 4), ('G', 11), ('N', 2), ('T', 5)]
+
+
+def test_sequence_composition3():
+    seq = 'A' * 10 + 'C' * 4 + 'T' * 5 + 'G' * 11 + 'N' * 2
+    assert sorted(sequence_composition(seq, chars=('A', 'C'))) == \
+        [('A', 10), ('C', 4)]
+
+
+def test_get_kmers1():
+    seq = 'ACTG' * 2
+    assert list(_get_kmers(seq, 4)) == ['ACTG', 'CTGA', 'TGAC', 'GACT', 'ACTG']
+
+
+def test_get_kmers2():
+    seq = 'ACTG' * 2
+    assert list(_get_kmers(seq, 5)) == ['ACTGA', 'CTGAC', 'TGACT', 'GACTG']
+
+
+def test_sliding_window1():
+    seq = 'ACTG' * 5
+    assert list(_sliding_window(seq, 4, 4)) == ['ACTG'] * 5
+
+
+def test_sliding_window2():
+    seq = 'ACTG' * 2
+    assert list(_sliding_window(seq, 4, 2)) == ['ACTG', 'TGAC', 'ACTG']
+
+
+def test_sliding_window3():
+    seq = 'ACTG' * 2
+    assert list(_sliding_window(seq, 4, 3)) == ['ACTG', 'GACT']
+
+
+def test_sequence_signature1():
+    seq = 'ACTG' * 2
+    count = _sequence_signature(seq, 4, 4, 4)
+    assert len(count) == 2
+
+
+def test_sequence_signature2():
+    seq = 'ACTG' * 2
+    count = _sequence_signature(seq, 4, 4, 4)
+    assert count[0]['ACTG'] == 1
+
+
+def test_sequence_signature3():
+    seq = 'ACTG' * 2
+    count = _sequence_signature(seq, 8, 4, 4)
+    assert count[0]['ACTG'] == 2
+
+
+def test_sequence_signature4():
+    seq = 'ACTG' * 2
+    count = _sequence_signature(seq, 5, 4, 5)
+    assert len(count) == 1
+
+
+def test_sequence_signature_cython():
+    seq = 'ACTG' * 2
+    countP = _sequence_signature(seq, 4, 4, 4)
+    countC = sequence_signature(seq, 4, 4, 4)
+    assert len(countP) == len(countC)
+
+
+def test_sliding_window_cython():
+    seq = 'ACTG' * 5
+    assert list(
+         _sliding_window(seq, 4, 4)
+    ) == list(
+         sliding_window(seq, 4, 4)
+    )
+
+
+def test_get_kmers_cython():
+    seq = 'ACTG' * 2
+    assert list(_get_kmers(seq, 4)) == list(get_kmers(seq, 4))
