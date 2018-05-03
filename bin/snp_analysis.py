@@ -44,7 +44,7 @@ term enrichment:
 
 """
 
-import cPickle
+import pickle
 import argparse
 import logging
 import os
@@ -204,7 +204,7 @@ def gene_taxon_analysis(options):
     dnds = None
     if options.dnds_file is not None:
         LOG.info("Loading dN/dS data from file %s", options.dnds_file.name)
-        dnds = cPickle.load(options.dnds_file)
+        dnds = pickle.load(options.dnds_file)
         # gene_taxon_clustering(gt_values)
 
     write_gt_values(

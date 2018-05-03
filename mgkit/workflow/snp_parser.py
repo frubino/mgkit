@@ -33,7 +33,10 @@ from __future__ import division
 import HTSeq
 import logging
 import argparse
-import cPickle
+if sys.version_info[0] == 2:
+    import cPickle as pickle
+else:
+    import pickle
 from . import utils
 from ..io import gff, compressed_handle, fasta
 from .. import logger
@@ -321,7 +324,7 @@ def save_data(output_file, snp_data):
     """
 
     LOG.info("Saving sample SNPs to %s", output_file)
-    cPickle.dump(snp_data, output_file, -1)
+    pickle.dump(snp_data, output_file, -1)
 
 
 def main():

@@ -36,6 +36,7 @@ install_requires = [
     'matplotlib>=2',
     'msgpack-python>=0.4.6',
     'statsmodels>=0.8',
+    'future',
 ]
 
 # Build of documentation fails on RTD when pytables is
