@@ -35,3 +35,4 @@ docs/source/pipeline/hmmer-tutorial-explore-data_files/hmmer-tutorial-explore-da
 docs/source/pipeline/hmmer-tutorial-explore-data_files/hmmer-tutorial-explore-data_74_0.png
 *.so
 FreeMono.ttf
+.pytest_cache/

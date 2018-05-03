@@ -3,7 +3,7 @@ from nose import SkipTest
 
 from mgkit.io import fasta
 
-data_dir = 'misc_data'
+data_dir = 'data'
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
 # GFF data
