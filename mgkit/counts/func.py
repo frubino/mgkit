@@ -8,7 +8,7 @@ import logging
 import itertools
 import functools
 from collections import Counter
-from future import viewitems
+from future.utils import viewitems
 
 from mgkit.filter import taxon as tx_filters
 from mgkit.io import open_file
