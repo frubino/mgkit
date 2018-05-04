@@ -471,7 +471,7 @@ class Annotation(GenomicRange):
         """
         counts = {}
 
-        for key, value in viewitems(elf.attr):
+        for key, value in viewitems(self.attr):
             if key.startswith('counts_'):
                 key = key.replace('counts_', '')
                 counts[key] = float(value)
@@ -500,7 +500,7 @@ class Annotation(GenomicRange):
         """
         fpkms = {}
 
-        for key, value in viewitems(elf.attr):
+        for key, value in viewitems(self.attr):
             if key.startswith('fpkms_'):
                 key = key.replace('fpkms_', '')
                 fpkms[key] = float(value)
