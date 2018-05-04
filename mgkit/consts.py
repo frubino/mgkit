@@ -45,7 +45,7 @@ DEFAULT_SNP_FILTER = {
         mgkit.taxon.ARCHAEA,
         mgkit.taxon.BACTERIA,
         mgkit.taxon.FUNGI,
-    ] + mgkit.taxon.PROTISTS.values(),
+    ] + list(mgkit.taxon.PROTISTS.values()),
     'func': mgkit.taxon.is_ancestor
 }
 """
