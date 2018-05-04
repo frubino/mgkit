@@ -2,7 +2,7 @@
 Dictionary utils
 
 """
-from future.utils import viewitems
+from future.utils import viewitems, viewkeys
 import numpy
 import pandas
 
@@ -207,7 +207,7 @@ def split_dictionary_by_value(value_dict, threshold, aggr_func=numpy.median,
     higher_dict = {}
 
     if key_filter is None:
-        key_filter = value_dict.iterkeys()
+        key_filter = viewkeys(value_dict)
 
     for key in key_filter:
         values = value_dict[key]

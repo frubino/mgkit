@@ -6,15 +6,13 @@ import itertools
 import functools
 import csv
 import copy
+from future.utils import viewitems, viewkeys
 from .filter import pipe_filters
 from .. import DependencyError
 
-try:
-    import pandas
-    import numpy
-    import scipy.stats
-except ImportError:
-    raise DependencyError('pandas, numpy, scipy')
+import pandas
+import numpy
+import scipy.stats
 
 LOG = logging.getLogger(__name__)
 
@@ -80,15 +78,15 @@ def group_rank_matrix(dataframe, gene_map):
     :return: :class:`pandas.DataFrame` instance
     """
     rank_matrix = pandas.DataFrame(
-        index=gene_map.keys(),
+        index=list(gene_map.keys()),
         columns=dataframe.columns
     )
 
-    for mapping_id, gene_ids in gene_map.iteritems():
+    for mapping_id, gene_ids in viewitems(gene_map):
         mapped_matrix = dataframe.loc[gene_ids]
         # we only use the minimum rank among the genes with a set function
         # min() will return only those
-        for taxon_id, rank in mapped_matrix.mean().dropna().iteritems():
+        for taxon_id, rank in mapped_matrix.mean().dropna().items():
             rank_matrix.set_value(mapping_id, taxon_id, rank)
 
     return rank_matrix
@@ -164,7 +162,7 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
     """
 
     if key_filter is None:
-        key_filter = ratios.keys()
+        key_filter = list(ratios.keys())
 
     order = [
         (
@@ -237,7 +235,7 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
     if taxon_func is None:
         taxon_func = functools.partial(itertools.repeat, times=1)
 
-    for sample, genes_dict in snps_data.iteritems():
+    for sample, genes_dict in viewitems(snps_data):
 
         LOG.info('Analysing SNP from sample %s', sample)
 
@@ -286,10 +284,10 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
             sample,
             dict(
                 (key, gene.calc_ratio_flag() if flag_values else gene.calc_ratio(haplotypes=haplotypes))
-                for key, gene in row_dict.iteritems()
+                for key, gene in viewitems(row_dict)
             )
         )
-        for sample, row_dict in sample_dict.iteritems()
+        for sample, row_dict in viewitems(sample_dict)
     )
     dataframe = pandas.DataFrame(sample_dict, index=multi_index,
                                  columns=sorted(sample_dict.keys()))
@@ -359,8 +357,8 @@ def flat_sample_snps(snps_data, min_cov):
         dict: the dictionary with only one key (`all_samples`), which can be
         used with :func:`combine_sample_snps`
     """
-    samples = snps_data.keys()
-    gene_ids = snps_data[samples[0]].keys()
+    samples = list(snps_data.keys())
+    gene_ids = list(snps_data[samples[0]].keys())
     new_data = {'all_samples': {}}
 
     for gene_id in gene_ids:

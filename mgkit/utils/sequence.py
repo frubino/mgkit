@@ -8,7 +8,7 @@ Module containing functions related to sequence data
 
 """
 from __future__ import division  # add check to use only on python 2.x
-
+from builtins import range
 import sys
 import itertools
 import logging
@@ -111,7 +111,7 @@ def translate_sequence(sequence, start=0, tbl=None, reverse=False):
 
     trs = []
 
-    for idx in xrange(start, len(sequence), 3):
+    for idx in range(start, len(sequence), 3):
         codon = sequence[idx:idx+3]
         if len(codon) < 3:
             break
@@ -697,7 +697,7 @@ def _sliding_window(seq, size, step=None):
     Yields:
         str: a subsequence of size *size* and step *step*
     """
-    for index in xrange(0, len(seq) - size + 1, size // 2 if step is None else step):
+    for index in range(0, len(seq) - size + 1, size // 2 if step is None else step):
         yield seq[index:index+size]
 
 
@@ -714,7 +714,7 @@ def _get_kmers(seq, k):
     Yields:
         str: a portion of *seq*, of size *k* with a step of *1*
     """
-    for index in xrange(0, len(seq) - k + 1):
+    for index in range(0, len(seq) - k + 1):
         yield seq[index:index+k]
 
 
@@ -818,7 +818,7 @@ def random_sequences_codon(n=1, length=150, codons=UNIVERSAL.keys(),
             frame = 0
         sframe = frame
 
-    for i in xrange(n):
+    for i in range(n):
 
         if frame is None:
             sframe = numpy.random.randint(0, 4)
@@ -846,7 +846,7 @@ def random_sequences(n=1, length=150, p=None):
     """
     nucl = numpy.array(['A', 'C', 'T', 'G'])
 
-    for i in xrange(n):
+    for i in range(n):
 
         yield ''.join(
             numpy.random.choice(nucl, size=length, replace=True, p=p)
@@ -957,7 +957,7 @@ def random_qualities(n=1, length=150, model=None):
 
     base, dist = model
 
-    for x in xrange(n):
+    for x in range(n):
         qual = numpy.round(base + dist.rvs(size=length)).astype(int)
         qual[qual > 40] = 40
         yield qual
