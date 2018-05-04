@@ -35,7 +35,7 @@ def get_pfam_families(key='id'):
         value when using the HMM provided by Pfam
     """
     families = {}
-    for line in url_open(PFAM_URL + "families?output=text"):
+    for line in url_open(PFAM_URL + "families?output=text", stream=True):
         line = line.strip()
         if line.startswith('#') or (not line):
             continue
