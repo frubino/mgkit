@@ -1,4 +1,7 @@
 """
+.. deprecated:: 0.3.4
+    To download the taxonomy, use download-taxonomy.sh
+
 The scripts downloads the data that is used by the framework for some of its
 functions. It's mostly a shortcut to call the download_data function that is
 present in every module that is in the package mappings and in the kegg module.
@@ -154,10 +157,13 @@ def set_parser():
 
 def main():
     "Main function"
+
     options = set_parser().parse_args()
 
     # configs log and set log level
     mgkit.logger.config_log(options.verbose)
+
+    LOG.error("Deprecated; to download the taxonomy use download-taxonomy.sh")
 
     try:
         os.mkdir(options.output_dir)
@@ -165,11 +171,12 @@ def main():
         LOG.info('Directory exists')
 
     LOG.info("Downloading Uniprot Taxonomy data")
-    taxonomy_path = os.path.join(options.output_dir, options.taxonomy)
+    # taxonomy_path = os.path.join(options.output_dir, options.taxonomy)
     if not os.path.exists(taxonomy_path):
-        taxonomy = mgkit.taxon.Taxonomy()
-        taxonomy.read_taxonomy(mgkit.net.url_open(TAXONONY_URL))
-        taxonomy.save_data(taxonomy_path)
+        LOG.error("Deprecated; to download the taxonomy use download-taxonomy.sh")
+        # taxonomy = mgkit.taxon.Taxonomy()
+        # taxonomy.read_taxonomy(mgkit.net.url_open(TAXONONY_URL))
+        # taxonomy.save_data(taxonomy_path)
 
     if options.only_taxonomy:
         LOG.info("Downloading Kegg data")
