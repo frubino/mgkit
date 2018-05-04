@@ -2,10 +2,7 @@
 Utility functions for the network package
 """
 import requests
-import urllib2
 import gzip
-import cStringIO
-import sys
 
 
 def url_open(url, data=None, headers=None, agent=None, get=True, stream=False):
