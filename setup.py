@@ -37,6 +37,7 @@ install_requires = [
     'msgpack-python>=0.4.6',
     'statsmodels>=0.8',
     'future',
+    'requests',
 ]
 
 # Build of documentation fails on RTD when pytables is
