@@ -4,13 +4,17 @@ files.
 """
 from __future__ import print_function
 from __future__ import division
-
+from builtins import object
 import random
 import itertools
 import logging
 import uuid
 import json
-import urllib
+try:
+    from urllib import unquote, quote
+except ImportError:
+    # Python3
+    from urllib.parse import unquote, quote
 # python 2.7 includes OrderedDict, older versions will use
 # the available as ordereddict in PyPI
 try:
@@ -568,7 +572,7 @@ class Annotation(GenomicRange):
             '{0}{1}"{2}"'.format(
                 key,
                 sep,
-                urllib.quote(str(self.attr[key]), ' ()/')
+                quote(str(self.attr[key]), ' ()/')
             )
             for key in sorted(self.attr)
         )
@@ -763,7 +767,7 @@ class Annotation(GenomicRange):
             '{0}{1}"{2}"'.format(
                 key,
                 sep,
-                urllib.quote(value, ' ()/')
+                quote(value, ' ()/')
             )
             for key, value in itertools.izip(attr_keys, attr_values)
         )
@@ -1181,7 +1185,7 @@ def from_gff(line, strict=True):
             continue
 
         if value is not None:
-            value = urllib.unquote(value.replace('"', ''))
+            value = unquote(value.replace('"', ''))
         attr[var] = value
 
     return Annotation(**attr)

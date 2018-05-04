@@ -2,7 +2,7 @@
 SNPs filtering functions
 """
 import functools
-import itertools
+from builtins import filter
 from .. import consts
 from ..filter.taxon import filter_taxon_by_id_list
 from ..filter.common import FilterFails
@@ -118,9 +118,9 @@ def get_default_filters(taxonomy, **kwargs):
 def pipe_filters(iterable, *funcs):
     """
     Pipes a list of filter to iterable, using the python ifilter function in
-    the itertools module.
+    the itertools module. Now using ``builtins.filter`
     """
     for func in funcs:
-        iterable = itertools.ifilter(func, iterable)
+        iterable = filter(func, iterable)
     for value in iterable:
         yield value

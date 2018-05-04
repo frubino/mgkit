@@ -265,7 +265,7 @@ class KeggClientRest(object):
 
         Loads the cache from file
         """
-        self.cache = pickle.load(open_file(file_handle, 'r'))
+        self.cache = pickle.load(open_file(file_handle, 'rb'))
 
     def write_cache(self, file_handle):
         """
@@ -273,7 +273,7 @@ class KeggClientRest(object):
 
         Write the cache to file
         """
-        pickle.dump(self.cache, open_file(file_handle, 'w'))
+        pickle.dump(self.cache, open_file(file_handle, 'wb'))
 
     # Kegg primitives #
 
