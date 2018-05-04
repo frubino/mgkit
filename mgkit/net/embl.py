@@ -1,9 +1,9 @@
 "Access EMBL Services"
 
+from builtins import range
 import logging
 import re
 import gzip
-import urllib
 from . import url_read
 import requests
 import mgkit

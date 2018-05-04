@@ -1,10 +1,8 @@
 """
 Contains function and constants for Uniprot access
 """
-
 from __future__ import division
-
-import urllib
+from builtins import range, zip
 import mgkit
 import logging
 import itertools
@@ -39,15 +37,13 @@ def get_sequences_by_ko(ko_id, taxonomy, contact=None, reviewed=True):
 
     :return: string with the fasta file downloaded
     """
-    params = urllib.urlencode(
-        {
-            'query': 'database:(type:ko {0}) AND taxonomy:{1}{2}'.format(
-                ko_id, taxonomy, ' reviewed:yes' if reviewed else ''),
-            'format': 'fasta',
-            'limit': 200,
-            'sort': 'score'
-        }
-    )
+    params = {
+        'query': 'database:(type:ko {0}) AND taxonomy:{1}{2}'.format(
+            ko_id, taxonomy, ' reviewed:yes' if reviewed else ''),
+        'format': 'fasta',
+        'limit': 200,
+        'sort': 'score'
+    }
     if mgkit.DEBUG:
         LOG.debug("query: %s?%s", UNIPROT_GET, params)
         LOG.debug("request length %d", len(params))
@@ -82,14 +78,12 @@ def get_mappings(entry_ids, db_from='ID', db_to='EMBL', out_format='tab',
     if isinstance(entry_ids, str):
         entry_ids = [entry_ids]
 
-    data = urllib.urlencode(
-        {
-            'from': db_from,
-            'to': db_to,
-            'query': ' '.join(entry_ids),
-            'format': out_format
-        }
-    )
+    data = {
+        'from': db_from,
+        'to': db_to,
+        'query': ' '.join(entry_ids),
+        'format': out_format
+    }
 
     mappings = url_read(UNIPROT_MAP, data=data, agent=contact)
 
@@ -135,13 +129,11 @@ def ko_to_mapping(ko_id, query, columns, contact=None):
         each mapping in the column is separated by a ;
 
     """
-    data = urllib.urlencode(
-        {
-            'query': query.format(ko_id),
-            'format': 'tab',
-            'columns': columns
-        }
-    )
+    data = {
+        'query': query.format(ko_id),
+        'format': 'tab',
+        'columns': columns
+    }
 
     mappings = url_read(UNIPROT_GET, data=data, agent=contact)
 
@@ -290,15 +282,8 @@ def query_uniprot(query, columns=None, format='tab', limit=None, contact=None,
     if limit is not None:
         data['limit'] = limit
 
-    data = urllib.urlencode(data)
-
     if columns is not None:
-        data += "&columns={0}".format(
-            ','.join(
-                urllib.quote(column)
-                for column in columns
-            )
-        )
+        data['columns'] = ','.join(columns)
 
     if mgkit.DEBUG:
         LOG.debug("query: %s?%s", baseurl, data)
@@ -342,7 +327,7 @@ def parse_uniprot_response(data, simple=True):
             parsed_data[entry_id] = line[1]
         else:
             parsed_data[entry_id] = dict(
-                itertools.izip(columns, line[1:])
+                zip(columns, line[1:])
             )
 
     return parsed_data
