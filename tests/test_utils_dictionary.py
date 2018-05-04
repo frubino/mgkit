@@ -1,5 +1,5 @@
 import pytest
-
+from builtins import range
 from mgkit.utils.dictionary import find_id_in_dict, combine_dict, \
     reverse_mapping, link_ids, combine_dict_one_value, merge_dictionaries, \
     split_dictionary_by_value, apply_func_to_values
@@ -93,7 +93,7 @@ def test_merge_dictionaries():
     res = merge_dictionaries(
         [
             {
-                1: xrange(5)
+                1: range(5)
             },
             {
                 1: range(8)

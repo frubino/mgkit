@@ -36,7 +36,7 @@ def get_pfam_families(key='id'):
     """
     families = {}
     for line in url_open(PFAM_URL + "families?output=text", stream=True):
-        line = line.strip()
+        line = line.decode('utf8').strip()
         if line.startswith('#') or (not line):
             continue
         acc, p_id, description = line.strip().split('\t')

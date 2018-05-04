@@ -6,7 +6,7 @@ import itertools
 import functools
 import csv
 import copy
-from future.utils import viewitems, viewkeys
+from future.utils import viewitems, viewkeys, viewvalues
 from .filter import pipe_filters
 from .. import DependencyError
 
@@ -239,7 +239,7 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
 
         LOG.info('Analysing SNP from sample %s', sample)
 
-        for gene_syn in pipe_filters(genes_dict.itervalues(), *filters):
+        for gene_syn in pipe_filters(viewvalues(genes_dict), *filters):
 
             iter_func = itertools.product(
                 gene_func(gene_syn.uid if use_uid else gene_syn.gene_id),
