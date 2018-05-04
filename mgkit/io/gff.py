@@ -4,7 +4,8 @@ files.
 """
 from __future__ import print_function
 from __future__ import division
-from builtins import object
+from builtins import object, zip
+from future.utils import viewitems
 import random
 import itertools
 import logging
@@ -470,7 +471,7 @@ class Annotation(GenomicRange):
         """
         counts = {}
 
-        for key, value in self.attr.iteritems():
+        for key, value in viewitems(elf.attr):
             if key.startswith('counts_'):
                 key = key.replace('counts_', '')
                 counts[key] = float(value)
@@ -487,7 +488,7 @@ class Annotation(GenomicRange):
         Arguments:
             counts (dict): key is the sample name and the count for it
         """
-        for key, value in counts.iteritems():
+        for key, value in viewitems(counts):
             self.attr["counts_{}".format(key)] = value
 
     @property
@@ -499,7 +500,7 @@ class Annotation(GenomicRange):
         """
         fpkms = {}
 
-        for key, value in self.attr.iteritems():
+        for key, value in viewitems(elf.attr):
             if key.startswith('fpkms_'):
                 key = key.replace('fpkms_', '')
                 fpkms[key] = float(value)
@@ -516,7 +517,7 @@ class Annotation(GenomicRange):
         Arguments:
             fpkms (dict): key is the sample name and the fpmk for it
         """
-        for key, value in fpkms.iteritems():
+        for key, value in viewitems(fpkms):
             self.attr["fpkms_{}".format(key)] = value
 
     def add_exp_syn_count(self, seq, syn_matrix=None):
@@ -697,7 +698,7 @@ class Annotation(GenomicRange):
         dictionary.update(
             dict(
                 (key, value)
-                for key, value in self.attr.iteritems()
+                for key, value in viewitems(self.attr)
                 if (key not in var_names) and (key not in ('uid', 'EC')) and
                 (not key.startswith('map_')) and
                 (not key.startswith('counts_')) and
@@ -769,7 +770,7 @@ class Annotation(GenomicRange):
                 sep,
                 quote(value, ' ()/')
             )
-            for key, value in itertools.izip(attr_keys, attr_values)
+            for key, value in zip(attr_keys, attr_values)
         )
 
         return "{0}\t{1}\n".format(values, attr_column)
@@ -789,7 +790,7 @@ class Annotation(GenomicRange):
 
         return dict(
             (attribute.replace('_cov', ''), float(value))
-            for attribute, value in attributes.iteritems()
+            for attribute, value in viewitems(attributes)
             if attribute.endswith('_cov')
         )
 
@@ -812,7 +813,7 @@ class Annotation(GenomicRange):
             )
 
         return sum(
-            1 for sample, coverage in coverage.iteritems()
+            1 for sample, coverage in viewitems(coverage)
             if coverage >= min_cov
         )
 
@@ -1078,7 +1079,7 @@ def from_glimmer3(header, line, feat_type='CDS'):
         >>> from_glimmer3(header, line)
 
     """
-    orf_id, start, end, frame, score = line.split()
+    orf_id, start, end, frame, score = line.decode('utf8').split()
 
     start = int(start)
     end = int(end)
@@ -1132,7 +1133,7 @@ def from_gff(line, strict=True):
         DuplicateKeyError: if the attribute column has duplicate keys
 
     """
-    line = line.rstrip()
+    line = line.decode('utf8').rstrip()
     line = line.split('\t')
 
     # in case the last column (attributes) is empty
@@ -1697,7 +1698,7 @@ def annotation_coverage(annotations, seqs, strand=True):
         key_func=key_func
     )
 
-    for key, key_ann in annotations.iteritems():
+    for key, key_ann in viewitems(annotations):
         if isinstance(key, str):
             seq_len = len(seqs[key])
         else:
@@ -1882,7 +1883,7 @@ def group_annotations_by_ancestor(annotations, ancestors, taxonomy):
 
     for annotation in annotations:
         anc_found = False
-        for ancestor, anc_ids in ancestors.iteritems():
+        for ancestor, anc_ids in viewitems(ancestors):
             if taxonomy.is_ancestor(annotation.taxon_id, anc_ids):
                 ann_dict[ancestor].append(annotation)
                 anc_found = True
