@@ -621,7 +621,7 @@ class Annotation(GenomicRange):
 
         return json.dumps(self.to_dict(), separators=(',', ':'))
 
-    def to_mongodb(self, lineage_func=None, indent=None):
+    def to_mongodb(self, lineage_func=None, indent=None, raw=False):
         """
         .. versionadded:: 0.2.1
 
@@ -631,6 +631,9 @@ class Annotation(GenomicRange):
         .. versionchanged:: 0.2.6
             added *indent* parameter
 
+        .. versionchanged:: 0.3.4
+            added *raw*
+
         Returns a MongoDB document that represent the Annotation.
 
         Arguments:
@@ -638,9 +641,12 @@ class Annotation(GenomicRange):
                 a list of taxon_id
             indent (int): the amount of indent to put in the record, None (the
                 default) is for the most compact - one line for the record
+            raw (bool): if True, the method returns a string, which is the
+                json dump, if False, the value returned is the dictionary
 
         Returns:
-            str: the MongoDB document, with Annotation.uid as _id
+            str or dict: the MongoDB document, with Annotation.uid as _id, as
+            a string if *raw* is True, a dictionary if it is False
         """
 
         # OrderedDict is necessary to keep the order of the keys
@@ -652,7 +658,7 @@ class Annotation(GenomicRange):
         var_names = (
             'seq_id', 'source', 'feat_type', 'start', 'end', 'score', 'strand',
             'phase', 'gene_id', 'taxon_id', 'bitscore', 'exp_nonsyn',
-            'exp_syn', 'length', 'dbq', 'coverage'
+            'exp_syn', 'length', 'dbq', 'coverage', 'uid'
         )
 
         for var_name in var_names:
@@ -694,6 +700,9 @@ class Annotation(GenomicRange):
                 (not key.startswith('fpkms_'))
             )
         )
+
+        if raw:
+            return dictionary
 
         return json.dumps(dictionary, indent=indent, separators=(',', ':'))
 
@@ -2123,31 +2132,33 @@ def from_mongodb(record, lineage=True):
     """
     record = record.copy()
 
-    record['uid'] = record['_id']
+    record['uid']
     del record['_id']
 
-    mappings = record['map'].copy()
-    del record['map']
+    if 'map' in record:
 
-    try:
-        record['EC'] = ','.join(mappings['ec'])
-        del mappings['ec']
-    except KeyError:
-        pass
+        mappings = record['map'].copy()
+        del record['map']
 
-    try:
-        for key in mappings:
-            record['map_{}'.format(key.upper())] = ','.join(mappings[key])
-    except KeyError:
-        pass
+        try:
+            record['EC'] = ','.join(mappings['ec'])
+            del mappings['ec']
+        except KeyError:
+            pass
 
-    try:
-        counts = record['counts'].copy()
-        del record['counts']
-        for key in counts:
-            record['counts_{}'.format(key)] = counts[key]
-    except KeyError:
-        pass
+        try:
+            for key in mappings:
+                record['map_{}'.format(key.upper())] = ','.join(mappings[key])
+        except KeyError:
+            pass
+
+        try:
+            counts = record['counts'].copy()
+            del record['counts']
+            for key in counts:
+                record['counts_{}'.format(key)] = counts[key]
+        except KeyError:
+            pass
 
     try:
         fpkms = record['fpkms'].copy()

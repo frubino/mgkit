@@ -6,7 +6,7 @@ of annotations using the *semidbm* package
 
 """
 import logging
-
+from builtins import object
 from ..io import gff
 
 import semidbm
