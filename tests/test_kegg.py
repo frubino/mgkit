@@ -1,79 +1,53 @@
-from nose.tools import ok_, eq_, with_setup
+import pytest
 from mgkit import kegg
-import misc_data
+
+@pytest.fixture
+def keggclient():
+    return kegg.KeggClientRest()
 
 
-# @with_setup(setup=misc_data.setup_keggmod_data)
-# def test_keggmod_parse1():
-#     km = kegg.KeggModule(misc_data.KEGGMOD_FILE)
-#     cpd = ['C00014', 'C00192', 'C00088']
-#     name = 'Nitrification, ammonia => nitrite'
-#     reactions = [
-#         (
-#             ('K10944', 'K10945', 'K10946'),
-#             ('C00014', 'C00192')
-#         ),
-#         (
-#             ('K10535',),
-#             ('C00192', 'C00088')
-#         )
-#     ]
-#     eq_(
-#         [km.name, km.compounds, km.reactions],
-#         [name, cpd, reactions]
-#     )
+def test_keggclient_link1(keggclient):
+
+    assert keggclient.link_ids('rn', 'K00201') == {'K00201': ['R03015', 'R08060']}
 
 
-# @with_setup(setup=misc_data.setup_keggmod_data)
-# def test_keggmod_parse2():
-#     km = kegg.KeggModule(misc_data.KEGGMOD_FILE)
-#     edges = [
-#         ('C00014', 'K10944'),
-#         ('K10944', 'C00192'),
-#         ('C00014', 'K10945'),
-#         ('K10945', 'C00192'),
-#         ('C00014', 'K10946'),
-#         ('K10946', 'C00192'),
-#         ('C00192', 'K10535'),
-#         ('K10535', 'C00088')
-#     ]
-#     eq_(
-#         list(km.to_edges()),
-#         edges
-#     )
+def test_keggclient_list1(keggclient):
+    assert 'cpd:C20660\tWybutosine in tRNA(Phe)\n' in keggclient.list_ids('cpd')
 
 
-def test_keggclient_link1():
-    kc = kegg.KeggClientRest()
-    eq_(
-        kc.link_ids('rn', 'K00201'),
-        {'K00201': ['R03015', 'R08060']}
-    )
+def test_keggclient_get1(keggclient):
+    assert 'DBLINKS     PubChem: 172232382' in keggclient.get_entry('cpd:C20660')
 
 
-def test_keggclient_list1():
-    kc = kegg.KeggClientRest()
-    ok_(
-        'cpd:C20660\tWybutosine in tRNA(Phe)\n' in kc.list_ids('cpd')
-    )
+def test_keggclient_get_names1(keggclient):
+    assert 'M00002' in keggclient.get_ids_names('module')
 
 
-def test_keggclient_get1():
-    kc = kegg.KeggClientRest()
-    ok_(
-        'DBLINKS     PubChem: 172232382' in kc.get_entry('cpd:C20660')
-    )
+def test_keggclient_get_names2(keggclient):
+    assert 'md:M00002' in keggclient.get_ids_names('module', strip=False)
 
 
-def test_keggclient_get_names1():
-    kc = kegg.KeggClientRest()
-    ok_(
-        'M00002' in kc.get_ids_names('module')
-    )
+def test_cache_io(keggclient, tmpdir):
+    query = keggclient.link_ids('rn', 'K00201')['K00201']
+    file_name = tmpdir.join('cache.pickle').strpath
+    keggclient.write_cache(file_name)
+
+    cached = kegg.KeggClientRest(file_name)
+    assert cached.cache == keggclient.cache
 
 
-def test_keggclient_get_names2():
-    kc = kegg.KeggClientRest()
-    ok_(
-        'md:M00002' in kc.get_ids_names('module', strip=False)
-    )
+def test_cache_link_ids1(keggclient):
+    query = keggclient.link_ids('rn', 'K00201')['K00201']
+    assert query == keggclient.cache['link_ids']['rn']['K00201']
+
+
+def test_find(keggclient):
+    assert keggclient.find('CH4', 'compound') == {'C01438': 'Methane; CH4'}
+
+
+def test_conv(keggclient):
+    assert 'b0217' in keggclient.conv('ncbi-geneid', 'eco')
+
+
+def test_get_ids_names(keggclient):
+    assert 'K00001' in keggclient.get_ids_names('ko')

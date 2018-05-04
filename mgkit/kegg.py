@@ -1,7 +1,8 @@
 """
 Module containing classes and functions to access Kegg data
 """
-
+from builtins import object
+from future.utils import iteritems
 import logging
 import pickle
 import random
@@ -355,7 +356,7 @@ class KeggClientRest(object):
 
         return {
             kegg_id: list(value)
-            for kegg_id, value in mapping.iteritems()
+            for kegg_id, value in iteritems(mapping)
             if (kegg_id in kegg_ids) and (value is not None)
         }
 
@@ -595,7 +596,7 @@ class KeggClientRest(object):
         """
         data = self.get_ids_names('pathway')
         pathways = {}
-        for kegg_id, name in data.iteritems():
+        for kegg_id, name in iteritems(data):
 
             kegg_id = kegg_id.replace('map', 'ko')
             pathways[kegg_id] = name
@@ -655,6 +656,9 @@ class KeggClientRest(object):
 
 
 class KeggData(object):
+    """
+    .. deprecated:: 0.3.4
+    """
     pathways = None
     _ko_map = None
     maps = None
@@ -854,6 +858,7 @@ class KeggData(object):
 
 class KeggMapperBase(object):
     """
+    .. deprecated:: 0.3.4
     Base object for Kegg mapping classes
     """
     _ko_map = None
@@ -1101,6 +1106,9 @@ BLACK_LIST = [
 
 
 def download_data(fname='kegg.pickle', contact=None):
+    """
+    .. deprecated:: 0.3.4
+    """
 
     kclient = KeggClientRest()
     kclient.contact = contact
