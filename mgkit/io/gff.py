@@ -1079,7 +1079,7 @@ def from_glimmer3(header, line, feat_type='CDS'):
         >>> from_glimmer3(header, line)
 
     """
-    orf_id, start, end, frame, score = line.decode('utf8').split()
+    orf_id, start, end, frame, score = line.split()
 
     start = int(start)
     end = int(end)
@@ -1133,7 +1133,7 @@ def from_gff(line, strict=True):
         DuplicateKeyError: if the attribute column has duplicate keys
 
     """
-    line = line.decode('utf8').rstrip()
+    line = line.rstrip()
     line = line.split('\t')
 
     # in case the last column (attributes) is empty
