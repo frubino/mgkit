@@ -2,8 +2,8 @@
 """
 Module containing classes and functions to deal with Gene Ontology data
 """
-
-import urllib2
+from future.utils import viewitems
+from requests.exceptions import HTTPError
 import logging
 from .. import kegg
 from ..utils import dictionary as dict_utils
@@ -42,7 +42,7 @@ class Kegg2GOMapper(kegg.KeggMapperBase):
             try:
                 mappings = self.ko_to_mapping(ko_id, self.query_string,
                                               self.columns_string, contact)
-            except urllib2.HTTPError as url_error:
+            except HTTPError as url_error:
                 LOG.warning(msg3, idx + 1, len(kos), ko_id, url_error.args)
                 errors += 1
                 continue
@@ -80,7 +80,7 @@ class Kegg2GOMapper(kegg.KeggMapperBase):
 
         ko_map = self.get_ko_map()
 
-        for ko_id, goterms in ko_map.iteritems():
+        for ko_id, goterms in viewitems(ko_map):
             f_handle.write("{0}\t{1}\n".format(ko_id, ';'.join(goterms)))
 
 

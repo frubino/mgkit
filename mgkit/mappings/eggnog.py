@@ -7,15 +7,19 @@ Module containing classes and functions to deal with eggNOG data
 
 """
 from __future__ import print_function
-
+from future.utils import viewitems
 from .. import kegg
-import urllib2
+from requests.exceptions import HTTPError
 import pickle
 import logging
 import gzip
-import cStringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import BytesIO
 import itertools
 from ..io import open_file
+from ..net import url_open
 from ..utils import dictionary
 
 LOG = logging.getLogger(__name__)
@@ -100,7 +104,7 @@ def get_general_eggnog_cat(category):
     """
     return set(
         gen_category
-        for gen_category, categories in EGGNOG_CAT_MAP.iteritems()
+        for gen_category, categories in viewitems(EGGNOG_CAT_MAP)
         if category in categories
     )
 
@@ -151,7 +155,7 @@ class Kegg2NogMapper(kegg.KeggMapperBase):
                 ko_id, self.query_string,
                 self.columns_string, contact
             )
-        except urllib2.HTTPError:
+        except HTTPError:
             return
 
         if mappings:
@@ -169,7 +173,7 @@ class Kegg2NogMapper(kegg.KeggMapperBase):
             )
             try:
                 self.map_ko_to_eggnog(ko_id, contact)
-            except urllib2.HTTPError:
+            except HTTPError:
                 LOG.warning("Problem getting mappings %s", ko_id)
                 errors += 1
 
@@ -197,7 +201,7 @@ class Kegg2NogMapper(kegg.KeggMapperBase):
             self._egg_to_cat[egg_id] = list(cats)
 
     def gen_ko_to_cat(self):
-        for ko_id, egg_ids in self._ko_map.iteritems():
+        for ko_id, egg_ids in viewitems(elf._ko_map):
             cats = set()
             for egg_id in egg_ids:
                 try:
@@ -262,7 +266,7 @@ def download_data(contact, kegg_data='kegg.pickle',
         for url in urls:
             LOG.info("Loading categories mapping from %s%s", base_url, url)
             f_handle = gzip.GzipFile(
-                fileobj=cStringIO.StringIO(urllib2.urlopen(base_url + url).read()),
+                fileobj=StringIO(url_open(base_url + url).raw.read()),
                 mode='r'
             )
             egg.get_cat_mapping(f_handle)

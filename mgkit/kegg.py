@@ -2,7 +2,7 @@
 Module containing classes and functions to access Kegg data
 """
 from builtins import object
-from future.utils import iteritems
+from future.utils import viewitems
 import logging
 import pickle
 import random
@@ -356,7 +356,7 @@ class KeggClientRest(object):
 
         return {
             kegg_id: list(value)
-            for kegg_id, value in iteritems(mapping)
+            for kegg_id, value in viewitems(mapping)
             if (kegg_id in kegg_ids) and (value is not None)
         }
 
@@ -596,7 +596,7 @@ class KeggClientRest(object):
         """
         data = self.get_ids_names('pathway')
         pathways = {}
-        for kegg_id, name in iteritems(data):
+        for kegg_id, name in viewitems(data):
 
             kegg_id = kegg_id.replace('map', 'ko')
             pathways[kegg_id] = name
@@ -697,7 +697,7 @@ class KeggData(object):
             self.gen_maps()
         return dict(
             (cp_id, cp.description)
-            for cp_id, cp in self.maps['cp'].iteritems()
+            for cp_id, cp in viewitems(elf.maps['cp'])
         )
 
     def get_ko_rn_links(self, path_filter=None, description=False):
@@ -1136,7 +1136,7 @@ def download_data(fname='kegg.pickle', contact=None):
 
     LOG.info("Downloading links pathway-ko (%d)", len(path_names))
     path_links = kclient.link_ids('ko', path_names.keys())
-    for path_id, ko_list in path_links.iteritems():
+    for path_id, ko_list in viewitems(path_links):
         path = KeggPathway(path_id, path_names[path_id])
         for ko_id in ko_list:
             try:
@@ -1157,7 +1157,7 @@ def download_data(fname='kegg.pickle', contact=None):
 
     LOG.info("Downloading links ko-reactions (%d)", len(ko_names))
     ko_links = kclient.link_ids('rn', ko_names.keys())
-    for ko_id, rn_list in ko_links.iteritems():
+    for ko_id, rn_list in viewitems(ko_links):
         try:
             ko = kos[ko_id]
         except KeyError:
@@ -1179,7 +1179,7 @@ def download_data(fname='kegg.pickle', contact=None):
 
     LOG.info("Downloading links reactions-compounds (%d)", len(rn_names))
     cp_links = kclient.get_reaction_equations(rn_names.keys())
-    for rn_id, cp_dict in cp_links.iteritems():
+    for rn_id, cp_dict in viewitems(cp_links):
         try:
             rn = rns[rn_id]
         except KeyError:

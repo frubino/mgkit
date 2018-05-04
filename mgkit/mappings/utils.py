@@ -2,6 +2,7 @@
 Utilities to map genes
 """
 
+from builtins import zip
 import pandas
 import itertools
 
@@ -26,7 +27,7 @@ def count_genes_in_mapping(gene_lists, labels, mapping, normalise=False):
 
     :return: a :class:`pandas.DataFrame` instance
     """
-    categories = set(itertools.chain(*mapping.values()))
+    categories = set(itertools.chain(*list(mapping.values())))
 
     matrix = pandas.DataFrame(index=labels, columns=categories)
     matrix.fillna(0, inplace=True)
@@ -60,7 +61,7 @@ def group_annotation_by_mapping(annotations, mapping, attr='ko'):
     :return dict: dictionary category->annotations
     """
     grouped = dict(
-        (categ, []) for categ in set(itertools.chain(*mapping.values()))
+        (categ, []) for categ in set(itertools.chain(*list(mapping.values())))
     )
     for annotation in annotations:
         try:
