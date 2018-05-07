@@ -7,6 +7,7 @@ Submodules
 .. toctree::
 
    mgkit.counts.func
+   mgkit.counts.glm
    mgkit.counts.scaling
 
 Module contents

@@ -20,7 +20,7 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
-__VERSION__ = "0.3.2"
+__VERSION__ = "0.3.3"
 
 from setuptools import setup, find_packages
 
@@ -28,7 +28,6 @@ install_requires = [
     'numpy>=1.9.2',
     'pandas>=0.18',
     'progressbar2',
-    #'goatools',
 ]
 
 with open('README.rst') as file:
@@ -45,7 +44,6 @@ if sys.version_info < (3, 4):
 extras_require = {
     'htseq': ['HTSeq>=0.6.0'],
     'db': ['semidbm>=0.5.1', 'pymongo>=3.1.1'],
-    'R': 'rpy2>=2.3.8',
     'pytables': 'tables>=3.4.2',
     'extra_scripts': [
         'pysam>=0.8.2.1',
@@ -88,14 +86,12 @@ setup(
             'blast2gff = mgkit.workflow.blast2gff:main',
             'snp_parser = mgkit.workflow.snp_parser:main [htseq,full]',
             'translate_seq = mgkit.workflow.nuc2aa:main',
-            'fastq_utils = mgkit.workflow.fastq_utils:main [htseq]',
             'fastq-utils = mgkit.workflow.fastq_utils:main [htseq]',
             'taxon-utils = mgkit.workflow.taxon_utils:main [pytables]',
             'json2gff = mgkit.workflow.json2gff:main',
             'fasta-utils = mgkit.workflow.fasta_utils:main',
             'sampling-utils = mgkit.workflow.sampling_utils:main',
         ],
-        # 'R': ['R = mgkit.utils:r_func [R]']
     },
     author="Francesco Rubino",
     author_email="rubino.francesco@gmail.com",

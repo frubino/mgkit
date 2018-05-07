@@ -213,6 +213,10 @@ warning message is logged.
 Changes
 *******
 
+.. versionchanged:: 0.3.3
+    changed how *addtaxa* *-a* works, to allow the use of *seq_id* as key to
+    add the taxon_id
+
 .. versionchanged:: 0.3.0
     added *cov_samtools* command, *--split* option to *exp_syn*, *-c* option to
     *addtaxa*
@@ -1202,14 +1206,15 @@ def addtaxa_command(options):
         annotations = bar(annotations)
 
     for annotation in annotations:
+        gene_id = annotation.get_attr(options.gene_attr, str)
         try:
-            taxon_id = gene_ids[annotation.attr[options.gene_attr]]
+            taxon_id = gene_ids[gene_id]
             annotation.taxon_id = taxon_id
             annotation.set_attr('taxon_db', options.taxon_db)
         except KeyError:
             LOG.error(
                 "No Taxon ID for GENE - %s",
-                annotation.attr[options.gene_attr]
+                gene_id
             )
             taxon_id = None
             if options.skip_no_taxon:

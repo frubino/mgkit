@@ -28,8 +28,8 @@ CASAVA_HEADER_NEW = r"""(?P<machine>[\w-]+):
         [_ ](?P<mate>\d): # underscore for data from from www.ebi.ac.uk/ena/
         (?P<filter>[YN]):
         (?P<bits>\d+):
-        (?P<index>[ACTGN]+)"""
-"New casava header regex"
+        (?P<index>[ACTGN+]+)"""
+"New casava header regex, including indices for both forward and reverse"
 
 CASAVA_KHMER = r"""
     (?P<machine>[\w-]+):
@@ -111,6 +111,9 @@ def convert_seqid_to_new(seq_id):
 
 def convert_seqid_to_old(seq_id, index_as_seq=True):
     """
+
+    .. deprecated:: 0.3.3
+
     Convert old seq_id format for Illumina reads to the new found in Casava
     until 1.8, which marks the new format.
 
@@ -139,6 +142,10 @@ def convert_seqid_to_old(seq_id, index_as_seq=True):
 
 def write_fastq_sequence(file_handle, name, seq, qual, write_mode='a'):
     """
+
+    .. versionchanged:: 0.3.3
+        if *qual* is not a string it's converted to chars (phred33)
+
     Write a fastq sequence to file. If the *file_handle* is a string, the file
     will be opened using *write_mode*.
 
@@ -149,6 +156,9 @@ def write_fastq_sequence(file_handle, name, seq, qual, write_mode='a'):
     """
     if isinstance(file_handle, str):
         file_handle = open(file_handle, write_mode)
+
+    if not isinstance(qual, str):
+        qual = ''.join(chr(q + 33) for q in qual)
 
     file_handle.write(
         "@{name}\n{seq}\n+\n{qual}\n".format(
@@ -255,3 +265,20 @@ def load_fastq(file_handle, num_qual=False):
         yield header1, seq, qualities
 
     LOG.info("Read %d fastq sequences", sequence_count)
+
+
+def load_fastq_rename(file_handle, num_qual=False, name_func=None):
+    """
+    .. versionadded:: 0.3.3
+
+    Mirrors the same functionality in :func:`mgkit.io.fasta.load_fasta_rename`.
+    Renames the header of the sequences using *name_func*, which is called on
+    each header. By default, the behaviour is to keep the header to the left of
+    the first space (BLAST behaviour).
+    """
+
+    if name_func is None:
+        name_func = lambda header: header.split(' ')[0]
+
+    for header, seq, qual in load_fastq(file_handle, num_qual=num_qual):
+        yield name_func(header), seq, qual

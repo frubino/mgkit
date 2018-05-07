@@ -8,7 +8,6 @@ import random
 import re
 import itertools
 from .utils import dictionary as dict_utils
-from .utils.common import deprecated
 from .net import uniprot, url_read
 from .io import open_file
 

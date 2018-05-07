@@ -8,7 +8,6 @@ Submodules
 
    mgkit.utils.common
    mgkit.utils.dictionary
-   mgkit.utils.r_func
    mgkit.utils.sequence
    mgkit.utils.trans_tables
 

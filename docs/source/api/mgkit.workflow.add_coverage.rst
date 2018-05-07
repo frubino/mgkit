@@ -1,5 +1,5 @@
-mgkit.workflow.add_coverage module
-==================================
+mgkit.workflow.add\_coverage module
+===================================
 
 .. automodule:: mgkit.workflow.add_coverage
     :members:

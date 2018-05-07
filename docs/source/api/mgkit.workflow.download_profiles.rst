@@ -1,5 +1,5 @@
-mgkit.workflow.download_profiles module
-=======================================
+mgkit.workflow.download\_profiles module
+========================================
 
 .. automodule:: mgkit.workflow.download_profiles
     :members:

@@ -415,3 +415,25 @@ def get_uniprot_ec_mappings(gene_ids, contact=None):
         contact=contact,
         max_req=100
     )
+
+
+def get_gene_info_iter(gene_ids, columns, contact=None, max_req=50):
+    """
+
+    .. versionadded:: 0.3.3
+
+    Alternative function to :func:`get_gene_info`, returning an iterator to
+    avoid connections timeouts when updating a dictionary
+
+    This funciton's parameters are the same as :func:`get_gene_info`
+    """
+
+    gene_ids = list(gene_ids)
+
+    for index in range(0, len(gene_ids), max_req):
+        yield get_gene_info(
+            gene_ids[index:index+max_req],
+            columns,
+            contact=contact,
+            max_req=max_req
+        )

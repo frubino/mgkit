@@ -799,6 +799,9 @@ class Annotation(GenomicRange):
 
     def get_attr(self, attr, conv=str):
         """
+        .. versionchanged:: 0.3.3
+            added *seq_id* as special attribute, in addition do *length*
+
         .. versionadded:: 0.1.13
 
         Generic method to get an attribute and convert it to a specific
@@ -806,6 +809,9 @@ class Annotation(GenomicRange):
         """
         if attr == 'length':
             return len(self)
+
+        if attr == 'seq_id':
+            return self.seq_id
 
         try:
             value = self.attr[attr]
@@ -919,7 +925,7 @@ class Annotation(GenomicRange):
         Adds GC content information for an annotation. The formula is:
 
         .. math::
-            :label: gc_content
+            :label: gc_content_gff
 
             \\frac {(G + C)}{(G + C + A + T)}
 
@@ -948,7 +954,7 @@ class Annotation(GenomicRange):
         Adds GC content information for an annotation. The formula is:
 
         .. math::
-            :label: gc_ratio
+            :label: gc_ratio_gff
 
             \\frac {(A + T)}{(G + C)}
 
@@ -2153,6 +2159,10 @@ def from_mongodb(record, lineage=True):
 
 def from_prodigal_frag(main_gff, blast_gff, attr='ID', split_func=None):
     """
+
+    .. versionchanged:: 0.3.3
+        fixed a bug for the strand, also the code is tested
+
     .. versionadded:: 0.2.6
         *experimental*
 
@@ -2200,5 +2210,6 @@ def from_prodigal_frag(main_gff, blast_gff, attr='ID', split_func=None):
         annotation.seq_id = key[0]
         annotation.start = start
         annotation.end = end
+        annotation.strand = strand
         annotation.set_attr('prodigal_ID', p_id)
         yield annotation

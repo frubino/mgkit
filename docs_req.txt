@@ -5,8 +5,7 @@ sphinxcontrib-actdiag>=0.6.0
 sphinxcontrib-blockdiag>=1.5.1
 sphinx-argparse>=0.1.12
 ipython>=3.2.1
-sphinxcontrib-programoutput>=0.8
-Sphinx>=1.4
+Sphinx==1.6.7
 numpy>=1.9.2
 pysam>=0.8.2.1
 pandas>=0.16.2

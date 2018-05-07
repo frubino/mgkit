@@ -1,5 +1,5 @@
-mgkit.utils.trans_tables module
-===============================
+mgkit.utils.trans\_tables module
+================================
 
 .. automodule:: mgkit.utils.trans_tables
     :members:

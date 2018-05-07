@@ -134,7 +134,7 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
 
     Arguments:
         groups (iterable): a nested list where each is element is a list
-            containing the labels belong to that group.
+            containing the labels that belong to that group.
         labels (iterable): an iterable with the labels of the groups. Needs to
             be in the same order as groups
         ax: axis to use (same as heatmap)

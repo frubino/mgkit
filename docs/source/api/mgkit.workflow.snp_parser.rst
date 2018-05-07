@@ -1,5 +1,5 @@
-mgkit.workflow.snp_parser module
-================================
+mgkit.workflow.snp\_parser module
+=================================
 
 .. automodule:: mgkit.workflow.snp_parser
     :members:

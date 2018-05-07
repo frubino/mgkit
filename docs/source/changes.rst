@@ -1,6 +1,45 @@
 Changes
 =======
 
+0.3.3
+-----
+
+Added
+*****
+
+* module :mod:`mgkit.counts.glm`, with functions used to help the fit of Generalised Linear Models (GLM)
+* :func:`mgkit.io.fastq.load_fastq_rename`
+* added `sync`, `sample_stream` and `rand_seq` commands to `sampling-utils` script
+* :func:`mgkit.utils.sequence.extrapolate_model`
+* :func:`mgkit.utils.sequence.qualities_model_constant`
+* :func:`mgkit.utils.sequence.qualities_model_decrease`
+* :func:`mgkit.utils.sequence.random_qualities`
+* :func:`mgkit.utils.sequence.random_sequences`
+* :func:`mgkit.utils.sequence.random_sequences_codon`
+* :meth:`mgkit.taxon.UniprotTaxonomy.get_lineage_string`
+* :meth:`mgkit.taxon.UniprotTaxonomy.parse_gtdb_lineage`
+* :func:`mgkit.net.uniprot.get_gene_info_iter`
+
+Changed
+*******
+
+* :func:`mgkit.io.fastq.write_fastq_sequence`
+* added `seq_id` as a special attribute to :meth:`mgkit.io.gff.Annotation.get_attr`
+* :func:`mgkit.io.gff.from_prodigal_frag` is tested and fixed
+* added cache in :class:`mgkit.utils.dictionary.HDFDict`
+* :func:`mgkit.utils.sequence.sequence_gc_content` now returns 0.5 when denominator is 0
+* `add-gff-info addtaxa -a` now accept `seq_id` as lookup, to use output from `taxon-utils lca` (after cutting output)
+
+Deprecated
+**********
+
+* :func:`mgkit.io.fastq.convert_seqid_to_old`
+
+0.3.2
+-----
+
+Removed deprecated code
+
 0.3.1
 -----
 

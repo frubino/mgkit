@@ -26,6 +26,8 @@ def load_fasta(f_handle):
     """
     if isinstance(f_handle, str):
         f_handle = mgkit.io.open_file(f_handle, 'r')
+    else:
+        f_handle = mgkit.io.compressed_handle(f_handle)
 
     if getattr(f_handle, 'name', None) is not None:
         LOG.info("Reading fasta file %s", f_handle.name)

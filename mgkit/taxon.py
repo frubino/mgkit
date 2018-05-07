@@ -271,7 +271,7 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
 class UniprotTaxonomy(object):
     """
     Class that contains the whole Uniprot taxonomy. Defines some methods to
-    easy access of taxonomy.
+    easy access of taxonomy. Follows the conventions of NCBI Taxonomy.
 
     Defines:
 
@@ -288,6 +288,28 @@ class UniprotTaxonomy(object):
         self._name_map = {}
         if fname:
             self.load_data(fname)
+    @staticmethod
+    def parse_gtdb_lineage(lineage, sep=';'):
+        """
+        .. versionadded:: 0.3.3
+
+        Parse a GTDB lineage, one that defines the rank as a single letter,
+        followed by **__** for each taxon name. Taxa are separated by semicolon
+        by default. Also the **domain** rank is renamed into **superkingdom**
+        to allow mixing of taxonomies.
+
+        Returns:
+            dict: dictionary with the parsed lineage, which can be passed to
+            :meth:`UniprotTaxonomy.add_lineage`
+        """
+        lineage_dict = {}
+        ranks = dict(d='superkingdom', f='family', p='phylum', o='order', g='genus', s='species', c='class')
+        for taxon_name in lineage.split(sep):
+            rank, taxon_name = taxon_name.split('__')
+            if not taxon_name:
+             continue
+            lineage_dict[ranks[rank]] = taxon_name
+        return lineage_dict
 
     def read_from_gtdb_taxonomy(self, file_handle, use_gtdb_name=True, sep='\t'):
         """
@@ -322,7 +344,7 @@ class UniprotTaxonomy(object):
             file_handle = open_file(file_handle)
 
         LOG.info(
-            "Reading GTDB taxonomy from file",
+            "Reading GTDB taxonomy from file (%s)",
             getattr(file_handle, 'name', repr(file_handle))
         )
 
@@ -696,6 +718,16 @@ class UniprotTaxonomy(object):
         .. versionadded:: 0.3.1
 
         Proxy for :func:`get_lineage`, with changed defaults
+
+        Arguments:
+            taxon_id (int): taxon_id to return the lineage
+            names (bool): if the elements of the list are converted into the
+                scientific names
+            only_ranked (bool): only return the ranked taxa
+            with_last (bool): include the taxon_id passed to the list
+
+        Returns:
+            list: the lineage of the passed taxon_id as a list of IDs or names
         """
 
         return get_lineage(
@@ -704,6 +736,39 @@ class UniprotTaxonomy(object):
             names=names,
             only_ranked=only_ranked,
             with_last=with_last
+        )
+
+    def get_lineage_string(self, taxon_id, only_ranked=True, with_last=True,
+                           sep=';', rank=None):
+        """
+        .. versionadded:: 0.3.3
+
+        Generates a lineage string, with the possibility of getting another
+        ranked taxon (via :meth:`UniprotTaxonomy.get_ranked_taxon`) to another
+        rank, such as *phylum*.
+
+        Arguments:
+            taxon_id (int): taxon_id to return the lineage
+            only_ranked (bool): only return the ranked taxa
+            with_last (bool): include the taxon_id passed to the list
+            sep (str): separator used to join the lineage string
+            rank (int or None): if None the full lineage is returned, otherwise
+                the lineage will be cut to the specified rank
+
+        Returns:
+            str: lineage string
+        """
+
+        if rank is not None:
+            taxon_id = self.get_ranked_taxon(taxon_id, rank=rank).taxon_id
+
+        return sep.join(
+            self.get_lineage(
+                taxon_id,
+                only_ranked=only_ranked,
+                with_last=with_last,
+                names=True
+            )
         )
 
     def add_taxon(self, taxon_name, common_name='', rank='no rank', parent_id=None):
@@ -892,51 +957,6 @@ class UniprotTaxonomy(object):
         .. versionadded:: 0.2.5
         """
         return "{} - {} taxa".format(self.__class__, len(self))
-
-
-def group_by_root(taxa, roots=TAXON_ROOTS, only_names=False, replace_space='#'):
-    """
-    .. deprecated:: 0.2.6
-
-    Returns a dictionary containing as keys the root taxa and as values a list
-    of taxa belonging to that group (checks lineage attribute of
-    :class:`UniprotTaxon` instances)
-
-    :param iterable taxa: iterable of :class:`UniprotTaxon` instances
-    :param roots: root taxa to be used to construct the dictionary, defaults to
-        the 5 defined in :data:`TAXON_ROOTS`
-    :param bool only_names: boolean that specify what data type to return for
-        values, if True returns strings (taxa names), if False
-        :class:`UniprotTaxon` instances
-    :param str replace_space: if only_names is True replaces spaces with the
-        choosen character
-
-    :return: a dictionary root->[taxa_ids]
-    """
-    groups = dict(
-        (root, []) for root in roots
-    )
-    if not only_names:
-        taxa.gen_name_map()
-        for root in roots:
-            groups[root].append(taxa.find_by_name(root)[0])
-
-    for taxon in taxa:
-        for root in roots:
-            if root in taxon.lineage:
-                groups[root].append(
-                    taxon.s_name.replace(
-                        ' ', replace_space) if only_names else taxon.taxon_id
-                )
-                break
-
-    return groups
-
-
-def load_taxonomy_map(taxon_file):
-    "Loads taxonomy from file and return a map root_taxon->taxa"
-    taxonomy = UniprotTaxonomy(taxon_file)
-    return group_by_root(taxonomy, only_names=True)
 
 
 def get_ancestor_map(leaf_ids, anc_ids, taxonomy):

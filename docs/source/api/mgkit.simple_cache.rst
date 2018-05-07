@@ -1,5 +1,5 @@
-mgkit.simple_cache module
-=========================
+mgkit.simple\_cache module
+==========================
 
 .. automodule:: mgkit.simple_cache
     :members:

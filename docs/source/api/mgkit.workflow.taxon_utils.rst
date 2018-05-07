@@ -1,5 +1,5 @@
-mgkit.workflow.taxon_utils module
-=================================
+mgkit.workflow.taxon\_utils module
+==================================
 
 .. automodule:: mgkit.workflow.taxon_utils
     :members:

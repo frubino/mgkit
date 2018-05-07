@@ -1,5 +1,5 @@
-mgkit.workflow.download_data module
-===================================
+mgkit.workflow.download\_data module
+====================================
 
 .. automodule:: mgkit.workflow.download_data
     :members:
