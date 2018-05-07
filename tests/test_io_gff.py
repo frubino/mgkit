@@ -1,5 +1,5 @@
 import pytest
-
+import pathlib
 from mgkit.io import gff, fasta
 from mgkit.io import open_file
 from mgkit.utils import sequence
@@ -551,3 +551,30 @@ def test_genomicrange_contains_annotation1(coords1, coords2, result):
     gen_range1 = gff.GenomicRange(start=coords1[0], end=coords1[1])
 
     assert (gff.Annotation(start=coords2[0], end=coords2[1]) in gen_range1) == result
+
+
+def test_split_gff_file1(tmpdir, shared_datadir):
+    gff_file = str(shared_datadir / 'test.gff')
+
+    gff.split_gff_file(gff_file, (tmpdir / 'test{}.gff').strpath, 2)
+
+    files = list(pathlib.Path(tmpdir.strpath).glob('*.gff'))
+
+    assert len(files) == 2
+
+
+def test_split_gff_file2(tmpdir, shared_datadir):
+
+    gff_file = str(shared_datadir / 'test.gff')
+
+    gff.split_gff_file(gff_file, (tmpdir / 'test{}.gff').strpath, 2)
+
+    files = list(
+        str(path)
+        for path in pathlib.Path(tmpdir.strpath).glob('*.gff')
+    )
+
+    count1 = sum(1 for x in gff.parse_gff(gff_file))
+    count2 = sum(1 for x in gff.parse_gff_files(files))
+
+    assert count1 == count2

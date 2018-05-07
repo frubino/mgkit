@@ -4,7 +4,8 @@ files.
 """
 from __future__ import print_function
 from __future__ import division
-from builtins import object, zip, bytes
+from builtins import object, zip, bytes, range
+from io import IOBase
 from future.utils import viewitems
 import random
 import itertools
@@ -1300,7 +1301,7 @@ def annotate_sequence(name, seq, window=None):
     if window is None:
         window = length
 
-    for index in xrange(1, length, window):
+    for index in range(1, length, window):
         annotation = Annotation.from_sequence(name, seq)
         annotation.start = index
         annotation.end = index + window - 1
@@ -1930,7 +1931,7 @@ def split_gff_file(file_handle, name_mask, num_files=2):
         >>> name_mask = 'split-file-{0}.gff'
         >>> split_gff_file(files, name_mask, 5)
     """
-    if not isinstance(file_handle, file):
+    if not isinstance(file_handle, IOBase):
         if isinstance(file_handle, str):
             file_handle = [file_handle]
 
@@ -1940,12 +1941,13 @@ def split_gff_file(file_handle, name_mask, num_files=2):
 
     out_handles = [
         mgkit.io.open_file(name_mask.format(filen), 'w')
-        for filen in xrange(num_files)
+        for filen in range(num_files)
     ]
 
     seq_ids = {}
 
     for line in file_handle:
+        line = line.decode('ascii')
         if line.startswith('#'):
             continue
         if line.startswith('>'):
@@ -1959,7 +1961,7 @@ def split_gff_file(file_handle, name_mask, num_files=2):
             seq_ids[seq_id] = new_index
             out_handle = out_handles[new_index]
 
-        out_handle.write(line)
+        out_handle.write(line.encode('ascii'))
 
 
 def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
