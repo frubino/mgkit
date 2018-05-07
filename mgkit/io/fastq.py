@@ -1,7 +1,6 @@
 """
 Fastq utility functions
 """
-from builtins import basestring
 import re
 import numpy
 import logging
@@ -158,7 +157,7 @@ def write_fastq_sequence(file_handle, name, seq, qual, write_mode='a'):
     if isinstance(file_handle, str):
         file_handle = open(file_handle, write_mode)
 
-    if not isinstance(qual, basestring):
+    if isinstance(qual[0], (int, numpy.integer)):
         qual = ''.join(chr(q + 33) for q in qual)
 
     file_handle.write(
