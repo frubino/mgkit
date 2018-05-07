@@ -1,6 +1,53 @@
 Changes
 =======
 
+0.3.4
+-----
+
+General cleanup and testing release. Major changes:
+
+* general moving to Python2 (2.7) and Python3 (3.5+) support, using the future
+package and when conveniente checks for the version of python installed
+* setup includes now all the optional dependencies, since this makes it easier
+to deal with conda environments
+* move to pytest from nose, since it allows some functionality that interests
+me, along with the reorganisation of the test modules and skips of tests that
+cannot be executed (like mongodb)
+* move from urlib to using `requests`, which also helps with python3 support
+* more careful with some dependencies, like the lzma module and msgpack
+* addition of more tests, to help the porting to python3, along with a tox
+configuration
+* :mod:`matplotlib.pyplot` is still in the :mod:`mgkit.plots.unused`, but it is
+not imported when the parent package is, now. It is still needed in the
+:mod:`mgkit.plots.utils` functions, so the import has been moved inside the
+function. This should help with virtual environments and test suites
+* renamed :class:`mgkit.taxon.UniprotTaxonomy` to :class:`mgkit.taxon.Taxonomy`,
+since it's really NCBI taxonomy and it's preferred to download the data from
+there. Same for :class:`mgkit.taxon.UniprotTaxonTuple` to :class:`mgkit.taxon.TaxonTuple`,
+with an alias for old name there, but will be removed in a later version
+* `download_data` is deprecated. Taxonomy should be downloaded using `download-taxonomy.sh`,
+and the :mod:`mgkit.mappings` is in need of refactoring to remove old and now
+ununsed functionality
+
+Python3
+*******
+
+At the time of writing all tests pass on Python 3.5, but more tests are needed,
+along with some new ones for the blast parser and the scripts. Some important
+changes:
+
+* :class:`mgkit.io.gff.Annotation` uses its *uid* to hash the instance. This
+allows the use in sets (mainly for filtering). However, hashing is not
+supported in :class:`mgkit.io.gff.GenomicRange`.
+* :func:`mgkit.io.utils.open_file` now *always* opens and writes files in binary
+mode. This is one of the suggestions to keep compatibility between 2.x and 3.x.
+So if used directly the output must be decoded from *ascii*, which is the format
+used in text files (at least bioinformatics). However, this is not required for
+the parsers, like :func:`mgkit.io.gff.parse_gff`, :func:`mgkit.io.fasta.load_fasta`
+along with others (and the correspective *write_* functions): they return unicode
+strings when parsing and decode into *ascii* when writing.
+
+
 0.3.3
 -----
 

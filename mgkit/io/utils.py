@@ -78,7 +78,7 @@ def open_file(file_name, mode='r'):
     .. versionadded:: 0.1.12
 
     .. versionchanged:: 0.3.4
-        using *io.open* on Python3, *open* on Python2
+        using *io.open*, always in binary mode
 
     Opens a file using the extension as a guide to which module to use.
 
