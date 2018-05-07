@@ -25,7 +25,7 @@ def load_fasta(f_handle):
         the sequence
     """
     if isinstance(f_handle, str):
-        f_handle = mgkit.io.open_file(f_handle, 'r')
+        f_handle = mgkit.io.open_file(f_handle, 'rb')
     else:
         f_handle = mgkit.io.compressed_handle(f_handle)
 
@@ -39,6 +39,7 @@ def load_fasta(f_handle):
     cur_seq = []
     # main loop to read file's sequences
     for line in f_handle:
+        line = line.decode('ascii')
         if line.startswith('>'):
             if cur_seq != []:
                 # start of next sequence

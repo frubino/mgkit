@@ -107,10 +107,7 @@ def open_file(file_name, mode='r'):
         else:
             file_handle = lzma.LZMAFile(file_name, mode)
     else:
-        if sys.version_info[0] == 2:
-            file_handle = open(file_name, mode)
-        else:
-            file_handle = io.open(file_name, mode)
+        file_handle = io.open(file_name, mode + 'b' if 'b' not in mode else mode)
 
     return file_handle
 
