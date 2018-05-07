@@ -9,6 +9,7 @@ Module containing functions related to sequence data
 """
 from __future__ import division  # add check to use only on python 2.x
 from builtins import range
+from future.utils import viewitems
 import sys
 import itertools
 import logging
@@ -57,6 +58,10 @@ def make_reverse_table(tbl=None):
 if sys.version_info[0] == 2:
     from string import maketrans
     REV_COMP_ASCII = maketrans('ATCG', 'TAGC')
+    REV_COMP_UNICODE = {
+        ord(unicode(key)): unicode(value)
+        for key, value in viewitems(REV_COMP)
+    }
 else:
     REV_COMP_ASCII = u''.maketrans(REV_COMP)
 
@@ -88,7 +93,7 @@ def reverse_complement(seq, tbl=REV_COMP_ASCII):
     # since on Python 3 the first condition won't be true, the second won't be
     # evaluated
     if (sys.version_info[0] == 2) and isinstance(seq, unicode):
-        tbl = REV_COMP
+        tbl = REV_COMP_UNICODE
     return seq[::-1].translate(tbl)
 
 

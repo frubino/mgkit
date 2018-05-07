@@ -53,8 +53,8 @@ def test_convert_aa_to_nuc_coord(coords, result):
 
 
 def test_reverse_complement():
-    seq = 'ACTGATATATGCGCGCATCT'
-    rev = 'AGATGCGCGCATATATCAGT'
+    seq = 'ACTGATATATGCGCGCATCTC'
+    rev = 'GAGATGCGCGCATATATCAGT'
 
     assert reverse_complement(seq) == rev
 
