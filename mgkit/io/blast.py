@@ -117,6 +117,7 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     lineno = 0
 
     for lineno, line in enumerate(file_handle):
+        line = line.decode('ascii')
         if line.startswith('#'):
             continue
 
@@ -302,7 +303,7 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
     zero_acc = 0
 
     for idx, line in enumerate(file_handle):
-
+        line = line.decode('ascii')
         # skip header
         if line.startswith('accession'):
             continue
