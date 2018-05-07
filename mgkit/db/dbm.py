@@ -6,7 +6,7 @@ of annotations using the *semidbm* package
 
 """
 import logging
-from builtins import object
+from builtins import object, bytes
 from ..io import gff
 
 import semidbm
@@ -38,7 +38,7 @@ def create_gff_dbm(annotations, file_name):
     LOG.info('DB "%s" opened/created', file_name)
 
     for annotation in annotations:
-        database[annotation.uid] = annotation.to_gff()
+        database[annotation.uid.encode('ascii')] = annotation.to_gff().encode('ascii')
 
     database.sync()
 
@@ -66,14 +66,16 @@ class GFFDB(object):
             self.db = db
 
     def __getitem__(self, key):
-        return gff.from_gff(self.db[key])
+        if not isinstance(key, bytes):
+            key = key.encode('ascii')
+        return gff.from_gff(self.db[key].decode('ascii'))
 
     def __del__(self):
         self.db.close()
 
     def __iter__(self):
         for uid in self.db:
-            yield uid
+            yield uid.decode('ascii')
 
     def items(self):
         for uid in self:
