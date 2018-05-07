@@ -748,9 +748,9 @@ def elongate_data():
     seq_id = 'test1'
 
     test_ann = [
-        gff.GenomicRange(seq_id=seq_id, start=1, end=10),
-        gff.GenomicRange(seq_id=seq_id, start=10, end=15),
-        gff.GenomicRange(seq_id=seq_id, start=16, end=18),
+        gff.Annotation(seq_id=seq_id, start=1, end=10),
+        gff.Annotation(seq_id=seq_id, start=10, end=15),
+        gff.Annotation(seq_id=seq_id, start=16, end=18),
     ]
     return test_ann
 
