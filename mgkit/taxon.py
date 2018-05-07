@@ -115,6 +115,7 @@ def parse_uniprot_taxon(line, light=True):
     UniprotTaxonTuple instance. If *light* is True, lineage is not stored to
     decrease the memory usage. This is now the default.
     """
+    line = line.decode('ascii')
     line = line.rstrip().split('\t')
     taxon_id = int(line[0])
     try:
@@ -172,7 +173,7 @@ def parse_ncbi_taxonomy_merged_file(file_handle):
     merged_taxa = {}
 
     for line in file_handle:
-
+        line = line.decode('ascii')
         merged_id, taxon_id = [col for col in line.strip().split('\t') if col != '|']
         merged_taxa[int(merged_id)] = int(taxon_id)
 
@@ -205,6 +206,7 @@ def parse_ncbi_taxonomy_names_file(file_handle, name_classes=('scientific name',
     taxa_names = {}
 
     for line in file_handle:
+        line = line.decode('ascii')
         taxon_id, taxon_name, uniq_name, name_class = [
             col.strip()
             for col in line.strip().split('\t')
@@ -247,6 +249,7 @@ def parse_ncbi_taxonomy_nodes_file(file_handle, taxa_names=None):
     )
 
     for line in file_handle:
+        line = line.decode('ascii')
         line = [col for col in line.strip().split('\t') if col != '|']
         taxon_id = int(line[0])
         parent_id = int(line[1])
@@ -372,6 +375,7 @@ class Taxonomy(object):
         taxon_ids = {}
         count = 1
         for line in file_handle:
+            line = line.decode('ascii')
             # expecting the table to be the exported file from GTDB
             try:
                 # print line.strip().split(sep)

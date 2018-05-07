@@ -1,6 +1,8 @@
 import pytest
+from conftest import skip_no_connection, taxonomy_files
 from mgkit.taxon import TaxonTuple, Taxonomy, TAXON_RANKS, NoLcaFound, \
-    last_common_ancestor, last_common_ancestor_multiple
+    last_common_ancestor, last_common_ancestor_multiple, VIRUS, \
+    CELLULAR_ORGANISMS
 
 
 @pytest.fixture
@@ -108,3 +110,26 @@ def test_taxonomy_serialise_msgpack(taxonomy, tmpdir):
     tx2 = Taxonomy(file_name)
 
     assert taxonomy._taxa == tx2._taxa
+
+
+@skip_no_connection
+def test_read_ncbi_taxonomy(taxonomy_files):
+
+    taxonomy = Taxonomy()
+    taxonomy.read_from_ncbi_dump(*taxonomy_files)
+
+    assert taxonomy.find_by_name('prevotella', rank='genus') == 838
+
+
+@skip_no_connection
+def test_root_taxa1(ncbi_taxonomy):
+    genus1 = ncbi_taxonomy.find_by_name('prevotella', rank='genus')
+    genus2 = ncbi_taxonomy.find_by_name('methanobrevibacter', rank='genus')
+    assert last_common_ancestor(ncbi_taxonomy, genus1, genus2) == CELLULAR_ORGANISMS
+
+
+@skip_no_connection
+def test_root_taxa2(ncbi_taxonomy):
+    genus1 = ncbi_taxonomy.find_by_name('prevotella', rank='genus')
+    with pytest.raises(NoLcaFound):
+        last_common_ancestor(ncbi_taxonomy, genus1, VIRUS)

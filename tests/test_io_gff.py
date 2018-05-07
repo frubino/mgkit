@@ -578,3 +578,203 @@ def test_split_gff_file2(tmpdir, shared_datadir):
     count2 = sum(1 for x in gff.parse_gff_files(files))
 
     assert count1 == count2
+
+
+@pytest.mark.parametrize(
+    "start1,end1,start2,end2,result",
+    [
+        (20, 30, 25, 30, True),
+        (20, 30, 30, 25, True),
+        (20, 30, 19, 30, False),
+        (20, 30, 25, 31, False),
+    ]
+)
+def test_genomicrange_contains_annotation(start1, end1, start2, end2, result):
+    gen_range1 = gff.GenomicRange(start=start1, end=end1)
+
+    assert (gff.Annotation(start=start2, end=end2) in gen_range1) == result
+
+
+@pytest.mark.parametrize(
+    "start,end,pos,relpos",
+    [
+        (20, 30, 20, 1),
+        (20, 30, 30, 11),
+        (20, 30, 25, 6),
+    ]
+)
+def test_genomicrange_get_relative_pos(start, end, pos, relpos):
+    gen_range1 = gff.GenomicRange(start=start, end=end)
+
+    gen_range1.get_relative_pos(pos) == relpos
+
+
+@pytest.mark.parametrize(
+    "start,end,pos",
+    [
+        (20, 30, 19),
+        (20, 30, 31),
+    ]
+)
+def test_genomicrange_get_relative_pos_fail(start, end, pos):
+    gen_range1 = gff.GenomicRange(start=start, end=end)
+
+    with pytest.raises(ValueError):
+        gen_range1.get_relative_pos(pos)
+
+
+@pytest.mark.parametrize(
+    "start2,end2,ustart,uend",
+    [
+        (19, 30, 10, 30),
+        (10, 20, 10, 20),
+        (20, 30, 10, 30),
+        (21, 30, 10, 30),
+    ]
+)
+def test_genomicrange_union(start2, end2, ustart, uend):
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = start2
+    gen_range2.end = end2
+
+    gen_range_u = gen_range1.union(gen_range2)
+
+    assert (gen_range_u.start, gen_range_u.end) == (ustart, uend)
+
+
+@pytest.mark.parametrize(
+    "start2,end2,seq2,strand2",
+    [
+        (19, 30, 'seq2', '+'),
+        (19, 30, 'seq1', '-'),
+        (21, 30, 'seq1', '-'),
+    ]
+)
+def test_genomicrange_union_fail(start2, end2, seq2, strand2):
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = seq2
+    gen_range2.strand = strand2
+    gen_range2.start = start2
+    gen_range2.end = end2
+
+    gen_range_u = gen_range1.union(gen_range2)
+
+    assert gen_range_u is None
+
+
+@pytest.mark.parametrize(
+    "start2,end2,seq2,strand2,result",
+    [
+        (19, 30, 'seq1', '+', (19, 20)),
+        (15, 30, 'seq1', '+', (15, 20)),
+        (10, 20, 'seq1', '+', (10, 20)),
+    ]
+)
+def test_genomicrange_intersect1(start2, end2, seq2, strand2, result):
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = seq2
+    gen_range2.strand = strand2
+    gen_range2.start = start2
+    gen_range2.end = end2
+
+    gen_range_u = gen_range1.intersect(gen_range2)
+
+    assert (gen_range_u.start, gen_range_u.end) == result
+
+
+
+def test_genomicrange_intersect2():
+    gen_range1 = gff.GenomicRange(seq_id='seq1', strand='+', start=10, end=20)
+    gen_range2 = gff.GenomicRange(seq_id='seq1', strand='+', start=12, end=18)
+
+    gen_range_u = gen_range2.intersect(gen_range1)
+
+    assert len(gen_range_u) == len(gen_range2)
+
+
+def test_genomicrange_intersect3():
+    gen_range1 = gff.GenomicRange(seq_id='seq1', strand='+', start=10, end=20)
+    gen_range2 = gff.GenomicRange(seq_id='seq1', strand='+', start=12, end=18)
+
+    gen_range_u = gen_range1.intersect(gen_range2)
+
+    assert len(gen_range_u) == len(gen_range2)
+
+
+@pytest.mark.parametrize(
+    "seq1,strand1,s1,e1,seq2,strand2,s2,e2",
+    [
+        ('seq2', '+', 10, 20, 'seq1', '+', 10, 20),
+        ('seq1', '-', 10, 20, 'seq1', '+', 10, 20),
+        ('seq1', '+', 10, 20, 'seq1', '+', 30, 40),
+    ]
+)
+def test_genomicrange_intersect_fail(seq1, strand1, s1, e1, seq2, strand2, s2, e2):
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = seq1
+    gen_range1.strand = strand1
+    gen_range1.start = s1
+    gen_range1.end = e1
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = seq2
+    gen_range2.strand = strand2
+    gen_range2.start = s2
+    gen_range2.end = e2
+
+    gen_range_u = gen_range2.intersect(gen_range1)
+
+    assert gen_range_u is None
+
+
+@pytest.fixture
+def elongate_data():
+    seq_id = 'test1'
+
+    test_ann = [
+        gff.GenomicRange(seq_id=seq_id, start=1, end=10),
+        gff.GenomicRange(seq_id=seq_id, start=10, end=15),
+        gff.GenomicRange(seq_id=seq_id, start=16, end=18),
+    ]
+    return test_ann
+
+
+def test_elongate_annotations(elongate_data):
+    assert gff.elongate_annotations(elongate_data) == {(1, 18)}
+
+
+def test_annotation_length1():
+    ann = gff.Annotation(start=1, end=10)
+    assert len(ann) == 10
+
+
+def test_annotation_length2():
+    ann = gff.Annotation(start=1, end=10)
+    assert ann.length == 10
+
+
+def test_genomicrange_length1():
+    ann = gff.GenomicRange(start=1, end=10)
+    assert len(ann) == 10
+
+
+def test_genomicrange_length2():
+    ann = gff.GenomicRange(start=1, end=10)
+    with pytest.raises(AttributeError):
+        ann.length
