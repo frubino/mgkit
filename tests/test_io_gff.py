@@ -20,22 +20,22 @@ def aaseq(shared_datadir):
 
 @pytest.fixture
 def gff_file(shared_datadir):
-    return open_file(str(shared_datadir / 'test.gff')).readlines()
+    return open_file(str(shared_datadir / 'test.gff'), 'rb').readlines()
 
 
 @pytest.fixture
 def hmmer_file(shared_datadir):
-    return open_file(str(shared_datadir / 'test-hmmer-dom.txt')).readlines()
+    return open_file(str(shared_datadir / 'test-hmmer-dom.txt'), 'rb').readlines()
 
 
 @pytest.fixture
 def glimmer_file(shared_datadir):
-    return open_file(str(shared_datadir / 'glimmer3.txt')).readlines()
+    return open_file(str(shared_datadir / 'glimmer3.txt'), 'rb').readlines()
 
 
 @pytest.fixture
 def keggmod_file(shared_datadir):
-    return open_file(str(shared_datadir / 'kmod-entry1.txt')).readlines()
+    return open_file(str(shared_datadir / 'kmod-entry1.txt'), 'rb').readlines()
 
 
 def test_fromgff1(gff_file):

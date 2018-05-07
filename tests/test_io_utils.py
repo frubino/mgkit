@@ -3,12 +3,12 @@ import mgkit.io.utils
 from mgkit.io.utils import open_file
 
 def test_open_file_text(tmpdir):
-    test_string = u'test\n'
+    test_string = 'test\n'
     file_name = tmpdir.join('test-open').strpath
-    handle = open_file(file_name, mode='w')
-    handle.write(test_string)
+    handle = open_file(file_name, mode='wb')
+    handle.write(test_string.encode('ascii'))
     handle.close()
-    assert open_file(file_name, mode='r').read() == test_string
+    assert open_file(file_name, mode='rb').read().decode('ascii') == test_string
 
 
 def test_open_file_binary(tmpdir):
