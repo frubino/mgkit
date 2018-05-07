@@ -1,6 +1,7 @@
 """
 Various utilities to help read and process files
 """
+from builtins import range
 import sys
 import logging
 import gzip
@@ -45,7 +46,7 @@ def group_tuples_by_key(iterator, key_func=None, skip_elements=0):
     if key_func is None:
         key_func = lambda x: x[0]
 
-    for index in xrange(skip_elements):
+    for index in range(skip_elements):
         next(iterator)
 
     curr_key = None
@@ -158,7 +159,7 @@ def split_write(records, name_mask, write_func, num_files=2):
             returned by `records` as the second argument
         num_files (int): the number of files to split the records
     """
-    out_handles = [open_file(name_mask.format(x), 'w') for x in xrange(num_files)]
+    out_handles = [open_file(name_mask.format(x), 'w') for x in range(num_files)]
 
     for index, record in enumerate(records):
         out_handle = out_handles[index % num_files]

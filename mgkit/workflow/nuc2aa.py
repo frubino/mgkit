@@ -1,6 +1,7 @@
 """
 Translate nucleotidic sequence in amino acidic sequences
 """
+from builtins import range
 import sys
 import argparse
 import logging
@@ -122,7 +123,7 @@ def main():
         LOG.info("Using %d processor(s)", options.processors)
         jobs = Parallel(n_jobs=options.processors, verbose=0)
 
-    for index in xrange(0, len(nuc_seqs), options.buffer_size):
+    for index in range(0, len(nuc_seqs), options.buffer_size):
         LOG.info(
             "Translating file position %d-%d",
             index,

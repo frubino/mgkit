@@ -118,6 +118,7 @@ Changes
 
 """
 from __future__ import division
+from builtins import range
 import sys
 import argparse
 import logging
@@ -437,7 +438,7 @@ def lca_contig_command(options):
                 lineage
             )
     if options.krona and (options.krona_total is not None):
-        for index in xrange(count, options.krona_total):
+        for index in range(count, options.krona_total):
             options.output_file.write('Unknown\n')
 
     if options.json:

@@ -2,7 +2,9 @@
 """
 Simple fasta parser and a few utility functions
 """
+import itertools
 import logging
+from builtins import range
 import mgkit.io
 
 LOG = logging.getLogger(__name__)
@@ -69,6 +71,21 @@ def load_fasta(f_handle):
     LOG.info("Read %d fasta sequences", nseq)
 
 
+def load_fasta_files(files):
+    """
+    .. versionadded:: 0.3.4
+
+    Loads all fasta files from a list or iterable
+    """
+    return itertools.chain(
+        *(
+            load_fasta(file_handle)
+            for file_handle in files
+        )
+
+    )
+
+
 def load_fasta_rename(file_handle, name_func=None):
     """
     .. versionadded:: 0.3.1
@@ -133,10 +150,10 @@ def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
     if wrap is not None:
         seq = '\n'.join(
             seq[pos:pos + wrap]
-            for pos in xrange(0, len(seq), wrap)
+            for pos in range(0, len(seq), wrap)
         )
 
-    file_handle.write(">{0}\n{1}\n".format(name, seq))
+    file_handle.write(">{0}\n{1}\n".format(name, seq).encode('ascii'))
 
 
 def split_fasta_file(file_handle, name_mask, num_files):

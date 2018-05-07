@@ -2,6 +2,7 @@
 Dictionary utils
 
 """
+from builtins import range
 from future.utils import viewitems, viewkeys
 import numpy
 import pandas
@@ -291,7 +292,7 @@ class cache_dict_file(object):
             iterator (iter): iterator used in building the dictionary
             skip_lines (int): how many iterations to skip at the start
         """
-        for index in xrange(skip_lines):
+        for index in range(skip_lines):
             next(iterator)
         self._iterator = iterator
         self._dict = {}

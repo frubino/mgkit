@@ -67,6 +67,7 @@ Changes
 
 """
 from __future__ import division
+from builtins import range
 import argparse
 import logging
 import itertools
@@ -445,7 +446,7 @@ def sample_command(options):
             h=open_file(name_mask.format(i), 'w'),
             c=0
         )
-        for i in xrange(options.number)
+        for i in range(options.number)
     ]
 
     load_func = fastq.load_fastq if options.fastq else fasta.load_fasta
