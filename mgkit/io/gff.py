@@ -4,7 +4,7 @@ files.
 """
 from __future__ import print_function
 from __future__ import division
-from builtins import object, zip
+from builtins import object, zip, bytes
 from future.utils import viewitems
 import random
 import itertools
@@ -1079,6 +1079,8 @@ def from_glimmer3(header, line, feat_type='CDS'):
         >>> from_glimmer3(header, line)
 
     """
+    if isinstance(line, bytes):
+        line = line.decode('ascii')
     orf_id, start, end, frame, score = line.split()
 
     start = int(start)
@@ -1133,6 +1135,8 @@ def from_gff(line, strict=True):
         DuplicateKeyError: if the attribute column has duplicate keys
 
     """
+    if isinstance(line, bytes):
+        line = line.decode('ascii')
     line = line.rstrip()
     line = line.split('\t')
 
@@ -1423,6 +1427,8 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
         be equal to the profile name
 
     """
+    if isinstance(line, bytes):
+        line = line.decode('ascii')
     line = line.split()
     if noframe:
         # no information on the frame is provided (already a protein, so f0)
@@ -1532,7 +1538,7 @@ def parse_gff(file_handle, gff_type=from_gff, strict=True):
         Annotation: an iterator of :class:`Annotation` instances
     """
     if isinstance(file_handle, str):
-        file_handle = mgkit.io.open_file(file_handle, 'r')
+        file_handle = mgkit.io.open_file(file_handle, 'rb')
 
     LOG.info(
         "Loading GFF from file (%s)",
@@ -1540,6 +1546,7 @@ def parse_gff(file_handle, gff_type=from_gff, strict=True):
     )
 
     for index, line in enumerate(file_handle):
+        line = line.decode('ascii')
         # the first is for GFF with comments and the second for
         # GFF with the fasta file attached
         if line.startswith('#'):
