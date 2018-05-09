@@ -792,7 +792,7 @@ def _signatures_matrix(seqs, w_size, k_size=4, step=None):
     ).T.fillna(0)
 
 
-def random_sequences_codon(n=1, length=150, codons=UNIVERSAL.keys(),
+def random_sequences_codon(n=1, length=150, codons=list(UNIVERSAL.keys()),
                            p=None, frame=None):
     """
     .. versionadded:: 0.3.3
@@ -802,6 +802,12 @@ def random_sequences_codon(n=1, length=150, codons=UNIVERSAL.keys(),
     first sampled with replacement from the codon list, with a number of codons
     that covers the length chosen plus an additional one to allow a frame shift
     as set by *frame*
+
+    .. note::
+
+        If the probability (for each codon) are supplied, the number of
+        sequences required to match those probabilities within a 10% margin of
+        error is of at least 10.000 sequences, for 5% at leas 100.000
 
     Arguments:
         n (int): number of sequences to yield

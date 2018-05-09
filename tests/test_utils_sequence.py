@@ -1,15 +1,18 @@
 from __future__ import division
-
+from builtins import zip
 import pytest
 import numpy
-
+import itertools
+import pandas
+from collections import Counter
 from mgkit.utils import trans_tables
 from mgkit.utils.sequence import reverse_aa_coord, get_variant_sequence, \
     convert_aa_to_nuc_coord, reverse_complement, translate_sequence, \
     put_gaps_in_nuc_seq, get_seq_expected_syn_count, Alignment, \
     get_seq_number_of_syn, sequence_gc_ratio, sequence_gc_content, \
     sequence_composition, _get_kmers, _sliding_window, _sequence_signature, \
-    sequence_signature, sliding_window, get_kmers
+    sequence_signature, sliding_window, get_kmers, random_sequences_codon, \
+    random_sequences
 
 
 @pytest.mark.parametrize(
@@ -260,3 +263,57 @@ def test_sliding_window_cython():
 def test_get_kmers_cython():
     seq = 'ACTG' * 2
     assert list(_get_kmers(seq, 4)) == list(get_kmers(seq, 4))
+
+
+def test_random_sequences_codon1():
+    seqs = random_sequences_codon(n=20, length=150, frame=0, codons=list(trans_tables.UNIVERSAL))
+    it = itertools.chain(
+        *(
+            _sliding_window(seq, 3, 3)
+            for seq in seqs
+        )
+    )
+    p = pandas.Series(Counter(it))
+    p = p.mean() / p.sum()
+
+    exp_p = 1. / len(trans_tables.UNIVERSAL)
+    assert p == exp_p
+
+
+def test_random_sequences_codon2():
+    seqs = random_sequences_codon(n=20, length=150, frame=0, codons=list(trans_tables.VT_MIT))
+    it = itertools.chain(
+        *(
+            _sliding_window(seq, 3, 3)
+            for seq in seqs
+        )
+    )
+    p = pandas.Series(Counter(it))
+    p = p.mean() / p.sum()
+
+    exp_p = 1. / len(trans_tables.VT_MIT)
+    assert p == exp_p
+
+
+def test_random_sequences_codon3():
+    exp_p = pandas.Series(
+        numpy.random.normal(
+            size=len(trans_tables.UNIVERSAL), loc=100, scale=50
+        ),
+        index=list(trans_tables.UNIVERSAL.keys())
+    ).apply(abs)
+    exp_p = (exp_p / exp_p.sum()).sort_index()
+
+    seqs = random_sequences_codon(n=10**5, length=150, frame=0,
+                                  codons=sorted(trans_tables.UNIVERSAL),
+                                  p=exp_p.tolist())
+    it = itertools.chain(
+        *(
+            _sliding_window(seq, 3, 3)
+            for seq in seqs
+        )
+    )
+    p = pandas.Series(Counter(it), index=exp_p.index)
+    p = p / p.sum()
+
+    assert all(p < (exp_p * 1.1)) and all(p > (exp_p * .9))
