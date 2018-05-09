@@ -1546,6 +1546,8 @@ def parse_gff(file_handle, gff_type=from_gff, strict=True):
         getattr(file_handle, 'name', repr(file_handle))
     )
 
+    index = 0
+
     for index, line in enumerate(file_handle):
         line = line.decode('ascii')
         # the first is for GFF with comments and the second for

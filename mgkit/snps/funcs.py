@@ -268,7 +268,7 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
 
                 multi_index.add(key)
 
-    if isinstance(key, tuple):
+    if index_type is None:
         multi_index = pandas.MultiIndex.from_tuples(
             sorted(multi_index),
             names=('gene', 'taxon')
