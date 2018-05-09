@@ -4,14 +4,10 @@
 Module to plot relative abundances in a 1D or 3D projection
 """
 from __future__ import division
+from builtins import zip
 import math
 
-from .. import DependencyError
-
-try:
-    import numpy
-except ImportError:
-    raise DependencyError('numpy')
+import numpy
 
 SQRT3_2 = math.sqrt(3) / 2
 

@@ -162,7 +162,7 @@ Changes
 
 """
 from __future__ import division
-
+from future.utils import viewvalues
 import sys
 import argparse
 import logging
@@ -567,9 +567,9 @@ def filter_perseq(options):
             file_iterator, lambda x: x.seq_id
         )
     else:
-        grouped = gff.group_annotations(
+        grouped = viewvalues(gff.group_annotations(
             file_iterator, lambda x: x.seq_id
-        ).itervalues()
+        ))
 
     attribute = options.attribute
 
@@ -641,9 +641,9 @@ def coverage_command(options):
             file_iterator, key_func
         )
     else:
-        grouped = gff.group_annotations(
+        grouped = viewvalues(gff.group_annotations(
             file_iterator, key_func
-        ).itervalues()
+        ))
 
     sequences = {
         seq_id: len(seq)
@@ -886,7 +886,7 @@ def filter_values(options):
     filters = setup_filters(options)
 
     for annotation in gff.parse_gff(options.input_file, gff_type=gff.from_gff):
-        if all(filter(annotation) for filter in filters):
+        if all(filter_func(annotation) for filter_func in filters):
             annotation.to_file(options.output_file)
 
 
@@ -929,7 +929,7 @@ def filter_overlaps(options):
         LOG.info("Input GFF is assumed sorted")
         grouped = gff.group_annotations_sorted(file_iterator)
     else:
-        grouped = gff.group_annotations(file_iterator).itervalues()
+        grouped = viewvalues(gff.group_annotations(file_iterator))
 
     choose_func = functools.partial(
         filter_gff.choose_annotation,

@@ -1,6 +1,7 @@
 """
 Functions used in SNPs manipulation
 """
+from builtins import zip
 import logging
 import itertools
 import functools

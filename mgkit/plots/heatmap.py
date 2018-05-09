@@ -3,16 +3,13 @@
 
 Code related to heatmaps.
 """
+from builtins import range
 import logging
 import numpy
 from .utils import get_grid_figure
-from .. import DependencyError
 
-try:
-    import scipy.spatial.distance as distance
-    import scipy.cluster.hierarchy as hclust
-except ImportError:
-    raise DependencyError('scipy')
+import scipy.spatial.distance as distance
+import scipy.cluster.hierarchy as hclust
 
 LOG = logging.getLogger(__name__)
 

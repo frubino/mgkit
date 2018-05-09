@@ -29,7 +29,7 @@ Changes
 """
 
 from __future__ import division
-
+from builtins import zip
 import HTSeq
 import logging
 import argparse
@@ -138,7 +138,7 @@ def set_parser():
 def init_count_set(annotations):
     LOG.info("Init data structures")
 
-    samples = annotations[0].sample_coverage.keys()
+    samples = list(annotations[0].sample_coverage.keys())
 
     snp_data = dict(
         (sample, {}) for sample in samples
@@ -278,7 +278,7 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
             # the samples that contain the SNP is a string separated by '-'
             if options.bcftools_vcf:
                 samples = set()
-                for sample_id, sample_info in vcf_record.samples.iteritems():
+                for sample_id, sample_info in vcf_record.samples.items():
                     # prepare the genotype list, to make the comparison easier
                     # the genotype separator to '/' only, to use only one
                     # type of split

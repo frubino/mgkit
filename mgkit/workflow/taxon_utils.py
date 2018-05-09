@@ -119,6 +119,7 @@ Changes
 """
 from __future__ import division
 from builtins import range
+from future.utils import viewvalues
 import sys
 import argparse
 import logging
@@ -364,10 +365,10 @@ def lca_contig_command(options):
         )
     else:
         # groups the annotations by sequence, in case they're not sorted
-        annotations = gff.group_annotations(
+        annotations = viewvalues(gff.group_annotations(
             annotations_iter,
             lambda annotation: annotation.seq_id
-        ).itervalues()
+        ))
 
     count = 0
     lca_dict = {}

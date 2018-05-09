@@ -4,10 +4,9 @@
 Code related to boxplots
 """
 from __future__ import division
-
+from builtins import zip
 import logging
 import numpy
-from .. import DependencyError
 from ..utils.common import deprecated
 from .colors import float_to_hex_color
 
@@ -213,10 +212,10 @@ def add_values_to_boxplot(dataframe, ax, plot_data, plot_order,
         # strings to avoid matplotlit to confuse the single color as different
         # shades of grey. It only happens when the number of data points in a
         # row is 3
-        if not isinstance(data_colours[data_colours.keys()[0]], str):
+        if not isinstance(data_colours[list(data_colours.keys())[0]], str):
             data_colours = dict(
                 (key, float_to_hex_color(*value))
-                for key, value in data_colours.iteritems()
+                for key, value in data_colours.items()
             )
 
     for index, row_id in enumerate(plot_order):

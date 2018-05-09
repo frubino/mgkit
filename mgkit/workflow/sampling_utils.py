@@ -67,7 +67,7 @@ Changes
 
 """
 from __future__ import division
-from builtins import range
+from builtins import range, zip
 import argparse
 import logging
 import itertools
@@ -297,7 +297,7 @@ def rand_sequence_command(options):
     else:
         qual_it = itertools.repeat(options.num_seqs)
 
-    for seq, qual in itertools.izip(seq_it, qual_it):
+    for seq, qual in zip(seq_it, qual_it):
         seq_id = str(uuid.uuid4())
         if options.fastq:
             fastq.write_fastq_sequence(options.output_file, seq_id, seq, qual)
@@ -454,7 +454,7 @@ def sample_command(options):
 
     for seq in load_func(options.input_file):
         # reached the maximum number of sequences for all samples
-        if all(map(lambda x: x['c'] == options.max_seq, output_files)):
+        if all(x['c'] == options.max_seq for x in output_files):
             break
 
         for output in output_files:

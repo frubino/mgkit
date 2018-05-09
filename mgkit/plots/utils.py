@@ -4,9 +4,8 @@
 Misc code
 
 """
+from builtins import zip
 import logging
-
-from .. import DependencyError
 
 from matplotlib.gridspec import GridSpec
 from matplotlib import patches as mpatches

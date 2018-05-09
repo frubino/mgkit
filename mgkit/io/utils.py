@@ -1,7 +1,7 @@
 """
 Various utilities to help read and process files
 """
-from builtins import range
+from builtins import range, next
 import sys
 import logging
 import gzip

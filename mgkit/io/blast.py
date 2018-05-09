@@ -4,7 +4,7 @@ Blast routines and parsers
 """
 
 import logging
-from builtins import range
+from builtins import range, zip
 from future.utils import viewitems
 from . import gff
 from . import open_file

@@ -8,8 +8,8 @@ Module containing functions related to sequence data
 
 """
 from __future__ import division  # add check to use only on python 2.x
-from builtins import range
-from future.utils import viewitems
+from builtins import range, zip
+from future.utils import viewitems, viewvalues
 import sys
 import itertools
 import logging
@@ -50,7 +50,7 @@ def make_reverse_table(tbl=None):
     if tbl is None:
         tbl = REV_COMP
     trans_table = [chr(idx) for idx in range(256)]
-    for nuc, rev in tbl.iteritems():
+    for nuc, rev in viewitems(tbl):
         trans_table[ord(nuc)] = rev
     return ''.join(trans_table)
 
@@ -658,7 +658,7 @@ def get_contigs_info(file_name, pp=False):
     """
 
     if isinstance(file_name, dict):
-        seqs = list(file_name.itervalues())
+        seqs = list(viewvalues(file_name))
         file_name = 'dictionary'
     elif isinstance(file_name, list):
         seqs = list(file_name)
@@ -773,7 +773,7 @@ def _signatures_matrix(seqs, w_size, k_size=4, step=None):
     """
 
     def flatten_contigs(data):
-        for name, windows in data.iteritems():
+        for name, windows in viewitems(data):
             for index, window in enumerate(windows):
                 yield (name, index), dict(window)
 

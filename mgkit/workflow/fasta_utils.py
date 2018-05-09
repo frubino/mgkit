@@ -31,6 +31,7 @@ Changes
 """
 
 from __future__ import division
+from builtins import range
 import argparse
 import logging
 import sys

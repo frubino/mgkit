@@ -255,6 +255,9 @@ Changes
 .. versionadded:: 0.1.12
 """
 from __future__ import division
+from builtins import zip
+from future.utils import viewitems, viewvalues
+from functools import reduce
 import sys
 import argparse
 import logging
@@ -350,7 +353,7 @@ def kegg_command(options):
         # Changes the names of the keys to *ko* instead of *map*
         path_names = dict(
             (path_id.replace('map', 'ko'), name)
-            for path_id, name in kegg_client.get_names('path').iteritems()
+            for path_id, name in viewitems(kegg_client.get_names('path'))
         )
 
     ko_cache = {}
@@ -521,7 +524,7 @@ def add_uniprot_info(annotations, options, info_cache):
             # no data was found
             continue
 
-        for column, values in gene_info.iteritems():
+        for column, values in viewitems(gene_info):
             # nothing found
             if not values:
                 continue
@@ -650,7 +653,7 @@ def get_gids(uid_gid_map):
 
     gids = set()
 
-    for hits in uid_gid_map.itervalues():
+    for hits in viewvalues(uid_gid_map):
         gids.update(x[0] for x in hits)
 
     return gids
@@ -915,7 +918,7 @@ def uniprot_offline_command(options):
     for annotation in annotations:
         try:
             mappings = file_mappings[annotation.gene_id]
-            for mapping_id, mapping_values in mappings.iteritems():
+            for mapping_id, mapping_values in viewitems(mappings):
                 if mapping_id == uniprot_io.MAPPINGS['taxonomy']:
                     if (annotation.taxon_id and options.force_taxon_id) or \
                        (annotation.taxon_id is None):
@@ -959,7 +962,7 @@ def set_uniprot_offline_parser(parser):
         action='append',
         default=None,
         required=True,
-        choices=uniprot_io.MAPPINGS.values(),
+        choices=list(uniprot_io.MAPPINGS.values()),
         help="Mappings to add"
     )
     parser.set_defaults(func=uniprot_offline_command)
@@ -1002,7 +1005,7 @@ def eggnog_command(options):
     for annotation in gff.parse_gff(options.input_file):
         try:
             ann_info = base_info[annotation.gene_id]
-            for key, value in ann_info.iteritems():
+            for key, value in viewitems(ann_info):
                 annotation.set_attr(
                     'eggnog_{}'.format(key),
                     value
@@ -1195,7 +1198,7 @@ def addtaxa_command(options):
         # Ensures all taxon_ids are *int*
         gene_ids = dict(
             (key, int(value))
-            for key, value in gene_ids.iteritems()
+            for key, value in viewitems(gene_ids)
         )
 
     if options.taxonomy is not None:

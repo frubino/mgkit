@@ -5,6 +5,7 @@ Graph module
 """
 
 import itertools
+from future.utils import viewitems
 from xml.etree import ElementTree
 from . import DependencyError
 
@@ -35,7 +36,7 @@ def build_graph(id_links, name, edge_type='', weight=0.5):
     g = nx.Graph()
     g.name = name
 
-    for id1, id2s in id_links.iteritems():
+    for id1, id2s in viewitems(id_links):
         g.add_node(id1, id=id1)
         for id2 in id2s:
             g.add_node(id2, id=id2)
@@ -392,7 +393,7 @@ def add_module_compounds(graph, rn_defs):
         rn_defs (dict): a dictionary, whose keys are reactions IDs and the
             values are instances of :class:`mgkit.kegg.KeggReaction`
     """
-    for rn_id, (left_cp, right_cp) in rn_defs.iteritems():
+    for rn_id, (left_cp, right_cp) in viewitems(rn_defs):
 
         reaction_type = graph.node[rn_id]['reaction_type']
         reversible = True if reaction_type == 'reversible' else False

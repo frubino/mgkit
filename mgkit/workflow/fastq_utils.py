@@ -18,14 +18,13 @@ Changes
 
 """
 from __future__ import division
-
+from builtins import zip
 import sys
 import random
 import argparse
 import logging
 import mgkit
 import HTSeq
-from itertools import izip
 from mgkit.io.fastq import choose_header_type
 from mgkit.io.fastq import write_fastq_sequence
 from mgkit.io import fasta
@@ -258,8 +257,8 @@ def sort(options):
     count = 0
     wcount = 0
 
-    for sequence1, sequence2 in izip(HTSeq.FastqReader(options.mate1_input),
-                                     HTSeq.FastqReader(options.mate2_input)):
+    for sequence1, sequence2 in zip(HTSeq.FastqReader(options.mate1_input),
+                                    HTSeq.FastqReader(options.mate2_input)):
 
         count += 1
 
@@ -405,7 +404,7 @@ def interleave(options):
     count = 0
     wcount = 0
 
-    for sequence1, sequence2 in izip(HTSeq.FastqReader(options.mate1_file),
+    for sequence1, sequence2 in zip(HTSeq.FastqReader(options.mate1_file),
                                      HTSeq.FastqReader(options.mate2_file)):
 
         count += 1
