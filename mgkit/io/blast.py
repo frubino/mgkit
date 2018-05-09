@@ -4,7 +4,8 @@ Blast routines and parsers
 """
 
 import logging
-
+from builtins import range
+from future.utils import viewitems
 from . import gff
 from . import open_file
 from ..utils.common import deprecated
@@ -104,7 +105,7 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         value_funcs = [lambda x: x for y in range(len(ret_col))]
 
     if ret_col is None:
-        ret_col = range(12)
+        ret_col = list(range(12))
 
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
@@ -245,7 +246,7 @@ def parse_fragment_blast(file_handle, bitscore=40.0):
         except KeyError:
             uidmap[uid] = [hit]
 
-    for uid, hits in uidmap.iteritems():
+    for uid, hits in viewitems(uidmap):
         # returns the hit with the max bitscore and max identity
         yield uid, hits
 

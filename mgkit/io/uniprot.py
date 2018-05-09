@@ -67,6 +67,7 @@ def parse_uniprot_mappings(file_handle, gene_ids=None, mappings=None,
         )
 
     for idx, line in enumerate(file_handle):
+        line = line.decode('ascii')
 
         if (num_lines is not None) and ((idx + 1) % num_lines == 0):
             LOG.info("Parsed %d lines", idx + 1)

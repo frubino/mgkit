@@ -1349,10 +1349,10 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False,
         start, end = end, start
         strand = '-'
         if seq_len is not None:
-            phase = (seq_len - end + 1) % 3
+            phase = (seq_len - end) % 3
 
     if strand == '+':
-        phase = start % 3
+        phase = (start - 1) % 3
 
     annotation = Annotation(
         seq_id=seq_id,
