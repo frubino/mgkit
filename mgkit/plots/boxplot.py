@@ -117,7 +117,7 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None,
             data_colours[category] if data_colours else colours['boxes']
         )
         if fill_box:
-            box_coord = zip(box.get_xdata(), box.get_ydata())
+            box_coord = list(zip(box.get_xdata(), box.get_ydata()))
             polygon = Polygon(
                 box_coord,
                 facecolor=data_colours[category] if data_colours else colours['boxes']
@@ -315,7 +315,7 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
             data_colours[row_id] if data_colours else colours['boxes']
         )
         if fill_box:
-            box_coord = zip(box.get_xdata(), box.get_ydata())
+            box_coord = list(zip(box.get_xdata(), box.get_ydata()))
             polygon = Polygon(
                 box_coord,
                 facecolor=data_colours[row_id] if data_colours else colours['boxes']
