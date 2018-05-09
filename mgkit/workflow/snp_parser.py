@@ -33,6 +33,7 @@ from builtins import zip
 import HTSeq
 import logging
 import argparse
+import sys
 if sys.version_info[0] == 2:
     import cPickle as pickle
 else:

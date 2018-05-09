@@ -75,7 +75,7 @@ setup(
         'scripts/download-ncbi-taxa.sh',
         'scripts/sort-gff.sh',
     ],
-    tests_require=['pytest>=3.5', 'pytest-datadir'],
+    tests_require=['pytest>=3.5', 'pytest-datadir', 'pytest-console-scripts'],
     entry_points={
         'console_scripts': [
             'download_data = mgkit.workflow.download_data:main',
