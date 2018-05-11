@@ -37,9 +37,14 @@ def test_json2gff_version(script_runner):
     assert script_runner.run('json2gff', '--version').success
 
 
-def test_fasta_utils(script_runner):
+def test_fasta_utils_version(script_runner):
     assert script_runner.run('fasta-utils', '--version').success
 
 
-def test_sampling_utils(script_runner):
+def test_sampling_utils_version(script_runner):
     assert script_runner.run('sampling-utils', '--version').success
+
+
+def test_blast2gff_blastdb1(script_runner, shared_datadir):
+    tab_file = str(shared_datadir / 'blast-outfmt6.tsv')
+    assert script_runner.run('blast2gff', 'blastdb', '-n', tab_file, '-').success

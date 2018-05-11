@@ -95,6 +95,8 @@ Changes
 import sys
 import argparse
 import logging
+import click
+import progressbar
 import mgkit
 from .. import logger
 from . import utils
@@ -104,73 +106,11 @@ from ..io import blast, fasta
 LOG = logging.getLogger(__name__)
 
 
-def parse_attr_arg(value):
-    values = value.split(':')
-    if len(values) != 2:
-        raise argparse.ArgumentTypeError(
-            "Wrong key/value format, must be 'key:value' 'key:value'"
-        )
-
-    return values[0], values[1]
-
-
-def set_common_options(parser):
-    parser.add_argument(
-        '-dbq',
-        '--db-quality',
-        action='store',
-        type=int,
-        help='Quality of the DB used',
-        default=10
-    )
-    parser.add_argument(
-        '-b',
-        '--bitscore',
-        action='store',
-        type=float,
-        help='Minimum bitscore to keep the annotation',
-        default=0.0
-    )
-    parser.add_argument(
-        '-k',
-        '--attr-value',
-        action='append',
-        type=parse_attr_arg,
-        help='''Additional attribute and value to add to each annotation,
-                in the form attr:value''',
-        default=None
-    )
-    parser.add_argument(
-        '-ft',
-        '--feat-type',
-        action='store',
-        default='CDS',
-        help='Feature type to use in the GFF'
-    )
-    parser.add_argument(
-        '-a',
-        '--fasta-file',
-        type=argparse.FileType('r'),
-        default=None,
-        help="""
-        Fasta file with nucleotide sequences, used to calculate the frame, if
-        not used, the frame on the '-' strand will always be 0
-        """
-    )
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='BLAST+ output file in tabular format, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default=sys.stdout,
-        help='Output GFF file, defaults to stdout'
-    )
+@click.group()
+@click.version_option()
+def main():
+    "Main function"
+    pass
 
 
 def set_uniprot_parser(parser):
@@ -194,178 +134,251 @@ def set_uniprot_parser(parser):
     parser.set_defaults(func=convert_from_uniprot)
 
 
-def set_blastdb_parser(parser):
-    """
-    .. versionadded:: 0.2.2
-    """
-    parser.add_argument(
-        '-db',
-        '--db-used',
-        action='store',
-        type=str,
-        default='NCBI-NT',
-        help='blastdb used'
-    )
-    parser.add_argument(
-        '-n',
-        '--no-split',
-        action='store_true',
-        default=False,
-        help='''if used, the script assumes that the sequence header will be
-                used as gene_id'''
-    )
-    parser.add_argument(
-        '-s',
-        '--header-sep',
-        action='store',
-        default='|',
-        help="""The separator for the header, defaults to '|' (pipe)"""
-    )
-    parser.add_argument(
-        '-i',
-        '--gene-index',
-        action='store',
-        default=1,
-        type=int,
-        help="""Which of the header columns (0-based) to use as gene_id
-                (defaults to 1 - the second column)"""
-    )
-    parser.add_argument(
-        '-r',
-        '--remove-version',
-        action='store_true',
-        default=False,
-        help='''if used, the script removes the *version* information from the
-                gene_id'''
-    )
-
-    parser.set_defaults(func=convert_from_blastdb)
-
-
 def load_fasta_file(file_name):
     if file_name is None:
         return None
 
     return dict(
         (name, len(seq))
-        for name, seq in fasta.load_fasta(file_name)
+        for name, seq in fasta.load_fasta_rename(file_name)
     )
 
 
-def convert_from_blastdb(options):
+def validate_params(ctx, param, values):
+    new_values = []
+    for value in values:
+        value = value.split(':')
+        if len(value) != 2:
+            raise click.BadParameter(
+                "Wrong key/value format, must be 'key:value' 'key:value'"
+            )
+        new_values.append(value)
+    return new_values
+
+
+@main.command('blastdb', help="""
+Reads a BLAST output file [blast-file] in tabular format (using -outfmt 6) and
+outputs a GFF file [gff-file]
+""")
+@click.option(
+    '-v',
+    '--verbose',
+    is_flag=True,
+)
+@click.option(
+    '-db',
+    '--db-used',
+    default='NCBI-NT',
+    help='blastdb used'
+)
+@click.option(
+    '-n',
+    '--no-split',
+    is_flag=True,
+    help='''if used, the script assumes that the sequence header will be
+            used as gene_id'''
+)
+@click.option(
+    '-s',
+    '--header-sep',
+    default='|',
+    help="""The separator for the header, defaults to '|' (pipe)"""
+)
+@click.option(
+    '-i',
+    '--gene-index',
+    default=1,
+    type=click.INT,
+    help="""Which of the header columns (0-based) to use as gene_id
+            (defaults to 1 - the second column)"""
+)
+@click.option(
+    '-r',
+    '--remove-version',
+    is_flag=True,
+    help='''if used, the script removes the *version* information from the
+            gene_id'''
+)
+@click.option(
+    '-a',
+    '--fasta-file',
+    type=click.Path(readable=True),
+    help='Optional FASTA file with the query sequences'
+)
+@click.option(
+    '-dbq',
+    '--db-quality',
+    type=click.INT,
+    help='Quality of the DB used',
+    default=10
+)
+@click.option(
+    '-b',
+    '--bitscore',
+    type=click.FLOAT,
+    help='Minimum bitscore to keep the annotation',
+    default=0.0
+)
+@click.option(
+    '-k',
+    '--attr-value',
+    multiple=True,
+    callback=validate_params,
+    help='''Additional attribute and value to add to each annotation,
+            in the form attr:value''',
+    default=None
+)
+@click.option(
+    '-ft',
+    '--feat-type',
+    default='CDS',
+    help='Feature type to use in the GFF'
+)
+@click.argument(
+    'blast-file',
+    type=click.File('rb'),
+)
+@click.argument(
+    'gff-file',
+    type=click.File('wb'),
+)
+def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
+                         remove_version, fasta_file, db_quality, bitscore,
+                         attr_value, feat_type, blast_file, gff_file):
     """
     .. versionadded:: 0.2.2
     """
 
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(gff_file, 'name', repr(gff_file))
     )
 
-    seqs = load_fasta_file(options.fasta_file)
+    seqs = load_fasta_file(fasta_file)
 
-    if options.no_split:
+    if no_split:
         name_func = lambda x: x
     else:
-        if options.remove_version:
-            name_func = lambda x: x.split(options.header_sep)[options.gene_index].split('.')[0]
+        if remove_version:
+            name_func = lambda x: x.split(header_sep)[gene_index].split('.')[0]
         else:
-            name_func = lambda x: x.split(options.header_sep)[options.gene_index]
+            name_func = lambda x: x.split(header_sep)[gene_index]
 
     iterator = blast.parse_uniprot_blast(
-        options.input_file,
-        bitscore=options.bitscore,
-        db=options.db_used,
-        dbq=options.db_quality,
+        blast_file,
+        bitscore=bitscore,
+        db=db_used,
+        dbq=db_quality,
         name_func=name_func,
-        feat_type=options.feat_type,
+        feat_type=feat_type,
         seq_lengths=seqs
     )
 
-    for annotation in iterator:
-        if options.attr_value is not None:
-            for key, value in options.attr_value:
+    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+    for annotation in bar(iterator):
+        if attr_value is not None:
+            for key, value in attr_value:
                 annotation.set_attr(key, value)
 
-        annotation.to_file(options.output_file)
+        annotation.to_file(gff_file)
 
 
-def convert_from_uniprot(options):
+@main.command('uniprot', help="""
+Reads a BLAST output file [blast-file] in tabular format (using -outfmt 6) from
+a Uniprot DB and outputs a GFF file [gff-file]
+""")
+@click.option(
+    '-v',
+    '--verbose',
+    is_flag=True,
+)
+@click.option(
+    '-db',
+    '--db-used',
+    default='UNIPROT-SP',
+    help='Uniprot database used with BLAST'
+)
+@click.option(
+    '-n',
+    '--no-split',
+    is_flag=True,
+    help='''if used, the script assumes that the sequence header will be
+            used as gene_id'''
+)
+@click.option(
+    '-a',
+    '--fasta-file',
+    type=click.Path(readable=True),
+    help='Optional FASTA file with the query sequences'
+)
+@click.option(
+    '-dbq',
+    '--db-quality',
+    type=click.INT,
+    help='Quality of the DB used',
+    default=10
+)
+@click.option(
+    '-b',
+    '--bitscore',
+    type=click.FLOAT,
+    help='Minimum bitscore to keep the annotation',
+    default=0.0
+)
+@click.option(
+    '-k',
+    '--attr-value',
+    multiple=True,
+    callback=validate_params,
+    help='''Additional attribute and value to add to each annotation,
+            in the form attr:value''',
+    default=None
+)
+@click.option(
+    '-ft',
+    '--feat-type',
+    default='CDS',
+    help='Feature type to use in the GFF'
+)
+@click.argument(
+    'blast-file',
+    type=click.File('rb'),
+)
+@click.argument(
+    'gff-file',
+    type=click.File('wb'),
+)
+def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,
+                         bitscore, attr_value, feat_type, blast_file, gff_file):
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(gff_file, 'name', repr(gff_file))
     )
 
-    seqs = load_fasta_file(options.fasta_file)
+    seqs = load_fasta_file(fasta_file)
 
-    if options.no_split is True:
+    if no_split is True:
         name_func = lambda x: x
     else:
         name_func = None
 
     iterator = blast.parse_uniprot_blast(
-        options.input_file,
-        bitscore=options.bitscore,
-        db=options.db_used,
-        dbq=options.db_quality,
+        blast_file,
+        bitscore=bitscore,
+        db=db_used,
+        dbq=db_quality,
         name_func=name_func,
-        feat_type=options.feat_type,
+        feat_type=feat_type,
         seq_lengths=seqs
     )
 
-    for annotation in iterator:
-        if options.attr_value is not None:
-            for key, value in options.attr_value:
+    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+    for annotation in bar(iterator):
+        if attr_value is not None:
+            for key, value in attr_value:
                 annotation.set_attr(key, value)
 
-        annotation.to_file(options.output_file)
-
-
-def set_parser():
-    """
-    .. versionchanged:: 0.2.2
-        added *blastdb* command
-
-    Sets command line arguments parser
-    """
-    parser = argparse.ArgumentParser(
-        description='Convert BLAST output to a GFF file',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    subparsers = parser.add_subparsers()
-    parser_u = subparsers.add_parser(
-        'uniprot',
-        help='Blast results from a Uniprot database, by default SwissProt'
-    )
-
-    set_uniprot_parser(parser_u)
-    set_common_options(parser_u)
-    utils.add_basic_options(parser_u, manual=__doc__)
-
-    parser_blastdb = subparsers.add_parser(
-        'blastdb',
-        help='Blast results from a NCBI database, like *nt*'
-    )
-
-    set_blastdb_parser(parser_blastdb)
-    set_common_options(parser_blastdb)
-    utils.add_basic_options(parser_blastdb, manual=__doc__)
-
-    utils.add_basic_options(parser, manual=__doc__)
-
-    return parser
-
-
-def main():
-    "Main function"
-
-    parser = set_parser()
-    options = parser.parse_args()
-
-    mgkit.logger.config_log(options.verbose)
-    try:
-        options.func(options)
-    except AttributeError:
-        parser.print_help()
+        annotation.to_file(gff_file)
