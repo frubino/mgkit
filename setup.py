@@ -38,6 +38,7 @@ install_requires = [
     'statsmodels>=0.8',
     'future',
     'requests',
+    'click>=6',
 ]
 
 # Build of documentation fails on RTD when pytables is
@@ -50,9 +51,6 @@ if not on_rtd:
 with open('README.rst') as file:
     long_description = file.read()
 
-if sys.version_info < (2, 7):
-    install_requires.append('argparse>=1.1')
-    install_requires.append('ordereddict>=1.1')
 
 if sys.version_info < (3, 4):
     #support for enum backported from Python 3.4
@@ -108,7 +106,6 @@ setup(
         'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
