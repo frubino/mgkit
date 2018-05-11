@@ -116,10 +116,12 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     )
 
     lineno = 0
+    comments = 0
 
     for lineno, line in enumerate(file_handle):
         line = line.decode('ascii')
         if line.startswith('#'):
+            comments += 1
             continue
 
         line = line.strip()
@@ -136,7 +138,7 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
 
         yield key, values
 
-    LOG.info('Read %d BLAST records', lineno + 1)
+    LOG.info('Read %d BLAST records', lineno + 1 - comments)
 
 
 def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
