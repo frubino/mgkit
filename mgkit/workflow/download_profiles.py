@@ -146,13 +146,16 @@ Changes
 import os
 import glob
 import argparse
-import urllib2
+from requests.exceptions import HTTPError
 import logging
 import itertools
 import numpy
 import pickle
 import functools
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import BytesIO as StringIO
 import mgkit
 from mgkit.io.fasta import load_fasta
 from mgkit import logger
@@ -510,7 +513,7 @@ def main():
                 reviewed,
                 contact
             )
-        except urllib2.HTTPError, error:
+        except HTTPError as error:
             LOG.error(
                 "Couldn't download sequences for %s: %s",
                 ko_id,
@@ -522,7 +525,7 @@ def main():
         try:
             write_ko_sequences(seqs, taxonomy, output_dir)
             add_profiles_to_length(seqs, length_data)
-        except IOError, error:
+        except IOError as error:
             LOG.error("Couldn't write sequences for %s", ko_id)
             LOG.error(str(error))
             file_list = glob.glob(

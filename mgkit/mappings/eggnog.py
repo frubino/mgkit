@@ -16,7 +16,7 @@ import gzip
 try:
     from cStringIO import StringIO
 except ImportError:
-    from io import BytesIO
+    from io import BytesIO as StringIO
 import itertools
 from ..io import open_file
 from ..net import url_open

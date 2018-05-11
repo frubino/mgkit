@@ -10,7 +10,7 @@ import mgkit
 try:
     from cStringIO import StringIO
 except ImportError:
-    from io import BytesIO
+    from io import BytesIO as StringIO
 
 
 class NoEntryFound(Exception):
