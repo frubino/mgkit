@@ -1,4 +1,6 @@
 """
+.. deprecated:: 0.3.4
+
 Adds coverage information to GFF
 """
 import argparse

@@ -68,6 +68,9 @@ the options of later changing the *gene_id* in the output GFF if necessary.
 Changes
 *******
 
+.. versionchanged:: 0.3.4
+    using *click* instead of *argparse*
+
 .. versionchanged:: 0.2.6
     added *-r* option to *blastdb*
 
@@ -108,30 +111,10 @@ LOG = logging.getLogger(__name__)
 
 @click.group()
 @click.version_option()
+@utils.cite_option
 def main():
     "Main function"
     pass
-
-
-def set_uniprot_parser(parser):
-    parser.add_argument(
-        '-db',
-        '--db-used',
-        action='store',
-        type=str,
-        default='UNIPROT-SP',
-        help='Uniprot database used with BLAST'
-    )
-    parser.add_argument(
-        '-n',
-        '--no-split',
-        action='store_true',
-        default=False,
-        help='''if used, the script assumes that the sequence header contains
-                only the gene id'''
-    )
-
-    parser.set_defaults(func=convert_from_uniprot)
 
 
 def load_fasta_file(file_name):

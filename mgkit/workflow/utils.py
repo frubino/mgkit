@@ -5,9 +5,21 @@ from __future__ import print_function
 import logging
 import argparse
 import sys
+import click
 import mgkit
 
 LOG = logging.getLogger(__name__)
+
+
+def cite_callback(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo(mgkit.CITE)
+    ctx.exit()
+
+
+cite_option = click.option('--cite', is_flag=True, callback=cite_callback,
+                           expose_value=False, is_eager=True)
 
 
 class CiteAction(argparse.Action):
