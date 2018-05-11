@@ -716,7 +716,7 @@ class Annotation(GenomicRange):
         """
         Writes the GFF annotation to *file_handle*
         """
-        file_handle.write(self.to_gff())
+        file_handle.write(self.to_gff().encode('ascii'))
 
     def to_gtf(self, gene_id_attr='uid', sep=' '):
         """

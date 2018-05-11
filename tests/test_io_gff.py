@@ -161,6 +161,20 @@ def test_Annotation_to_gff(gff_file):
     assert gff.from_gff(ann.to_gff()).attr == ann.attr
 
 
+def test_Annotation_to_file(gff_file, tmpdir):
+
+    ann = gff.from_gff(gff_file[0])
+
+    file_name = (tmpdir / 'test-write.gff').strpath
+    file_handle = open_file(file_name, 'wb')
+    ann.to_file(file_handle)
+    file_handle.close()
+
+    ann2 = next(gff.parse_gff(file_name))
+
+    assert ann == ann2
+
+
 def test_Annotation_to_gtf1(gff_file):
 
     ann = gff.from_gff(gff_file[0])
