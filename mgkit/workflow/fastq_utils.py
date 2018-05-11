@@ -469,11 +469,14 @@ def interleave(options):
 
 def main():
     "Main function"
-    options = set_parser().parse_args()
+    parser = set_parser()
+    options = parser.parse_args()
 
-    # configs log and set log level
     mgkit.logger.config_log(options.verbose)
-    options.func(options)
+    try:
+        options.func(options)
+    except AttributeError:
+        parser.print_help()
 
 if __name__ == '__main__':
     main()

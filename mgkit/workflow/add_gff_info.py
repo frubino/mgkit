@@ -1525,7 +1525,11 @@ def set_parser():
 def main():
     "Main function"
 
-    options = set_parser().parse_args()
+    parser = set_parser()
+    options = parser.parse_args()
 
-    logger.config_log(options.verbose)
-    options.func(options)
+    mgkit.logger.config_log(options.verbose)
+    try:
+        options.func(options)
+    except AttributeError:
+        parser.print_help()

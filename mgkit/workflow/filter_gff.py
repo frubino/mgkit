@@ -170,6 +170,7 @@ import functools
 
 import pandas
 
+import mgkit
 from .. import logger
 from . import utils
 from ..io import gff, fasta
@@ -951,8 +952,11 @@ def filter_overlaps(options):
 def main():
     "Main function"
 
-    options = set_parser().parse_args()
+    parser = set_parser()
+    options = parser.parse_args()
 
-    logger.config_log(options.verbose)
-
-    options.func(options)
+    mgkit.logger.config_log(options.verbose)
+    try:
+        options.func(options)
+    except AttributeError:
+        parser.print_help()

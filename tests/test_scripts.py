@@ -1,39 +1,39 @@
 import pytest
 
 
-def test_filter_gff(script_runner):
+def test_filter_gff_version(script_runner):
     assert script_runner.run('filter-gff', '--version').success
 
 
-def test_add_gff_info(script_runner):
+def test_add_gff_info_version(script_runner):
     assert script_runner.run('add-gff-info', '--version').success
 
 
-def test_get_gff_info(script_runner):
+def test_get_gff_info_version(script_runner):
     assert script_runner.run('get-gff-info', '--version').success
 
 
-def test_hmmer2gff(script_runner):
+def test_hmmer2gff_version(script_runner):
     assert script_runner.run('hmmer2gff', '--version').success
 
 
-def test_blast2gff(script_runner):
+def test_blast2gff_version(script_runner):
     assert script_runner.run('blast2gff', '--version').success
 
 
-def test_snp_parser(script_runner):
+def test_snp_parser_version(script_runner):
     assert script_runner.run('snp_parser', '--version').success
 
 
-def test_fastq_utils(script_runner):
+def test_fastq_utils_version(script_runner):
     assert script_runner.run('fastq-utils', '--version').success
 
 
-def test_taxon_utils(script_runner):
+def test_taxon_utils_version(script_runner):
     assert script_runner.run('taxon-utils', '--version').success
 
 
-def test_json2gff(script_runner):
+def test_json2gff_version(script_runner):
     assert script_runner.run('json2gff', '--version').success
 
 
