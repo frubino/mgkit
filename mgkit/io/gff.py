@@ -2,9 +2,9 @@
 This modules define classes and function related to manipulation of GFF/GTF
 files.
 """
-from __future__ import print_function
-from __future__ import division
+from __future__ import print_function, division
 from builtins import object, zip, bytes, range
+import sys
 from io import IOBase
 from future.utils import viewitems
 import random
@@ -1933,16 +1933,20 @@ def split_gff_file(file_handle, name_mask, num_files=2):
         >>> name_mask = 'split-file-{0}.gff'
         >>> split_gff_file(files, name_mask, 5)
     """
-    if not isinstance(file_handle, IOBase):
+    if sys.version_info[0] == 2:
+        test_class = file
+    else:
+        test_class = IOBase
+    if not isinstance(file_handle, test_class):
         if isinstance(file_handle, str):
             file_handle = [file_handle]
 
         file_handle = itertools.chain(
-            *(mgkit.io.open_file(x, 'r') for x in file_handle)
+            *(mgkit.io.open_file(x, 'rb') for x in file_handle)
         )
 
     out_handles = [
-        mgkit.io.open_file(name_mask.format(filen), 'w')
+        mgkit.io.open_file(name_mask.format(filen), 'wb')
         for filen in range(num_files)
     ]
 
