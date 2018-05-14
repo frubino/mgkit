@@ -62,7 +62,8 @@ Changes
 *******
 
 .. versionchanged:: 0.3.4
-    using *click* instead of *argparse*
+    using *click* instead of *argparse*, renamed *split* command *--json* to
+    *--json-out*
 
 .. versionchanged:: 0.3.1
     added *cov* command
