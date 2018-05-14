@@ -152,6 +152,7 @@ outputs a GFF file [gff-file]
     '-db',
     '--db-used',
     default='NCBI-NT',
+    show_default=True,
     help='blastdb used'
 )
 @click.option(
@@ -165,6 +166,7 @@ outputs a GFF file [gff-file]
     '-s',
     '--header-sep',
     default='|',
+    show_default=True,
     help="""The separator for the header, defaults to '|' (pipe)"""
 )
 @click.option(
@@ -172,6 +174,7 @@ outputs a GFF file [gff-file]
     '--gene-index',
     default=1,
     type=click.INT,
+    show_default=True,
     help="""Which of the header columns (0-based) to use as gene_id
             (defaults to 1 - the second column)"""
 )
@@ -193,12 +196,14 @@ outputs a GFF file [gff-file]
     '--db-quality',
     type=click.INT,
     help='Quality of the DB used',
+    show_default=True,
     default=10
 )
 @click.option(
     '-b',
     '--bitscore',
     type=click.FLOAT,
+    show_default=True,
     help='Minimum bitscore to keep the annotation',
     default=0.0
 )
@@ -214,6 +219,7 @@ outputs a GFF file [gff-file]
 @click.option(
     '-ft',
     '--feat-type',
+    show_default=True,
     default='CDS',
     help='Feature type to use in the GFF'
 )
@@ -275,6 +281,7 @@ a Uniprot DB and outputs a GFF file [gff-file]
     '-db',
     '--db-used',
     default='UNIPROT-SP',
+    show_default=True,
     help='Uniprot database used with BLAST'
 )
 @click.option(
@@ -295,6 +302,7 @@ a Uniprot DB and outputs a GFF file [gff-file]
     '--db-quality',
     type=click.INT,
     help='Quality of the DB used',
+    show_default=True,
     default=10
 )
 @click.option(
@@ -302,6 +310,7 @@ a Uniprot DB and outputs a GFF file [gff-file]
     '--bitscore',
     type=click.FLOAT,
     help='Minimum bitscore to keep the annotation',
+    show_default=True,
     default=0.0
 )
 @click.option(
@@ -317,6 +326,7 @@ a Uniprot DB and outputs a GFF file [gff-file]
     '-ft',
     '--feat-type',
     default='CDS',
+    show_default=True,
     help='Feature type to use in the GFF'
 )
 @click.argument('blast-file', type=click.File('rb'), default='-')
