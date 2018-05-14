@@ -84,7 +84,6 @@ setup(
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'blast2gff = mgkit.workflow.blast2gff:main',
             'snp_parser = mgkit.workflow.snp_parser:main',
-            'translate_seq = mgkit.workflow.nuc2aa:main',
             'fastq-utils = mgkit.workflow.fastq_utils:main',
             'taxon-utils = mgkit.workflow.taxon_utils:main',
             'json2gff = mgkit.workflow.json2gff:main',
