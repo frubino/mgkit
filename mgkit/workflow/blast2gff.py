@@ -217,14 +217,8 @@ outputs a GFF file [gff-file]
     default='CDS',
     help='Feature type to use in the GFF'
 )
-@click.argument(
-    'blast-file',
-    type=click.File('rb'),
-)
-@click.argument(
-    'gff-file',
-    type=click.File('wb'),
-)
+@click.argument('blast-file', type=click.File('rb'), default='-')
+@click.argument('gff-file', type=click.File('wb'), default='-')
 def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
                          remove_version, fasta_file, db_quality, bitscore,
                          attr_value, feat_type, blast_file, gff_file):
@@ -325,16 +319,12 @@ a Uniprot DB and outputs a GFF file [gff-file]
     default='CDS',
     help='Feature type to use in the GFF'
 )
-@click.argument(
-    'blast-file',
-    type=click.File('rb'),
-)
-@click.argument(
-    'gff-file',
-    type=click.File('wb'),
-)
+@click.argument('blast-file', type=click.File('rb'), default='-')
+@click.argument('gff-file', type=click.File('wb'), default='-')
 def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,
                          bitscore, attr_value, feat_type, blast_file, gff_file):
+
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
