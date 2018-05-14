@@ -62,6 +62,9 @@ the model can be saved (as a pickle file) and loaded back for analysis
 Changes
 -------
 
+.. versionchanged:: 0.3.4
+    using *click* instead of *argparse. Now *rand_seq* can save and reload models
+
 .. versionchanged:: 0.3.3
     added *sync*, *sample_stream* and *rand_seq* commnads
 
@@ -72,6 +75,7 @@ import argparse
 import logging
 import itertools
 import uuid
+import click
 import numpy
 import scipy.stats
 import pickle
@@ -79,138 +83,23 @@ import pickle
 import mgkit
 from . import utils
 from ..utils import sequence
-from mgkit.io import fasta, fastq, open_file
+from mgkit.io import fasta, open_file
+from mgkit.io.fastq import load_fastq, write_fastq_sequence
 
 LOG = logging.getLogger(__name__)
 
 
-def set_parser():
-    """
-    Sets command line arguments parser
-    """
-    parser = argparse.ArgumentParser(
-        description='Sampling utilities',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    utils.add_basic_options(parser, manual=__doc__)
-
-    subparsers = parser.add_subparsers()
-
-    parser_sample = subparsers.add_parser(
-        'sample',
-        help='Sample a FastA/Q multiple times'
-    )
-
-    set_sample_parser(parser_sample)
-    utils.add_basic_options(parser_sample, manual=__doc__)
-
-    parser_fq_sync = subparsers.add_parser(
-        'sync',
-        help='Syncs a FastQ'
-    )
-
-    set_fq_sync_parser(parser_fq_sync)
-    utils.add_basic_options(parser_fq_sync, manual=__doc__)
-
-    stream_sample_parser = subparsers.add_parser(
-        'sample_stream',
-        help='Sample a FastA/Q one time'
-    )
-
-    set_stream_sample_parser(stream_sample_parser)
-    utils.add_basic_options(stream_sample_parser, manual=__doc__)
-
-    random_seq_parser = subparsers.add_parser(
-        'rand_seq',
-        help='Generates random FastA/Q sequences'
-    )
-
-    set_random_seq_parser(random_seq_parser)
-    utils.add_basic_options(random_seq_parser, manual=__doc__)
-
-    return parser
-
-
-def set_random_seq_parser(parser):
-    parser.add_argument(
-        '-n',
-        '--num-seqs',
-        default=1000,
-        type=int,
-        help='Number of sequences to generate'
-    )
-    parser.add_argument(
-        '-gc',
-        '--gc-content',
-        default=.5,
-        type=float,
-        help='GC content (defaults to .5 out of 1)'
-    )
-    parser.add_argument(
-        '-i',
-        '--infer-params',
-        default=None,
-        type=argparse.FileType('r'),
-        help='Infer parameters GC content and Quality model from file'
-    )
-    parser.add_argument(
-        '-r',
-        '--coding-prop',
-        default=0.,
-        type=float,
-        help='Proportion of coding sequences'
-    )
-    parser.add_argument(
-        '-l',
-        '--length',
-        default=150,
-        type=int,
-        help='Sequence length'
-    )
-    parser.add_argument(
-        '-d',
-        '--const-model',
-        default=False,
-        action='store_true',
-        help='Use a model with constant qualities + noise'
-    )
-    parser.add_argument(
-        '-x',
-        '--dist-loc',
-        default=30.,
-        type=float,
-        help='Use as the starting point quality'
-    )
-    parser.add_argument(
-        '-q',
-        '--fastq',
-        default=False,
-        action='store_true',
-        help='The output file is a FastQ file'
-    )
-    parser.add_argument(
-        '-m',
-        '--save-model',
-        default=None,
-        type=str,
-        help='Save inferred qualities model to a pickle file'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default='-',
-        help='Output FastA/Q file, defaults to stdout'
-    )
-    parser.set_defaults(func=rand_sequence_command)
+@click.group()
+def main():
+    "Main function"
+    pass
 
 
 def infer_parameters(file_handle, fastq_bool):
     LOG.info('Inferring parameters from file')
 
     if fastq_bool:
-        it = fastq.load_fastq(file_handle, num_qual=True)
+        it = load_fastq(file_handle, num_qual=True)
         quals = []
     else:
         it = fasta.load_fasta(file_handle)
@@ -237,19 +126,72 @@ def infer_parameters(file_handle, fastq_bool):
     return length, gc_content, model
 
 
-def rand_sequence_command(options):
+@main.command('rand_seq', help='Generates random FastA/Q sequences')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-n', '--num-seqs', default=1000, type=click.INT, show_default=True,
+              help='Number of sequences to generate')
+@click.option('-gc', '--gc-content', default=.5, type=click.FLOAT, show_default=True,
+              help='GC content (defaults to .5 out of 1)')
+@click.option('-i', '--infer-params', default=None, type=click.File('rb'),
+              help='Infer parameters GC content and Quality model from file')
+@click.option('-r', '--coding-prop', default=0., type=click.FLOAT, show_default=True,
+              help='Proportion of coding sequences')
+@click.option('-l', '--length', default=150, type=click.INT, show_default=True,
+              help='Sequence length')
+@click.option('-d', '--const-model', default=False, is_flag=True,
+              help='Use a model with constant qualities + noise')
+@click.option('-x', '--dist-loc', default=30., type=click.FLOAT, show_default=True,
+              help='Use as the starting point quality')
+@click.option('-q', '--fastq', default=False, is_flag=True,
+              help='The output file is a FastQ file')
+@click.option('-m', '--save-model', default=None, type=click.File('wb'),
+              help='Save inferred qualities model to a pickle file')
+@click.option('-a', '--read-model', default=None, type=click.File('rb'),
+              help='Load qualities model from a pickle file')
+@click.argument('output_file', type=click.File('wb'), default='-')
+def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
+                          coding_prop, length, const_model, dist_loc, fastq,
+                          save_model, read_model, output_file):
 
-    if options.infer_params:
-        length, gc_content, model = infer_parameters(
-            options.infer_params,
-            options.fastq
-        )
-        if options.save_model is not None:
-            pickle.dump(dict(lw=model[0], dist=model[1].args, dist_family='norm'), open_file(options.save_model, 'w'))
-    else:
-        model = None
-        length = options.length
-        gc_content = options.gc_content
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    if fastq:
+        if const_model:
+            LOG.info("Using constant model with loc=%.1f", dist_loc)
+            model = sequence.qualities_model_constant(
+                length=length,
+                loc=dist_loc
+            )
+        elif infer_params:
+            length, gc_content, model = infer_parameters(
+                infer_params,
+                fastq
+            )
+        elif read_model:
+            LOG.info('Reading saved model')
+            read_model = pickle.load(read_model)
+            gc_content = read_model['gc_content']
+            lw = read_model['lw']
+            length = len(lw)
+            model = (
+                lw,
+                getattr(scipy.stats, read_model['dist_family'])(*read_model['dist'])
+            )
+        else:
+            LOG.info("Using decrease model with loc=%.1f", dist_loc)
+            model = sequence.qualities_model_decrease(
+                length=length,
+                loc=dist_loc
+            )
+
+        if save_model is not None:
+            LOG.info('Saving model to file (%s)',
+                     getattr(save_model, 'name', repr(save_model)))
+            pickle.dump(
+                dict(lw=model[0], dist=model[1].args, dist_family='norm',
+                     gc_content=gc_content),
+                save_model
+            )
 
     # A C T G
     prob = [
@@ -259,75 +201,36 @@ def rand_sequence_command(options):
 
     LOG.info(
         '%d Sequences, with a length of %d - coding proportion: %.1f',
-        options.num_seqs,
+        num_seqs,
         length,
-        options.coding_prop
+        coding_prop
     )
     LOG.info("Probability A %.2f, C %.2f, T %.2f, G %.2f", *prob)
 
-    if (not options.infer_params) and options.fastq:
-        if options.const_model:
-            LOG.info("Using constant model with loc=%.1f", options.dist_loc)
-            model = sequence.qualities_model_constant(
-                length=length,
-                loc=options.dist_loc
-            )
-        else:
-            LOG.info("Using decrease model with loc=%.1f", options.dist_loc)
-            model = sequence.qualities_model_decrease(
-                length=length,
-                loc=options.dist_loc
-            )
-
-    num_coding = numpy.round(options.num_seqs * options.coding_prop).astype(int)
+    num_coding = numpy.round(num_seqs * coding_prop).astype(int)
     seq_it = itertools.chain(
         sequence.random_sequences_codon(n=num_coding, length=length),
         sequence.random_sequences(
-            n=options.num_seqs - num_coding,
+            n=num_seqs - num_coding,
             length=length,
             p=prob
         )
     )
-    if options.fastq:
+    if fastq:
         qual_it = sequence.random_qualities(
-            n=options.num_seqs,
+            n=num_seqs,
             length=length,
             model=model
         )
     else:
-        qual_it = itertools.repeat(options.num_seqs)
+        qual_it = itertools.repeat(num_seqs)
 
     for seq, qual in zip(seq_it, qual_it):
         seq_id = str(uuid.uuid4())
-        if options.fastq:
-            fastq.write_fastq_sequence(options.output_file, seq_id, seq, qual)
+        if fastq:
+            write_fastq_sequence(output_file, seq_id, seq, qual)
         else:
-            fasta.write_fasta_sequence(options.output_file, seq_id, seq)
-
-
-def set_fq_sync_parser(parser):
-    parser.add_argument(
-        '-m',
-        '--master-file',
-        type=argparse.FileType('r'),
-        required=True,
-        help=''
-    )
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input FASTQ file, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default='-',
-        help='Input FASTQ file, defaults to stdout'
-    )
-    parser.set_defaults(func=fq_sync_command)
+            fasta.write_fasta_sequence(output_file, seq_id, seq)
 
 
 def compare_header(header1, header2, header_type=None):
@@ -337,21 +240,29 @@ def compare_header(header1, header2, header_type=None):
     else:
         return header1.split(' ')[0] == header2.split(' ')[0]
 
-def fq_sync_command(options):
 
-    master_file = fastq.load_fastq(options.master_file, num_qual=False)
+@main.command('sync', help="""Syncs a FastQ file generated with *sample* with
+              the original pair of files.""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-m', '--master-file', type=click.File('rb'), required=True,
+    help='Resampled FastQ file that is out of sync with the original pair')
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def fq_sync_command(verbose, master_file, input_file, output_file):
+
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    master_file = load_fastq(master_file, num_qual=False)
     master_header = next(master_file)[0]
 
     header_type = fastq.choose_header_type(master_header)
 
     written_count = 0
 
-    for header, seq, qual in fastq.load_fastq(options.input_file, num_qual=False):
+    for header, seq, qual in load_fastq(input_file, num_qual=False):
 
         if compare_header(master_header, header, header_type):
-            fastq.write_fastq_sequence(
-                options.output_file, header, seq, qual
-            )
+            write_fastq_sequence(output_file, header, seq, qual)
             written_count += 1
             try:
                 master_header = next(master_file)[0]
@@ -360,105 +271,70 @@ def fq_sync_command(options):
 
     LOG.info("Wrote %d FASTQ sequences", written_count)
 
-def set_sample_parser(parser):
-    parser.add_argument(
-        '-p',
-        '--prefix',
-        type=str,
-        default='sample',
-        help='Prefix for the file name(s) in output'
-    )
-    parser.add_argument(
-        '-n',
-        '--number',
-        type=int,
-        default=1,
-        help='Number of samples to take'
-    )
-    parser.add_argument(
-        '-r',
-        '--prob',
-        type=float,
-        default=10**-3,
-        help='Probability of picking a sequence'
-    )
-    parser.add_argument(
-        '-x',
-        '--max-seq',
-        type=int,
-        default=10**5,
-        help='Maximum number of sequences'
-    )
-    parser.add_argument(
-        '-q',
-        '--fastq',
-        default=False,
-        action='store_true',
-        help='The input file is a fastq file'
-    )
-    parser.add_argument(
-        '-z',
-        '--gzip',
-        action='store_true',
-        default=False,
-        help='gzip output files'
-    )
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input FASTA/FASTQ file, defaults to stdin'
-    )
-    parser.set_defaults(func=sample_command)
 
-
-def sample_command(options):
+@main.command('sample', help='Sample a FastA/Q multiple times')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-p', '--prefix', default='sample', show_default=True,
+              help='Prefix for the file name(s) in output')
+@click.option('-n', '--number', type=click.INT, default=1, show_default=True,
+              help='Number of samples to take')
+@click.option('-r', '--prob', type=click.FLOAT, default=10**-3,
+              show_default=True, help='Probability of picking a sequence')
+@click.option('-x', '--max-seq', type=click.INT, default=10**5,
+              show_default=True, help='Maximum number of sequences')
+@click.option('-q', '--fastq', default=False, is_flag=True,
+              help='The input file is a fastq file')
+@click.option('-z', '--gzip', is_flag=True, default=False,
+              help='gzip output files')
+@click.argument('input-file', type=click.File('rb'), default='-')
+def sample_command(verbose, prefix, number, prob, max_seq, fastq, gzip,
+                   input_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
         "Sampling %s file (%d) chunks with prefix (%s)",
-        'FastQ' if options.fastq else 'Fasta',
-        options.number,
-        options.prefix
+        'FastQ' if fastq else 'Fasta',
+        number,
+        prefix
     )
 
-    if (options.prob > 1) or (options.prob <= 0):
+    if (prob > 1) or (prob <= 0):
         utils.exit_script(
             "The probability value ({}) is outside the correct range" +
             " (0 < p <= 1)",
             1
         )
 
-    dist = scipy.stats.binom(1, options.prob)
+    dist = scipy.stats.binom(1, prob)
 
     LOG.info(
         "Probability of picking a sequence (%.5f), max number of seqs %d",
-        options.prob,
-        options.max_seq
+        prob,
+        max_seq
     )
-    name_mask = "%s-{0:05}.%s" % (options.prefix, 'fq' if options.fastq else 'fa')
+    name_mask = "%s-{0:05}.%s" % (prefix, 'fq' if fastq else 'fa')
 
-    if options.gzip:
+    if gzip:
         name_mask += '.gz'
         LOG.info("Output files will be compressed (gzip)")
 
     output_files = [
         dict(
-            h=open_file(name_mask.format(i), 'w'),
+            h=open_file(name_mask.format(i), 'wb'),
             c=0
         )
-        for i in range(options.number)
+        for i in range(number)
     ]
 
-    load_func = fastq.load_fastq if options.fastq else fasta.load_fasta
-    write_func = fastq.write_fastq_sequence if options.fastq else fasta.write_fasta_sequence
+    load_func = load_fastq if fastq else fasta.load_fasta
+    write_func = write_fastq_sequence if fastq else fasta.write_fasta_sequence
 
-    for seq in load_func(options.input_file):
+    for seq in load_func(input_file):
         # reached the maximum number of sequences for all samples
-        if all(x['c'] == options.max_seq for x in output_files):
+        if all(x['c'] == max_seq for x in output_files):
             break
 
         for output in output_files:
-            if output['c'] == options.max_seq:
+            if output['c'] == max_seq:
                 continue
 
             if dist.rvs():
@@ -466,86 +342,47 @@ def sample_command(options):
                 output['c'] += 1
 
 
-def set_stream_sample_parser(parser):
-    parser.add_argument(
-        '-r',
-        '--prob',
-        type=float,
-        default=10**-3,
-        help='Probability of picking a sequence'
-    )
-    parser.add_argument(
-        '-x',
-        '--max-seq',
-        type=int,
-        default=10**5,
-        help='Maximum number of sequences'
-    )
-    parser.add_argument(
-        '-q',
-        '--fastq',
-        default=False,
-        action='store_true',
-        help='The input file is a fastq file'
-    )
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input FASTA file, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default='-',
-        help='Output FASTA/FASTQ file, defaults to stdout'
-    )
-    parser.set_defaults(func=stream_sample_command)
+@main.command('sample_stream', help="""Samples a FastA/Q one time, alternative
+              to sample if multiple sampling is not needed""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-r', '--prob', type=click.FLOAT, default=10**-3,
+              help='Probability of picking a sequence')
+@click.option('-x', '--max-seq', type=click.INT, default=10**5,
+              help='Maximum number of sequences')
+@click.option('-q', '--fastq', default=False, is_flag=True,
+              help='The input file is a fastq file')
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def stream_sample_command(verbose, prob, max_seq, fastq, input_file,
+                          output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-
-def stream_sample_command(options):
-
-    if (options.prob > 1) or (options.prob <= 0):
+    if (prob > 1) or (prob <= 0):
         utils.exit_script(
             "The probability value ({}) is outside the correct range" +
             " (0 < p <= 1)",
             1
         )
 
-    dist = scipy.stats.binom(1, options.prob)
+    dist = scipy.stats.binom(1, prob)
 
     LOG.info(
         "Probability of picking a sequence (%.5f), max number of seqs %d",
-        options.prob,
-        options.max_seq
+        prob,
+        max_seq
     )
 
-    load_func = fastq.load_fastq if options.fastq else fasta.load_fasta
-    write_func = fastq.write_fastq_sequence if options.fastq else fasta.write_fasta_sequence
+    load_func = load_fastq if fastq else fasta.load_fasta
+    write_func = write_fastq_sequence if fastq else fasta.write_fasta_sequence
 
     count = 0
 
-    for index, seq in enumerate(load_func(options.input_file)):
+    for index, seq in enumerate(load_func(input_file)):
         # reached the maximum number of sequences for all samples
-        if count >= options.max_seq:
+        if count >= max_seq:
             LOG.info('Read the first %d sequences', index + 1)
             break
 
         if dist.rvs():
-            write_func(options.output_file, *seq)
+            write_func(output_file, *seq)
             count += 1
-
-
-def main():
-    "Main function"
-
-    parser = set_parser()
-    options = parser.parse_args()
-
-    mgkit.logger.config_log(options.verbose)
-    try:
-        options.func(options)
-    except AttributeError:
-        parser.print_help()

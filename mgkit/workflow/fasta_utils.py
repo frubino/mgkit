@@ -156,13 +156,8 @@ def translate_command(verbose, trans_table, fasta_file, output_file):
 @main.command('uid', help="""Changes each header of a FASTA file [file-file] to
               a uid (unique ID)""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option(
-    '-t',
-    '--table',
-    default=None,
-    type=click.File('wb'),
-    help='Filename of a table to record the changes (by default discards it)'
-)
+@click.option('-t', '--table', default=None, type=click.File('wb'),
+              help='Filename of a table to record the changes (by default discards it)')
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def uid_command(verbose, table, fasta_file, output_file):
