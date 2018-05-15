@@ -90,6 +90,8 @@ LOG = logging.getLogger(__name__)
 
 
 @click.group()
+@click.version_option()
+@utils.cite_option
 def main():
     "Main function"
     pass
