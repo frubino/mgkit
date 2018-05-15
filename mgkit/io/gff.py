@@ -820,13 +820,21 @@ class Annotation(GenomicRange):
 
     def get_attr(self, attr, conv=str):
         """
+
+        .. versionchanged:: 0.3.4
+            any attribute can be returned
+
         .. versionchanged:: 0.3.3
             added *seq_id* as special attribute, in addition do *length*
 
         .. versionadded:: 0.1.13
 
         Generic method to get an attribute and convert it to a specific
-        datatype
+        datatype. The order for the lookup is:
+
+        * length
+        * self.attr (dictionary)
+        * getattr(self)
         """
         if attr == 'length':
             return len(self)
@@ -834,12 +842,15 @@ class Annotation(GenomicRange):
         if attr == 'seq_id':
             return self.seq_id
 
-        try:
-            value = self.attr[attr]
-        except KeyError:
-            raise AttributeNotFound('No {0} attribute found'.format(attr))
+        value = self.attr.get(attr, None)
+        if value is not None:
+            return conv(value)
 
-        return conv(value)
+        value = getattr(self, attr, None)
+        if value is not None:
+            return conv(value)
+
+        raise AttributeNotFound('No {0} attribute found'.format(attr))
 
     def set_attr(self, attr, value):
         """
