@@ -1,5 +1,6 @@
 """
 .. deprecated:: 0.3.4
+    removal in 0.4
 
 Adds coverage information to GFF
 """

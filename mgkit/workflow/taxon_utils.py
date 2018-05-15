@@ -171,6 +171,15 @@ def lca_options(parser):
         default=None,
         help='File to which write records with no LCA',
     )
+    parser.add_argument(
+        '-a',
+        '--only-ranked',
+        action='store_true',
+        help='''If set, only taxa that have a rank will be used in the lineage.
+             This is not advised for lineages such as Viruses, where the top
+             levels have no rank''',
+        default=False
+    )
 
 
 def set_lca_contig_parser(parser):
@@ -188,15 +197,6 @@ def set_lca_contig_parser(parser):
         help='''If the GFF file is sorted (all of a sequence annotations are
                 contiguos) can use less memory, `sort -s -k 1,1` can be
                 used''',
-        default=False
-    )
-    parser.add_argument(
-        '-a',
-        '--only-ranked',
-        action='store_true',
-        help='''If set, only taxa that have a rank will be used in the lineage.
-             This is not advised for lineages such as Viruses, where the top
-             levels have no rank''',
         default=False
     )
     parser.add_argument(
@@ -491,7 +491,7 @@ def lca_line_command(options):
                     taxon_ids
                 )
             continue
-        taxon_name, lineage = get_taxon_info(taxonomy, taxon_id)
+        taxon_name, lineage = get_taxon_info(taxonomy, taxon_id, options.only_ranked)
         write_lca_tab(
             options.output_file,
             ';'.join(str(x) for x in taxon_ids),
