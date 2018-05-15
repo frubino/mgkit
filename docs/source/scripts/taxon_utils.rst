@@ -12,7 +12,6 @@ Overview
 Options
 -------
 
-.. argparse::
-   :module: mgkit.workflow.taxon_utils
-   :func: set_parser
-   :prog: taxon_utils
+.. click:: mgkit.workflow.taxon_utils:main
+   :prog: taxon-utils
+   :show-nested:
