@@ -1,7 +1,7 @@
 """
 
 .. versionchanged:: 0.3.4
-    using *click* instead of *argparse
+    using *click* instead of *argparse*
 
 .. versionadded:: 0.2.6
 

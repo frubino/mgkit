@@ -12,7 +12,6 @@ Overview
 Options
 -------
 
-.. argparse::
-   :module: mgkit.workflow.sampling_utils
-   :func: set_parser
+.. click:: mgkit.workflow.sampling_utils:main
    :prog: sampling-utils
+   :show-nested:

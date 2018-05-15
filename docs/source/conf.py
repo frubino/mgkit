@@ -39,6 +39,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinxarg.ext',
+    'sphinx_click.ext',
     #'sphinxcontrib.bibtex',
     #'sphinxcontrib.programoutput', # unused, argparse used instead
 ]

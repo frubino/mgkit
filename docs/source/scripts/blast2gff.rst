@@ -12,7 +12,6 @@ Overview
 Options
 -------
 
-.. argparse::
-   :module: mgkit.workflow.blast2gff
-   :func: set_parser
+.. click:: mgkit.workflow.blast2gff:main
    :prog: blast2gff
+   :show-nested:

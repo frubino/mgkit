@@ -20,4 +20,3 @@ This section detailed information about the scripts included
    download_profiles
    sampling-utils
    download_data
-   nuc2aa

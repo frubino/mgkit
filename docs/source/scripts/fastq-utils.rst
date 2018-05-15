@@ -12,7 +12,6 @@ Overview
 Options
 -------
 
-.. argparse::
-   :module: mgkit.workflow.fastq_utils
-   :func: set_parser
+.. click:: mgkit.workflow.fastq_utils:main
    :prog: fastq-utils
+   :show-nested:
