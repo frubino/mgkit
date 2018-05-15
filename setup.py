@@ -39,7 +39,6 @@ install_requires = [
     'future',
     'requests',
     'click>=6',
-    'tables>=3.3', #pytables in conda
 ]
 
 # Build of documentation fails on RTD when pytables is
