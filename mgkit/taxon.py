@@ -626,7 +626,7 @@ class Taxonomy(object):
             self.gen_name_map()
 
         if rank is None:
-            return self._name_map[s_name.lower()]
+            return list(set(self._name_map[s_name.lower()]))
         else:
             taxon_ids = [
                 taxon_id
