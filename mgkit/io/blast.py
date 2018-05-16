@@ -2,7 +2,7 @@
 Blast routines and parsers
 
 """
-
+import sys
 import logging
 from builtins import range, zip
 from future.utils import viewitems
@@ -292,6 +292,8 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
 
     """
 
+    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
+        file_handle = open_file(file_handle, 'rb')
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
 
