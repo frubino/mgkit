@@ -95,8 +95,7 @@ Changes
 .. versionadded:: 0.1.12
 
 """
-import sys
-import argparse
+
 import logging
 import click
 import progressbar

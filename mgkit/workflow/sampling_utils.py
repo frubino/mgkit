@@ -71,7 +71,6 @@ Changes
 """
 from __future__ import division
 from builtins import range, zip
-import argparse
 import logging
 import itertools
 import uuid
