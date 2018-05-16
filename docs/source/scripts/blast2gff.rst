@@ -8,7 +8,6 @@ Overview
 
 .. automodule:: mgkit.workflow.blast2gff
 
-
 Options
 -------
 

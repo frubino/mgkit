@@ -8,7 +8,6 @@ Overview
 
 .. automodule:: mgkit.workflow.add_gff_info
 
-
 Options
 -------
 

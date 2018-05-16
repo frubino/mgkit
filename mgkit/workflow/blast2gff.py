@@ -9,7 +9,7 @@ Uniprot
 
 The Function :func:`mgkit.io.blast.parse_uniprot_blast` is used, which filters
 BLAST hits based on bitscore and adds by default a *db* attribute to the
-annotation with the value `UNIPROT-SP`, indicating that the SwissProt db is
+annotation with the value *UNIPROT-SP*, indicating that the SwissProt db is
 used and a *dbq* attribute with the value 10. The feature type used in the GFF
 is CDS.
 
@@ -88,9 +88,7 @@ Changes
     added *-ft* option
 
 .. versionchanged:: 0.1.13
-
-* added *-n* parameter to *uniprot* command
-* added *-k* option to *uniprot* command
+    added *-n* and *-k* parameters to *uniprot* command
 
 .. versionadded:: 0.1.12
 

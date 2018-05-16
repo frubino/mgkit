@@ -14,6 +14,7 @@ reportlab>=3.2.0
 jupyter-console
 statsmodels>=0.8
 sphinx-click
+patsy>=0.5
 HTSeq
 pymongo
 semidbm

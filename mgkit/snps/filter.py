@@ -118,7 +118,7 @@ def get_default_filters(taxonomy, **kwargs):
 def pipe_filters(iterable, *funcs):
     """
     Pipes a list of filter to iterable, using the python ifilter function in
-    the itertools module. Now using ``builtins.filter`
+    the itertools module. Now using `builtins.filter`
     """
     for func in funcs:
         iterable = filter(func, iterable)
