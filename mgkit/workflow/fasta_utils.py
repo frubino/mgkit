@@ -56,33 +56,13 @@ def main():
 
 @main.command('split', help="""Splits a FASTA file [fasta-file] in a number of
               fragments""")
-@click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-)
-@click.option(
-    '-p',
-    '--prefix',
-    default='split',
-    show_default=True,
-    help='Prefix for the file name in output'
-)
-@click.option(
-    '-n',
-    '--number',
-    type=click.INT,
-    default=10,
-    show_default=True,
-    help='Number of chunks into which split the FASTA file'
-)
-@click.option(
-    '-z',
-    '--gzip',
-    is_flag=True,
-    default=False,
-    help='gzip output files'
-)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-p', '--prefix', default='split', show_default=True,
+              help='Prefix for the file name in output')
+@click.option('-n', '--number', type=click.INT, default=10, show_default=True,
+              help='Number of chunks into which split the FASTA file')
+@click.option('-z', '--gzip', is_flag=True, default=False,
+              help='gzip output files')
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 def split_command(verbose, prefix, number, gzip, fasta_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -120,27 +100,11 @@ def translate_seq(name, seq, trans_table):
 @main.command('translate', help="""Translate FASTA file [fasta-file] in all 6
               frames to [output-file]""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option(
-    '-t',
-    '--trans-table',
-    default='universal',
-    type=click.Choice([
-        table_name.lower() for table_name in dir(trans_tables)
-        if not table_name.startswith('_')
-    ]),
-    show_default=True,
-    help='translation table'
-)
-@click.argument(
-    'fasta-file',
-    type=click.File('rb'),
-    default='-',
-)
-@click.argument(
-    'output-file',
-    type=click.File('wb'),
-    default='-',
-)
+@click.option('-t', '--trans-table', default='universal', show_default=True,
+              type=click.Choice([table_name.lower() for table_name in dir(trans_tables) if not table_name.startswith('_')]),
+              help='translation table')
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
 def translate_command(verbose, trans_table, fasta_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(

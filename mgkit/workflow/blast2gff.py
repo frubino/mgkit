@@ -140,86 +140,27 @@ def validate_params(ctx, param, values):
 Reads a BLAST output file [blast-file] in tabular format (using -outfmt 6) and
 outputs a GFF file [gff-file]
 """)
-@click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-)
-@click.option(
-    '-db',
-    '--db-used',
-    default='NCBI-NT',
-    show_default=True,
-    help='blastdb used'
-)
-@click.option(
-    '-n',
-    '--no-split',
-    is_flag=True,
-    help='''if used, the script assumes that the sequence header will be
-            used as gene_id'''
-)
-@click.option(
-    '-s',
-    '--header-sep',
-    default='|',
-    show_default=True,
-    help="""The separator for the header, defaults to '|' (pipe)"""
-)
-@click.option(
-    '-i',
-    '--gene-index',
-    default=1,
-    type=click.INT,
-    show_default=True,
-    help="""Which of the header columns (0-based) to use as gene_id
-            (defaults to 1 - the second column)"""
-)
-@click.option(
-    '-r',
-    '--remove-version',
-    is_flag=True,
-    help='''if used, the script removes the *version* information from the
-            gene_id'''
-)
-@click.option(
-    '-a',
-    '--fasta-file',
-    type=click.Path(readable=True),
-    help='Optional FASTA file with the query sequences'
-)
-@click.option(
-    '-dbq',
-    '--db-quality',
-    type=click.INT,
-    help='Quality of the DB used',
-    show_default=True,
-    default=10
-)
-@click.option(
-    '-b',
-    '--bitscore',
-    type=click.FLOAT,
-    show_default=True,
-    help='Minimum bitscore to keep the annotation',
-    default=0.0
-)
-@click.option(
-    '-k',
-    '--attr-value',
-    multiple=True,
-    callback=validate_params,
-    help='''Additional attribute and value to add to each annotation,
-            in the form attr:value''',
-    default=None
-)
-@click.option(
-    '-ft',
-    '--feat-type',
-    show_default=True,
-    default='CDS',
-    help='Feature type to use in the GFF'
-)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-db', '--db-used', default='NCBI-NT', show_default=True,
+              help='blastdb used')
+@click.option('-n', '--no-split', is_flag=True,
+              help='''if used, the script assumes that the sequence header will be used as gene_id''')
+@click.option('-s', '--header-sep', default='|', show_default=True,
+              help="""The separator for the header, defaults to '|' (pipe)""")
+@click.option('-i', '--gene-index', default=1, type=click.INT, show_default=True,
+              help="""Which of the header columns (0-based) to use as gene_id (defaults to 1 - the second column)""")
+@click.option('-r', '--remove-version', is_flag=True,
+              help='''if used, the script removes the *version* information from the gene_id''')
+@click.option('-a', '--fasta-file', type=click.Path(readable=True),
+              help='Optional FASTA file with the query sequences')
+@click.option('-dbq', '--db-quality', type=click.INT, show_default=True,
+              default=10, help='Quality of the DB used')
+@click.option('-b', '--bitscore', type=click.FLOAT, show_default=True,
+              help='Minimum bitscore to keep the annotation', default=0.0)
+@click.option('-k', '--attr-value', multiple=True, callback=validate_params,
+              default=None, help='''Additional attribute and value to add to each annotation, in the form attr:value''')
+@click.option('-ft', '--feat-type', show_default=True, default='CDS',
+              help='Feature type to use in the GFF')
 @click.argument('blast-file', type=click.File('rb'), default='-')
 @click.argument('gff-file', type=click.File('wb'), default='-')
 def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
@@ -269,63 +210,21 @@ def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
 Reads a BLAST output file [blast-file] in tabular format (using -outfmt 6) from
 a Uniprot DB and outputs a GFF file [gff-file]
 """)
-@click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-)
-@click.option(
-    '-db',
-    '--db-used',
-    default='UNIPROT-SP',
-    show_default=True,
-    help='Uniprot database used with BLAST'
-)
-@click.option(
-    '-n',
-    '--no-split',
-    is_flag=True,
-    help='''if used, the script assumes that the sequence header will be
-            used as gene_id'''
-)
-@click.option(
-    '-a',
-    '--fasta-file',
-    type=click.Path(readable=True),
-    help='Optional FASTA file with the query sequences'
-)
-@click.option(
-    '-dbq',
-    '--db-quality',
-    type=click.INT,
-    help='Quality of the DB used',
-    show_default=True,
-    default=10
-)
-@click.option(
-    '-b',
-    '--bitscore',
-    type=click.FLOAT,
-    help='Minimum bitscore to keep the annotation',
-    show_default=True,
-    default=0.0
-)
-@click.option(
-    '-k',
-    '--attr-value',
-    multiple=True,
-    callback=validate_params,
-    help='''Additional attribute and value to add to each annotation,
-            in the form attr:value''',
-    default=None
-)
-@click.option(
-    '-ft',
-    '--feat-type',
-    default='CDS',
-    show_default=True,
-    help='Feature type to use in the GFF'
-)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-db', '--db-used', default='UNIPROT-SP', show_default=True,
+              help='Uniprot database used with BLAST')
+@click.option('-n', '--no-split', is_flag=True,
+              help='''if used, the script assumes that the sequence header will be used as gene_id''')
+@click.option('-a', '--fasta-file', type=click.Path(readable=True),
+              help='Optional FASTA file with the query sequences')
+@click.option('-dbq', '--db-quality', type=click.INT, show_default=True,
+              default=10, help='Quality of the DB used')
+@click.option('-b', '--bitscore', type=click.FLOAT, show_default=True,
+              default=0.0, help='Minimum bitscore to keep the annotation')
+@click.option('-k', '--attr-value', multiple=True, callback=validate_params,
+              default=None, help='''Additional attribute and value to add to each annotation, in the form attr:value''')
+@click.option('-ft', '--feat-type', default='CDS', show_default=True,
+              help='Feature type to use in the GFF')
 @click.argument('blast-file', type=click.File('rb'), default='-')
 @click.argument('gff-file', type=click.File('wb'), default='-')
 def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,

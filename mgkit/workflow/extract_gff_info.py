@@ -115,32 +115,14 @@ def main():
 @main.command('sequence', help='''Extract the nucleotidic sequences of
 annotations from [gff-file] to [fasta-file]''')
 @click.option('-v', '--verbose', is_flag=True)
-@click.option(
-    '-r',
-    '--reverse',
-    help='Reverse complement sequences on the - strand',
-    is_flag=True
-)
-@click.option(
-    '-w',
-    '--no-wrap',
-    help='Write the sequences on one line',
-    is_flag=True
-)
-@click.option(
-    '-s',
-    '--split',
-    help='''Split the sequence header of the reference at the first
-    space, to emulate BLAST behaviour''',
-    is_flag=True
-)
-@click.option(
-    '-f',
-    '--reference',
-    type=click.File('rb'),
-    default=None,
-    help='Fasta file containing the reference sequences of the GFF file'
-)
+@click.option('-r', '--reverse', is_flag=True,
+              help='Reverse complement sequences on the - strand')
+@click.option('-w', '--no-wrap', is_flag=True,
+              help='Write the sequences on one line')
+@click.option('-s', '--split', is_flag=True,
+              help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
+@click.option('-f', '--reference', type=click.File('rb'), default=None,
+              help='Fasta file containing the reference sequences of the GFF file')
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('fasta-file', type=click.File('wb'), default='-')
 def sequence_command(verbose, reverse, no_wrap, split, reference, gff_file,
@@ -174,23 +156,10 @@ def sequence_command(verbose, reverse, no_wrap, split, reference, gff_file,
 
 @main.command('dbm', help='''Creates a dbm database with annotations from file
 [gff-file] into db [output-dir]''')
-@click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-)
-@click.option(
-    '-d',
-    '--output-dir',
-    default='gff-dbm',
-    show_default=True,
-    help='Directory for the database'
-)
-@click.argument(
-    'gff-file',
-    type=click.File('rb'),
-    default='-',
-)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-d', '--output-dir', default='gff-dbm', show_default=True,
+              help='Directory for the database')
+@click.argument('gff-file', type=click.File('rb'), default='-')
 def dbm_command(verbose, output_dir, gff_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -200,31 +169,13 @@ def dbm_command(verbose, output_dir, gff_file):
 
 @main.command('mongodb', help='''Extract annotations from a GFF [gff-file] file
 and makes output for MongoDB [output-file]''')
-@click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-)
-@click.option(
-    '-t',
-    '--taxonomy',
-    type=click.File('rb'),
-    default=None,
-    help='Taxonomy used to populate the lineage'
-)
-@click.option(
-    '-c',
-    '--no-cache',
-    is_flag=True,
-    help='No cache for the lineage function'
-)
-@click.option(
-    '-i',
-    '--indent',
-    type=click.INT,
-    default=None,
-    help='If used, the json will be written in a human readble form'
-)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-t', '--taxonomy', type=click.File('rb'), default=None,
+              help='Taxonomy used to populate the lineage')
+@click.option('-c', '--no-cache', is_flag=True,
+              help='No cache for the lineage function')
+@click.option('-i', '--indent', type=click.INT, default=None,
+              help='If used, the json will be written in a human readble form')
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def mongodb_command(verbose, taxonomy, no_cache, indent, gff_file, output_file):
@@ -260,18 +211,9 @@ def mongodb_command(verbose, taxonomy, no_cache, indent, gff_file, output_file):
 
 @main.command('gtf', help='''Extract annotations from a GFF file [gff-file] to
 a GTF file [gtf-file]''')
-@click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-)
-@click.option(
-    '-g',
-    '--gene-id',
-    default='gene_id',
-    show_default=True,
-    help='GFF attribute to use for the GTF *gene_id* attribute'
-)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-g', '--gene-id', default='gene_id', show_default=True,
+              help='GFF attribute to use for the GTF *gene_id* attribute')
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('gtf-file', type=click.File('wb'), default='-')
 def gtf_command(verbose, gene_id, gff_file, gtf_file):
@@ -293,33 +235,13 @@ def gtf_command(verbose, gene_id, gff_file, gtf_file):
 
 @main.command('split', help="""Split annotations from a GFF file [gff-file] to
 several files starting with [prefix]""")
-@click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-)
-@click.option(
-    '-p',
-    '--prefix',
-    default='split',
-    show_default=True,
-    help='Prefix for the file name in output'
-)
-@click.option(
-    '-n',
-    '--number',
-    type=click.INT,
-    default=10,
-    show_default=True,
-    help='Number of chunks into which split the GFF file'
-)
-@click.option(
-    '-z',
-    '--gzip',
-    is_flag=True,
-    default=False,
-    help='gzip output files'
-)
+@click.option('-v','--verbose', is_flag=True,)
+@click.option('-p', '--prefix', default='split', show_default=True,
+              help='Prefix for the file name in output')
+@click.option('-n', '--number', type=click.INT, default=10, show_default=True,
+              help='Number of chunks into which split the GFF file')
+@click.option('-z', '--gzip', is_flag=True, default=False,
+              help='gzip output files')
 @click.argument('gff-file', type=click.File('rb'), default='-')
 def split_command(verbose, prefix, number, gzip, gff_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -344,40 +266,15 @@ def split_command(verbose, prefix, number, gzip, gff_file):
 
 @main.command('cov', help="""Report on how much a sequence length is covered
 by annotations in [gff-file]""")
-@click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-)
-@click.option(
-    '-f',
-    '--reference',
-    type=click.File('rb'),
-    required=True,
-    help='Reference FASTA file for the GFF'
-)
-@click.option(
-    '-j',
-    '--json-out',
-    is_flag=True,
-    default=False,
-    help='The output will be a JSON dictionary'
-)
-@click.option(
-    '-s',
-    '--strand-specific',
-    is_flag=True,
-    default=False,
-    help='If the coverage must be calculated on each strand'
-)
-@click.option(
-    '-r',
-    '--rename',
-    default=False,
-    is_flag=True,
-    help='Emulate BLAST output (use only the header part before the' +
-    ' first space)'
-)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-f', '--reference', type=click.File('rb'), required=True,
+              help='Reference FASTA file for the GFF')
+@click.option('-j', '--json-out', is_flag=True, default=False,
+              help='The output will be a JSON dictionary')
+@click.option('-s', '--strand-specific', is_flag=True, default=False,
+              help='If the coverage must be calculated on each strand')
+@click.option('-r', '--rename', default=False, is_flag=True,
+              help='Emulate BLAST output (use only the header part before the first space)')
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def coverage_command(verbose, reference, json_out, strand_specific, rename,

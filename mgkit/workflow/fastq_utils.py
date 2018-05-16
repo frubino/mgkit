@@ -41,30 +41,6 @@ def main():
     pass
 
 
-
-def set_parser():
-    parser_convert = subparsers.add_parser('convert', help='Convert to FASTA')
-    parser_convert.add_argument(
-        'input_file',
-        type=argparse.FileType('r'),
-        action='store',
-        nargs='?',
-        default='-',
-        help="Input FastQ file"
-    )
-    parser_convert.add_argument(
-        'output_file',
-        type=argparse.FileType('w'),
-        action='store',
-        nargs='?',
-        default=sys.stdout,
-        help="Output FASTA file"
-    )
-    parser_convert.set_defaults(func=convert_command)
-
-    return parser
-
-
 @main.command('convert', help="""Convert FastQ file [fastq-file] to FASTA file
               [fasta-file]""")
 @click.option('-v', '--verbose', is_flag=True)
@@ -187,13 +163,8 @@ def sort(verbose, mate1_input, mate2_input, mate1_output, mate2_output):
 @main.command('di', help="""Deinterleave sequences from [fastq-file], into
               [mate1-file] and [mate2-file]""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option(
-    '-s',
-    '--strip',
-    is_flag=True,
-    default=False,
-    help="Strip additional info"
-)
+@click.option('-s', '--strip', is_flag=True, default=False,
+              help="Strip additional info")
 @click.argument('fastq-file', type=click.File('rb'), default='-')
 @click.argument('mate1-file', type=click.File('wb'))
 @click.argument('mate2-file', type=click.File('wb'))

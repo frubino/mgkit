@@ -415,32 +415,25 @@ def validate_params(ctx, param, values, convert=str):
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('--str-eq', multiple=True,
               callback=functools.partial(validate_params, convert=str),
-              help='''filter by custom key:value, if the argument is 'key:value' the
-              annotation is kept if it contains an attribute 'key' whose value
-              is exactly 'value' as a string''')
+              help='''filter by custom key:value, if the argument is 'key:value' the annotation is kept if it contains an attribute 'key' whose value is exactly 'value' as a string''')
 @click.option('--str-in', multiple=True,
               callback=functools.partial(validate_params, convert=str),
               help="Same as '--str-eq' but 'value' is contained in the attribute")
 @click.option('--num-eq', multiple=True,
               callback=functools.partial(validate_params, convert=float),
-              help="Same as '--str-eq' but 'value' is a number which is equal or " +
-              "greater than")
+              help="Same as '--str-eq' but 'value' is a number which is equal or greater than")
 @click.option('--num-ge', multiple=True,
               callback=functools.partial(validate_params, convert=float),
-              help="Same as '--str-eq' but 'value' is a number which is equal or " +
-              "greater than")
+              help="Same as '--str-eq' but 'value' is a number which is equal or greater than")
 @click.option('--num-le', multiple=True,
               callback=functools.partial(validate_params, convert=float),
-              help="Same as '--num-ge' but 'value' is a number which is equal " +
-              "or less than")
+              help="Same as '--num-ge' but 'value' is a number which is equal or less than")
 @click.option('--num-gt', multiple=True,
               callback=functools.partial(validate_params, convert=float),
-              help="Same as '--str-eq' but 'value' is a number which is " +
-              "greater than")
+              help="Same as '--str-eq' but 'value' is a number which is greater than")
 @click.option('--num-lt', multiple=True,
               callback=functools.partial(validate_params, convert=float),
-              help="Same as '--num-ge' but 'value' is a number which is " +
-              "less than")
+              help="Same as '--num-ge' but 'value' is a number which is less than")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def filter_values(verbose, str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_lt,
@@ -490,9 +483,7 @@ def make_choose_func(values):
 @click.option('-s', '--size', type=click.INT, default=100,
               help='Size of the overlap that triggers the filter')
 @click.option('-t', '--sorted', is_flag=True, default=False,
-              help='''If the GFF file is sorted (all of a sequence annotations
-              are contiguos and sorted by strand) can use less memory,
-              `sort -s -k 1,1 -k 7,7` can be used''')
+              help='''If the GFF file is sorted (all of a sequence annotations are contiguos and sorted by strand) can use less memory, `sort -s -k 1,1 -k 7,7` can be used''')
 @click.option('-c', '--choose-func', default='dbq,bitscore,length',
               help='Function to choose between two overlapping annotations')
 @click.option('-a', '--sort-attr', default='bitscore',

@@ -248,17 +248,13 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
 @click.option('-n', '--no-lca', type=click.File('wb'), default=None,
               help='File to which write records with no LCA')
 @click.option('-a', '--only-ranked',is_flag=True, default=False,
-              help='''If set, only taxa that have a rank will be used in the lineageself.
-              This is not advised for lineages such as Viruses, where the top
-              levels have no rank''')
+              help='''If set, only taxa that have a rank will be used in the lineageself. This is not advised for lineages such as Viruses, where the top levels have no rank''')
 @click.option('-b', '--bitscore', default=0, type=click.FLOAT,
               help='Minimum bitscore accepted')
 @click.option('-m', '--rename', is_flag=True, default=False,
               help='Emulates BLAST behaviour for headers (keep left of first space)')
 @click.option('-s', '--sorted', is_flag=True, default=False,
-              help='''If the GFF file is sorted (all of a sequence annotations
-              are contiguos) can use less memory, `sort -s -k 1,1` can be
-              used''')
+              help='''If the GFF file is sorted (all of a sequence annotations are contiguos) can use less memory, `sort -s -k 1,1` can be used''')
 @click.option('-ft', '--feat-type', default='LCA', show_default=True,
               help='Feature type used if the output is a GFF (default is *LCA*)')
 @click.option('-r', '--reference', default=None, type=click.File('rb'),
@@ -266,8 +262,7 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
 @click.option('-b', '--simple-table', is_flag=True, default=False,
               help='Uses a 2 column table format (seq_id taxon_id) TAB separated')
 @click.option('-kt', '--krona-total', type=click.INT, default=None,
-              help='''Total number of raw sequences (used to output correct
-              percentages in Krona''')
+              help='''Total number of raw sequences (used to output correct percentages in Krona''')
 @click.option('-f', '--out-format', default='tab', show_default=True,
               type=click.Choice(['krona', 'json', 'tab', 'gff']),
               help='Output a file that can be read by Krona (text)')
@@ -415,9 +410,7 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
 @click.option('-n', '--no-lca', type=click.File('wb'), default=None,
               help='File to which write records with no LCA')
 @click.option('-a', '--only-ranked',is_flag=True, default=False,
-              help='''If set, only taxa that have a rank will be used in the lineageself.
-              This is not advised for lineages such as Viruses, where the top
-              levels have no rank''')
+              help='''If set, only taxa that have a rank will be used in the lineageself. This is not advised for lineages such as Viruses, where the top levels have no rank''')
 @click.option('-s', '--separator', default='\t',
               help='separator for taxon_ids (defaults to TAB)')
 @click.argument('input-file', type=click.File('rb'), default='-')
