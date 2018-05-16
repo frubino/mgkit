@@ -28,6 +28,9 @@ Changes
 .. versionchanged:: 0.3.1
     added *translate* and *uid* command
 
+.. versionchanged:: 0.3.4
+    ported to *click*
+
 """
 
 from __future__ import division
