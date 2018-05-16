@@ -3,7 +3,7 @@
 
 Uniprot file formats
 """
-
+import sys
 import logging
 from . import open_file
 
@@ -47,8 +47,10 @@ def parse_uniprot_mappings(file_handle, gene_ids=None, mappings=None,
         tuple: the first element is the gene ID, the second is the mapping type
         and third element is the mapped ID
     """
+    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
+        file_handle = open_file(file_handle, 'rb')
     if isinstance(file_handle, str):
-        file_handle = open_file(file_handle, 'r')
+        file_handle = open_file(file_handle, 'rb')
 
     LOG.info(
         "Loading Uniprot Mappings from file (%s)",
@@ -85,8 +87,11 @@ def parse_uniprot_mappings(file_handle, gene_ids=None, mappings=None,
     LOG.info("Read %d lines", idx + 1)
 
 
-def uniprot_mappings_to_dict(file_handle, gene_ids, mappings):
+def uniprot_mappings_to_dict(file_handle, gene_ids, mappings, num_lines=None):
     """
+    .. versionchanged:: 0.3.4
+        added *num_lines*
+
     Parses a Uniprot mapping `file <ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz>`_,
     returning a generator of dictionaries with the mappings requested.
 
@@ -95,6 +100,7 @@ def uniprot_mappings_to_dict(file_handle, gene_ids, mappings):
         gene_ids (None, set): if not None, the returned mappings are for the
             gene IDs specified
         mappings (None, set): mappings to be returned
+        num_lines (int, None): passed to :func:`parse_uniprot_mappings`
 
     Yields:
         tuple: the first element is the gene ID, the second is a dictionary
@@ -104,7 +110,8 @@ def uniprot_mappings_to_dict(file_handle, gene_ids, mappings):
     iterator = parse_uniprot_mappings(
         file_handle,
         gene_ids=gene_ids,
-        mappings=mappings
+        mappings=mappings,
+        num_lines=num_lines
     )
 
     curr_gene = ''

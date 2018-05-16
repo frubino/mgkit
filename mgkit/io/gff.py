@@ -57,7 +57,7 @@ def write_gff(annotations, file_handle, verbose=True):
     """
 
     if isinstance(file_handle, str):
-        file_handle = open(file_handle, 'w')
+        file_handle = open_file(file_handle, 'wb')
 
     if verbose:
         LOG.info(
