@@ -152,31 +152,6 @@ def main():
     pass
 
 
-def set_common_options(parser):
-    parser.add_argument(
-        '-t',
-        '--taxonomy',
-        type=str,
-        default=None,
-        help='Taxonomy file',
-        required=True
-    )
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input file, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default=sys.stdout,
-        help='Output file, defaults to stdout'
-    )
-
-
 def write_lca_gff(file_handle, seq_id, seq, taxon_id, taxon_name, lineage,
                   feat_type):
     annotation = gff.from_sequence(
