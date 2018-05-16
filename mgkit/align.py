@@ -162,6 +162,9 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
 
 def read_samtools_depth(file_handle, num_seqs=10000):
     """
+    ..versionchanged:: 0.3.4
+        *num_seqs* can be None to avoid a log message
+
     .. versionadded:: 0.3.0
 
     Reads a samtools *depth* file, returning a generator that yields the
@@ -179,7 +182,8 @@ def read_samtools_depth(file_handle, num_seqs=10000):
 
     Arguments:
         file_handle (file): file handle of the coverage file
-        num_seqs (int): number of sequence that fires a log message
+        num_seqs (int or None): number of sequence that fires a log message. If
+            None, no message is triggered
 
     Yields:
         tuple: the first element is the sequence identifier and the second one
@@ -203,7 +207,7 @@ def read_samtools_depth(file_handle, num_seqs=10000):
                 curr_key = name
             else:
                 line_no += 1
-                if line_no % num_seqs == 0:
+                if (num_seqs is None) and (line_no % num_seqs == 0):
                     LOG.info('Read %d sequence coverage', line_no)
                 yield curr_key, numpy.array(curr_cov)
                 curr_key = name
