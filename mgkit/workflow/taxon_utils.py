@@ -105,7 +105,8 @@ Changes
 *******
 
 .. versionchanged:: 0.3.4
-    changed interface and behaviour for *filter*, also now can filter tables
+    changed interface and behaviour for *filter*, also now can filter tables;
+    *lca* has changed the interface and allows the output of a 2 column table
 
 .. versionchanged:: 0.3.1
     added *to_hdf* command
@@ -201,6 +202,12 @@ def write_lca_tab(file_handle, seq_id, taxon_id, taxon_name, rank, lineage):
     )
 
 
+def write_lca_tab_simple(file_handle, seq_id, taxon_id):
+    file_handle.write(
+        "{}\t{}\n".format(seq_id, taxon_id).encode('ascii')
+    )
+
+
 def get_taxon_info(taxonomy, taxon_id, only_ranked):
     if taxonomy[taxon_id].s_name:
         taxon_name = taxonomy[taxon_id].s_name
@@ -281,6 +288,8 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
               help='Feature type used if the output is a GFF (default is *LCA*)')
 @click.option('-r', '--reference', default=None, type=click.File('rb'),
               help='Reference file for the GFF, if supplied a GFF file is the output')
+@click.option('-b', '--simple-table', is_flag=True, default=False,
+              help='Uses a 2 column table format (seq_id taxon_id) TAB separated')
 @click.option('-kt', '--krona-total', type=click.INT, default=None,
               help='''Total number of raw sequences (used to output correct
               percentages in Krona''')
@@ -290,8 +299,8 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
-                       rename, sorted, feat_type, reference, krona_total,
-                       out_format, gff_file, output_file):
+                       rename, sorted, feat_type, reference, simple_table,
+                       krona_total, out_format, gff_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
         'Writing to file (%s)',
@@ -404,14 +413,17 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
                 only_ranked
             )
         elif out_format == 'tab':
-            write_lca_tab(
-                output_file,
-                seq_id,
-                taxon_id,
-                taxon_name,
-                taxonomy[taxon_id].rank,
-                lineage
-            )
+            if simple_table:
+                write_lca_tab_simple(output_file, seq_id, taxon_id)
+            else:
+                write_lca_tab(
+                    output_file,
+                    seq_id,
+                    taxon_id,
+                    taxon_name,
+                    taxonomy[taxon_id].rank,
+                    lineage
+                )
     if (out_format == 'krona') and (krona_total is not None):
         for index in range(count, krona_total):
             output_file.write('Unknown\n')
