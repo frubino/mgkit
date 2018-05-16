@@ -12,7 +12,6 @@ Overview
 Options
 -------
 
-.. argparse::
-   :module: mgkit.workflow.add_gff_info
-   :func: set_parser
+.. click:: mgkit.workflow.add_gff_info:main
    :prog: add-gff-info
+   :show-nested:
