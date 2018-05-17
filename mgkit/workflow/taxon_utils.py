@@ -249,7 +249,7 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
               help='File to which write records with no LCA')
 @click.option('-a', '--only-ranked',is_flag=True, default=False,
               help='''If set, only taxa that have a rank will be used in the lineageself. This is not advised for lineages such as Viruses, where the top levels have no rank''')
-@click.option('-b', '--bitscore', default=0, type=click.FLOAT,
+@click.option('-b', '--bitscore', default=0, type=click.FLOAT, show_default=True,
               help='Minimum bitscore accepted')
 @click.option('-m', '--rename', is_flag=True, default=False,
               help='Emulates BLAST behaviour for headers (keep left of first space)')
