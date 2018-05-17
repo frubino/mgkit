@@ -839,16 +839,15 @@ class Annotation(GenomicRange):
         if attr == 'length':
             return len(self)
 
-        if attr == 'seq_id':
-            return self.seq_id
-
         value = self.attr.get(attr, None)
         if value is not None:
             return conv(value)
 
-        value = getattr(self, attr, None)
-        if value is not None:
-            return conv(value)
+        if attr in ('seq_id', 'source', 'feat_type', 'start', 'end', 'score',
+                    'strand', 'phase'):
+            value = getattr(self, attr, None)
+            if value is not None:
+                return conv(value)
 
         raise AttributeNotFound('No {0} attribute found'.format(attr))
 
