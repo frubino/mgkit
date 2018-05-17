@@ -3,7 +3,7 @@
 
 Misc functions for count data
 """
-
+import sys
 import logging
 import itertools
 import functools
@@ -47,13 +47,16 @@ def load_htseq_counts(file_handle, conv_func=int):
 
     """
 
-    if isinstance(file_handle, str):
-        file_handle = open_file(file_handle, 'r')
+    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
+        file_handle = open_file(file_handle, 'rb')
+    elif isinstance(file_handle, str):
+        file_handle = open_file(file_handle, 'rb')
 
     if getattr(file_handle, 'name', None) is not None:
         LOG.info("Loading HTSeq-count file %s", file_handle.name)
 
     for line in file_handle:
+        line = line.decode('ascii')
         gene_id, count = line.rstrip().split('\t')
 
         if line.startswith('__') or (gene_id in SKIP):
