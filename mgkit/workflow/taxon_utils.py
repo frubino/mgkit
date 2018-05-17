@@ -259,7 +259,7 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
               help='Feature type used if the output is a GFF (default is *LCA*)')
 @click.option('-r', '--reference', default=None, type=click.File('rb'),
               help='Reference file for the GFF, if supplied a GFF file is the output')
-@click.option('-b', '--simple-table', is_flag=True, default=False,
+@click.option('-p', '--simple-table', is_flag=True, default=False,
               help='Uses a 2 column table format (seq_id taxon_id) TAB separated')
 @click.option('-kt', '--krona-total', type=click.INT, default=None,
               help='''Total number of raw sequences (used to output correct percentages in Krona''')
@@ -334,7 +334,7 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
                 (annotation.taxon_id for annotation in seq_ann)
             )
         except taxon.NoLcaFound as error:
-            LOG.error("No LCA found for %s (%s)", seq_id, error)
+            LOG.warning("No LCA found for %s (%s)", seq_id, error)
             if no_lca is not None:
                 write_no_lca(
                     no_lca,
@@ -348,7 +348,7 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
                         for annotation in seq_ann
                     )
                 )
-            if krona:
+            if out_format == 'krona':
                 write_krona(output_file, taxonomy, None, False)
             continue
 
