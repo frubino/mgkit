@@ -225,6 +225,7 @@ import progressbar
 import click
 import msgpack
 import mgkit
+import mgkit.counts.func
 from . import utils
 from .. import align
 from .. import logger
@@ -614,53 +615,27 @@ def uniprot_offline_command(verbose, mapping_file, force_taxon_id, mapping,
         count / len(annotations) * 100
     )
 
-def read_lines_from_files(file_handles):
-    file_handles = [
-        compressed_handle(file_handle)
-        if file_handle.name.endswith('gz')
-        else file_handle
 
-        for file_handle in file_handles
-    ]
-    for line in itertools.chain(*(x for x in file_handles)):
-        line = line.decode('ascii')
-        # the __ is for HTSeq-count files, # for featureCounts
-        if line.startswith('#') or line.startswith('__'):
-            continue
-        yield line.strip()
-
-
-def load_counts(count_files, samples, featureCounts):
-    LOG.info("Sample: %s", ', '.join(samples))
-
+def load_htseq_count_files(count_files, samples):
     counts = {}
 
-    index = 6 if featureCounts else 1
-
-    for line in read_lines_from_files(count_files):
-        # featureCounts puts the header on the second line
-        # the first is skipped by read_lines_from_files
-        # as it starts with a #
-        if featureCounts and line.startswith('Geneid'):
-            continue
-        line = line.split('\t')
-        uid = line[0]
-        if len(line[index:]) != len(samples):
-            utils.exit_script(
-                "The number of samples is not the same as the columns in " +
-                "the count file",
-                2
-            )
-        counts[uid] = {}
-        for sample, count in zip(samples, line[index:]):
-            count = float(count)
-            # to save some memory
-            if count == 0:
-                continue
+    for sample, count_file in zip(samples, count_files):
+        for uid, count in mgkit.counts.func.load_htseq_counts(count_file):
+            if uid not in counts:
+                counts[uid] = {}
             counts[uid][sample] = count
 
-    LOG.info("Loaded counts for %s annotations", len(counts))
+    return counts
 
+
+def load_featurecounts_files(count_files, samples):
+    count = {}
+    for sample, count_file in zip(samples, count_files):
+        for line in open_file(count_file, 'rb'):
+            line = line.decode('ascii')
+            line = line.split('\t')
+            uid = line[0]
+            counts[uid] = dict(zip(samples, count_files))
     return counts
 
 
@@ -668,15 +643,14 @@ def load_counts(count_files, samples, featureCounts):
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-s', '--samples', required=True, multiple=True,
               help="""Sample names, in the same order as the count files""")
-@click.option('-c', '--count-files', multiple=True, required=True,
-              type=click.File('rb'), help="Count file(s)")
+@click.option('-c', '--count-files', multiple=True, required=True, help="Count file(s)")
 @click.option('-f', '--fpkms', default=False, is_flag=True,
               help="If the counts are FPKMS")
 @click.option('-e', '--featureCounts', default=False, is_flag=True,
               help="""If the counts files are from featureCounts""")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def counts_command(verbose, samples, count_files, fpkms, featureCounts,
+def counts_command(verbose, samples, count_files, fpkms, featurecounts,
                    input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -685,11 +659,10 @@ def counts_command(verbose, samples, count_files, fpkms, featureCounts,
         getattr(output_file, 'name', repr(output_file))
     )
 
-    counts = load_counts(
-        count_files,
-        samples,
-        featureCounts
-    )
+    if featurecounts:
+        counts = load_featurecounts_files(count_files, samples)
+    else:
+        counts = load_htseq_count_files(count_files, samples)
 
     key = "fpkms_{}" if fpkms else "counts_{}"
 
@@ -815,14 +788,16 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
         bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
         annotations = bar(annotations)
 
-    for annotation in annotations:
+    count = 0
+    for lineno, annotation in enumerate(annotations):
         gene_id = annotation.get_attr(gene_attr, str)
         try:
             taxon_id = gene_ids[gene_id]
             annotation.taxon_id = taxon_id
             annotation.set_attr('taxon_db', taxon_db)
+            count += 1
         except KeyError:
-            LOG.error(
+            LOG.warning(
                 "No Taxon ID for GENE - %s",
                 gene_id
             )
@@ -842,6 +817,8 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
                 LOG.warning("Taxon ID %d not found in the Taxonomy", taxon_id)
 
         annotation.to_file(output_file)
+
+    LOG.info("Percentage of annotations changed %.2f%%", count / (count + 1) * 100)
 
 
 @main.command('pfam', help="""Adds information from Pfam""")
