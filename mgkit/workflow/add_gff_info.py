@@ -758,7 +758,7 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
 
         for annotation in gff.parse_gff(input_file):
             annotations.append(annotation)
-            gene_ids.add(annotation.attr[gene_attr])
+            gene_ids.add(annotation.get_attr(gene_attr, str))
         gene_ids = dict(
             blast.parse_accession_taxa_table(
                 gene_taxon_table,
