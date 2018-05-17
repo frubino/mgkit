@@ -2,6 +2,7 @@
 """
 Simple fasta parser and a few utility functions
 """
+import sys
 import itertools
 import logging
 from builtins import range
@@ -10,7 +11,7 @@ import mgkit.io
 LOG = logging.getLogger(__name__)
 
 
-def load_fasta(f_handle):
+def load_fasta(file_handle):
     """
     .. versionchanged:: 0.1.13
         now returns uppercase sequences
@@ -19,20 +20,22 @@ def load_fasta(f_handle):
     element is the name of the sequence and the second the sequence
 
     Arguments:
-        f_handle (str, file): fasta file to open; a file name or a file handle
+        file_handle (str, file): fasta file to open; a file name or a file handle
             is expected
 
     Yields:
         tuple: first element is the sequence name/header, the second element is
         the sequence
     """
-    if isinstance(f_handle, str):
-        f_handle = mgkit.io.open_file(f_handle, 'rb')
+    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
+        file_handle = open_file(file_handle, 'rb')
+    elif isinstance(file_handle, str):
+        file_handle = mgkit.io.open_file(file_handle, 'rb')
     else:
-        f_handle = mgkit.io.compressed_handle(f_handle)
+        file_handle = mgkit.io.compressed_handle(file_handle)
 
-    if getattr(f_handle, 'name', None) is not None:
-        LOG.info("Reading fasta file %s", f_handle.name)
+    if getattr(file_handle, 'name', None) is not None:
+        LOG.info("Reading fasta file %s", file_handle.name)
 
     cur_name = ""
     last_name = ""
@@ -40,7 +43,7 @@ def load_fasta(f_handle):
     # Better use ''.join(list) than seq+=seq, it's faster
     cur_seq = []
     # main loop to read file's sequences
-    for line in f_handle:
+    for line in file_handle:
         line = line.decode('ascii')
         if line.startswith('>'):
             if cur_seq != []:
@@ -66,7 +69,7 @@ def load_fasta(f_handle):
         else:
             yield cur_name, ''.join(cur_seq).upper()
             nseq += 1
-    f_handle.close()
+    file_handle.close()
 
     LOG.info("Read %d fasta sequences", nseq)
 

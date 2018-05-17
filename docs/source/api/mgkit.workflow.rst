@@ -6,11 +6,8 @@ Submodules
 
 .. toctree::
 
-   mgkit.workflow.add_coverage
    mgkit.workflow.add_gff_info
    mgkit.workflow.blast2gff
-   mgkit.workflow.download_data
-   mgkit.workflow.download_profiles
    mgkit.workflow.extract_gff_info
    mgkit.workflow.fasta_utils
    mgkit.workflow.fastq_utils

@@ -76,8 +76,6 @@ setup(
     tests_require=['pytest>=3.5', 'pytest-datadir', 'pytest-console-scripts'],
     entry_points={
         'console_scripts': [
-            'download_data = mgkit.workflow.download_data:main',
-            'download_profiles = mgkit.workflow.download_profiles:main',
             'filter-gff = mgkit.workflow.filter_gff:main',
             'add-gff-info = mgkit.workflow.add_gff_info:main',
             'get-gff-info = mgkit.workflow.extract_gff_info:main',
