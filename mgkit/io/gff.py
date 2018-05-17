@@ -537,11 +537,6 @@ class Annotation(GenomicRange):
 
         seq = self.get_nuc_seq(seq, reverse=self.strand == '-')
 
-        # seq = seq[self.start - 1:self.end]
-        #
-        # if self.strand == '-':
-        #     seq = seq_utils.reverse_complement(seq)
-
         syn_count, nonsyn_count = seq_utils.get_seq_expected_syn_count(
             seq,
             syn_matrix=syn_matrix
@@ -822,7 +817,7 @@ class Annotation(GenomicRange):
         """
 
         .. versionchanged:: 0.3.4
-            any attribute can be returned
+            any GFF attribute can be returned
 
         .. versionchanged:: 0.3.3
             added *seq_id* as special attribute, in addition do *length*
@@ -834,7 +829,7 @@ class Annotation(GenomicRange):
 
         * length
         * self.attr (dictionary)
-        * getattr(self)
+        * getattr(self) of the first 8 columns of a GFF (seq_id, source, ...)
         """
         if attr == 'length':
             return len(self)
