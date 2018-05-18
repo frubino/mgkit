@@ -56,16 +56,14 @@ Adding Coverage from samtools depth
 
 The *cov_samtools* allows the use of the output of *samtools* **depth**
 command. The *-aa* options must be used to pass information about all base
-pairs and sequences coverage in the BAM/SAM file. The command accept only one
-sample and the relative file/stream from *samtools*, meaning that multiple
-samples coverage information must be added one at a time. One solution is to
-pipe multiple commands to obtain result wanted. For example::
+pairs and sequences coverage in the BAM/SAM file. The command work similarly to
+*coverage*, accepting compressed *depth* files as well. If only one *depth*
+file is passed and no sample is passed, the attribute in the GFF will be *cov*,
+otherwise the attribute will be *sample1_cov*, *sample2_cov*, etc.
 
-    $ add-gff-info cov_samtools -s SAMPLE1 -d sample1-coverage input.gff | \
-        add-gff-info cov_samtools -s SAMPLE2 -d sample2-coverage - output.gff
+To create samtools *depth* files, this command must be used::
 
-This command will add the coverage information for SAMPLE1 and SAMPLE2 from
-the respective files.
+    $ samtools depth -aa bam_file
 
 Uniprot Offline Mappings
 ************************
@@ -167,7 +165,8 @@ Changes
 .. versionchanged:: 0.3.4
     removed the *taxonomy* command, since a similar result can be obtained with
     *taxon-utils lca* and *add-gff-info addtaxa*. Removed *eggnog* command and
-    added option to silence logging in *cov_samtools*
+    added option to verbose the logging in *cov_samtools* (now is quiet), also
+    changed the interface
 
 .. versionchanged:: 0.3.3
     changed how *addtaxa* *-a* works, to allow the use of *seq_id* as key to
@@ -477,7 +476,7 @@ def split_sample_alg(ctx, param, values):
     new_values = []
     for value in values:
         try:
-            sample, bam_file_name = argument.split(',', 1)
+            sample, bam_file_name = value.split(',', 1)
         except ValueError:
             raise click.BadParameter(
                 "Can't get get both sample and bam file from '%s'" % value
@@ -852,33 +851,47 @@ def pfam_command(verbose, id_attr, use_accession, input_file, output_file):
 
 @main.command('cov_samtools', help="""Adds information from samtools_depth""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-s', '--sample', default=None,
+@click.option('-s', '--samples', default=None, multiple=True,
               help='''Sample name, will add a `sample_cov` in the GFF file. If not passed, the attribute will be `cov`''')
-@click.option('-d', '--depth', required=True, help='`samtools depth -aa` file')
-@click.option('-n', '--num-seqs', default=10**4,  type=click.INT,
+@click.option('-d', '--depths', required=True, multiple=True,
+              help='`samtools depth -aa` file')
+@click.option('-n', '--num-seqs', default=0,  type=click.INT,
               show_default=True,
               help='''Number of sequences to update the log. If 0, no message is logged''')
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def samtools_depth_command(verbose, sample, depth, num_seqs, input_file,
+def samtools_depth_command(verbose, samples, depths, num_seqs, input_file,
                            output_file):
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-    depth = align.SamtoolsDepth(depth, None if num_seqs == 0 else num_seqs)
-    if sample is None:
-        cov_attr = 'cov'
+    if samples is None:
+        samples = (None,)
     else:
-        cov_attr = '{}_cov'.format(sample)
+        sample = ['{}_cov'.format(sample) for sample in samples]
+
+    depths = [
+        align.SamtoolsDepth(file_name, None if num_seqs == 0 else num_seqs)
+        for file_name in depths
+    ]
+    if len(samples) != len(depths):
+        exit_script('Number of samples different from number of files', 2)
 
     annotations = gff.parse_gff(input_file)
 
     bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
 
     for annotation in bar(annotations):
-        cov = depth.region_coverage(
-            annotation.seq_id,
-            annotation.start,
-            annotation.end
-        )
-        annotation.set_attr(cov_attr, cov)
+        coverages = []
+        for sample, depth in zip(sample, depths):
+            cov = depth.region_coverage(
+                annotation.seq_id,
+                annotation.start,
+                annotation.end
+            )
+            coverages.append(cov)
+            if sample is not None:
+                annotation.set_attr(sample, cov)
+
+        annotation.set_attr('cov', sum(coverages) / len(coverages))
+
         annotation.to_file(output_file)
