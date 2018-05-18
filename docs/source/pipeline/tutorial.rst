@@ -1,5 +1,8 @@
 .. _simple-tutorial:
 
+.. versionchanged:: 0.3.4
+    updated to the last version of the scripts
+
 Tutorial
 ========
 
@@ -7,9 +10,7 @@ The aim of this tutorial is to show how to build a pipeline to analyse metagenom
 
 We're going to use `Peru Margin Subseafloor Biosphere <https://www.ebi.ac.uk/metagenomics/project/SRP000183>`_ as an example, which can be download from the ENA website.
 
-For a pipeline using another approach, you can refer to the :ref:`hmmer-tutorial` section of the documentation. This tutorial is expected to run on a
-UNIX (Linux/MacOSX/Solaris), with the bash shell running, because of some of
-the loops (not tested with other shells).
+This tutorial is expected to run on a UNIX (Linux/MacOSX/Solaris), with the `bash` shell running, because of some of the loops (not tested with other shells).
 
 .. note::
 
@@ -28,7 +29,7 @@ Also for the rest of the tutorial we assume that the following software are inst
 
     * `Velvet <https://www.ebi.ac.uk/~zerbino/velvet/>`_
     * `Bowtie 2 <http://bowtie-bio.sourceforge.net/bowtie2/>`_
-    * `samtools <http://samtools.sourceforge.net>`_
+    * `samtools and bcftools 1.8 <http://samtools.sourceforge.net>`_
     * `Picard Tools <http://picard.sourceforge.net>`_ [#]_
     * `GATK <http://www.broadinstitute.org/gatk/>`_ [#]_
     * `HTSeq <http://sourceforge.net/p/htseq/code/HEAD/tree/>`_
@@ -55,9 +56,9 @@ Taxonomy Data
 
 We only need the taxonomy for an optional part of the gene prediction for the analysis. It can be downloaded using the command::
 
-    $ download_data -x -p -m EMAIL
+    $ download-taxonomy.sh
 
-Where *EMAIL* should be replaced by your email address. The data will be saved in the directory `mg_data` to which we'll refer from now on.
+The data will be saved in the file `taxonomy.pickle` to which we'll refer from now on. More information can be found in :ref:`download-taxonomy`
 
 Metagenome Assembly
 -------------------
@@ -135,6 +136,14 @@ Taxonomic Refinement
 
 This section is optional, as taxonomic identifiers are assigned using Uniprot, but it can result in a better identification. It requires the the `nt` database from NCBI to be found on the system, in the `ncbi-db` directory.
 
+if you don't have the *nt* database installed, it can be downloaded (> 80GB) with this command (you'll need to install `ncftpget`)::
+
+    $ mkdir ncbi-db
+    $ cd ncbi-db
+    $ ncftpget ftp://ftp.ncbi.nlm.nih.gov/blast/db/nt*.gz
+    $ tar xfvz *.tar.gz
+    $ cd ..
+
 To do it, first the nucleotide sequences must be extracted and then use blastn against the `nt` database::
 
     $ get-gff-info sequence -f assembly.fasta assembly.uniprot.gff \
@@ -142,15 +151,24 @@ To do it, first the nucleotide sequences must be extracted and then use blastn a
     $ blastn -query assembly.uniprot.frag.fasta -db ncbi-db/nt -out \
         assembly.uniprot.frag.tab -outfmt 6
 
-After BLAST completes, we need to download a supporting file to associate the results with the taxonomic information::
+After BLAST completes, we need to download supporting file to associate the results with the taxonomic information::
 
-    $ wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/gi_taxid_nucl.dmp.gz
+    $ download-ncbi-taxa.sh
+    $ gunzip -c ncbi-nucl-taxa.gz | taxon-utils to_hdf -n nt
 
-and run the script to add the taxonomic information to the GFF file, also using the LCA algorithm::
+We now need to run the `taxon-utils` (:ref:`taxon-utils`) script to find the LCA for each annotation. BLAST will output too many matches, so we want to also filter this file first, with `filter-gff`. First we convert into GFF the BLAST tab file, then use `filter-gff` to pick only the 95% quantile of sequence identity out of all hits. Finally run `taxon-utils` to get the LCA table::
 
-    $ add-gff-info taxonomy -v -t gi_taxid_nucl.dmp.gz -b \
-        assembly.uniprot.frag.tab -s 40 -d NCBI-NT -l -x \
-        mg_data/taxonomy.pickle \
+    $ blast2gff blastdb -i 3 -r assembly.uniprot.frag.tab | \
+        filter-gff sequence -t -a length -f quantile -l 0.95 -c gt | \
+        filter-gff sequence -t -a identity -f quantile -l 0.95 -c gt | \
+        add-gff-info addtaxa -f taxa-table.hf5:nt | \
+        taxon-utils lca -b 40 -t taxonomy.pickle -s -p - lca.tab
+
+What we do is convert the BLAST results into a GFF file, removing the version information from the accession. Then filter the GFF keeping only the annotation which are in the top 5% of indentity scores, but also use only annotations that have a bitscore of 40 and write the result as a 2 columns table.
+
+We can now run the script to add the taxonomic information to the GFF file, with::
+
+    $ add-gff-info addtaxa -v -t lca.tab -a seq_id -db NCBI-NT \
         assembly.uniprot.gff assembly.uniprot-taxa.gff
 
 after it completes, it is safe to rename the output GFF::
@@ -162,7 +180,7 @@ Complete GFF
 
 To add the remaining information, mapping to `KO <http://www.kegg.jp>`_ and others, including the taxonomic information, a script is provided that downloads this information into a GFF file::
 
-    $ add-gff-info uniprot -v --buffer 500 -t -e -ec -ko \
+    $ add-gff-info uniprot --buffer 500 -t -e -ec -ko \
         assembly.uniprot.gff assembly.uniprot-final.gff
 
 After which we can rename the GFF file::
@@ -210,7 +228,17 @@ The coverage information is added to the GFF and needs to be added for later SNP
     $ mv assembly.uniprot-update.gff assembly.uniprot.gff
     $ unset SAMPLES
 
-The first line prepares part of the command line for the script and stores it into an environment variable, while the last command unsets the variable, as it's not needed anymore. The second command adds mapping and taxonomy information from Uniprot IDs to Kegg Orthologs, EC numbers and eggNOG.
+The first line prepares part of the command line for the script and stores it into an environment variable, while the last command unsets the variable, as it's not needed anymore. The second command adds the expected number of synonymous and non-synonymous changes for each annotation.
+
+A faster way to add the coverage to a GFF file is to use the *cov_samtools* command instead::
+
+    $ for x in *.bam; do samtools depth -aa $x > `basename $x .bam`.depth; done
+    $ add-gff-info cov_samtools $(for file in *.depth; do echo -s `basename $ file .depth` -d $file ;done ) assembly.uniprot.gff assembly.uniprot-update.gff
+    $ mv assembly.uniprot-update.gff assembly.uniprot.gff
+
+This requires the creation of *depth* files from samtools, which can be fairly big. The script will accept files compressed with gzip, bzip2 (and xz if the module is available), but will be slower. For this tutorial, each uncompressed depth file is aboud 110MB.
+
+The *coverage* command memory footprint is tied to the GFF file (kept in memory). The *cov_samtools* reads the depth information one line at a time and keeps a numpy array for each sequence in memory (and each sample), while the GFF is streamed.
 
 SNP Calling
 -----------
@@ -219,28 +247,14 @@ Before running samtools, which we'll use to do the SNP calling and GATK, to merg
 
     $ java -jar picard-tools/picard.jar CreateSequenceDictionary R=assembly.fasta O=assembly.dict
 
-SAMtools
+bcftools
 ^^^^^^^^
 
-For calling SNPs, we're going to use SAMtools, as it's the one having lower requirements for this tutorial. The output required by SNPdat and the later part of this tutorial is a vcf, so any software that can output can be used.
-
-Running samtools to make the SNP calling requires a simple loop, as follows:
+For calling SNPs, we can use `bcftools` (v 1.8 was tested)
 
 .. code-block:: bash
 
-    for file in *.bam; do
-        samtools mpileup -Iuf assembly.fasta \
-        $file | bcftools view -vcg - > `basename $file`.vcf;
-    done
-
-After which, you need to merge all sample vcf files into one, so it can be analysed with the sample specific information, which is needed by the library. This can be done with various packages, but here we'l use GATK (tested on version 3.0-0-g6bad1c6)::
-
-    $ export SAMPLES=$(for file in *.bam.vcf; do echo -V:`basename $file .bam.vcf` $file ;done)
-    $ java -Xmx10g -jar GATK/GenomeAnalysisTK.jar \
-      -R assembly.fasta -T CombineVariants -o assembly.vcf \
-      -genotypeMergeOptions UNIQUIFY \
-      $SAMPLES
-    $ unset SAMPLES
+    bcftools mpileup -f assembly.fasta -Ou *.bam | bcftools call -v -O v --ploidy 1 -A -o assembly.vcf
 
 Data Preparation
 ----------------
@@ -254,6 +268,10 @@ To use diversity estimates (pN/pS) for the data, we need to first first is aggre
     $ snp_parser -v -g assembly.uniprot.gff -p assembly.vcf -a assembly.fasta $SAMPLES
     $ unset SAMPLES
 
+.. note::
+
+        The `-s` options must be added if the VCF file was created with `bcftools`
+
 Count Data
 ^^^^^^^^^^
 
@@ -266,6 +284,23 @@ To evaluate the abundance of taxa and functional categories  in the data we need
         -m intersection-nonempty $file assembly.uniprot.gff \
         > `basename $file .bam`-counts.txt
     done
+
+And to add the counts to the GFF file::
+
+    $ add-gff-info counts `for x in *.bam; do echo -s $(basename $x .bam); done` \
+        `for x in *-counts.txt; do echo -c $x; done` assembly.uniprot.gff tmp.gff
+    $ mv tmp.gff assembly.uniprot.gff
+
+Alternatively `featureCounts` from the `subread` package can be used::
+
+    $ featureCounts -a assembly.uniprot.gff -g uid -O  -t CDS -o counts-featureCounts.txt *.bam
+
+And adding it to the GFF is similar::
+
+    $ add-gff-info counts `for x in *.bam; do echo -s $(basename $x .bam); done` -c counts-featureCounts.txt -e assembly.uniprot.gff tmp.gff
+    $ mv tmp.gff assembly.uniprot.gff
+
+Note however that there will be one file only made by featureCounts and that is allowed when using `add-gff-info counts` when the `-e` option is passed.
 
 Additional Downloads
 ^^^^^^^^^^^^^^^^^^^^
