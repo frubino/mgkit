@@ -628,7 +628,7 @@ def load_htseq_count_files(count_files, samples):
 
 
 def load_featurecounts_files(count_files, samples):
-    count = {}
+    counts = {}
     for sample, count_file in zip(samples, count_files):
         for line in open_file(count_file, 'rb'):
             line = line.decode('ascii')

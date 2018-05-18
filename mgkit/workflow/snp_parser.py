@@ -340,8 +340,6 @@ def main():
     # Loads them as list because it's easier to init the data structure
     annotations = list(gff.parse_gff(options.gff_file))
 
-    LOG.debug("Loaded %d annotations", len(annotations))
-
     if len(annotations[0].sample_coverage) != len(options.samples_id):
         utils.exit_script(
             "Coverage information was not found for all samples", 2
