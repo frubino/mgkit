@@ -98,6 +98,17 @@ def open_file(file_name, mode='r'):
         UnsupportedFormat: if the module to open the file is not available
 
     """
+
+    if sys.version_info[0] == 2:
+        test_class = file
+    else:
+        test_class = io.IOBase
+
+    if isinstance(file_name, test_class):
+        return file_name
+
+    mode = mode + 'b' if 'b' not in mode else mode
+
     if file_name.endswith('.gz'):
         file_handle = gzip.GzipFile(file_name, mode)
     elif file_name.endswith('.bz2'):
@@ -108,7 +119,7 @@ def open_file(file_name, mode='r'):
         else:
             file_handle = lzma.LZMAFile(file_name, mode)
     else:
-        file_handle = io.open(file_name, mode + 'b' if 'b' not in mode else mode)
+        file_handle = io.open(file_name, mode)
 
     return file_handle
 
