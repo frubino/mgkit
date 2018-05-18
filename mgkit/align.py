@@ -1,7 +1,7 @@
 """
 Module dealing with BAM/SAM files
 """
-
+from future.utils import viewitems
 import logging
 import itertools
 try:
@@ -14,7 +14,7 @@ import pandas
 import numpy
 import pysam
 import progressbar
-from future.utils import viewitems
+from mgkit.io.utils import open_file
 
 LOG = logging.getLogger(__name__)
 
@@ -101,6 +101,9 @@ def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
 
 def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
     """
+    .. versionchanged:: 0.3.4
+        the coverage now is returned as floats instead of int
+
     Adds coverage information to annotations, using BAM files.
 
     The coverage information is added for each sample as a 'sample_cov' and the
@@ -156,7 +159,7 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
         cov_mean = tot_coverage[annotation.uid].mean()
         annotation.set_attr(
             'cov',
-            0 if numpy.isnan(cov_mean) else int(cov_mean)
+            0 if numpy.isnan(cov_mean) else cov_mean
         )
 
 
@@ -191,12 +194,16 @@ def read_samtools_depth(file_handle, num_seqs=10000):
     """
     curr_key = ''
     curr_cov = []
+
+    file_handle = open_file(file_handle, 'rb')
+
     LOG.info(
         'Reading coverage from file (%s)',
         getattr(file_handle, 'name', repr(file_handle))
     )
     line_no = 0
     for line in file_handle:
+        line = line.decode('ascii')
         name, pos, cov = line.strip().split('\t')
         cov = int(cov)
         if curr_key == name:
@@ -207,7 +214,7 @@ def read_samtools_depth(file_handle, num_seqs=10000):
                 curr_key = name
             else:
                 line_no += 1
-                if (num_seqs is None) and (line_no % num_seqs == 0):
+                if (num_seqs is not None) and (line_no % num_seqs == 0):
                     LOG.info('Read %d sequence coverage', line_no)
                 yield curr_key, numpy.array(curr_cov)
                 curr_key = name
