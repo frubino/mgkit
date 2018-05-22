@@ -717,6 +717,39 @@ class Taxonomy(object):
 
         return ranked
 
+    def get_ranked_id(self, taxon_id, rank=None, it=False, include_higher=True):
+        """
+        .. versionadded:: 0.3.4
+
+        Gets the ranked taxon of another one. Useful when it's better to get a
+        taxon_id instead of an instance of :class:`TaxonTuple`. Internally, it
+        relies on :meth:`Taxonomy.get_ranked_taxon`.
+
+        Arguments:
+            taxon_id (int): taxon_id
+            rank (str or None): passed over
+            it (bool): determines the return value. if True, a list is returned
+            include_higher (bool): if True, any rank higher than the requested
+                may be returned. If False and the rank cannot be returned, None
+                is returned
+
+        Returns:
+            int or list: The type returned is based on the *it* paramenter. If
+            *it* is True, the return value is a list with the *taxon_id* of the
+            ranked taxon as the sole value. If False, the returned value is the
+            *taxon_id*. *include_higher* determines if the return value should
+            be *None* if the exact rank was not found and *include_higher* is
+            False
+        """
+        taxon = self.get_ranked_taxon(taxon_id, rank)
+        if (taxon.rank != rank) and (not include_higher):
+            taxon = None
+        else:
+            taxon = taxon.taxon_id
+        if it:
+            taxon = [taxon]
+        return taxon
+
     def get_name_map(self):
         "Returns a taxon_id->s_name dictionary"
 
