@@ -14,7 +14,8 @@ General cleanup and testing release. Major changes:
 * addition of more tests, to help the porting to python3, along with a tox configuration
 * :mod:`matplotlib.pyplot` is still in the :mod:`mgkit.plots.unused`, but it is not imported when the parent package is, now. It is still needed in the :mod:`mgkit.plots.utils` functions, so the import has been moved inside the function. This should help with virtual environments and test suites
 * renamed :class:`mgkit.taxon.UniprotTaxonomy` to :class:`mgkit.taxon.Taxonomy`, since it's really NCBI taxonomy and it's preferred to download the data from there. Same for :class:`mgkit.taxon.UniprotTaxonTuple` to :class:`mgkit.taxon.TaxonTuple`, with an alias for old name there, but will be removed in a later version
-* `download_data` is deprecated. Taxonomy should be downloaded using `download-taxonomy.sh`, and the :mod:`mgkit.mappings` is in need of refactoring to remove old and now ununsed functionality
+* `download_data` was removed. Taxonomy should be downloaded using `download-taxonomy.sh`, and the :mod:`mgkit.mappings` is in need of refactoring to remove old and now ununsed functionality
+* added :meth:`mgkit.taxon.Taxonomy.get_ranked_id`
 
 Scripts
 *******
