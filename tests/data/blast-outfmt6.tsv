@@ -1,0 +1,10 @@
+# blastn
+# Iteration: 0
+# Query: M95099.1 Bos taurus lysozyme gene (cow 3), complete cds
+# RID: F576X54A015
+# Database: nr
+# Fields: query acc.ver, subject acc.ver, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
+# 20516 hits found
+M95099.1	M95099.1	100.000	8051	0	0	1	8051	1	8051	0.0	14520
+M95099.1	M95099.1	86.429	140	18	1	4488	4627	3633	3771	8.04e-35	163
+M95099.1	M95099.1	86.429	140	18	1	3633	3771	4488	4627	8.04e-35	163

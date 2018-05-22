@@ -4,19 +4,15 @@
 Code related to boxplots
 """
 from __future__ import division
-
+from builtins import zip
 import logging
-from .. import DependencyError
+import numpy
 from ..utils.common import deprecated
 from .colors import float_to_hex_color
 
-try:
-    import numpy
-    import matplotlib.pyplot as plt
-except ImportError:
-    raise DependencyError('numpy, matplotlib')
-
 LOG = logging.getLogger(__name__)
+
+from matplotlib.patches import Polygon
 
 try:
     import seaborn as sns
@@ -121,8 +117,8 @@ def boxplot_dataframe_multindex(dataframe, axes, plot_order=None,
             data_colours[category] if data_colours else colours['boxes']
         )
         if fill_box:
-            box_coord = zip(box.get_xdata(), box.get_ydata())
-            polygon = plt.Polygon(
+            box_coord = list(zip(box.get_xdata(), box.get_ydata()))
+            polygon = Polygon(
                 box_coord,
                 facecolor=data_colours[category] if data_colours else colours['boxes']
             )
@@ -216,10 +212,10 @@ def add_values_to_boxplot(dataframe, ax, plot_data, plot_order,
         # strings to avoid matplotlit to confuse the single color as different
         # shades of grey. It only happens when the number of data points in a
         # row is 3
-        if not isinstance(data_colours[data_colours.keys()[0]], str):
+        if not isinstance(data_colours[list(data_colours.keys())[0]], str):
             data_colours = dict(
                 (key, float_to_hex_color(*value))
-                for key, value in data_colours.iteritems()
+                for key, value in data_colours.items()
             )
 
     for index, row_id in enumerate(plot_order):
@@ -319,8 +315,8 @@ def boxplot_dataframe(dataframe, plot_order, ax, label_map=None, fonts=None,
             data_colours[row_id] if data_colours else colours['boxes']
         )
         if fill_box:
-            box_coord = zip(box.get_xdata(), box.get_ydata())
-            polygon = plt.Polygon(
+            box_coord = list(zip(box.get_xdata(), box.get_ydata()))
+            polygon = Polygon(
                 box_coord,
                 facecolor=data_colours[row_id] if data_colours else colours['boxes']
             )

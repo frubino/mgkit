@@ -157,7 +157,7 @@ def write_fastq_sequence(file_handle, name, seq, qual, write_mode='a'):
     if isinstance(file_handle, str):
         file_handle = open(file_handle, write_mode)
 
-    if not isinstance(qual, str):
+    if isinstance(qual[0], (int, numpy.integer)):
         qual = ''.join(chr(q + 33) for q in qual)
 
     file_handle.write(
@@ -165,7 +165,7 @@ def write_fastq_sequence(file_handle, name, seq, qual, write_mode='a'):
             name=name,
             seq=seq,
             qual=qual
-        )
+        ).encode('ascii')
     )
 
 
@@ -231,15 +231,15 @@ def load_fastq(file_handle, num_qual=False):
     sequence_count = 0
 
     while True:
-        header1 = file_handle.readline().strip()
+        header1 = file_handle.readline().decode('ascii').strip()
         # Reached the end of the file
         if not header1:
             break
 
-        seq = file_handle.readline().strip()
+        seq = file_handle.readline().decode('ascii').strip()
 
-        header2 = file_handle.readline().strip()
-        qualities = file_handle.readline().strip()
+        header2 = file_handle.readline().decode('ascii').strip()
+        qualities = file_handle.readline().decode('ascii').strip()
 
         if (header1[0] != '@') or (header2[0] != '+'):
             raise ValueError(

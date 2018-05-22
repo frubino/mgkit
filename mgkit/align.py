@@ -1,26 +1,22 @@
 """
 Module dealing with BAM/SAM files
 """
-
+from future.utils import viewitems
 import logging
 import itertools
-
-from . import DependencyError
-
 try:
-    import pandas
-    import numpy
-    import pysam
+    # In Python2
+    from itertools import izip as zip
 except ImportError:
-    raise DependencyError('numpy, pysam, pandas')
+    pass
+from builtins import object
+import pandas
+import numpy
+import pysam
+import progressbar
+from mgkit.io.utils import open_file
 
 LOG = logging.getLogger(__name__)
-
-try:
-    from progress.bar import Bar
-except ImportError:
-    LOG.debug("Could not import progress module")
-    Bar = None
 
 
 def get_region_coverage(bam_file, seq_id, feat_from, feat_to):
@@ -86,15 +82,9 @@ def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
         # pysam 0.8.1 changed Samfile to AlignmentFile
         alg_file = pysam.AlignmentFile(file_name, 'rb')
 
-        if progress and (Bar is not None):
-            bar = Bar(
-                file_name,
-                max=len(annotations),
-                suffix='%(percent)d%% - %(eta_td)s'
-            )
-            bar.width = 64
-        else:
-            bar = None
+        if progress:
+            bar = progressbar.ProgressBar(max_value=len(annotations))
+            annotations = bar(annotations)
 
         for uid, seq_id, start, end in annotations:
             cov = get_region_coverage(alg_file, seq_id, start, end)
@@ -104,19 +94,16 @@ def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
             except KeyError:
                 covered[uid] = cov
 
-            if bar is not None:
-                bar.next()
-
-        if bar is not None:
-            bar.finish()
-
     return dict(
-        (uid, len(cov[cov >= min_cov])) for uid, cov in covered.iteritems()
+        (uid, len(cov[cov >= min_cov])) for uid, cov in viewitems(covered)
     )
 
 
 def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
     """
+    .. versionchanged:: 0.3.4
+        the coverage now is returned as floats instead of int
+
     Adds coverage information to annotations, using BAM files.
 
     The coverage information is added for each sample as a 'sample_cov' and the
@@ -136,7 +123,7 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
 
     tot_coverage = {}
 
-    for bam_file, sample in itertools.izip(bam_files, samples):
+    for bam_file, sample in zip(bam_files, samples):
         LOG.info("Adding coverage for sample %s", sample)
         for index, annotation in enumerate(annotations):
             sample_coverage = get_region_coverage(
@@ -172,12 +159,15 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
         cov_mean = tot_coverage[annotation.uid].mean()
         annotation.set_attr(
             'cov',
-            0 if numpy.isnan(cov_mean) else int(cov_mean)
+            0 if numpy.isnan(cov_mean) else cov_mean
         )
 
 
 def read_samtools_depth(file_handle, num_seqs=10000):
     """
+    ..versionchanged:: 0.3.4
+        *num_seqs* can be None to avoid a log message
+
     .. versionadded:: 0.3.0
 
     Reads a samtools *depth* file, returning a generator that yields the
@@ -195,7 +185,8 @@ def read_samtools_depth(file_handle, num_seqs=10000):
 
     Arguments:
         file_handle (file): file handle of the coverage file
-        num_seqs (int): number of sequence that fires a log message
+        num_seqs (int or None): number of sequence that fires a log message. If
+            None, no message is triggered
 
     Yields:
         tuple: the first element is the sequence identifier and the second one
@@ -203,12 +194,16 @@ def read_samtools_depth(file_handle, num_seqs=10000):
     """
     curr_key = ''
     curr_cov = []
+
+    file_handle = open_file(file_handle, 'rb')
+
     LOG.info(
         'Reading coverage from file (%s)',
         getattr(file_handle, 'name', repr(file_handle))
     )
     line_no = 0
     for line in file_handle:
+        line = line.decode('ascii')
         name, pos, cov = line.strip().split('\t')
         cov = int(cov)
         if curr_key == name:
@@ -219,7 +214,7 @@ def read_samtools_depth(file_handle, num_seqs=10000):
                 curr_key = name
             else:
                 line_no += 1
-                if line_no % num_seqs == 0:
+                if (num_seqs is not None) and (line_no % num_seqs == 0):
                     LOG.info('Read %d sequence coverage', line_no)
                 yield curr_key, numpy.array(curr_cov)
                 curr_key = name

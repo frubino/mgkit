@@ -53,7 +53,7 @@ def filter_taxon_by_id_list(taxon_id, filter_list=None, exclude=False,
     Example:
 
         If using func and assuming that `taxonomy` is an instance of
-        :class:`~mgkit.taxon.UniprotTaxonomy` with data loaded:
+        :class:`~mgkit.taxon.Taxonomy` with data loaded:
 
         >>> import functools
         >>> import mgkit.taxon

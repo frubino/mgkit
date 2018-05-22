@@ -29,11 +29,15 @@ Changes
 """
 
 from __future__ import division
-
+from builtins import zip
 import HTSeq
 import logging
 import argparse
-import cPickle
+import sys
+if sys.version_info[0] == 2:
+    import cPickle as pickle
+else:
+    import pickle
 from . import utils
 from ..io import gff, compressed_handle, fasta
 from .. import logger
@@ -135,7 +139,7 @@ def set_parser():
 def init_count_set(annotations):
     LOG.info("Init data structures")
 
-    samples = annotations[0].sample_coverage.keys()
+    samples = list(annotations[0].sample_coverage.keys())
 
     snp_data = dict(
         (sample, {}) for sample in samples
@@ -275,7 +279,7 @@ def parse_vcf(vcf_file, snp_data, min_reads, min_af, min_qual, annotations,
             # the samples that contain the SNP is a string separated by '-'
             if options.bcftools_vcf:
                 samples = set()
-                for sample_id, sample_info in vcf_record.samples.iteritems():
+                for sample_id, sample_info in vcf_record.samples.items():
                     # prepare the genotype list, to make the comparison easier
                     # the genotype separator to '/' only, to use only one
                     # type of split
@@ -321,7 +325,7 @@ def save_data(output_file, snp_data):
     """
 
     LOG.info("Saving sample SNPs to %s", output_file)
-    cPickle.dump(snp_data, output_file, -1)
+    pickle.dump(snp_data, output_file, -1)
 
 
 def main():
@@ -335,8 +339,6 @@ def main():
 
     # Loads them as list because it's easier to init the data structure
     annotations = list(gff.parse_gff(options.gff_file))
-
-    LOG.debug("Loaded %d annotations", len(annotations))
 
     if len(annotations[0].sample_coverage) != len(options.samples_id):
         utils.exit_script(

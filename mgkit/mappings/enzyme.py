@@ -3,7 +3,7 @@
 
 EC mappings
 """
-
+from future.utils import viewitems
 import re
 from ..io import open_file
 
@@ -106,7 +106,7 @@ def change_mapping_level(ec_map, level=3):
         {'Q9HFQ1': {'1.1'}}
 
     """
-    for gene_id, ecdict in ec_map.iteritems():
+    for gene_id, ecdict in iteritems(ec_map):
         try:
             ec_list = ecdict['ec']
         except KeyError:
@@ -137,7 +137,7 @@ def get_mapping_level(ec_map, level=3):
         tuple: a tuple (gene_id, set(ECs)), which can be passed to *dict* to
         make a dictionary
     """
-    for gene_id, ec_list in ec_map.iteritems():
+    for gene_id, ec_list in viewitems(ec_map):
 
         if not ec_list:
             continue

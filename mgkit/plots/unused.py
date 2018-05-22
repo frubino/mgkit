@@ -378,11 +378,11 @@ def map_taxon_to_colours(taxa, taxonomy, default_colour='#ffff33'):
     """
     Returns a dictionary of taxa and their assigned colours based on
     :data:`TAXON_COLOURS` and the taxonomy provided. Uses the
-    :func:`taxon.UniprotTaxonomy.get_taxon_root` to determine the root of a
+    :func:`taxon.Taxonomy.get_taxon_root` to determine the root of a
     taxon.
 
     :param iterable taxa: iterable of taxon ids
-    :param UniprotTaxonomy taxonomy: taxonomy instance
+    :param Taxonomy taxonomy: taxonomy instance
     :param default_colour: colour used in case there's no known root for the
         taxon
 

@@ -35,11 +35,12 @@ extensions = [
     # 'sphinx.ext.imgmath', #either this or mathjax
     'sphinx.ext.viewcode',
     'sphinx.ext.graphviz',
-    'sphinxcontrib.actdiag',
     'sphinxcontrib.blockdiag',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinxarg.ext',
+    'sphinx_click.ext',
+    'nbsphinx',
     #'sphinxcontrib.bibtex',
     #'sphinxcontrib.programoutput', # unused, argparse used instead
 ]
@@ -96,7 +97,7 @@ copyright = u'2013-2015, Francesco Rubino'
 #
 # The short X.Y version.
 
-__VERSION__ = '0.3.3'
+__VERSION__ = '0.3.4'
 
 version = __VERSION__
 # The full version, including alpha/beta/rc tags.

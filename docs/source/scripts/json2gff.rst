@@ -12,7 +12,6 @@ Overview
 Options
 -------
 
-.. argparse::
-   :module: mgkit.workflow.json2gff
-   :func: set_parser
+.. click:: mgkit.workflow.json2gff:main
    :prog: json2gff
+   :show-nested:

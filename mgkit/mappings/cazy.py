@@ -2,7 +2,7 @@
 Module containing classes and functions to deal with CaZy data
 """
 
-import urllib2
+from requests.exceptions import HTTPError
 import logging
 from .. import kegg
 
@@ -44,7 +44,7 @@ class Kegg2CazyMapper(kegg.KeggMapperBase):
                     ko_id, self.query_string,
                     self.columns_string, contact
                 )
-            except urllib2.HTTPError as url_error:
+            except HTTPError as url_error:
                 LOG.warning(warn1, idx + 1, len(kos), ko_id, url_error.args)
                 errors += 1
                 continue

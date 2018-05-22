@@ -1,7 +1,9 @@
 """
 Module containing classes and functions to access Kegg data
 """
-
+from builtins import object
+from future.utils import viewitems
+import sys
 import logging
 import pickle
 import random
@@ -264,7 +266,7 @@ class KeggClientRest(object):
 
         Loads the cache from file
         """
-        self.cache = pickle.load(open_file(file_handle, 'r'))
+        self.cache = pickle.load(open_file(file_handle, 'rb'))
 
     def write_cache(self, file_handle):
         """
@@ -272,7 +274,7 @@ class KeggClientRest(object):
 
         Write the cache to file
         """
-        pickle.dump(self.cache, open_file(file_handle, 'w'))
+        pickle.dump(self.cache, open_file(file_handle, 'wb'))
 
     # Kegg primitives #
 
@@ -297,6 +299,8 @@ class KeggClientRest(object):
             request, should not exceed 50
         :return dict: dictionary mapping requested id to target id(s)
         """
+        if (sys.version_info[0] == 2) and isinstance(kegg_ids, unicode):
+            kegg_ids = [kegg_ids]
         if isinstance(kegg_ids, str):
             kegg_ids = [kegg_ids]
 
@@ -355,7 +359,7 @@ class KeggClientRest(object):
 
         return {
             kegg_id: list(value)
-            for kegg_id, value in mapping.iteritems()
+            for kegg_id, value in viewitems(mapping)
             if (kegg_id in kegg_ids) and (value is not None)
         }
 
@@ -595,7 +599,7 @@ class KeggClientRest(object):
         """
         data = self.get_ids_names('pathway')
         pathways = {}
-        for kegg_id, name in data.iteritems():
+        for kegg_id, name in viewitems(data):
 
             kegg_id = kegg_id.replace('map', 'ko')
             pathways[kegg_id] = name
@@ -655,6 +659,9 @@ class KeggClientRest(object):
 
 
 class KeggData(object):
+    """
+    .. deprecated:: 0.3.4
+    """
     pathways = None
     _ko_map = None
     maps = None
@@ -693,7 +700,7 @@ class KeggData(object):
             self.gen_maps()
         return dict(
             (cp_id, cp.description)
-            for cp_id, cp in self.maps['cp'].iteritems()
+            for cp_id, cp in viewitems(elf.maps['cp'])
         )
 
     def get_ko_rn_links(self, path_filter=None, description=False):
@@ -854,6 +861,8 @@ class KeggData(object):
 
 class KeggMapperBase(object):
     """
+    .. deprecated:: 0.3.4
+    
     Base object for Kegg mapping classes
     """
     _ko_map = None
@@ -1101,6 +1110,9 @@ BLACK_LIST = [
 
 
 def download_data(fname='kegg.pickle', contact=None):
+    """
+    .. deprecated:: 0.3.4
+    """
 
     kclient = KeggClientRest()
     kclient.contact = contact
@@ -1128,7 +1140,7 @@ def download_data(fname='kegg.pickle', contact=None):
 
     LOG.info("Downloading links pathway-ko (%d)", len(path_names))
     path_links = kclient.link_ids('ko', path_names.keys())
-    for path_id, ko_list in path_links.iteritems():
+    for path_id, ko_list in viewitems(path_links):
         path = KeggPathway(path_id, path_names[path_id])
         for ko_id in ko_list:
             try:
@@ -1149,7 +1161,7 @@ def download_data(fname='kegg.pickle', contact=None):
 
     LOG.info("Downloading links ko-reactions (%d)", len(ko_names))
     ko_links = kclient.link_ids('rn', ko_names.keys())
-    for ko_id, rn_list in ko_links.iteritems():
+    for ko_id, rn_list in viewitems(ko_links):
         try:
             ko = kos[ko_id]
         except KeyError:
@@ -1171,7 +1183,7 @@ def download_data(fname='kegg.pickle', contact=None):
 
     LOG.info("Downloading links reactions-compounds (%d)", len(rn_names))
     cp_links = kclient.get_reaction_equations(rn_names.keys())
-    for rn_id, cp_dict in cp_links.iteritems():
+    for rn_id, cp_dict in viewitems(cp_links):
         try:
             rn = rns[rn_id]
         except KeyError:

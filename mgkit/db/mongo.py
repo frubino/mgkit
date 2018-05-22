@@ -58,28 +58,28 @@ of mappings, and the values the list of IDs the annoation maps to.
 
 
 """
+from builtins import object
 import logging
 from ..io import gff
-from .. import DependencyError
 
-try:
-    from pymongo import MongoClient
-except ImportError:
-    raise DependencyError('pymongo')
+from pymongo import MongoClient
 
 LOG = logging.getLogger(__name__)
 
 
 class GFFDB(object):
     """
+    .. versionchanged:: 0.3.4
+        added *timeout* parameter
+
     Wrapper to a MongoDB connection/db. It is used to automate the convertion
     of MongoDB records into :class:`mgkit.io.gff.Annotation` instances.
     """
     conn = None
     db = None
 
-    def __init__(self, db, collection, uri=None):
-        self.conn = MongoClient(uri)
+    def __init__(self, db, collection, uri=None, timeout=5):
+        self.conn = MongoClient(uri, serverSelectionTimeoutMS=timeout)
         self.db = self.conn[db][collection]
 
     def cursor(self, query=None):
@@ -111,6 +111,44 @@ class GFFDB(object):
         Retrieves an annotation from the DB by its *uid*
         """
         return self.convert_record(self.db.find_one(uid))
+
+    def insert_one(self, annotation):
+        """
+        .. versionadded:: 0.3.4
+
+        Inserts an annotation into the DB
+
+        Raises:
+            TypeError: if the passed object is not an annotation
+        """
+        if not isinstance(annotation, gff.Annotation):
+            raise TypeError(
+                'An mgkit.io.gff.Annotation instance is required got {}'.format(
+                    type(annotation)
+                )
+            )
+
+        self.db.insert_one(annotation.to_mongodb(raw=True))
+
+    def insert_many(self, annotations):
+        """
+        .. versionadded:: 0.3.4
+
+        Inserts annotations into the DB
+
+        .. warning::
+
+            The object must be a :class:`mgkit.io.gff.Annotation`
+
+        """
+
+        self.db.insert_many(
+            (
+                annotation.to_mongodb(raw=True)
+                for annotation in annotations
+            ),
+            ordered=False
+        )
 
     def __iter__(self):
         """

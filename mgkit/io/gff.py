@@ -2,15 +2,21 @@
 This modules define classes and function related to manipulation of GFF/GTF
 files.
 """
-from __future__ import print_function
-from __future__ import division
-
+from __future__ import print_function, division
+from builtins import object, zip, bytes, range
+import sys
+from io import IOBase
+from future.utils import viewitems
 import random
 import itertools
 import logging
 import uuid
 import json
-import urllib
+try:
+    from urllib import unquote, quote
+except ImportError:
+    # Python3
+    from urllib.parse import unquote, quote
 # python 2.7 includes OrderedDict, older versions will use
 # the available as ordereddict in PyPI
 try:
@@ -51,7 +57,7 @@ def write_gff(annotations, file_handle, verbose=True):
     """
 
     if isinstance(file_handle, str):
-        file_handle = open(file_handle, 'w')
+        file_handle = open_file(file_handle, 'wb')
 
     if verbose:
         LOG.info(
@@ -264,6 +270,9 @@ class Annotation(GenomicRange):
         else:
             self.uid = uid
 
+    def __hash__(self):
+        return hash(self.uid)
+
     def get_ec(self, level=4):
         """
         .. versionadded:: 0.1.13
@@ -463,7 +472,7 @@ class Annotation(GenomicRange):
         """
         counts = {}
 
-        for key, value in self.attr.iteritems():
+        for key, value in viewitems(self.attr):
             if key.startswith('counts_'):
                 key = key.replace('counts_', '')
                 counts[key] = float(value)
@@ -480,7 +489,7 @@ class Annotation(GenomicRange):
         Arguments:
             counts (dict): key is the sample name and the count for it
         """
-        for key, value in counts.iteritems():
+        for key, value in viewitems(counts):
             self.attr["counts_{}".format(key)] = value
 
     @property
@@ -492,7 +501,7 @@ class Annotation(GenomicRange):
         """
         fpkms = {}
 
-        for key, value in self.attr.iteritems():
+        for key, value in viewitems(self.attr):
             if key.startswith('fpkms_'):
                 key = key.replace('fpkms_', '')
                 fpkms[key] = float(value)
@@ -509,7 +518,7 @@ class Annotation(GenomicRange):
         Arguments:
             fpkms (dict): key is the sample name and the fpmk for it
         """
-        for key, value in fpkms.iteritems():
+        for key, value in viewitems(fpkms):
             self.attr["fpkms_{}".format(key)] = value
 
     def add_exp_syn_count(self, seq, syn_matrix=None):
@@ -525,10 +534,8 @@ class Annotation(GenomicRange):
                 :func:`mgkit.utils.sequnce.get_seq_expected_syn_count`.
 
         """
-        seq = seq[self.start - 1:self.end]
 
-        if self.strand == '-':
-            seq = seq_utils.reverse_complement(seq)
+        seq = self.get_nuc_seq(seq, reverse=self.strand == '-')
 
         syn_count, nonsyn_count = seq_utils.get_seq_expected_syn_count(
             seq,
@@ -562,7 +569,7 @@ class Annotation(GenomicRange):
             '{0}{1}"{2}"'.format(
                 key,
                 sep,
-                urllib.quote(str(self.attr[key]), ' ()/')
+                quote(str(self.attr[key]), ' ()/')
             )
             for key in sorted(self.attr)
         )
@@ -615,7 +622,7 @@ class Annotation(GenomicRange):
 
         return json.dumps(self.to_dict(), separators=(',', ':'))
 
-    def to_mongodb(self, lineage_func=None, indent=None):
+    def to_mongodb(self, lineage_func=None, indent=None, raw=False):
         """
         .. versionadded:: 0.2.1
 
@@ -625,6 +632,9 @@ class Annotation(GenomicRange):
         .. versionchanged:: 0.2.6
             added *indent* parameter
 
+        .. versionchanged:: 0.3.4
+            added *raw*
+
         Returns a MongoDB document that represent the Annotation.
 
         Arguments:
@@ -632,9 +642,12 @@ class Annotation(GenomicRange):
                 a list of taxon_id
             indent (int): the amount of indent to put in the record, None (the
                 default) is for the most compact - one line for the record
+            raw (bool): if True, the method returns a string, which is the
+                json dump, if False, the value returned is the dictionary
 
         Returns:
-            str: the MongoDB document, with Annotation.uid as _id
+            str or dict: the MongoDB document, with Annotation.uid as _id, as
+            a string if *raw* is True, a dictionary if it is False
         """
 
         # OrderedDict is necessary to keep the order of the keys
@@ -646,7 +659,7 @@ class Annotation(GenomicRange):
         var_names = (
             'seq_id', 'source', 'feat_type', 'start', 'end', 'score', 'strand',
             'phase', 'gene_id', 'taxon_id', 'bitscore', 'exp_nonsyn',
-            'exp_syn', 'length', 'dbq', 'coverage'
+            'exp_syn', 'length', 'dbq', 'coverage', 'uid'
         )
 
         for var_name in var_names:
@@ -681,7 +694,7 @@ class Annotation(GenomicRange):
         dictionary.update(
             dict(
                 (key, value)
-                for key, value in self.attr.iteritems()
+                for key, value in viewitems(self.attr)
                 if (key not in var_names) and (key not in ('uid', 'EC')) and
                 (not key.startswith('map_')) and
                 (not key.startswith('counts_')) and
@@ -689,13 +702,16 @@ class Annotation(GenomicRange):
             )
         )
 
+        if raw:
+            return dictionary
+
         return json.dumps(dictionary, indent=indent, separators=(',', ':'))
 
     def to_file(self, file_handle):
         """
         Writes the GFF annotation to *file_handle*
         """
-        file_handle.write(self.to_gff())
+        file_handle.write(self.to_gff().encode('ascii'))
 
     def to_gtf(self, gene_id_attr='uid', sep=' '):
         """
@@ -748,9 +764,9 @@ class Annotation(GenomicRange):
             '{0}{1}"{2}"'.format(
                 key,
                 sep,
-                urllib.quote(value, ' ()/')
+                quote(value, ' ()/')
             )
-            for key, value in itertools.izip(attr_keys, attr_values)
+            for key, value in zip(attr_keys, attr_values)
         )
 
         return "{0}\t{1}\n".format(values, attr_column)
@@ -770,7 +786,7 @@ class Annotation(GenomicRange):
 
         return dict(
             (attribute.replace('_cov', ''), float(value))
-            for attribute, value in attributes.iteritems()
+            for attribute, value in viewitems(attributes)
             if attribute.endswith('_cov')
         )
 
@@ -793,32 +809,42 @@ class Annotation(GenomicRange):
             )
 
         return sum(
-            1 for sample, coverage in coverage.iteritems()
+            1 for sample, coverage in viewitems(coverage)
             if coverage >= min_cov
         )
 
     def get_attr(self, attr, conv=str):
         """
+
+        .. versionchanged:: 0.3.4
+            any GFF attribute can be returned
+
         .. versionchanged:: 0.3.3
             added *seq_id* as special attribute, in addition do *length*
 
         .. versionadded:: 0.1.13
 
         Generic method to get an attribute and convert it to a specific
-        datatype
+        datatype. The order for the lookup is:
+
+        * length
+        * self.attr (dictionary)
+        * getattr(self) of the first 8 columns of a GFF (seq_id, source, ...)
         """
         if attr == 'length':
             return len(self)
 
-        if attr == 'seq_id':
-            return self.seq_id
+        value = self.attr.get(attr, None)
+        if value is not None:
+            return conv(value)
 
-        try:
-            value = self.attr[attr]
-        except KeyError:
-            raise AttributeNotFound('No {0} attribute found'.format(attr))
+        if attr in ('seq_id', 'source', 'feat_type', 'start', 'end', 'score',
+                    'strand', 'phase'):
+            value = getattr(self, attr, None)
+            if value is not None:
+                return conv(value)
 
-        return conv(value)
+        raise AttributeNotFound('No {0} attribute found'.format(attr))
 
     def set_attr(self, attr, value):
         """
@@ -1059,6 +1085,8 @@ def from_glimmer3(header, line, feat_type='CDS'):
         >>> from_glimmer3(header, line)
 
     """
+    if isinstance(line, bytes):
+        line = line.decode('ascii')
     orf_id, start, end, frame, score = line.split()
 
     start = int(start)
@@ -1113,6 +1141,8 @@ def from_gff(line, strict=True):
         DuplicateKeyError: if the attribute column has duplicate keys
 
     """
+    if isinstance(line, bytes):
+        line = line.decode('ascii')
     line = line.rstrip()
     line = line.split('\t')
 
@@ -1166,7 +1196,7 @@ def from_gff(line, strict=True):
             continue
 
         if value is not None:
-            value = urllib.unquote(value.replace('"', ''))
+            value = unquote(value.replace('"', ''))
         attr[var] = value
 
     return Annotation(**attr)
@@ -1276,7 +1306,7 @@ def annotate_sequence(name, seq, window=None):
     if window is None:
         window = length
 
-    for index in xrange(1, length, window):
+    for index in range(1, length, window):
         annotation = Annotation.from_sequence(name, seq)
         annotation.start = index
         annotation.end = index + window - 1
@@ -1324,10 +1354,10 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False,
         start, end = end, start
         strand = '-'
         if seq_len is not None:
-            phase = (seq_len - end + 1) % 3
+            phase = (seq_len - end) % 3
 
     if strand == '+':
-        phase = start % 3
+        phase = (start - 1) % 3
 
     annotation = Annotation(
         seq_id=seq_id,
@@ -1403,6 +1433,8 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
         be equal to the profile name
 
     """
+    if isinstance(line, bytes):
+        line = line.decode('ascii')
     line = line.split()
     if noframe:
         # no information on the frame is provided (already a protein, so f0)
@@ -1512,14 +1544,17 @@ def parse_gff(file_handle, gff_type=from_gff, strict=True):
         Annotation: an iterator of :class:`Annotation` instances
     """
     if isinstance(file_handle, str):
-        file_handle = mgkit.io.open_file(file_handle, 'r')
+        file_handle = mgkit.io.open_file(file_handle, 'rb')
 
     LOG.info(
         "Loading GFF from file (%s)",
         getattr(file_handle, 'name', repr(file_handle))
     )
 
+    index = 0
+
     for index, line in enumerate(file_handle):
+        line = line.decode('ascii')
         # the first is for GFF with comments and the second for
         # GFF with the fasta file attached
         if line.startswith('#'):
@@ -1678,7 +1713,7 @@ def annotation_coverage(annotations, seqs, strand=True):
         key_func=key_func
     )
 
-    for key, key_ann in annotations.iteritems():
+    for key, key_ann in viewitems(annotations):
         if isinstance(key, str):
             seq_len = len(seqs[key])
         else:
@@ -1863,7 +1898,7 @@ def group_annotations_by_ancestor(annotations, ancestors, taxonomy):
 
     for annotation in annotations:
         anc_found = False
-        for ancestor, anc_ids in ancestors.iteritems():
+        for ancestor, anc_ids in viewitems(ancestors):
             if taxonomy.is_ancestor(annotation.taxon_id, anc_ids):
                 ann_dict[ancestor].append(annotation)
                 anc_found = True
@@ -1903,22 +1938,27 @@ def split_gff_file(file_handle, name_mask, num_files=2):
         >>> name_mask = 'split-file-{0}.gff'
         >>> split_gff_file(files, name_mask, 5)
     """
-    if not isinstance(file_handle, file):
+    if sys.version_info[0] == 2:
+        test_class = file
+    else:
+        test_class = IOBase
+    if not isinstance(file_handle, test_class):
         if isinstance(file_handle, str):
             file_handle = [file_handle]
 
         file_handle = itertools.chain(
-            *(mgkit.io.open_file(x, 'r') for x in file_handle)
+            *(mgkit.io.open_file(x, 'rb') for x in file_handle)
         )
 
     out_handles = [
-        mgkit.io.open_file(name_mask.format(filen), 'w')
-        for filen in xrange(num_files)
+        mgkit.io.open_file(name_mask.format(filen), 'wb')
+        for filen in range(num_files)
     ]
 
     seq_ids = {}
 
     for line in file_handle:
+        line = line.decode('ascii')
         if line.startswith('#'):
             continue
         if line.startswith('>'):
@@ -1932,7 +1972,7 @@ def split_gff_file(file_handle, name_mask, num_files=2):
             seq_ids[seq_id] = new_index
             out_handle = out_handles[new_index]
 
-        out_handle.write(line)
+        out_handle.write(line.encode('ascii'))
 
 
 def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
@@ -2117,31 +2157,33 @@ def from_mongodb(record, lineage=True):
     """
     record = record.copy()
 
-    record['uid'] = record['_id']
+    record['uid']
     del record['_id']
 
-    mappings = record['map'].copy()
-    del record['map']
+    if 'map' in record:
 
-    try:
-        record['EC'] = ','.join(mappings['ec'])
-        del mappings['ec']
-    except KeyError:
-        pass
+        mappings = record['map'].copy()
+        del record['map']
 
-    try:
-        for key in mappings:
-            record['map_{}'.format(key.upper())] = ','.join(mappings[key])
-    except KeyError:
-        pass
+        try:
+            record['EC'] = ','.join(mappings['ec'])
+            del mappings['ec']
+        except KeyError:
+            pass
 
-    try:
-        counts = record['counts'].copy()
-        del record['counts']
-        for key in counts:
-            record['counts_{}'.format(key)] = counts[key]
-    except KeyError:
-        pass
+        try:
+            for key in mappings:
+                record['map_{}'.format(key.upper())] = ','.join(mappings[key])
+        except KeyError:
+            pass
+
+        try:
+            counts = record['counts'].copy()
+            del record['counts']
+            for key in counts:
+                record['counts_{}'.format(key)] = counts[key]
+        except KeyError:
+            pass
 
     try:
         fpkms = record['fpkms'].copy()

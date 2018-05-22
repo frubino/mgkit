@@ -12,7 +12,6 @@ Overview
 Options
 -------
 
-.. argparse::
-   :module: mgkit.workflow.fasta_utils
-   :func: set_parser
+.. click:: mgkit.workflow.fasta_utils:main
    :prog: fasta-utils
+   :show-nested:

@@ -10,7 +10,6 @@ Submodules
    mgkit.plots.boxplot
    mgkit.plots.colors
    mgkit.plots.heatmap
-   mgkit.plots.unused
    mgkit.plots.utils
 
 Module contents

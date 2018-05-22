@@ -28,14 +28,18 @@ Changes
 .. versionchanged:: 0.3.1
     added *translate* and *uid* command
 
+.. versionchanged:: 0.3.4
+    ported to *click*
+
 """
 
 from __future__ import division
-import argparse
+from builtins import range
 import logging
 import sys
 from uuid import uuid4
 
+import click
 import mgkit
 from . import utils
 from mgkit.io import fasta, open_file
@@ -45,124 +49,42 @@ from ..utils.sequence import translate_sequence
 LOG = logging.getLogger(__name__)
 
 
-def set_parser():
-    """
-    Sets command line arguments parser
-    """
-    parser = argparse.ArgumentParser(
-        description='FASTA utilities',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    utils.add_basic_options(parser, manual=__doc__)
-
-    subparsers = parser.add_subparsers()
-
-    parser_split = subparsers.add_parser(
-        'split',
-        help='Splits a FASTA file in a number of fragments'
-    )
-
-    set_split_parser(parser_split)
-    utils.add_basic_options(parser_split, manual=__doc__)
-
-    parser_translate = subparsers.add_parser(
-        'translate',
-        help='Translate FASTA file in all 6 frames'
-    )
-
-    set_translate_parser(parser_translate)
-    utils.add_basic_options(parser_translate, manual=__doc__)
-
-    parser_uid = subparsers.add_parser(
-        'uid',
-        help='Changes the header to a uid (unique ID)'
-    )
-
-    set_uid_parser(parser_uid)
-    utils.add_basic_options(parser_uid, manual=__doc__)
-
-    return parser
+@click.group()
+@click.version_option()
+@utils.cite_option
+def main():
+    "Main function"
+    pass
 
 
-def set_split_parser(parser):
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input FASTA file, defaults to stdin'
-    )
-    parser.add_argument(
-        '-p',
-        '--prefix',
-        type=str,
-        default='split',
-        help='Prefix for the file name in output'
-    )
-    parser.add_argument(
-        '-n',
-        '--number',
-        type=int,
-        default=10,
-        help='Number of chunks into which split the FASTA file'
-    )
-    parser.add_argument(
-        '-z',
-        '--gzip',
-        action='store_true',
-        default=False,
-        help='gzip output files'
-    )
-    parser.set_defaults(func=split_command)
-
-
-def split_command(options):
+@main.command('split', help="""Splits a FASTA file [fasta-file] in a number of
+              fragments""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-p', '--prefix', default='split', show_default=True,
+              help='Prefix for the file name in output')
+@click.option('-n', '--number', type=click.INT, default=10, show_default=True,
+              help='Number of chunks into which split the FASTA file')
+@click.option('-z', '--gzip', is_flag=True, default=False,
+              help='gzip output files')
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+def split_command(verbose, prefix, number, gzip, fasta_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
-        "Splitting FASTA into %d chunks with prefix %s",
-        options.number,
-        options.prefix
+        "Splitting FASTA into %d chunks with prefix (%s)",
+        number,
+        prefix
     )
 
-    name_mask = "%s-{0:05}.fa" % options.prefix
-    if options.gzip:
+    name_mask = "%s-{0:05}.fa" % prefix
+    if gzip:
         name_mask += '.gz'
         LOG.info("Output files will be compressed (gzip)")
 
     fasta.split_fasta_file(
-        options.input_file,
+        fasta_file,
         name_mask,
-        num_files=options.number
+        num_files=number
     )
-
-
-def set_translate_parser(parser):
-    parser.add_argument(
-        '-t',
-        '--trans-table',
-        default='universal',
-        action='store',
-        choices=[
-            table_name.lower() for table_name in dir(trans_tables)
-            if not table_name.startswith('_')
-        ],
-        help='translation table'
-    )
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input FASTA file, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default=sys.stdout,
-        help='Input FASTA file, defaults to stdin'
-    )
-    parser.set_defaults(func=translate_command)
 
 
 def load_trans_table(table_name):
@@ -178,72 +100,51 @@ def translate_seq(name, seq, trans_table):
         yield header.format(name, 'r', start), translate_sequence(seq, start, trans_table, True)
 
 
-def translate_command(options):
+@main.command('translate', help="""Translate FASTA file [fasta-file] in all 6
+              frames to [output-file]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-t', '--trans-table', default='universal', show_default=True,
+              type=click.Choice([table_name.lower() for table_name in dir(trans_tables) if not table_name.startswith('_')]),
+              help='translation table')
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def translate_command(verbose, trans_table, fasta_file, output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
-    trans_table = load_trans_table(options.trans_table)
+    trans_table = load_trans_table(trans_table)
 
-    for name, seq in fasta.load_fasta(options.input_file):
+    for name, seq in fasta.load_fasta(fasta_file):
         for new_header, new_seq in translate_seq(name, seq, trans_table):
-            fasta.write_fasta_sequence(options.output_file, new_header, new_seq)
+            fasta.write_fasta_sequence(output_file, new_header, new_seq)
 
 
-def set_uid_parser(parser):
-    parser.add_argument(
-        '-t',
-        '--table',
-        default=None,
-        action='store',
-        type=str,
-        help='Filename of table of the changes (by default discards it)'
-    )
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input FASTA file, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default=sys.stdout,
-        help='Input FASTA file, defaults to stdin'
-    )
-    parser.set_defaults(func=uid_command)
-
-
-def uid_command(options):
-    if options.table is not None:
-        table_file = open_file(options.table, 'w')
+@main.command('uid', help="""Changes each header of a FASTA file [file-file] to
+              a uid (unique ID)""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-t', '--table', default=None, type=click.File('wb'),
+              help='Filename of a table to record the changes (by default discards it)')
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def uid_command(verbose, table, fasta_file, output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+    if table is not None:
         LOG.info(
             'Writing Table to file (%s)',
-            getattr(options.table, 'name', repr(options.table))
+            getattr(table, 'name', repr(table))
         )
-    else:
-        table_file = None
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
-    for name, seq in fasta.load_fasta(options.input_file):
+    for name, seq in fasta.load_fasta(fasta_file):
         uid = str(uuid4())
-        if table_file is not None:
-            table_file.write("{}\t{}\n".format(uid, name))
+        if table is not None:
+            table.write("{}\t{}\n".format(uid, name).encode('ascii'))
 
-        fasta.write_fasta_sequence(options.output_file, uid, seq)
-
-
-def main():
-    "Main function"
-
-    options = set_parser().parse_args()
-
-    mgkit.logger.config_log(options.verbose)
-    options.func(options)
+        fasta.write_fasta_sequence(output_file, uid, seq)

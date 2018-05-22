@@ -1,5 +1,6 @@
 "Module configuring log information"
 
+import click
 import logging
 import sys
 import os.path
@@ -7,6 +8,20 @@ import os.path
 DEBUG_FMT = "%(asctime)s - %(levelname) 7s - %(name)s->%(funcName)s: " + \
     "%(message)s"
 INFO_FMT = "%(levelname)s - %(name)s: %(message)s"
+
+
+class ColorFormatter(logging.Formatter):
+    colors = {
+        'INFO': 'green',
+        'WARNING': 'yellow',
+        'ERROR': 'magenta',
+        'CRITICAL': 'red',
+        'DEBUG': 'blue',
+    }
+    def format(self, record):
+        color = self.colors.get(record.levelname, None)
+        record.levelname = click.style(record.levelname, fg=color)
+        return super(ColorFormatter, self).format(record)
 
 
 def config_log(level=logging.DEBUG, output=sys.stderr):
@@ -20,9 +35,9 @@ def config_log(level=logging.DEBUG, output=sys.stderr):
     log_handler = logging.StreamHandler(output)
 
     if level == logging.DEBUG:
-        fmt = logging.Formatter(fmt=DEBUG_FMT)
+        fmt = ColorFormatter(fmt=DEBUG_FMT)
     else:
-        fmt = logging.Formatter(fmt=INFO_FMT)
+        fmt = ColorFormatter(fmt=INFO_FMT)
 
     log_handler.setFormatter(fmt)
     log_handler.setLevel(level)

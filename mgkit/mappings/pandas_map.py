@@ -1,7 +1,9 @@
 """
 Module that contains mapping operations on pandas data structures
 """
-
+from __future__ import division
+from future.utils import viewitems
+from builtins import zip
 import pandas
 
 
@@ -18,7 +20,7 @@ def group_dataframe_by_mapping(dataframe, mapping, root_taxon, name_dict=None):
     :return DataFrame: DataFrame filtered
     """
     data_dict = {}
-    for category, id_list in mapping.iteritems():
+    for category, id_list in viewitems(mapping):
         category_name = category
         if name_dict is not None:
             category_name = name_dict[category_name]

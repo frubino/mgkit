@@ -8,7 +8,9 @@ Module containing functions related to sequence data
 
 """
 from __future__ import division  # add check to use only on python 2.x
-
+from builtins import range, zip
+from future.utils import viewitems, viewvalues
+import sys
 import itertools
 import logging
 import random
@@ -48,13 +50,20 @@ def make_reverse_table(tbl=None):
     if tbl is None:
         tbl = REV_COMP
     trans_table = [chr(idx) for idx in range(256)]
-    for nuc, rev in tbl.iteritems():
+    for nuc, rev in viewitems(tbl):
         trans_table[ord(nuc)] = rev
     return ''.join(trans_table)
 
-
-REV_COMP_ASCII = make_reverse_table()
-
+# The maketrans function is not available on Python3
+if sys.version_info[0] == 2:
+    from string import maketrans
+    REV_COMP_ASCII = maketrans('ATCG', 'TAGC')
+    REV_COMP_UNICODE = {
+        ord(unicode(key)): unicode(value)
+        for key, value in viewitems(REV_COMP)
+    }
+else:
+    REV_COMP_ASCII = u''.maketrans(REV_COMP)
 
 def reverse_complement_old(seq, tbl=None):
     """
@@ -80,6 +89,11 @@ def reverse_complement(seq, tbl=REV_COMP_ASCII):
 
     :return str: returns the reverse complement of a nucleotide sequence
     """
+    # Python 2.7 hack with unicode, make sure futurize doesn't change to str
+    # since on Python 3 the first condition won't be true, the second won't be
+    # evaluated
+    if (sys.version_info[0] == 2) and isinstance(seq, unicode):
+        tbl = REV_COMP_UNICODE
     return seq[::-1].translate(tbl)
 
 
@@ -102,7 +116,7 @@ def translate_sequence(sequence, start=0, tbl=None, reverse=False):
 
     trs = []
 
-    for idx in xrange(start, len(sequence), 3):
+    for idx in range(start, len(sequence), 3):
         codon = sequence[idx:idx+3]
         if len(codon) < 3:
             break
@@ -644,7 +658,7 @@ def get_contigs_info(file_name, pp=False):
     """
 
     if isinstance(file_name, dict):
-        seqs = list(file_name.itervalues())
+        seqs = list(viewvalues(file_name))
         file_name = 'dictionary'
     elif isinstance(file_name, list):
         seqs = list(file_name)
@@ -688,7 +702,7 @@ def _sliding_window(seq, size, step=None):
     Yields:
         str: a subsequence of size *size* and step *step*
     """
-    for index in xrange(0, len(seq) - size + 1, size // 2 if step is None else step):
+    for index in range(0, len(seq) - size + 1, size // 2 if step is None else step):
         yield seq[index:index+size]
 
 
@@ -705,7 +719,7 @@ def _get_kmers(seq, k):
     Yields:
         str: a portion of *seq*, of size *k* with a step of *1*
     """
-    for index in xrange(0, len(seq) - k + 1):
+    for index in range(0, len(seq) - k + 1):
         yield seq[index:index+k]
 
 
@@ -759,7 +773,7 @@ def _signatures_matrix(seqs, w_size, k_size=4, step=None):
     """
 
     def flatten_contigs(data):
-        for name, windows in data.iteritems():
+        for name, windows in viewitems(data):
             for index, window in enumerate(windows):
                 yield (name, index), dict(window)
 
@@ -778,7 +792,7 @@ def _signatures_matrix(seqs, w_size, k_size=4, step=None):
     ).T.fillna(0)
 
 
-def random_sequences_codon(n=1, length=150, codons=UNIVERSAL.keys(),
+def random_sequences_codon(n=1, length=150, codons=list(UNIVERSAL.keys()),
                            p=None, frame=None):
     """
     .. versionadded:: 0.3.3
@@ -788,6 +802,12 @@ def random_sequences_codon(n=1, length=150, codons=UNIVERSAL.keys(),
     first sampled with replacement from the codon list, with a number of codons
     that covers the length chosen plus an additional one to allow a frame shift
     as set by *frame*
+
+    .. note::
+
+        If the probability (for each codon) are supplied, the number of
+        sequences required to match those probabilities within a 10% margin of
+        error is of at least 10.000 sequences, for 5% at leas 100.000
 
     Arguments:
         n (int): number of sequences to yield
@@ -809,7 +829,7 @@ def random_sequences_codon(n=1, length=150, codons=UNIVERSAL.keys(),
             frame = 0
         sframe = frame
 
-    for i in xrange(n):
+    for i in range(n):
 
         if frame is None:
             sframe = numpy.random.randint(0, 4)
@@ -837,7 +857,7 @@ def random_sequences(n=1, length=150, p=None):
     """
     nucl = numpy.array(['A', 'C', 'T', 'G'])
 
-    for i in xrange(n):
+    for i in range(n):
 
         yield ''.join(
             numpy.random.choice(nucl, size=length, replace=True, p=p)
@@ -948,7 +968,7 @@ def random_qualities(n=1, length=150, model=None):
 
     base, dist = model
 
-    for x in xrange(n):
+    for x in range(n):
         qual = numpy.round(base + dist.rvs(size=length)).astype(int)
         qual[qual > 40] = 40
         yield qual

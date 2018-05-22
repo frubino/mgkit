@@ -2,13 +2,12 @@
 .. versionadded:: 0.1.14
 """
 
-import colors
-import heatmap
-import boxplot
-import utils
-import unused
+from . import colors
+from . import heatmap
+from . import boxplot
+from . import utils
 
-from colors import *
-from heatmap import *
-from boxplot import *
-from utils import *
+from .colors import *
+from .heatmap import *
+from .boxplot import *
+from .utils import *

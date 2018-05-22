@@ -20,7 +20,7 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
-__VERSION__ = "0.3.3"
+__VERSION__ = "0.3.4"
 
 from setuptools import setup, find_packages
 
@@ -28,33 +28,33 @@ install_requires = [
     'numpy>=1.9.2',
     'pandas>=0.18',
     'progressbar2',
+    'HTSeq>=0.9.1',
+    'semidbm>=0.5.1',
+    'pymongo>=3.1.1',
+    'pysam>=0.14',
+    'scipy>=0.15.1',
+    'matplotlib>=2',
+    'msgpack-python>=0.4.6',
+    'statsmodels>=0.8',
+    'future',
+    'requests',
+    'click>=6',
 ]
+
+# Build of documentation fails on RTD when pytables is
+# required
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+if not on_rtd:
+    install_requires.append('tables>=3.4.2')
+
 
 with open('README.rst') as file:
     long_description = file.read()
 
-if sys.version_info < (2, 7):
-    install_requires.append('argparse>=1.1')
-    install_requires.append('ordereddict>=1.1')
 
 if sys.version_info < (3, 4):
     #support for enum backported from Python 3.4
     install_requires.append('enum34')
-
-extras_require = {
-    'htseq': ['HTSeq>=0.6.0'],
-    'db': ['semidbm>=0.5.1', 'pymongo>=3.1.1'],
-    'pytables': 'tables>=3.4.2',
-    'extra_scripts': [
-        'pysam>=0.8.2.1',
-    ],
-}
-
-extras_require['full'] = [
-    'scipy>=0.15.1',
-    'matplotlib>=1.5',
-    'msgpack-python>=0.4.6'
-] + extras_require['db'] + extras_require['extra_scripts']
 
 setup(
     name="mgkit",
@@ -73,21 +73,17 @@ setup(
         'scripts/download-ncbi-taxa.sh',
         'scripts/sort-gff.sh',
     ],
-    tests_require=['nose>=1.3.4', 'yanc'],
-    extras_require=extras_require,
+    tests_require=['pytest>=3.5', 'pytest-datadir', 'pytest-console-scripts'],
     entry_points={
         'console_scripts': [
-            'download_data = mgkit.workflow.download_data:main [extra_scripts]',
-            'download_profiles = mgkit.workflow.download_profiles:main',
-            'filter-gff = mgkit.workflow.filter_gff:main [extra_scripts]',
-            'add-gff-info = mgkit.workflow.add_gff_info:main [extra_scripts]',
-            'get-gff-info = mgkit.workflow.extract_gff_info:main [db]',
+            'filter-gff = mgkit.workflow.filter_gff:main',
+            'add-gff-info = mgkit.workflow.add_gff_info:main',
+            'get-gff-info = mgkit.workflow.extract_gff_info:main',
             'hmmer2gff = mgkit.workflow.hmmer2gff:main',
             'blast2gff = mgkit.workflow.blast2gff:main',
-            'snp_parser = mgkit.workflow.snp_parser:main [htseq,full]',
-            'translate_seq = mgkit.workflow.nuc2aa:main',
-            'fastq-utils = mgkit.workflow.fastq_utils:main [htseq]',
-            'taxon-utils = mgkit.workflow.taxon_utils:main [pytables]',
+            'snp_parser = mgkit.workflow.snp_parser:main',
+            'fastq-utils = mgkit.workflow.fastq_utils:main',
+            'taxon-utils = mgkit.workflow.taxon_utils:main',
             'json2gff = mgkit.workflow.json2gff:main',
             'fasta-utils = mgkit.workflow.fasta_utils:main',
             'sampling-utils = mgkit.workflow.sampling_utils:main',
@@ -107,7 +103,6 @@ setup(
         'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Bio-Informatics',

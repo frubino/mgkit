@@ -30,49 +30,6 @@ used.
 
     However, a cache is kept to reduce the number of connections
 
-Taxonomy Command
-****************
-
-To refine the taxonomic assignments of predicted genes annotations, the
-annotation sequences may be searched against a database like the NCBI *nt*.
-
-This commands takes as input a GFF file, one or more blast output files and a
-file with all mappings from GIDs to taxonomy IDs. More information on how to
-get the file can be read in the documentation of the function
-:func:`mgkit.io.blast.parse_gi_taxa_table`.
-
-The fasta sequences used with BLAST must have as name the uid of the
-annotations they refer to, and one way to obtain these sequences is to use the
-function :func:`mgkit.io.gff.extract_nuc_seqs` and save them to a fasta file.
-Another options is to use the `sequence` command of the `get-gff-info` script
-(:ref:`get-gff-info`).
-
-The command accept a minimum bitscore to accept an hit and the taxon ID is
-selected by default using top hit method, but LCA can be used, using the *-l*
-switch.
-
-Top Hit
-+++++++
-
-The best hit is selected from all those found for a sequence which has the
-maximum bitscore and identity, with the bitscore having the highest priority.
-
-LCA Taxon
-+++++++++
-
-Activated with the *-l* switch, it selects the last common ancestor of all
-taxon IDs that are from the cellular organism root in the taxonomy and are
-within a 10 bits (by default, can be customised with *-a*) from the hit with
-the highest bitscore. If a taxon ID is not found in the taxonomy, it is
-excluded. One of the requirements of this option is a file that contains the
-full taxonomy from Uniprot/NCBI. The file can be obtained with the following
-command::
-
-    $ download_data -x -p -m your@email
-
-The command will output a `taxonomy.pickle` file that can be passed to the `-x`
-option :ref:`download-data`.
-
 Coverage Command
 ****************
 
@@ -99,16 +56,14 @@ Adding Coverage from samtools depth
 
 The *cov_samtools* allows the use of the output of *samtools* **depth**
 command. The *-aa* options must be used to pass information about all base
-pairs and sequences coverage in the BAM/SAM file. The command accept only one
-sample and the relative file/stream from *samtools*, meaning that multiple
-samples coverage information must be added one at a time. One solution is to
-pipe multiple commands to obtain result wanted. For example::
+pairs and sequences coverage in the BAM/SAM file. The command work similarly to
+*coverage*, accepting compressed *depth* files as well. If only one *depth*
+file is passed and no sample is passed, the attribute in the GFF will be *cov*,
+otherwise the attribute will be *sample1_cov*, *sample2_cov*, etc.
 
-    $ add-gff-info cov_samtools -s SAMPLE1 -d sample1-coverage input.gff | \
-        add-gff-info cov_samtools -s SAMPLE2 -d sample2-coverage - output.gff
+To create samtools *depth* files, this command must be used::
 
-This command will add the coverage information for SAMPLE1 and SAMPLE2 from
-the respective files.
+    $ samtools depth -aa bam_file
 
 Uniprot Offline Mappings
 ************************
@@ -134,12 +89,6 @@ number of synonymous and non-synonymous changes of an annotation. This can be
 done using :meth:`mgkit.io.gff.Annotation.add_exp_syn_count` by the user of the
 command `exp_syn` of this script. The attributes added to each annotation are
 explained in the :ref:`gff-specs`
-
-Adding Information from eggNOG
-******************************
-
-The *eggnog* command allows to add information from the *annotations* file
-available for profiles in eggNOG.
 
 Adding Count Data
 *****************
@@ -213,13 +162,20 @@ warning message is logged.
 Changes
 *******
 
+.. versionchanged:: 0.3.4
+    removed the *taxonomy* command, since a similar result can be obtained with
+    *taxon-utils lca* and *add-gff-info addtaxa*. Removed *eggnog* command and
+    added option to verbose the logging in *cov_samtools* (now is quiet), also
+    changed the interface
+
 .. versionchanged:: 0.3.3
     changed how *addtaxa* *-a* works, to allow the use of *seq_id* as key to
     add the taxon_id
 
 .. versionchanged:: 0.3.0
     added *cov_samtools* command, *--split* option to *exp_syn*, *-c* option to
-    *addtaxa*
+    *addtaxa*. *kegg* now does not skip annotations when the attribute is not
+    found.
 
 .. versionchanged:: 0.2.6
     added *skip-no-taxon* option to *addtaxa*
@@ -255,8 +211,9 @@ Changes
 .. versionadded:: 0.1.12
 """
 from __future__ import division
-import sys
-import argparse
+from builtins import zip
+from future.utils import viewitems, viewvalues
+from functools import reduce
 import logging
 import itertools
 import functools
@@ -264,13 +221,15 @@ import pysam
 import json
 import pickle
 import progressbar
+import click
+import msgpack
 import mgkit
+import mgkit.counts.func
 from . import utils
 from .. import align
 from .. import logger
 from .. import taxon
 from .. import kegg
-from .. import DependencyError
 from ..io import gff, blast, fasta, compressed_handle, open_file
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
@@ -281,84 +240,53 @@ from ..utils.dictionary import cache_dict_file, HDFDict
 LOG = logging.getLogger(__name__)
 
 
-def set_common_options(parser):
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input GFF file, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default=sys.stdout,
-        help='Output GFF file, defaults to stdout'
-    )
+@click.group()
+@click.version_option()
+@utils.cite_option
+def main():
+    "Main function"
+    pass
 
 
-def set_kegg_parser(parser):
-    parser.add_argument(
-        '-c',
-        '--email',
-        action='store',
-        type=str,
-        help='Contact email',
-        default=None
-    )
-    group = parser.add_argument_group('Requires Internet connection')
-    group.add_argument(
-        '-d',
-        '--description',
-        action='store_true',
-        default=False,
-        help='Add Kegg description'
-    )
-    group.add_argument(
-        '-p',
-        '--pathways',
-        action='store_true',
-        default=False,
-        help='Add pathways ID involved'
-    )
-    group.add_argument(
-        '-m',
-        '--kegg-id',
-        action='store',
-        default='gene_id',
-        help="""
-        In which attribute the Kegg ID is stored (defaults to *gene_id*)"""
-    )
-    parser.set_defaults(func=kegg_command)
-
-
-def kegg_command(options):
-
+@main.command('kegg', help="""Adds information and mapping from Kegg""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-c', '--email', help='Contact email', required=True)
+@click.option('-d', '--description', default=False, is_flag=True,
+              help='Add Kegg description')
+@click.option('-p', '--pathways', is_flag=True, default=False,
+              help='Add pathways ID involved')
+@click.option('-m', '--kegg-id', default='gene_id',
+              help="""In which attribute the Kegg ID is stored (defaults to *gene_id*)""")
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def kegg_command(verbose, email, description, pathways, kegg_id, input_file,
+                 output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
     kegg_client = kegg.KeggClientRest()
 
     LOG.info('Retrieving KO names')
-    ko_names = kegg_client.get_names('ko')
+    ko_names = kegg_client.get_ids_names('ko')
 
-    if options.pathways:
+    if pathways:
         LOG.info('Retrieving Pathways names')
         # Changes the names of the keys to *ko* instead of *map*
         path_names = dict(
             (path_id.replace('map', 'ko'), name)
-            for path_id, name in kegg_client.get_names('path').iteritems()
+            for path_id, name in viewitems(kegg_client.get_ids_names('path'))
         )
 
     ko_cache = {}
 
-    for annotation in gff.parse_gff(options.input_file, gff_type=gff.from_gff):
+    for annotation in gff.parse_gff(input_file, gff_type=gff.from_gff):
         try:
-            ko_id = annotation.attr[options.kegg_id]
+            ko_id = annotation.attr[kegg_id]
         except KeyError:
+            annotation.to_file(output_file)
             continue
         # if more than one KO is defined
         if ',' in ko_id:
@@ -366,13 +294,13 @@ def kegg_command(options):
                 'More than one KO assigned, skipping annotation: %s',
                 annotation.uid
             )
-            annotation.to_file(options.output_file)
+            annotation.to_file(output_file)
             continue
         try:
             ko_info = ko_cache[ko_id]
         except KeyError:
             ko_info = {}
-            if options.pathways:
+            if pathways:
                 ko_info['pathway'] = kegg_client.link_ids('path', ko_id)
                 # If left empty, no pathway will be saved
                 if ko_info['pathway']:
@@ -382,114 +310,38 @@ def kegg_command(options):
                         if path_id.startswith('ko')
                     )
             ko_cache[ko_id] = ko_info
-        if options.description:
+        if description:
             annotation.attr['ko_description'] = ko_names.get(ko_id, ko_id)
-        if options.pathways and ko_info['pathway']:
+        if pathways and ko_info['pathway']:
             annotation.attr['ko_pathway'] = ','.join(ko_info['pathway'])
             annotation.attr['ko_pathway_names'] = ','.join(
                 path_names[path_id]
                 for path_id in ko_info['pathway']
             )
 
-        annotation.to_file(options.output_file)
+        annotation.to_file(output_file)
 
 
-def set_uniprot_parser(parser):
-    parser.add_argument(
-        '-c',
-        '--email',
-        action='store',
-        type=str,
-        help='Contact email',
-        default=None
-    )
-    parser.add_argument(
-        '--buffer',
-        action='store',
-        type=int,
-        help='Number of annotations to keep in memory',
-        default=50
-    )
-    group = parser.add_argument_group('Requires Internet connection')
-    group.add_argument(
-        '-f',
-        '--force-taxon-id',
-        action='store_true',
-        default=False,
-        help='Overwrite taxon_id if already present'
-    )
-    group.add_argument(
-        '-t',
-        '--taxon-id',
-        action='store_true',
-        default=False,
-        help="""
-             Add taxonomic ids to annotations, if taxon_id is found, it won't
-             be Overwritten.
-             """
-    )
-    group.add_argument(
-        '-l',
-        '--lineage',
-        action='store_true',
-        default=False,
-        help='Add taxonomic lineage to annotations'
-    )
-    group.add_argument(
-        '-e',
-        '--eggnog',
-        action='store_true',
-        default=False,
-        help='Add eggNOG mappings to annotations'
-    )
-    group.add_argument(
-        '-ec',
-        action='store_true',
-        default=False,
-        help='Add EC mappings to annotations'
-    )
-    group.add_argument(
-        '-ko',
-        action='store_true',
-        default=False,
-        help='Add KO mappings to annotations'
-    )
-    group.add_argument(
-        '-d',
-        '--protein-names',
-        action='store_true',
-        default=False,
-        help='Add Uniprot description'
-    )
-    group.add_argument(
-        '-m',
-        '--mapping',
-        action='append',
-        type=str,
-        help='Add any DB mappings to annotations'
-    )
-
-    parser.set_defaults(func=uniprot_command)
-
-
-def add_uniprot_info(annotations, options, info_cache):
+def add_uniprot_info(annotations, email, force_taxon_id, taxon_id, lineage,
+                     eggnog, enzymes, kegg_orthologs, protein_names, mapping,
+                     info_cache):
     columns = []
 
-    if options.taxon_id:
+    if taxon_id:
         columns.append('organism')
         columns.append('organism-id')
-    if options.eggnog:
+    if eggnog:
         columns.append('database(EGGNOG)')
-    if options.ko:
+    if kegg_orthologs:
         columns.append('database(KO)')
-    if options.ec:
+    if enzymes:
         columns.append('ec')
-    if options.lineage:
+    if lineage:
         columns.append('lineage(ALL)')
-    if options.mapping is not None:
-        for db in options.mapping:
+    if mapping is not None:
+        for db in mapping:
             columns.append('database({0})'.format(db))
-    if options.protein_names:
+    if protein_names:
         columns.append('protein names')
 
     if not columns:
@@ -509,7 +361,7 @@ def add_uniprot_info(annotations, options, info_cache):
         data = uniprot_net.get_gene_info(
             gene_ids,
             columns=columns,
-            contact=options.email
+            contact=email
         )
 
         info_cache.update(data)
@@ -521,13 +373,13 @@ def add_uniprot_info(annotations, options, info_cache):
             # no data was found
             continue
 
-        for column, values in gene_info.iteritems():
+        for column, values in viewitems(gene_info):
             # nothing found
             if not values:
                 continue
 
             if column == 'organism-id':
-                if (annotation.taxon_id and options.force_taxon_id) or \
+                if (annotation.taxon_id and force_taxon_id) or \
                    (annotation.taxon_id is None):
                     annotation.attr['taxon_id'] = int(values)
                     annotation.attr['taxon_db'] = 'UNIPROT'
@@ -554,370 +406,196 @@ def add_uniprot_info(annotations, options, info_cache):
                 annotation.attr['uniprot_description'] = values
 
 
-def uniprot_command(options):
+@main.command('uniprot', help="""Adds information from GFF whose gene_id is
+              from Uniprot""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-c', '--email', help='Contact email', required=True)
+@click.option('--buffer', type=click.INT, default=50, show_default=True,
+              help='Number of annotations to keep in memory')
+@click.option('-f', '--force-taxon-id', default=False, is_flag=True,
+              help='Overwrite taxon_id if already present')
+@click.option('-t', '--taxon-id', default=False, is_flag=True,
+              help="""Add taxonomic ids to annotations, if taxon_id is found, it won't be Overwritten.""")
+@click.option('-l', '--lineage', default=False, is_flag=True,
+              help='Add taxonomic lineage to annotations')
+@click.option('-e', '--eggnog', default=False, is_flag=True,
+              help='Add eggNOG mappings to annotations')
+@click.option('-ec', '--enzymes', default=False, is_flag=True,
+              help='Add EC mappings to annotations')
+@click.option('-ko', '--kegg_orthologs', default=False, is_flag=True,
+              help='Add KO mappings to annotations')
+@click.option('-d', '--protein-names', default=False, is_flag=True,
+              help='Add Uniprot description')
+@click.option('-m', '--mapping', multiple=True, default=None,
+              help='Add any DB mappings to annotations')
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def uniprot_command(verbose, email, buffer, force_taxon_id, taxon_id, lineage,
+                    eggnog, enzymes, kegg_orthologs, protein_names, mapping,
+                    input_file, output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
-    if options.buffer < 1:
-        options.buffer = 1
+    if buffer < 1:
+        buffer = 1
 
     ann_buffer = []
 
     info_cache = {}
 
-    for annotation in gff.parse_gff(options.input_file, gff_type=gff.from_gff):
+    for annotation in gff.parse_gff(input_file, gff_type=gff.from_gff):
 
         ann_buffer.append(annotation)
 
-        if len(ann_buffer) == options.buffer:
+        if len(ann_buffer) == buffer:
 
-            add_uniprot_info(ann_buffer, options, info_cache)
+            add_uniprot_info(ann_buffer, email, force_taxon_id, taxon_id,
+                             lineage, eggnog, enzymes, kegg_orthologs,
+                             protein_names, mapping, info_cache)
 
             for annotation in ann_buffer:
-                annotation.to_file(options.output_file)
+                annotation.to_file(output_file)
 
             ann_buffer = []
     else:
-        add_uniprot_info(ann_buffer, options, info_cache)
+        add_uniprot_info(ann_buffer, email, force_taxon_id, taxon_id, lineage,
+                         eggnog, enzymes, kegg_orthologs, protein_names,
+                         mapping, info_cache)
 
         for annotation in ann_buffer:
-            annotation.to_file(options.output_file)
+            annotation.to_file(output_file)
 
 
-def set_blast_taxonomy_parser(parser):
-    parser.add_argument(
-        '-t',
-        '--gi-taxa-table',
-        action='store',
-        default=None,
-        required=True,
-        help="GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz)"
-    )
-    parser.add_argument(
-        '-b',
-        '--blast-output',
-        action='append',
-        default=None,
-        required=True,
-        help="BLAST output file(s)"
-    )
-    parser.add_argument(
-        '-s',
-        '--bitscore',
-        action='store',
-        default=40,
-        type=float,
-        help="Minimum bitscore allowed"
-    )
-    parser.add_argument(
-        '-d',
-        '--taxon-db',
-        action='store',
-        default='NCBI-NT',
-        help="NCBI database used"
-    )
-    group = parser.add_argument_group('LCA options')
-    group.add_argument(
-        '-l',
-        '--lca',
-        action='store_true',
-        default=False,
-        help="Use last common ancestor to solve ambiguities"
-    )
-    group.add_argument(
-        '-x',
-        '--taxonomy',
-        action='store',
-        type=argparse.FileType('r'),
-        default=None,
-        help="Taxonomy file"
-    )
-    group.add_argument(
-        '-a',
-        '--max-diff',
-        action='store',
-        default=10,
-        type=float,
-        help="Bitscore difference from the max hit"
-    )
-    parser.set_defaults(func=taxonomy_command)
-
-
-def get_gids(uid_gid_map):
-
-    gids = set()
-
-    for hits in uid_gid_map.itervalues():
-        gids.update(x[0] for x in hits)
-
-    return gids
-
-
-def choose_by_lca(hits, taxonomy, gid_taxon_map, score=10):
-    # the minimum score required to be part of the taxon IDs selected is to
-    # be at most 10 bits (by default) from the maximum bitscore found in the
-    # hits
-    min_score = max(hits, key=lambda x: x[-1])[-1] - score
-
-    # filter over only cellular organisms
-    cellular_organism = 131567
-
-    taxon_ids = set()
-
-    for gid, identity, bitscore in hits:
-        # No taxon_id found for the gid
-        taxon_id = gid_taxon_map.get(gid, None)
-
-        # skip already included taxon_ids
-        if taxon_id in taxon_ids:
-            continue
-
-        # if the requirements are met
-        if (taxon_id is not None) and (bitscore >= min_score):
-            try:
-                # test to make sure it is a cellular organism
-                if taxon.is_ancestor(taxonomy, taxon_id, cellular_organism):
-                    taxon_ids.add(taxon_id)
-                # not part of the loop
-                else:
-                    LOG.debug("%d not part of cellular organisms", taxon_id)
-            # The taxon id is not in the taxonomy used. It's skipped
-            except KeyError:
-                LOG.warning("%d is not part of the taxonomy", taxon_id)
-                continue
-
-    # no taxon_id passes the filters
-    if len(taxon_ids) == 0:
-        return None
-
-    # log message fired up only if the package is set on DEBUG
-    if mgkit.DEBUG and (len(taxon_ids) > 1):
-        LOG.debug(
-            "Num hits %d: %s",
-            len(taxon_ids),
-            ','.join(
-                taxonomy[taxon_id].s_name
-                for taxon_id in taxon_ids
-                if taxon_id in taxonomy
-            )
-        )
-
-    func = functools.partial(
-        taxon.last_common_ancestor,
-        taxonomy
-    )
-
-    return reduce(func, taxon_ids)
-
-
-def choose_by_score(hits, gid_taxon_map):
-    return gid_taxon_map.get(max(hits, key=lambda x: (x[-1], x[-2]))[0], None)
-
-
-def taxonomy_command(options):
-
-    LOG.info(
-        'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
-    )
-
-    if options.lca:
-        LOG.info(
-            "Using LCA to resolve multiple hits %.2f bits from the top hit",
-            options.max_diff
-        )
-        if options.taxonomy is None:
-            utils.exit_script('A taxonomy file is required', 1)
-        options.taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
-
-    uid_gid_map = dict(
-        itertools.chain(
-            *(
-                blast.parse_fragment_blast(x, bitscore=options.bitscore)
-                for x in options.blast_output
-            )
-        )
-    )
-
-    gids = get_gids(uid_gid_map)
-
-    gid_taxon_map = dict(
-        (gid, taxon_id)
-        for gid, taxon_id in blast.parse_gi_taxa_table(
-            options.gi_taxa_table, gids=gids
-        )
-    )
-
-    count = 0
-    tot_count = 0
-
-    for annotation in gff.parse_gff(options.input_file):
-        tot_count += 1
-
-        hits = uid_gid_map.get(annotation.uid, None)
-
-        if hits is not None:
-            if options.lca:
-                taxon_id = choose_by_lca(
-                    hits,
-                    options.taxonomy,
-                    gid_taxon_map,
-                    options.max_diff
-                )
-                if taxon_id is not None:
-                    LOG.debug(
-                        "Selected %s (%s) by LCA",
-                        options.taxonomy[taxon_id].s_name,
-                        options.taxonomy[taxon_id].rank
-                    )
-            else:
-                taxon_id = choose_by_score(
-                    hits,
-                    gid_taxon_map
-                )
-        else:
-            taxon_id = None
-
-        if taxon_id is not None:
-            count += 1
-            annotation.taxon_id = taxon_id
-            annotation.taxon_db = options.taxon_db
-
-        annotation.to_file(options.output_file)
-
-    LOG.info(
-        "Added taxonomy information to %.2f%% annotations (%d/%d)",
-        count / tot_count * 100,
-        count,
-        tot_count
-    )
-
-
-def split_sample_alg(argument):
+def split_sample_alg(ctx, param, values):
     "Split sample/alignment option"
-    try:
-        sample, bam_file_name = argument.split(',', 1)
-    except ValueError:
-        raise argparse.ArgumentTypeError(
-            "Can't get get both sample and bam file from '%s'" % argument
-        )
 
-    return (sample, bam_file_name)
+    new_values = []
+    for value in values:
+        try:
+            sample, bam_file_name = value.split(',', 1)
+        except ValueError:
+            raise click.BadParameter(
+                "Can't get get both sample and bam file from '%s'" % value
+            )
+        new_values.append((sample, bam_file_name))
 
-
-def set_coverage_parser(parser):
-    parser.add_argument(
-        '-a',
-        '--sample-alignment',
-        action='append',
-        required=True,
-        type=split_sample_alg,
-        help='sample name and correspondent alignment file separated by comma'
-    )
-    parser.set_defaults(func=coverage_command)
+    return new_values
 
 
-def coverage_command(options):
+@main.command('coverage', help="""Adds coverage information from BAM Alignment
+              files""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-a', '--sample-alignment', multiple=True, required=True,
+              callback=split_sample_alg,
+              help='sample name and correspondent alignment file separated by comma')
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def coverage_command(verbose, sample_alignment, input_file, output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     samples = []
     bam_files = []
 
-    for sample, bam_file_name in options.sample_alignment:
+    for sample, bam_file_name in sample_alignment:
         samples.append(sample)
         bam_files.append(pysam.Samfile(bam_file_name, 'rb'))
 
     if len(samples) != len(set(samples)):
-        LOG.critical("There are duplicate sample names")
-        return 1
+        utils.exit_script("There are duplicate sample names", 1)
 
-    annotations = list(gff.parse_gff(options.input_file))
+    annotations = list(gff.parse_gff(input_file))
 
     align.add_coverage_info(annotations, bam_files, samples)
 
-    gff.write_gff(annotations, options.output_file)
+    gff.write_gff(annotations, output_file)
 
 
-def set_exp_syn_parser(parser):
+@main.command('exp_syn', help="""Adds expected synonymous and non-synonymous
+              changes information""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-r', '--reference', required=True, type=click.File('rn'),
+              help='reference sequence in fasta format')
+@click.option('-s', '--split', default=False, is_flag=True,
+              help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def exp_syn_command(verbose, reference, split, input_file, output_file):
     """
     .. versionadded:: 0.1.16
     """
-    parser.add_argument(
-        '-r',
-        '--reference',
-        required=True,
-        type=argparse.FileType('r'),
-        help='reference sequence in fasta format'
-    )
-    parser.add_argument(
-        '-s',
-        '--split',
-        action='store_true',
-        help='''Split the sequence header of the reference at the first
-        space, to emulate BLAST behaviour''',
-        default=False
-    )
-    parser.set_defaults(func=exp_syn_command)
-
-
-def exp_syn_command(options):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
-
-    """
-    .. versionadded:: 0.1.16
-    """
 
     seqs = dict(
         (
-            seq_id.split(' ')[0] if options.split else seq_id,
+            seq_id.split(' ')[0] if split else seq_id,
             seq
         )
-        for seq_id, seq in fasta.load_fasta(options.reference)
+        for seq_id, seq in fasta.load_fasta(reference)
     )
 
-    for annotation in gff.parse_gff(options.input_file):
+    for annotation in gff.parse_gff(input_file):
         annotation.add_exp_syn_count(seqs[annotation.seq_id])
 
-        annotation.to_file(options.output_file)
+        annotation.to_file(output_file)
 
 
-def uniprot_offline_command(options):
+@main.command('unipfile', help="""Adds expected synonymous and non-synonymous
+              changes information""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-i', '--mapping-file', default='idmapping.dat.gz', required=True,
+              help="Uniprot mapping file")
+@click.option('-f', '--force-taxon-id', default=False, is_flag=True,
+              help="Overwrite taxon_id if already present")
+@click.option('-m', '--mapping', multiple=True, default=None, required=True,
+              type=click.Choice(list(uniprot_io.MAPPINGS.values())),
+              help="Mappings to add")
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def uniprot_offline_command(verbose, mapping_file, force_taxon_id, mapping,
+                            input_file, output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
-    LOG.info("Mappings selected: %s", ', '.join(options.mapping))
+    LOG.info("Mappings selected: %s", ', '.join(mapping))
 
     annotations = []
     gene_ids = set()
 
-    for annotation in gff.parse_gff(options.input_file):
+    for annotation in gff.parse_gff(input_file):
         annotations.append(annotation)
         gene_ids.add(annotation.gene_id)
 
     iterator = uniprot_io.uniprot_mappings_to_dict(
-        options.mapping_file,
+        mapping_file,
         gene_ids=set(gene_ids),
-        mappings=set(options.mapping)
+        mappings=set(mapping),
+        num_lines=None
     )
 
-    file_mappings = dict(iterator)
+    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+
+    file_mappings = dict(bar(iterator))
 
     count = 0
 
     for annotation in annotations:
         try:
             mappings = file_mappings[annotation.gene_id]
-            for mapping_id, mapping_values in mappings.iteritems():
+            for mapping_id, mapping_values in viewitems(mappings):
                 if mapping_id == uniprot_io.MAPPINGS['taxonomy']:
-                    if (annotation.taxon_id and options.force_taxon_id) or \
+                    if (annotation.taxon_id and force_taxon_id) or \
                        (annotation.taxon_id is None):
                         annotation.taxon_id = mapping_values[0]
                         annotation.taxon_db = 'UNIPROT'
@@ -927,7 +605,7 @@ def uniprot_offline_command(options):
         except KeyError:
             pass
 
-        annotation.to_file(options.output_file)
+        annotation.to_file(output_file)
 
     LOG.info(
         "Number of annotation changed: %d/%d (%.2f%%)",
@@ -937,204 +615,114 @@ def uniprot_offline_command(options):
     )
 
 
-def set_uniprot_offline_parser(parser):
-    parser.add_argument(
-        '-i',
-        '--mapping-file',
-        action='store',
-        default='idmapping.dat.gz',
-        required=True,
-        help="Uniprot mapping file"
-    )
-    parser.add_argument(
-        '-f',
-        '--force-taxon-id',
-        action='store_true',
-        default=False,
-        help="Overwrite taxon_id if already present"
-    )
-    parser.add_argument(
-        '-m',
-        '--mapping',
-        action='append',
-        default=None,
-        required=True,
-        choices=uniprot_io.MAPPINGS.values(),
-        help="Mappings to add"
-    )
-    parser.set_defaults(func=uniprot_offline_command)
-
-
-def read_lines_from_files(file_handles):
-    file_handles = [
-        compressed_handle(file_handle)
-        if file_handle.name.endswith('gz')
-        else file_handle
-
-        for file_handle in file_handles
-    ]
-    for line in itertools.chain(*(x for x in file_handles)):
-        # the __ is for HTSeq-count files, # for featureCounts
-        if line.startswith('#') or line.startswith('__'):
-            continue
-        yield line.strip()
-
-
-def eggnog_command(options):
-
-    LOG.info(
-        'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
-    )
-
-    base_info = {}
-    LOG.info(
-        "Reading eggNOG annotations from files: %s",
-        ', '.join(x.name for x in options.annotations_file)
-    )
-    for line in read_lines_from_files(options.annotations_file):
-        level, gene_id, description, source = line.split('\t')
-        base_info[gene_id] = dict(
-            level=level,
-            description=description,
-            source=source
-        )
-    for annotation in gff.parse_gff(options.input_file):
-        try:
-            ann_info = base_info[annotation.gene_id]
-            for key, value in ann_info.iteritems():
-                annotation.set_attr(
-                    'eggnog_{}'.format(key),
-                    value
-                )
-        except KeyError:
-            LOG.warning('No annotation for gene_id %s', annotation.gene_id)
-        annotation.to_file(options.output_file)
-
-
-def set_eggnog_parser(parser):
-    parser.add_argument(
-        '-a',
-        '--annotations-file',
-        action='append',
-        required=True,
-        type=argparse.FileType('r'),
-        help="Annotations file"
-    )
-    parser.set_defaults(func=eggnog_command)
-
-
-def load_counts(count_files, samples, featureCounts):
-    LOG.info("Sample: %s", ', '.join(samples))
-
+def load_htseq_count_files(count_files, samples):
     counts = {}
 
-    index = 6 if featureCounts else 1
-
-    for line in read_lines_from_files(count_files):
-        # featureCounts puts the header on the second line
-        # the first is skipped by read_lines_from_files
-        # as it starts with a #
-        if featureCounts and line.startswith('Geneid'):
-            continue
-        line = line.split('\t')
-        uid = line[0]
-        if len(line[index:]) != len(samples):
-            utils.exit_script(
-                "The number of samples is not the same as the columns in " +
-                "the count file",
-                2
-            )
-        counts[uid] = {}
-        for sample, count in zip(samples, line[index:]):
-            count = float(count)
-            # to save some memory
-            if count == 0:
-                continue
+    for sample, count_file in zip(samples, count_files):
+        for uid, count in mgkit.counts.func.load_htseq_counts(count_file):
+            if uid not in counts:
+                counts[uid] = {}
             counts[uid][sample] = count
-
-    LOG.info("Loaded counts for %s annotations", len(counts))
 
     return counts
 
 
-def counts_command(options):
+def load_featurecounts_files(count_files, samples):
+    counts = {}
+    for sample, count_file in zip(samples, count_files):
+        for line in open_file(count_file, 'rb'):
+            line = line.decode('ascii')
+            if line.startswith('#') or line.lower().startswith('geneid'):
+                continue
+            line = line.split('\t')
+            uid = line[0]
+            counts[uid] = dict(zip(samples, line[-4:]))
+    return counts
+
+
+@main.command('counts', help="""Adds counts data to the GFF file""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-s', '--samples', required=True, multiple=True,
+              help="""Sample names, in the same order as the count files""")
+@click.option('-c', '--count-files', multiple=True, required=True, help="Count file(s)")
+@click.option('-f', '--fpkms', default=False, is_flag=True,
+              help="If the counts are FPKMS")
+@click.option('-e', '--featureCounts', default=False, is_flag=True,
+              help="""If the counts files are from featureCounts""")
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def counts_command(verbose, samples, count_files, fpkms, featurecounts,
+                   input_file, output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
-    counts = load_counts(
-        options.count_files,
-        options.samples,
-        options.featureCounts
-    )
+    if featurecounts:
+        counts = load_featurecounts_files(count_files, samples)
+    else:
+        counts = load_htseq_count_files(count_files, samples)
 
-    key = "fpkms_{}" if options.fpkms else "counts_{}"
+    key = "fpkms_{}" if fpkms else "counts_{}"
 
-    for annotation in gff.parse_gff(options.input_file):
+    for annotation in gff.parse_gff(input_file):
         try:
             ann_counts = counts[annotation.uid]
         except KeyError:
             LOG.warning("No counts found for annotation %s", annotation.uid)
-            annotation.to_file(options.output_file)
+            annotation.to_file(output_file)
             continue
 
-        for sample in options.samples:
+        for sample in samples:
             annotation.attr[key.format(sample)] = ann_counts.get(sample, 0)
 
-        annotation.to_file(options.output_file)
+        annotation.to_file(output_file)
 
 
-def set_counts_parser(parser):
-    parser.add_argument(
-        '-s',
-        '--samples',
-        action='store',
-        required=True,
-        type=lambda x: [y for y in x.split(',') if y],
-        help="Comma separated sample names, in the same order as the count " +
-             " file"
-    )
-    parser.add_argument(
-        '-c',
-        '--count-files',
-        action='append',
-        required=True,
-        type=argparse.FileType('r'),
-        help="Count file(s)"
-    )
-    parser.add_argument(
-        '-f',
-        '--fpkms',
-        action='store_true',
-        default=False,
-        help="If the counts are FPKMS"
-    )
-    parser.add_argument(
-        '-e',
-        '--featureCounts',
-        action='store_true',
-        default=False,
-        help="If the counts files are from featureCounts (using the -f option)"
-    )
-    parser.set_defaults(func=counts_command)
+def parse_hdf5_arg(ctx, param, values):
+    if values is None:
+        return values
+    try:
+        file_name, table = values.strip().split(':')
+    except ValueError:
+        raise click.BadParameter("""The HDF5 file name must be followed by ':'
+                                 and the name of the table""")
 
-
-def parse_hdf5_arg(argument):
-    file_name, table = argument.strip().split(':')
     return (file_name, table)
 
 
-def addtaxa_command(options):
+@main.command('addtaxa', help='''Adds taxonomy information from a GI-Taxa,
+              gene_id/taxon_id table or a dictionary serialised as a
+              pickle/msgpack/json file, or a table in a HDF5 file''')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-t', '--gene-taxon-table', default=None,
+              help="""GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz) or a similar file where GENE/TAXON are tab separated and one per line""")
+@click.option('-a','--gene-attr', default='gene_id',
+              help="""In which attribute the GENEID in the table is stored (defaults to *gene_id*)""")
+@click.option('-f', '--hdf-table', default=None, callback=parse_hdf5_arg,
+              help="""HDF5 file and table name to use for taxon_id lookups. The format to pass is the file name, colon and the table file hf5:taxa-table. The index in the table is the accession_id, while the column `taxon_id` stores the taxon_id as int""")
+@click.option('-x', '--taxonomy', default=None, help="""Taxonomy file - If given, both *taxon_name* and *lineage* attributes will be set""")
+@click.option('-d', '--dictionary', default=None, help="""A serialised dictionary, where the key is the GENEID and the value is TAXONID. It can be in json or msgpack format (can be a compressed file) *Note*: the dictionary values takes precedence over the table files""")
+@click.option('-e', '--skip-no-taxon', default=False, is_flag=True,
+              help="""If used, annotations with no taxon_id won't be outputted""")
+@click.option('-db', '--taxon-db', default='NONE', help="""DB used to add the taxonomic information""")
+@click.option('-c', '--cache-table', default=False, is_flag=True,
+              help="""If used, annotations are not preloaded, but the taxa table is cached, instead""")
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
+                    dictionary, skip_no_taxon, taxon_db, cache_table,
+                    input_file, output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
-    if (options.gene_taxon_table is not None) and (not options.cache_table):
+    if (gene_taxon_table is not None) and (not cache_table):
         annotations = []
         gene_ids = set()
 
@@ -1142,52 +730,48 @@ def addtaxa_command(options):
         # the one from NCBI, so only the gene_ids necessary are taken from that
         # table to save memory
 
-        for annotation in gff.parse_gff(options.input_file):
+        for annotation in gff.parse_gff(input_file):
             annotations.append(annotation)
-            gene_ids.add(annotation.attr[options.gene_attr])
+            gene_ids.add(annotation.get_attr(gene_attr, str))
         gene_ids = dict(
             blast.parse_accession_taxa_table(
-                options.gene_taxon_table,
+                gene_taxon_table,
                 acc_ids=gene_ids,
                 key=0,
                 value=1,
                 no_zero=True
             )
         )
-    elif (options.gene_taxon_table is not None) and options.cache_table:
-        annotations = gff.parse_gff(options.input_file)
+    elif (gene_taxon_table is not None) and cache_table:
+        annotations = gff.parse_gff(input_file)
         gene_ids = cache_dict_file(
             blast.parse_accession_taxa_table(
-                options.gene_taxon_table,
+                gene_taxon_table,
                 key=0,
                 value=1,
                 no_zero=True
             )
         )
-    elif options.hdf_table is not None:
+    elif hdf_table is not None:
         try:
-            gene_ids = HDFDict(options.hdf_table[0], options.hdf_table[1])
+            gene_ids = HDFDict(hdf_table[0], hdf_table[1])
         except ValueError as e:
             utils.exit_script(
                 str(e),
                 3
             )
-        annotations = gff.parse_gff(options.input_file)
+        annotations = gff.parse_gff(input_file)
     else:
         # in case a dictionary is supplied, it's expected to fit in memory,
         # meaning that the GFF doesn't have to be preloaded
-        annotations = gff.parse_gff(options.input_file)
+        annotations = gff.parse_gff(input_file)
         gene_ids = {}
 
-    if (options.dictionary is not None) and (options.hdf_table is None):
-        dict_file = open_file(options.dictionary, 'r')
-        if '.json' in options.dictionary:
+    if (dictionary is not None) and (hdf_table is None):
+        dict_file = open_file(dictionary, 'r')
+        if '.json' in dictionary:
             gene_ids.update(json.load(dict_file))
         elif '.msgpack':
-            try:
-                import msgpack
-            except ImportError:
-                raise DependencyError('msgpack')
             gene_ids.update(msgpack.load(dict_file))
         else:
             gene_ids.update(pickle.load(dict_file))
@@ -1195,32 +779,34 @@ def addtaxa_command(options):
         # Ensures all taxon_ids are *int*
         gene_ids = dict(
             (key, int(value))
-            for key, value in gene_ids.iteritems()
+            for key, value in viewitems(gene_ids)
         )
 
-    if options.taxonomy is not None:
-        taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+    if taxonomy is not None:
+        taxonomy = taxon.Taxonomy(taxonomy)
 
-    if options.hdf_table is not None:
+    if hdf_table is not None:
         bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
         annotations = bar(annotations)
 
-    for annotation in annotations:
-        gene_id = annotation.get_attr(options.gene_attr, str)
+    count = 0
+    for lineno, annotation in enumerate(annotations):
+        gene_id = annotation.get_attr(gene_attr, str)
         try:
             taxon_id = gene_ids[gene_id]
             annotation.taxon_id = taxon_id
-            annotation.set_attr('taxon_db', options.taxon_db)
+            annotation.set_attr('taxon_db', taxon_db)
+            count += 1
         except KeyError:
-            LOG.error(
+            LOG.warning(
                 "No Taxon ID for GENE - %s",
                 gene_id
             )
             taxon_id = None
-            if options.skip_no_taxon:
+            if skip_no_taxon:
                 continue
 
-        if (options.taxonomy is not None) and (taxon_id is not None):
+        if (taxonomy is not None) and (taxon_id is not None):
             try:
                 annotation.attr['taxon_name'] = taxonomy[taxon_id].s_name
                 annotation.attr['lineage'] = ','.join(
@@ -1231,298 +817,83 @@ def addtaxa_command(options):
             except KeyError:
                 LOG.warning("Taxon ID %d not found in the Taxonomy", taxon_id)
 
-        annotation.to_file(options.output_file)
+        annotation.to_file(output_file)
+
+    LOG.info("Percentage of annotations changed %.2f%%", count / (count + 1) * 100)
 
 
-def set_addtaxa_parser(parser):
-    parser.add_argument(
-        '-t',
-        '--gene-taxon-table',
-        action='store',
-        default=None,
-        help="""GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz) or a similar
-                file where GENE/TAXON are tab separated and one per line"""
-    )
-    parser.add_argument(
-        '-f',
-        '--hdf-table',
-        action='store',
-        default=None,
-        type=parse_hdf5_arg,
-        help="""
-        HDF5 file and table name to use for taxon_id lookups. The format to
-        pass is the file name, colon and the table file.hf5:taxa-table. The
-        index in the table is the accession_id, while the column `taxon_id`
-        stores the taxon_id as int
-        """
-    )
-    parser.add_argument(
-        '-a',
-        '--gene-attr',
-        action='store',
-        default='gene_id',
-        help="""
-        In which attribute the GENEID in the table is stored (defaults to
-        *gene_id*)"""
-    )
-    parser.add_argument(
-        '-x',
-        '--taxonomy',
-        action='store',
-        default=None,
-        help="""
-        Taxonomy file - If given, both *taxon_name* and *lineage* attributes
-        will be set
-        """
-    )
-    parser.add_argument(
-        '-d',
-        '--dictionary',
-        action='store',
-        default=None,
-        help="""
-        A serialised dictionary, where the key is the GENEID and the value is
-        TAXONID. It can be in json or msgpack format (can be a compressed file)
-        *Note*: the dictionary values takes precedence over the table files
-        """
-    )
-    parser.add_argument(
-        '-e',
-        '--skip-no-taxon',
-        action='store_true',
-        default=False,
-        help="""If used, annotations with no taxon_id won't be outputted"""
-    )
-    parser.add_argument(
-        '-db',
-        '--taxon-db',
-        action='store',
-        default='NONE',
-        help="DB used to add the taxonomic information"
-    )
-    parser.add_argument(
-        '-c',
-        '--cache-table',
-        action='store_true',
-        default=False,
-        help="""If used, annotations are not preloaded, but the taxa table is
-        cached, instead.
-        """
-    )
-
-    parser.set_defaults(func=addtaxa_command)
-
-
-def pfam_command(options):
+@main.command('pfam', help="""Adds information from Pfam""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-i', '--id-attr', default='gene_id', help="""In which attribute the Pfam ID/ACCESSION is stored (defaults to *gene_id*)""")
+@click.option('-a', '--use-accession', default=False, is_flag=True, help="""If used, the attribute value is the Pfam ACCESSION (e.g. PF06894), not ID (e.g. Phage_TAC_2)""")
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def pfam_command(verbose, id_attr, use_accession, input_file, output_file):
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
     LOG.info("Downloading Pfam Information")
 
     pfam_families = pfam.get_pfam_families(
-        'acc' if options.use_accession else 'id'
+        'acc' if use_accession else 'id'
     )
 
-    for annotation in gff.parse_gff(options.input_file):
-        pfam_id = annotation.attr[options.id_attr]
+    for annotation in gff.parse_gff(input_file):
+        pfam_id = annotation.attr[id_attr]
         try:
             annotation.attr['pfam_description'] = pfam_families[pfam_id][1]
         except KeyError:
             LOG.warning("No description found for family %s", pfam_id)
-        annotation.to_file(options.output_file)
+        annotation.to_file(output_file)
 
 
-def set_pfam_parser(parser):
-    parser.add_argument(
-        '-i',
-        '--id-attr',
-        action='store',
-        default='gene_id',
-        help="""
-        In which attribute the Pfam ID/ACCESSION is stored (defaults to
-        *gene_id*)"""
-    )
-    parser.add_argument(
-        '-a',
-        '--use-accession',
-        action='store_true',
-        default=False,
-        help="""If used, the attribute value is the Pfam ACCESSION
-        (e.g. PF06894), not ID (e.g. Phage_TAC_2)"""
-    )
-    parser.set_defaults(func=pfam_command)
+@main.command('cov_samtools', help="""Adds information from samtools_depth""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-s', '--samples', default=None, multiple=True,
+              help='''Sample name, will add a `sample_cov` in the GFF file. If not passed, the attribute will be `cov`''')
+@click.option('-d', '--depths', required=True, multiple=True,
+              help='`samtools depth -aa` file')
+@click.option('-n', '--num-seqs', default=0,  type=click.INT,
+              show_default=True,
+              help='''Number of sequences to update the log. If 0, no message is logged''')
+@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def samtools_depth_command(verbose, samples, depths, num_seqs, input_file,
+                           output_file):
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-
-def set_samtools_depth_parser(parser):
-    parser.add_argument(
-        '-s',
-        '--sample',
-        action='store',
-        type=str,
-        help='sample name'
-    )
-    parser.add_argument(
-        '-d',
-        '--depth',
-        action='store',
-        required=True,
-        type=argparse.FileType('r'),
-        help='`samtools depth -aa` file'
-    )
-    parser.add_argument(
-        '-n',
-        '--num-seqs',
-        action='store',
-        default=10**4,
-        type=int,
-        help='Number of sequences to update the log'
-    )
-    parser.set_defaults(func=samtools_depth_command)
-
-
-def samtools_depth_command(options):
-    depth = align.SamtoolsDepth(options.depth, options.num_seqs)
-    if options.sample is None:
-        cov_attr = 'cov'
+    if samples is None:
+        samples = (None,)
     else:
-        cov_attr = '{}_cov'.format(options.sample)
+        sample = ['{}_cov'.format(sample) for sample in samples]
 
-    for annotation in gff.parse_gff(options.input_file):
-        cov = depth.region_coverage(
-            annotation.seq_id,
-            annotation.start,
-            annotation.end
-        )
-        annotation.set_attr(cov_attr, cov)
-        annotation.to_file(options.output_file)
+    depths = [
+        align.SamtoolsDepth(file_name, None if num_seqs == 0 else num_seqs)
+        for file_name in depths
+    ]
+    if len(samples) != len(depths):
+        exit_script('Number of samples different from number of files', 2)
 
+    annotations = gff.parse_gff(input_file)
 
-def set_parser():
-    """
-    Sets command line arguments parser
-    """
-    parser = argparse.ArgumentParser(
-        description='Adds informations to a GFF file',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
 
-    subparsers = parser.add_subparsers()
+    for annotation in bar(annotations):
+        coverages = []
+        for sample, depth in zip(sample, depths):
+            cov = depth.region_coverage(
+                annotation.seq_id,
+                annotation.start,
+                annotation.end
+            )
+            coverages.append(cov)
+            if sample is not None:
+                annotation.set_attr(sample, cov)
 
-    parser_u = subparsers.add_parser(
-        'uniprot',
-        help='Adds information from GFF whose gene_id is from Uniprot'
-    )
+        annotation.set_attr('cov', sum(coverages) / len(coverages))
 
-    set_uniprot_parser(parser_u)
-    set_common_options(parser_u)
-    utils.add_basic_options(parser_u, manual=__doc__)
-
-    parser_t = subparsers.add_parser(
-        'taxonomy',
-        help='''Adds taxonomic information from annotation sequences blasted
-                against a NCBI db'''
-    )
-
-    set_blast_taxonomy_parser(parser_t)
-    set_common_options(parser_t)
-    utils.add_basic_options(parser_t, manual=__doc__)
-
-    parser_c = subparsers.add_parser(
-        'coverage',
-        help='Adds coverage information from BAM Alignment files'
-    )
-
-    set_coverage_parser(parser_c)
-    set_common_options(parser_c)
-    utils.add_basic_options(parser_c, manual=__doc__)
-
-    parser_e = subparsers.add_parser(
-        'exp_syn',
-        help='Adds expected synonymous and non-synonymous changes information'
-    )
-
-    set_exp_syn_parser(parser_e)
-    set_common_options(parser_e)
-    utils.add_basic_options(parser_e, manual=__doc__)
-
-    parser_f = subparsers.add_parser(
-        'unipfile',
-        help='Adds mappings and taxonomy from Uniprot mapping file'
-    )
-
-    set_uniprot_offline_parser(parser_f)
-    set_common_options(parser_f)
-    utils.add_basic_options(parser_f, manual=__doc__)
-
-    parser_k = subparsers.add_parser(
-        'kegg',
-        help='Adds information and mapping from Kegg'
-    )
-
-    set_kegg_parser(parser_k)
-    set_common_options(parser_k)
-    utils.add_basic_options(parser_k, manual=__doc__)
-
-    parser_eggnog = subparsers.add_parser(
-        'eggnog',
-        help='Adds information from eggNOG'
-    )
-
-    set_eggnog_parser(parser_eggnog)
-    set_common_options(parser_eggnog)
-    utils.add_basic_options(parser_eggnog, manual=__doc__)
-
-    parser_counts = subparsers.add_parser(
-        'counts',
-        help='Adds counts data to the GFF'
-    )
-
-    set_counts_parser(parser_counts)
-    set_common_options(parser_counts)
-    utils.add_basic_options(parser_counts, manual=__doc__)
-
-    parser_addtaxa = subparsers.add_parser(
-        'addtaxa',
-        help='''Adds taxonomy information from a GI-Taxa, gene_id/taxon_id
-                table or a dictionary serialised as a pickle/msgpack/json file
-                '''
-    )
-
-    set_addtaxa_parser(parser_addtaxa)
-    set_common_options(parser_addtaxa)
-    utils.add_basic_options(parser_addtaxa, manual=__doc__)
-
-    parser_pfam = subparsers.add_parser(
-        'pfam',
-        help='Adds information from Pfam'
-    )
-
-    set_pfam_parser(parser_pfam)
-    set_common_options(parser_pfam)
-    utils.add_basic_options(parser_pfam, manual=__doc__)
-
-    parser_samtools_depth = subparsers.add_parser(
-        'cov_samtools',
-        help='Adds information from samtools_depth'
-    )
-
-    set_samtools_depth_parser(parser_samtools_depth)
-    set_common_options(parser_samtools_depth)
-    utils.add_basic_options(parser_samtools_depth, manual=__doc__)
-
-    # top parser
-    utils.add_basic_options(parser, manual=__doc__)
-
-    return parser
-
-
-def main():
-    "Main function"
-
-    options = set_parser().parse_args()
-
-    logger.config_log(options.verbose)
-    options.func(options)
+        annotation.to_file(output_file)

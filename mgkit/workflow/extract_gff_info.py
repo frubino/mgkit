@@ -61,6 +61,10 @@ annotations.
 Changes
 *******
 
+.. versionchanged:: 0.3.4
+    using *click* instead of *argparse*, renamed *split* command *--json* to
+    *--json-out*
+
 .. versionchanged:: 0.3.1
     added *cov* command
 
@@ -85,10 +89,10 @@ Changes
 
 from __future__ import division
 import sys
-import argparse
 import logging
 import functools
 import json
+import click
 
 import mgkit
 from . import utils
@@ -100,389 +104,208 @@ from mgkit import simple_cache
 LOG = logging.getLogger(__name__)
 
 
-def set_sequence_parser(parser):
-    parser.add_argument(
-        '-r',
-        '--reverse',
-        action='store_true',
-        help='Reverse complement sequences on the - strand',
-        default=False
-    )
-    parser.add_argument(
-        '-w',
-        '--no-wrap',
-        action='store_true',
-        help='Write the nucleotidic sequence on one line',
-        default=False
-    )
-    parser.add_argument(
-        '-s',
-        '--split',
-        action='store_true',
-        help='''Split the sequence header of the reference at the first
-        space, to emulate BLAST behaviour''',
-        default=False
-    )
-    parser.add_argument(
-        '-f',
-        '--reference',
-        type=argparse.FileType('r'),
-        default=None,
-        help='Fasta file containing the reference sequences of the GFF file'
-    )
-
-    parser.set_defaults(func=sequence_command)
+@click.group()
+@click.version_option()
+@utils.cite_option
+def main():
+    "Main function"
+    pass
 
 
-def sequence_command(options):
-    if options.reference is None:
+@main.command('sequence', help='''Extract the nucleotidic sequences of
+annotations from [gff-file] to [fasta-file]''')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-r', '--reverse', is_flag=True,
+              help='Reverse complement sequences on the - strand')
+@click.option('-w', '--no-wrap', is_flag=True,
+              help='Write the sequences on one line')
+@click.option('-s', '--split', is_flag=True,
+              help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
+@click.option('-f', '--reference', type=click.File('rb'), default=None,
+              help='Fasta file containing the reference sequences of the GFF file')
+@click.argument('gff-file', type=click.File('rb'), default='-')
+@click.argument('fasta-file', type=click.File('wb'), default='-')
+def sequence_command(verbose, reverse, no_wrap, split, reference, gff_file,
+                     fasta_file):
+
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    if reference is None:
         utils.exit_script('A fasta reference file is required', 1)
 
     wrap = 60
 
-    if options.no_wrap:
+    if no_wrap:
         wrap = None
 
     seqs = dict(
         (
-            seq_id.split(' ')[0] if options.split else seq_id,
+            seq_id.split(' ')[0] if split else seq_id,
             seq
         )
-        for seq_id, seq in fasta.load_fasta(options.reference)
+        for seq_id, seq in fasta.load_fasta(reference)
     )
 
-    ann_iter = gff.parse_gff(options.input_file, gff_type=gff.from_gff)
+    ann_iter = gff.parse_gff(gff_file, gff_type=gff.from_gff)
 
-    seq_iter = gff.extract_nuc_seqs(ann_iter, seqs, reverse=options.reverse)
+    seq_iter = gff.extract_nuc_seqs(ann_iter, seqs, reverse=reverse)
 
     for name, seq in seq_iter:
-        fasta.write_fasta_sequence(options.output_file, name, seq, wrap=wrap)
+        fasta.write_fasta_sequence(fasta_file, name, seq, wrap=wrap)
 
 
-def set_dbm_parser(parser):
-    parser.add_argument(
-        '-d',
-        '--output-dir',
-        default='gff-dbm',
-        type=str,
-        help='Directory for the database'
-    )
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input GFF file, defaults to stdin'
-    )
+@main.command('dbm', help='''Creates a dbm database with annotations from file
+[gff-file] into db [output-dir]''')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-d', '--output-dir', default='gff-dbm', show_default=True,
+              help='Directory for the database')
+@click.argument('gff-file', type=click.File('rb'), default='-')
+def dbm_command(verbose, output_dir, gff_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-    parser.set_defaults(func=dbm_command)
-
-
-def dbm_command(options):
-    db = dbm.create_gff_dbm(
-        gff.parse_gff(options.input_file),
-        options.output_dir
-    )
+    db = dbm.create_gff_dbm(gff.parse_gff(gff_file), output_dir)
     db.close()
 
 
-def set_mongodb_parser(parser):
-    parser.add_argument(
-        '-t',
-        '--taxonomy',
-        type=str,
-        default=None,
-        help='Taxonomy used to populate the lineage'
-    )
-    parser.add_argument(
-        '-c',
-        '--no-cache',
-        action='store_false',
-        default=True,
-        help='No cache for the lineage function'
-    )
-    parser.add_argument(
-        '-i',
-        '--indent',
-        action='store',
-        type=int,
-        default=None,
-        help='If used, the json will be written in a human readble form'
-    )
+@main.command('mongodb', help='''Extract annotations from a GFF [gff-file] file
+and makes output for MongoDB [output-file]''')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-t', '--taxonomy', type=click.File('rb'), default=None,
+              help='Taxonomy used to populate the lineage')
+@click.option('-c', '--no-cache', is_flag=True,
+              help='No cache for the lineage function')
+@click.option('-i', '--indent', type=click.INT, default=None,
+              help='If used, the json will be written in a human readble form')
+@click.argument('gff-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def mongodb_command(verbose, taxonomy, no_cache, indent, gff_file, output_file):
 
-    parser.set_defaults(func=mongodb_command)
-
-
-def mongodb_command(options):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(output_file, 'name', repr(output_file))
     )
 
     lineage_func = None
 
-    if options.taxonomy is not None:
-        taxonomy = taxon.UniprotTaxonomy(options.taxonomy)
+    if taxonomy is not None:
+        taxonomy = taxon.Taxonomy(taxonomy)
         lineage_func = functools.partial(
             taxon.get_lineage,
             taxonomy
         )
-        if options.no_cache:
+        if no_cache:
             LOG.info('Using cached calls to lineage')
             lineage_func = simple_cache.memoize(lineage_func)
 
-    for annotation in gff.parse_gff(options.input_file):
-        options.output_file.write(
+    for annotation in gff.parse_gff(gff_file):
+        output_file.write(
             annotation.to_mongodb(
                 lineage_func=lineage_func,
-                indent=options.indent
-            )
+                indent=indent
+            ).encode('ascii')
         )
-        options.output_file.write('\n')
+        output_file.write('\n'.encode('ascii'))
 
 
-def gtf_command(options):
+@main.command('gtf', help='''Extract annotations from a GFF file [gff-file] to
+a GTF file [gtf-file]''')
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-g', '--gene-id', default='gene_id', show_default=True,
+              help='GFF attribute to use for the GTF *gene_id* attribute')
+@click.argument('gff-file', type=click.File('rb'), default='-')
+@click.argument('gtf-file', type=click.File('wb'), default='-')
+def gtf_command(verbose, gene_id, gff_file, gtf_file):
+
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
-        getattr(options.output_file, 'name', repr(options.output_file))
+        getattr(gtf_file, 'name', repr(gtf_file))
     )
 
-    for annotation in gff.parse_gff(options.input_file):
-        options.output_file.write(
+    for annotation in gff.parse_gff(gff_file):
+        gtf_file.write(
             annotation.to_gtf(
-                gene_id_attr=options.gene_id
-            )
+                gene_id_attr=gene_id
+            ).encode('ascii')
         )
 
 
-def set_gtf_parser(parser):
-    parser.add_argument(
-        '-g',
-        '--gene-id',
-        type=str,
-        default='gene_id',
-        help='GFF attribute to use for the GTF gene_id attribute'
-    )
-    parser.set_defaults(func=gtf_command)
+@main.command('split', help="""Split annotations from a GFF file [gff-file] to
+several files starting with [prefix]""")
+@click.option('-v','--verbose', is_flag=True,)
+@click.option('-p', '--prefix', default='split', show_default=True,
+              help='Prefix for the file name in output')
+@click.option('-n', '--number', type=click.INT, default=10, show_default=True,
+              help='Number of chunks into which split the GFF file')
+@click.option('-z', '--gzip', is_flag=True, default=False,
+              help='gzip output files')
+@click.argument('gff-file', type=click.File('rb'), default='-')
+def split_command(verbose, prefix, number, gzip, gff_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-
-def set_common_options(parser):
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input GFF file, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default=sys.stdout,
-        help='Output file, defaults to stdout'
-    )
-
-
-def set_split_parser(parser):
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input GFF file, defaults to stdin'
-    )
-    parser.add_argument(
-        '-p',
-        '--prefix',
-        type=str,
-        default='split',
-        help='Prefix for the file name in output'
-    )
-    parser.add_argument(
-        '-n',
-        '--number',
-        type=int,
-        default=10,
-        help='Number of chunks into which split the GFF file'
-    )
-    parser.add_argument(
-        '-z',
-        '--gzip',
-        action='store_true',
-        default=False,
-        help='gzip output files'
-    )
-    parser.set_defaults(func=split_command)
-
-
-def split_command(options):
     LOG.info(
         "Splitting GFF into %d chunks with prefix %s",
-        options.number,
-        options.prefix
+        number,
+        prefix
     )
 
-    name_mask = "%s-{0:05}.gff" % options.prefix
-    if options.gzip:
+    name_mask = "%s-{0:05}.gff" % prefix
+    if gzip:
         name_mask += '.gz'
         LOG.info("Output files will be compressed (gzip)")
 
     gff.split_gff_file(
-        options.input_file,
+        gff_file,
         name_mask,
-        num_files=options.number
+        num_files=number
     )
 
 
-def set_coverage_parser(parser):
-    parser.add_argument(
-        'input_file',
-        nargs='?',
-        type=argparse.FileType('r'),
-        default='-',
-        help='Input GFF file, defaults to stdin'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        type=argparse.FileType('w'),
-        default='-',
-        help='Output file (tab separated), defaults to stdout'
-    )
-    parser.add_argument(
-        '-f',
-        '--reference',
-        type=argparse.FileType('r'),
-        required=True,
-        help='Reference FASTA file for the GFF'
-    )
-    group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument(
-        '-j',
-        '--json',
-        action='store_true',
-        default=False,
-        help='The output will be a JSON dictionary'
-    ),
-    group.add_argument(
-        '-s',
-        '--strand-specific',
-        action='store_true',
-        default=False,
-        help='If the coverage must be calculated on each strand'
-    )
-    parser.add_argument(
-        '-r',
-        '--rename',
-        action='store_true',
-        default=False,
-        help='Emulate BLAST output (use only the header part before the' +
-        ' first space)'
-    )
-    parser.set_defaults(func=coverage_command)
+@main.command('cov', help="""Report on how much a sequence length is covered
+by annotations in [gff-file]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-f', '--reference', type=click.File('rb'), required=True,
+              help='Reference FASTA file for the GFF')
+@click.option('-j', '--json-out', is_flag=True, default=False,
+              help='The output will be a JSON dictionary')
+@click.option('-s', '--strand-specific', is_flag=True, default=False,
+              help='If the coverage must be calculated on each strand')
+@click.option('-r', '--rename', default=False, is_flag=True,
+              help='Emulate BLAST output (use only the header part before the first space)')
+@click.argument('gff-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def coverage_command(verbose, reference, json_out, strand_specific, rename,
+                     gff_file, output_file):
 
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-def coverage_command(options):
     sequences = dict(
-        fasta.load_fasta_rename(options.reference) if options.rename else fasta.load_fasta(options.reference)
+        fasta.load_fasta_rename(reference) if rename else fasta.load_fasta(reference)
     )
     iterator = gff.annotation_coverage_sorted(
-        gff.parse_gff(options.input_file),
+        gff.parse_gff(gff_file),
         sequences,
-        strand=options.strand_specific
+        strand=strand_specific
     )
 
     contig_coverage = {}
 
     for seq_id, strand, coverage in iterator:
-        if options.json:
+        if json_out:
             contig_coverage[seq_id] = coverage
         else:
-            options.output_file.write(
+            output_file.write(
                 "{}\t{}\t{}\n".format(
                     seq_id,
                     "NA" if strand is None else strand,
                     coverage
-                )
+                ).encode('ascii')
             )
 
-    if options.json:
-        json.dump(contig_coverage, options.output_file, indent=4)
-
-
-def set_parser():
-    """
-    Sets command line arguments parser
-    """
-    parser = argparse.ArgumentParser(
-        description='Extract informations from a GFF file',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    subparsers = parser.add_subparsers()
-
-    parser_s = subparsers.add_parser(
-        'sequence',
-        help='Extract the nucleotidic sequences of annotations'
-    )
-
-    set_sequence_parser(parser_s)
-    set_common_options(parser_s)
-    utils.add_basic_options(parser_s, manual=__doc__)
-
-    parser_d = subparsers.add_parser(
-        'dbm',
-        help='Creates a dbm database'
-    )
-
-    set_dbm_parser(parser_d)
-    utils.add_basic_options(parser_d, manual=__doc__)
-
-    parser_m = subparsers.add_parser(
-        'mongodb',
-        help='Extract annotations from a GFF file and makes output for MongoDB'
-    )
-
-    set_mongodb_parser(parser_m)
-    set_common_options(parser_m)
-    utils.add_basic_options(parser_m, manual=__doc__)
-
-    parser_gtf = subparsers.add_parser(
-        'gtf',
-        help='Extract annotations from a GFF file to a GTF file'
-    )
-
-    set_gtf_parser(parser_gtf)
-    set_common_options(parser_gtf)
-    utils.add_basic_options(parser_gtf, manual=__doc__)
-
-    parser_split = subparsers.add_parser(
-        'split',
-        help='Split annotations from a GFF file to a several files'
-    )
-
-    set_split_parser(parser_split)
-    utils.add_basic_options(parser_split, manual=__doc__)
-
-    parser_coverage = subparsers.add_parser(
-        'cov',
-        help='Report on how much a sequence length is covered by annotations'
-    )
-
-    set_coverage_parser(parser_coverage)
-    utils.add_basic_options(parser_coverage, manual=__doc__)
-
-    utils.add_basic_options(parser, manual=__doc__)
-
-    return parser
-
-
-def main():
-    "Main function"
-
-    options = set_parser().parse_args()
-
-    mgkit.logger.config_log(options.verbose)
-    options.func(options)
+    if json_out:
+        output_file.write(
+            json.dumps(contig_coverage, indent=4).encode('ascii')
+        )

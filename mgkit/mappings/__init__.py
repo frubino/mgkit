@@ -1,8 +1,8 @@
 from .utils import *
 
-import cazy
-import enzyme
-import taxon
-import utils
-import pandas_map
-import eggnog
+from . import cazy
+from . import enzyme
+from . import taxon
+from . import utils
+from . import pandas_map
+from . import eggnog

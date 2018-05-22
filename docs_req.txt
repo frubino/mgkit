@@ -1,7 +1,5 @@
-actdiag>=0.5.1
 blockdiag>=1.5.1
 sphinx-rtd-theme>=0.1.7
-sphinxcontrib-actdiag>=0.6.0
 sphinxcontrib-blockdiag>=1.5.1
 sphinx-argparse>=0.1.12
 ipython>=3.2.1
@@ -14,4 +12,12 @@ matplotlib>=2.0
 networkx>=1.9.1
 reportlab>=3.2.0
 jupyter-console
-
+statsmodels>=0.8
+sphinx-click
+patsy>=0.5
+HTSeq
+pymongo
+semidbm
+nbsphinx
+ipykernel
+pygments

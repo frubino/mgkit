@@ -2,7 +2,9 @@
 SNPDat reader
 """
 import logging
+from builtins import object
 import mgkit.utils.sequence
+from mgkit.io import open_file
 
 LOG = logging.getLogger(__name__)
 
@@ -214,12 +216,13 @@ def snpdat_reader(f_handle):
     """
 
     if isinstance(f_handle, str):
-        f_handle = open(f_handle, 'r')
+        f_handle = open_file(f_handle, 'r')
     LOG.info("Reading from file %s", f_handle.name)
 
     f_handle.readline()  # skips header line
 
     for line in f_handle:
+        line = line.decode('ascii')
         try:
             yield SNPDatRow(line)
         except ValueError:

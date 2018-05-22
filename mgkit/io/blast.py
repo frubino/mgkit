@@ -2,9 +2,10 @@
 Blast routines and parsers
 
 """
-
+import sys
 import logging
-
+from builtins import range, zip
+from future.utils import viewitems
 from . import gff
 from . import open_file
 from ..utils.common import deprecated
@@ -104,7 +105,7 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
         value_funcs = [lambda x: x for y in range(len(ret_col))]
 
     if ret_col is None:
-        ret_col = range(12)
+        ret_col = list(range(12))
 
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
@@ -115,9 +116,12 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     )
 
     lineno = 0
+    comments = 0
 
     for lineno, line in enumerate(file_handle):
+        line = line.decode('ascii')
         if line.startswith('#'):
+            comments += 1
             continue
 
         line = line.strip()
@@ -134,7 +138,7 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
 
         yield key, values
 
-    LOG.info('Read %d BLAST records', lineno + 1)
+    LOG.info('Read %d BLAST records', lineno + 1 - comments)
 
 
 def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
@@ -244,7 +248,7 @@ def parse_fragment_blast(file_handle, bitscore=40.0):
         except KeyError:
             uidmap[uid] = [hit]
 
-    for uid, hits in uidmap.iteritems():
+    for uid, hits in viewitems(uidmap):
         # returns the hit with the max bitscore and max identity
         yield uid, hits
 
@@ -288,6 +292,8 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
 
     """
 
+    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
+        file_handle = open_file(file_handle, 'rb')
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
 
@@ -302,7 +308,7 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
     zero_acc = 0
 
     for idx, line in enumerate(file_handle):
-
+        line = line.decode('ascii')
         # skip header
         if line.startswith('accession'):
             continue

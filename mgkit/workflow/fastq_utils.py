@@ -5,10 +5,12 @@ Commands
 * Interleave/deinterleave paired-end fastq files.
 * Converts to FASTA
 * sort 2 files to sync the headers
-* randomise (untested)
 
 Changes
 -------
+
+.. versionchanged:: 0.3.4
+    moved to use click, internal fastq parsing, removed *rand* command
 
 .. versionchanged:: 0.3.1
     added stdin/stdout defaults for some commands
@@ -18,235 +20,71 @@ Changes
 
 """
 from __future__ import division
-
-import sys
-import random
-import argparse
+from builtins import zip
 import logging
 import mgkit
-import HTSeq
-from itertools import izip
-from mgkit.io.fastq import choose_header_type
-from mgkit.io.fastq import write_fastq_sequence
+import click
+from mgkit.io.fastq import choose_header_type, write_fastq_sequence, load_fastq
 from mgkit.io import fasta
 from . import utils
 
 LOG = logging.getLogger(__name__)
 
 
-def set_parser():
-    """
-    Sets command line arguments parser
-    """
-    parser = argparse.ArgumentParser(
-        description='Interleave/Deinterleave fastq files',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    utils.add_basic_options(parser, manual=__doc__)
-    # Deinterleave
-    subparsers = parser.add_subparsers()
-    parser_d = subparsers.add_parser('di', help='Deinterleave sequences')
-    parser_d.add_argument(
-        'input_file',
-        type=argparse.FileType('r'),
-        action='store',
-        help="File with interleaved sequences"
-    )
-    parser_d.add_argument(
-        'mate1_file',
-        type=argparse.FileType('w'),
-        action='store',
-        help="File with mate 1 reads"
-    )
-    parser_d.add_argument(
-        'mate2_file',
-        type=argparse.FileType('w'),
-        action='store',
-        help="File with mate 2 reads"
-    )
-    parser_d.add_argument(
-        '-s',
-        '--strip',
-        action='store_true',
-        default=False,
-        help="Strip additional info"
-    )
-    parser_d.set_defaults(func=deinterleave)
-    # Interleave
-    parser_i = subparsers.add_parser('il', help='Interleave sequences')
-    parser_i.add_argument(
-        'mate1_file',
-        type=argparse.FileType('r'),
-        action='store',
-        help="File with mate 1 reads"
-    )
-    parser_i.add_argument(
-        'mate2_file',
-        type=argparse.FileType('r'),
-        action='store',
-        help="File with mate 1 reads"
-    )
-    parser_i.add_argument(
-        'output_file',
-        default='output-il.fq',
-        type=argparse.FileType('w'),
-        action='store',
-        help='Output file name'
-    )
-    parser_i.set_defaults(func=interleave)
-    # Sort
-    parser_s = subparsers.add_parser('sort', help='Sort paired-end sequences')
-    parser_s.add_argument(
-        'mate1_input',
-        type=argparse.FileType('r'),
-        action='store',
-        help="File with mate 1 reads"
-    )
-    parser_s.add_argument(
-        'mate2_input',
-        type=argparse.FileType('r'),
-        action='store',
-        help="File with mate 1 reads"
-    )
-    parser_s.add_argument(
-        'mate1_output',
-        type=argparse.FileType('w'),
-        action='store',
-        help="Output file with mate 1 reads"
-    )
-    parser_s.add_argument(
-        'mate2_output',
-        type=argparse.FileType('w'),
-        action='store',
-        help="Output file with mate 2 reads"
-    )
-    parser_s.set_defaults(func=sort)
-    # Randomise
-    parser_r = subparsers.add_parser('rand', help='Randomise sequences')
-    parser_r.add_argument(
-        'input_file',
-        type=argparse.FileType('r'),
-        action='store',
-        nargs='?',
-        default='-',
-        help="File with sequences"
-    )
-    parser_r.add_argument(
-        'output_file',
-        type=argparse.FileType('w'),
-        action='store',
-        nargs='?',
-        default=sys.stdout,
-        help="Output file"
-    )
-    parser_r.add_argument(
-        '-b',
-        '--buffer-size',
-        type=int,
-        action='store',
-        default=None,
-        help="Maximum number of sequences to keep in memory (default: all)"
-    )
-    parser_r.set_defaults(func=randomise)
-
-    # Convert to fasta
-    parser_convert = subparsers.add_parser('convert', help='Convert to FASTA')
-    parser_convert.add_argument(
-        'input_file',
-        type=argparse.FileType('r'),
-        action='store',
-        nargs='?',
-        default='-',
-        help="Input FastQ file"
-    )
-    parser_convert.add_argument(
-        'output_file',
-        type=argparse.FileType('w'),
-        action='store',
-        nargs='?',
-        default=sys.stdout,
-        help="Output FASTA file"
-    )
-    parser_convert.set_defaults(func=convert_command)
-
-    return parser
+@click.group()
+@click.version_option()
+@utils.cite_option
+def main():
+    "Main function"
+    pass
 
 
-def convert_command(options):
+@main.command('convert', help="""Convert FastQ file [fastq-file] to FASTA file
+              [fasta-file]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('fastq-file', type=click.File('rb'), default='-')
+@click.argument('fasta-file', type=click.File('wb'), default='-')
+def convert_command(verbose, fastq_file, fasta_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
-        "Reading from file (%s)",
-        options.input_file.name
+        "Writing FASTA file (%s)",
+        getattr(fasta_file, 'name', repr(fasta_file))
     )
-    file_handle = HTSeq.FastqReader(options.input_file)
 
-    for sequence in file_handle:
-        fasta.write_fasta_sequence(
-            options.output_file,
-            sequence.name,
-            sequence.seq
-        )
+    for seq_id, seq, qual in load_fastq(fastq_file):
+        fasta.write_fasta_sequence(fasta_file, seq_id, seq)
 
 
 def report_counts(count, wcount, counter=None):
     "Logs the status"
     if (counter is None) or (counter % 100000 == 0):
         LOG.info(
-            "Read %-7d sequences, Wrote %-7d (%.2f%%)",
+            "Read %-9d sequences, Wrote %-9d (%.2f%%)",
             count,
             wcount,
             wcount / count * 100
         )
 
 
-def randomise(options):
-    "Used for testing"
-    LOG.info(
-        "Reading from file (%s)",
-        options.input_file.name
-    )
-
-    file_handle = HTSeq.FastqReader(options.input_file)
-    random.seed(random.randint(0, 1000000))
-
-    count = 0
-    wcount = 0
-
-    seqs = []
-
-    for sequence in file_handle:
-        count += 1
-        report_counts(count, wcount, count)
-        seqs.append((sequence.name, sequence.seq, sequence.qualstr))
-
-        if (options.buffer_size is None) or (len(seqs) < options.buffer_size):
-            continue
-
-        index = random.randint(0, len(seqs) - 1)
-
-        write_fastq_sequence(options.output_file, *seqs[index])
-
-        del seqs[index]
-
-        wcount += 1
-
-    # Shuffle the list
-    random.shuffle(seqs)
-
-    # Flush the rest of the sequences to disk
-    for sequence in seqs:
-        write_fastq_sequence(options.output_file, *sequence)
-        wcount += 1
-        report_counts(count, wcount, wcount)
-
-    report_counts(count, wcount, None)
-
-
-def sort(options):
+@main.command('sort', help="""Sort paired-end sequences from [mate1-input] and
+              [mate2-input] into files [mate1-output] and [mate2-output]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('mate1-input', type=click.File('rb'))
+@click.argument('mate2-input', type=click.File('rb'))
+@click.argument('mate1-output', type=click.File('wb'))
+@click.argument('mate2-output', type=click.File('wb'))
+def sort(verbose, mate1_input, mate2_input, mate1_output, mate2_output):
     "Sort two fastq files"
+
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
     LOG.info(
-        "Reading from mate1 (%s) and mate2 (%s)",
-        options.mate1_input.name,
-        options.mate2_input.name
+        'Writing [mate1-output] to file (%s)',
+        getattr(mate1_output, 'name', repr(mate1_output))
+    )
+    LOG.info(
+        'Writing [mate2-output] to file (%s)',
+        getattr(mate2_output, 'name', repr(mate2_output))
     )
 
     regex = None
@@ -258,23 +96,22 @@ def sort(options):
     count = 0
     wcount = 0
 
-    for sequence1, sequence2 in izip(HTSeq.FastqReader(options.mate1_input),
-                                     HTSeq.FastqReader(options.mate2_input)):
+    for (seq_id1, seq1, qual1), (seq_id2, seq2, qual2) in zip(load_fastq(mate1_input), load_fastq(mate2_input)):
 
         count += 1
 
         if (regex is None) and (not simple_header):
-            regex = choose_header_type(sequence1.name)
+            regex = choose_header_type(seq_id1)
             if regex is None:
                 simple_header = True
                 LOG.info("Using a simple header structure")
 
         if simple_header:
-            key1 = sequence1.name[:-1]
-            key2 = sequence2.name[:-1]
+            key1 = seq_id1[:-1]
+            key2 = seq_id2[:-1]
         else:
-            match1 = regex.search(sequence1.name)
-            match2 = regex.search(sequence2.name)
+            match1 = regex.search(seq_id1)
+            match2 = regex.search(seq_id2)
 
             key1 = (
                 match1.group('lane'),
@@ -289,13 +126,13 @@ def sort(options):
                 match2.group('ycoord')
             )
 
-        seq1 = (sequence1.name, sequence1.seq, sequence1.qualstr)
-        seq2 = (sequence2.name, sequence2.seq, sequence2.qualstr)
+        seq1 = (seq_id1, seq1, qual1)
+        seq2 = (seq_id2, seq2, qual2)
 
         if key1 == key2:
             # if the 2
-            write_fastq_sequence(options.mate1_output, *seq1)
-            write_fastq_sequence(options.mate2_output, *seq2)
+            write_fastq_sequence(mate1_output, *seq1)
+            write_fastq_sequence(mate2_output, *seq2)
             wcount += 1
             report_counts(count, wcount, count)
             continue
@@ -304,14 +141,14 @@ def sort(options):
         mate2[key2] = seq2
 
         if key1 in mate2:
-            write_fastq_sequence(options.mate1_output, *mate1[key1])
-            write_fastq_sequence(options.mate2_output, *mate2[key1])
+            write_fastq_sequence(mate1_output, *mate1[key1])
+            write_fastq_sequence(mate2_output, *mate2[key1])
             del mate1[key1]
             del mate2[key1]
             wcount += 1
         if key2 in mate1:
-            write_fastq_sequence(options.mate1_output, *mate1[key2])
-            write_fastq_sequence(options.mate2_output, *mate2[key2])
+            write_fastq_sequence(mate1_output, *mate1[key2])
+            write_fastq_sequence(mate2_output, *mate2[key2])
             del mate1[key2]
             del mate2[key2]
             wcount += 1
@@ -321,12 +158,27 @@ def sort(options):
     report_counts(count, wcount, None)
 
 
-def deinterleave(options):
+@main.command('di', help="""Deinterleave sequences from [fastq-file], into
+              [mate1-file] and [mate2-file]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-s', '--strip', is_flag=True, default=False,
+              help="Strip additional info")
+@click.argument('fastq-file', type=click.File('rb'), default='-')
+@click.argument('mate1-file', type=click.File('wb'))
+@click.argument('mate2-file', type=click.File('wb'))
+def deinterleave(verbose, strip, fastq_file, mate1_file, mate2_file):
     "Deinterleave a fastq file"
 
-    LOG.info("Reading from file %s", options.input_file.name)
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-    fastq_in = HTSeq.FastqReader(options.input_file)
+    LOG.info(
+        'Writing [mate1-file] to file (%s)',
+        getattr(mate1_file, 'name', repr(mate1_file))
+    )
+    LOG.info(
+        'Writing [mate2-file] to file (%s)',
+        getattr(mate2_file, 'name', repr(mate2_file))
+    )
 
     regex = None
     simple_header = False
@@ -337,21 +189,21 @@ def deinterleave(options):
     count = 0
     wcount = 0
 
-    for sequence in fastq_in:
+    for seq_id, seq, qual in load_fastq(fastq_file):
 
         count += 1
 
         if (regex is None) and (not simple_header):
-            regex = choose_header_type(sequence.name)
+            regex = choose_header_type(seq_id)
             if regex is None:
                 LOG.info("Using a simple header structure")
                 simple_header = True
 
         if simple_header:
-            key = sequence.name[:-1]
-            mate = int(sequence.name[-1])
+            key = seq_id[:-1]
+            mate = int(seq_id[-1])
         else:
-            match = regex.search(sequence.name)
+            match = regex.search(seq_id)
             key = (
                 match.group('lane'),
                 match.group('tile'),
@@ -360,22 +212,22 @@ def deinterleave(options):
             )
             mate = int(match.group('mate'))
 
-        if options.strip:
-            sequence_name = sequence.name.split('\t')[0]
+        if strip:
+            sequence_name = seq_id.split('\t')[0]
         else:
-            sequence_name = sequence.name
+            sequence_name = seq_id
 
         if mate == 1:
-            mate1[key] = (sequence_name, sequence.seq, sequence.qualstr)
+            mate1[key] = (sequence_name, seq, qual)
         else:
-            mate2[key] = (sequence_name, sequence.seq, sequence.qualstr)
+            mate2[key] = (sequence_name, seq, qual)
 
         try:
             # if sequence header in both
             seq1 = mate1[key]
             seq2 = mate2[key]
-            write_fastq_sequence(options.mate1_file, *seq1)
-            write_fastq_sequence(options.mate2_file, *seq2)
+            write_fastq_sequence(mate1_file, *seq1)
+            write_fastq_sequence(mate2_file, *seq2)
             wcount += 2
             del mate1[key]
             del mate2[key]
@@ -387,13 +239,20 @@ def deinterleave(options):
     report_counts(count, wcount, None)
 
 
-def interleave(options):
+@main.command('il', help="""Interleave sequences from [mate1-file] and
+              [mate2-file] into [fastq-file]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('mate1-file', type=click.File('rb'))
+@click.argument('mate2-file', type=click.File('rb'))
+@click.argument('fastq-file', type=click.File('wb'), default='-')
+def interleave(verbose, mate1_file, mate2_file, fastq_file):
     "Interleave two fastq files"
 
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
     LOG.info(
-        "Reading from mate1 (%s) and mate2 (%s)",
-        options.mate1_file.name,
-        options.mate2_file.name
+        'Writing interleaved [fastq-file] to file (%s)',
+        getattr(fastq_file, 'name', repr(fastq_file))
     )
 
     regex = None
@@ -405,23 +264,22 @@ def interleave(options):
     count = 0
     wcount = 0
 
-    for sequence1, sequence2 in izip(HTSeq.FastqReader(options.mate1_file),
-                                     HTSeq.FastqReader(options.mate2_file)):
+    for (seq_id1, seq1, qual1), (seq_id2, seq2, qual2) in zip(load_fastq(mate1_file), load_fastq(mate2_file)):
 
         count += 1
 
         if (regex is None) and (not simple_header):
-            regex = choose_header_type(sequence1.name)
+            regex = choose_header_type(seq_id1)
             if regex is None:
                 simple_header = True
                 LOG.info("Using a simple header structure")
 
         if simple_header:
-            key1 = sequence1.name[:-1]
-            key2 = sequence2.name[:-1]
+            key1 = seq_id1[:-1]
+            key2 = seq_id2[:-1]
         else:
-            match1 = regex.search(sequence1.name)
-            match2 = regex.search(sequence2.name)
+            match1 = regex.search(seq_id1)
+            match2 = regex.search(seq_id2)
 
             key1 = (
                 match1.group('lane'),
@@ -436,13 +294,13 @@ def interleave(options):
                 match2.group('ycoord')
             )
 
-        seq1 = (sequence1.name, sequence1.seq, sequence1.qualstr)
-        seq2 = (sequence2.name, sequence2.seq, sequence2.qualstr)
+        seq1 = (seq_id1, seq1, qual1)
+        seq2 = (seq_id2, seq2, qual2)
 
         if key1 == key2:
             # if the 2
-            write_fastq_sequence(options.output_file, *seq1)
-            write_fastq_sequence(options.output_file, *seq2)
+            write_fastq_sequence(fastq_file, *seq1)
+            write_fastq_sequence(fastq_file, *seq2)
             wcount += 1
             report_counts(count, wcount, wcount)
             continue
@@ -451,14 +309,14 @@ def interleave(options):
         mate2[key2] = seq2
 
         if key1 in mate2:
-            write_fastq_sequence(options.output_file, *mate1[key1])
-            write_fastq_sequence(options.output_file, *mate2[key1])
+            write_fastq_sequence(fastq_file, *mate1[key1])
+            write_fastq_sequence(fastq_file, *mate2[key1])
             del mate1[key1]
             del mate2[key1]
             wcount += 1
         if key2 in mate1:
-            write_fastq_sequence(options.output_file, *mate1[key2])
-            write_fastq_sequence(options.output_file, *mate2[key2])
+            write_fastq_sequence(fastq_file, *mate1[key2])
+            write_fastq_sequence(fastq_file, *mate2[key2])
             del mate1[key2]
             del mate2[key2]
             wcount += 1
@@ -466,15 +324,3 @@ def interleave(options):
         report_counts(count, wcount, count)
 
     report_counts(count, wcount, None)
-
-
-def main():
-    "Main function"
-    options = set_parser().parse_args()
-
-    # configs log and set log level
-    mgkit.logger.config_log(options.verbose)
-    options.func(options)
-
-if __name__ == '__main__':
-    main()

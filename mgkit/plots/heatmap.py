@@ -3,16 +3,13 @@
 
 Code related to heatmaps.
 """
+from builtins import range
 import logging
 import numpy
 from .utils import get_grid_figure
-from .. import DependencyError
 
-try:
-    import scipy.spatial.distance as distance
-    import scipy.cluster.hierarchy as hclust
-except ImportError:
-    raise DependencyError('scipy')
+import scipy.spatial.distance as distance
+import scipy.cluster.hierarchy as hclust
 
 LOG = logging.getLogger(__name__)
 
@@ -251,7 +248,7 @@ def dendrogram(data, ax, method='complete', orientation='top', use_dist=True,
     )
     ax.grid(False)
     ax.set_axis_off()
-    ax.set_axis_bgcolor('white')
+    ax.set_facecolor('white')
     ax.set_xticks([])
     ax.set_yticks([])
 

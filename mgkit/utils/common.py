@@ -2,6 +2,7 @@
 Utility functions
 """
 from __future__ import division
+from builtins import range
 import itertools
 import operator
 import functools
@@ -151,7 +152,7 @@ def complement_ranges(intervals, end=None):
     if intervals[0][0] > 1:
         comp_intervals.append((1, intervals[0][0] - 1))
 
-    for index in xrange(0, len(intervals) - 1):
+    for index in range(0, len(intervals) - 1):
         new_start = intervals[index][1] + 1
         new_end = intervals[index + 1][0] - 1
         if new_start < new_end:
@@ -174,6 +175,12 @@ def ranges_length(ranges):
     Given an iterable where each element is a range, a tuple whose elements
     are numbers with the first being less than or equal to the second, the
     function sums the lengths of all ranges.
+
+    .. warning::
+
+        it's supposed to be used on intervals that were first passed to
+        functions like :func:`union_ranges`. If values overlap, there the sum
+        will be wrong
 
     Arguments:
         ranges (iterable): each element is a tuple like *(1, 10)*
@@ -228,7 +235,7 @@ def apply_func_window(func, data, window, step=0):
     if step == 0:
         step = window
 
-    for index in xrange(0, len(data), step):
+    for index in range(0, len(data), step):
         yield func(data[index:index+window])
 
 
@@ -249,8 +256,8 @@ def deprecated(func):
                 func.__doc__
             ),
             category=DeprecationWarning,
-            filename=func.func_code.co_filename,
-            lineno=func.func_code.co_firstlineno + 1
+            filename=func.__code__.co_filename,
+            lineno=func.__code__.co_firstlineno + 1
         )
         return func(*args, **kwargs)
     return new_func

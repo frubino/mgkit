@@ -1,6 +1,48 @@
 Changes
 =======
 
+0.3.4
+-----
+
+General cleanup and testing release. Major changes:
+
+* general moving to Python2 (2.7) and Python3 (3.5+) support, using the future package and when convenient checks for the version of python installed
+* setup includes now all the optional dependencies, since this makes it easier to deal with conda environments
+* move to pytest from nose, since it allows some functionality that interests me, along with the reorganisation of the test modules and skips of tests that cannot be executed (like mongodb)
+* move from urlib to using `requests`, which also helps with python3 support
+* more careful with some dependencies, like the lzma module and msgpack
+* addition of more tests, to help the porting to python3, along with a tox configuration
+* :mod:`matplotlib.pyplot` is still in the :mod:`mgkit.plots.unused`, but it is not imported when the parent package is, now. It is still needed in the :mod:`mgkit.plots.utils` functions, so the import has been moved inside the function. This should help with virtual environments and test suites
+* renamed :class:`mgkit.taxon.UniprotTaxonomy` to :class:`mgkit.taxon.Taxonomy`, since it's really NCBI taxonomy and it's preferred to download the data from there. Same for :class:`mgkit.taxon.UniprotTaxonTuple` to :class:`mgkit.taxon.TaxonTuple`, with an alias for old name there, but will be removed in a later version
+* `download_data` was removed. Taxonomy should be downloaded using `download-taxonomy.sh`, and the :mod:`mgkit.mappings` is in need of refactoring to remove old and now ununsed functionality
+* added :meth:`mgkit.taxon.Taxonomy.get_ranked_id`
+* using a sphinx plugin to render the jupyter notebooks instead of old solution
+* rerun most of the tutorial and updated commands for newest available software (samtools/bcftools) and preferred the SNP calling from bcftools
+
+Scripts
+*******
+
+This is a summary of notable changes, it is advised to check the changes in the command line interface for several scripts
+
+* changed several scripts command line interface, to adapt to the use of _click_
+* `taxon-utils lca` has one options only to specify the output format, also adding the option to output a format that can be used by `add-gff-info addtaxa`
+* `taxon-utils filter` support the filtering of table files, when they are in a 2-columns format, such as those that are downloaded by `download-ncbi-taxa.sh`
+* removed the *eggnog* and *taxonomy* commands from `add-gff-info`, the former since it's not that useful, the latter because it's possible to achieve the same results using taxon-utils with the new output option
+* removed the *rand* command of `fastq-utils` since it was only for testing and the FastQ parser is the one from :mod:`mgkit.io.fastq`
+* substantial changes where made to commands *values* and *sequence* of the `filter-gff` script
+* `sampling-utils rand_seq` now can save the model used and reload it
+* removed `download_data` and `download_profiles`, since they are not going to be used in the next tutorial and it is preferred now to use BLAST and then find the LCA with `taxon-utils`
+
+Python3
+*******
+
+At the time of writing all tests pass on Python 3.5, but more tests are needed, along with some new ones for the blast parser and the scripts. Some important changes:
+
+* :class:`mgkit.io.gff.Annotation` uses its *uid* to hash the instance. This allows the use in sets (mainly for filtering). However, hashing is not supported in :class:`mgkit.io.gff.GenomicRange`.
+* :func:`mgkit.io.utils.open_file` now *always* opens and writes files in binary mode. This is one of the suggestions to keep compatibility between 2.x and 3.x. So if used directly the output must be decoded from *ascii*, which is the format used in text files (at least bioinformatics). However, this is not required for the parsers, like :func:`mgkit.io.gff.parse_gff`, :func:`mgkit.io.fasta.load_fasta` along with others (and the correspective *write_* functions): they return unicode strings when parsing and decode into *ascii* when writing.
+
+In general new projects will be worked on using Python 3.5 and the next releases will prioritise that (0.4.0 and later). If bugfixes are needed and Python 3 cannot be used, this version branch (0.3.x) will be used to fix bugs for users.
+
 0.3.3
 -----
 

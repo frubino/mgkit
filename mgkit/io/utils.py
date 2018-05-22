@@ -1,12 +1,18 @@
 """
 Various utilities to help read and process files
 """
+from builtins import range, next
+import sys
 import logging
 import gzip
 import bz2
+import io
 
 try:
-    import lzma
+    if sys.version_info >= (3, 3):
+        import lzma
+    else:
+        from backports import lzma
 except ImportError:
     lzma = None
 
@@ -40,7 +46,7 @@ def group_tuples_by_key(iterator, key_func=None, skip_elements=0):
     if key_func is None:
         key_func = lambda x: x[0]
 
-    for index in xrange(skip_elements):
+    for index in range(skip_elements):
         next(iterator)
 
     curr_key = None
@@ -71,7 +77,15 @@ def open_file(file_name, mode='r'):
     """
     .. versionadded:: 0.1.12
 
+    .. versionchanged:: 0.3.4
+        using *io.open*, always in binary mode
+
     Opens a file using the extension as a guide to which module to use.
+
+    .. note::
+
+        Unicode makes for a slower `.translate` method in Python2, so it's
+        best to use the `open` builtin.
 
     Arguments:
         file_name (str): file name
@@ -84,17 +98,28 @@ def open_file(file_name, mode='r'):
         UnsupportedFormat: if the module to open the file is not available
 
     """
+
+    if sys.version_info[0] == 2:
+        test_class = file
+    else:
+        test_class = io.IOBase
+
+    if isinstance(file_name, test_class):
+        return file_name
+
+    mode = mode + 'b' if 'b' not in mode else mode
+
     if file_name.endswith('.gz'):
         file_handle = gzip.GzipFile(file_name, mode)
     elif file_name.endswith('.bz2'):
         file_handle = bz2.BZ2File(file_name, mode)
     elif file_name.endswith('.xz'):
-        if lzma:
+        if lzma is None:
             raise UnsupportedFormat("Cannot import lzma module")
         else:
             file_handle = lzma.LZMAFile(file_name, mode)
     else:
-        file_handle = open(file_name, mode)
+        file_handle = io.open(file_name, mode)
 
     return file_handle
 
@@ -145,7 +170,7 @@ def split_write(records, name_mask, write_func, num_files=2):
             returned by `records` as the second argument
         num_files (int): the number of files to split the records
     """
-    out_handles = [open_file(name_mask.format(x), 'w') for x in xrange(num_files)]
+    out_handles = [open_file(name_mask.format(x), 'w') for x in range(num_files)]
 
     for index, record in enumerate(records):
         out_handle = out_handles[index % num_files]

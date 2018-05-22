@@ -17,7 +17,4 @@ This section detailed information about the scripts included
    fasta-utils
    fastq-utils
    json2gff
-   download_profiles
    sampling-utils
-   download_data
-   nuc2aa

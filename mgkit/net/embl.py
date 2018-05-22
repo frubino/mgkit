@@ -1,12 +1,16 @@
 "Access EMBL Services"
 
+from builtins import range
 import logging
 import re
 import gzip
-import urllib
 from . import url_read
+import requests
 import mgkit
-import cStringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import BytesIO as StringIO
 
 
 class NoEntryFound(Exception):
@@ -51,9 +55,11 @@ LOG = logging.getLogger(__name__)
 
 
 def get_sequences_by_ids(embl_ids, contact=None, out_format='fasta',
-                         num_req=10, embl_db=EMBL_DBID, compress=True,
-                         strict=False):
+                         num_req=10, embl_db=EMBL_DBID, strict=False):
     """
+    .. versionchanged:: 0.3.4
+        removed *compress* as it's bases on the `requests` package
+
     Downloads entries using EBI REST API. It can download one entry at a
     time or accept an iterable and all sequences will be downloaded in batches
     of at most num_req.
@@ -82,8 +88,6 @@ def get_sequences_by_ids(embl_ids, contact=None, out_format='fasta',
         format (str): format of the entry
         num_req (int): number of entries to download with each request
         embl_db (str): db to which the ids refer to
-        compress (bool): if True, the function tries to obtain a compressed
-            response and decompress it on the fly
         strict (bool): if True, a check on the number of entries retrieved is
             performed
 
@@ -125,7 +129,7 @@ def get_sequences_by_ids(embl_ids, contact=None, out_format='fasta',
 
         request_url = URL_REST + request_params
 
-        seqs = url_read(request_url, compress=compress, agent=contact)
+        seqs = url_read(request_url, agent=contact)
 
         # it seems that they add at the end of each request two newlines
         # (should be just one)
@@ -292,13 +296,12 @@ def datawarehouse_search(query, domain='sequence', result='sequence_release',
                 "equal to 'report'"
                 )
 
-    params = urllib.urlencode(
-        params
-    )
-
-    data = cStringIO.StringIO(url_read(url, params, agent=contact))
-
+    stream = True if download == 'gzip' else False
+    request = requests.get(url, params, headers={'user-agent': contact}, stream=stream)
     if download == 'gzip':
-        data = gzip.GzipFile(fileobj=data)
+        data = StringIO(request.raw.read())
+        data = gzip.GzipFile(mode='rb', fileobj=data).read()
+    else:
+        data = request.text
 
-    return data.read()
+    return data

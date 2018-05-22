@@ -2,13 +2,10 @@
 Some test functions to filter sequences
 """
 from __future__ import division
-
+from builtins import range
 from .. import DependencyError
 
-try:
-    import numpy
-except ImportError:
-    raise DependencyError('numpy')
+import numpy
 
 # from numpy import sum
 # import pandas
@@ -67,7 +64,7 @@ def trim_by_ee(qualities, min_length=50, threshold=0.5, chars=True, base=33):
     # qualities = ne.evaluate("10 ** ((-qualities) / 10)")
     qualities = 10 ** ((-qualities) / 10)
     # print qualities
-    for idx in xrange(min_length, qualities.size):
+    for idx in range(min_length, qualities.size):
         # print expected_error_rate(qualities[:idx])
         if expected_error_rate(qualities[:idx]) > threshold:
             return idx
