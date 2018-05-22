@@ -28,9 +28,7 @@ This is a summary of notable changes, it is advised to check the changes in the 
 * removed the *rand* command of `fastq-utils` since it was only for testing and the FastQ parser is the one from :mod:`mgkit.io.fastq`
 * substantial changes where made to commands *values* and *sequence* of the `filter-gff` script
 * `sampling-utils rand_seq` now can save the model used and reload it
-* removed `download_data` and `download_profiles`, since they are not going to
-be used in the next tutorial and it is preferred now to use BLAST and then find
-the LCA with `taxon-utils`
+* removed `download_data` and `download_profiles`, since they are not going to be used in the next tutorial and it is preferred now to use BLAST and then find the LCA with `taxon-utils`
 
 Python3
 *******

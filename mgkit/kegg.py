@@ -862,6 +862,7 @@ class KeggData(object):
 class KeggMapperBase(object):
     """
     .. deprecated:: 0.3.4
+    
     Base object for Kegg mapping classes
     """
     _ko_map = None

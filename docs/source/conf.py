@@ -40,6 +40,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinxarg.ext',
     'sphinx_click.ext',
+    'nbsphinx',
     #'sphinxcontrib.bibtex',
     #'sphinxcontrib.programoutput', # unused, argparse used instead
 ]

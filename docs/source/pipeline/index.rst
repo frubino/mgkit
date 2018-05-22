@@ -7,8 +7,6 @@ This section detailed information about example pipelines made using the framewo
    :maxdepth: 3
 
    tutorial
-   simple-tutorial-notebook
-   pipeline-hmmer
-   hmmer-tutorial-notebook
+   Exploring-Metagenomic-Data
    blast2lca
    gene_prediction
