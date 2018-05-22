@@ -94,13 +94,13 @@ def draw_triangle_grid(ax, labels=['LAM', 'SAM', 'EAM'], linewidth=1.,
                 linewidth=linewidth)
 
         # LAM labels
-        ax.text(x1, y1 - 0.02, index, va='top', ha='center',
+        ax.text(x1, y1 - 0.02, numpy.round(index, 1), va='top', ha='center',
                 fontsize=int(fontsize * 0.75))
         # EAM labels
-        ax.text(x4 - 0.02, y4, 1 - index, ha='right', va='center',
+        ax.text(x4 - 0.02, y4, numpy.round(1 - index, 1), ha='right', va='center',
                 fontsize=int(fontsize * 0.75))
         # EAM labels
-        ax.text(x3 + 0.02, y3, index, ha='left', va='center',
+        ax.text(x3 + 0.02, y3, numpy.round(index, 1), ha='left', va='center',
                 fontsize=int(fontsize * 0.75))
 
 
@@ -132,8 +132,10 @@ def draw_1d_grid(ax, labels=['LAM', 'SAM'], fontsize=22):
 
     for x in numpy.arange(0.1, 1., 0.1):
         ax.plot([x, x], [by, ty], color='k', linestyle=':')
-        ax.text(x, by - .1, x, fontsize=fontsize * 0.75, ha='center', va='top')
-        ax.text(x, ty + .1, 1 - x, fontsize=fontsize * 0.75, ha='center',
+        y_b = by - .1
+        y_t = ty + .1
+        ax.text(x, y_b, numpy.round(x, 1), fontsize=fontsize * 0.75, ha='center', va='top')
+        ax.text(x, y_t, numpy.round(1 - x, 1), fontsize=fontsize * 0.75, ha='center',
                 va='bottom')
 
 
