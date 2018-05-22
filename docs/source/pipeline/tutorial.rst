@@ -1,7 +1,7 @@
 .. _simple-tutorial:
 
 .. versionchanged:: 0.3.4
-    updated to the last version of the scripts
+    updates
 
 Tutorial
 ========
@@ -32,7 +32,6 @@ Also for the rest of the tutorial we assume that the following software are inst
     * `samtools and bcftools 1.8 <http://samtools.sourceforge.net>`_
     * `Picard Tools <http://picard.sourceforge.net>`_ [#]_
     * `GATK <http://www.broadinstitute.org/gatk/>`_ [#]_
-    * `HTSeq <http://sourceforge.net/p/htseq/code/HEAD/tree/>`_
     * `BLAST <http://www.ncbi.nlm.nih.gov/books/NBK279690/>`_ or `RAPSearch2 <http://omics.informatics.indiana.edu/mg/RAPSearch2/>`_
 
 Getting Sequence Data
@@ -68,9 +67,13 @@ We're going to use velvet to assemble the metagenomics sample, using the followi
     $ velveth velvet_work 31 -fmtAuto  *.fastq
     $ velvetg velvet_work -min_contig_lgth 50
 
-The contigs are in the `velvet_work/contigs.fa` file. We want to take out some of the informations in each sequence header, to make it easier to identify them. We decided to keep only `NODE_#`, where # is a unique number in the file (e.g. from `>NODE_27_length_157_cov_703.121033` we keep only `>NODE_27`). We used this command in bash::
+The contigs are in the `velvet_work/contigs.fa` file. We want to take out some of the information in each sequence header, to make it easier to identify them. We decided to keep only `NODE_#`, where # is a unique number in the file (e.g. from `>NODE_27_length_157_cov_703.121033` we keep only `>NODE_27`). We used this command in bash::
 
     $ cat velvet_work/contigs.fa | sed -E 's/(>NODE_[0-9]+)_.+/\1/g' > assembly.fa
+
+Alternatively, `fasta-utils uid` can be used to avoid problems with spaces in the headers::
+
+    $ fasta-utils uid cat velvet_work/contigs.fa assembly.fa
 
 Gene Prediction
 ---------------
@@ -103,7 +106,7 @@ RAPSearch is faster than BLAST, while giving similar results. As with BLAST, the
 
 After this command is complete its execution, RAPSearch can be started::
 
-    $ rapsearch -q assembly.fasta -d uniprot_sprot -o assembly.uniprot.tab
+    $ rapsearch -q assembly.fa -d uniprot_sprot -o assembly.uniprot.tab
 
 RAPSearch will produce two files, `assembly.uniprot.tab.m8` and `assembly.uniprot.tab.aln`. `assembly.uniprot.tab.m8` is the file in the correct format, so we can rename it and remove the other one::
 
@@ -125,18 +128,22 @@ And then, because the number of annotations is high, we filter them to reduce th
 This will result in a smaller file. Both script supports piping, so they can be used together, for example to save a compressed file::
 
     $ blast2gff uniprot -b 40 -db UNIPROT-SP -dbq 10 assembly.uniprot.tab | \
-        filter-gff overlap | gzip > assembly.uniprot-filt.gff.gz
+        filter-gff overlap - assembly.uniprot-filt.gff
+
+Finally, rename the filtered GFF file::
+
+    $ mv assembly.uniprot-filt.gff assembly.uniprot.gff
 
 .. warning::
 
-    filter-gff may require a lot of memory, so it's recommended to read its documentation for strategies on lowering the memory requirements for big datasets
+    filter-gff may require a lot of memory, so it's recommended to read its documentation for strategies on lowering the memory requirements for big datasets (a small script to sort a GFF is included `sort-gff.sh`)
 
 Taxonomic Refinement
 ^^^^^^^^^^^^^^^^^^^^
 
-This section is optional, as taxonomic identifiers are assigned using Uniprot, but it can result in a better identification. It requires the the `nt` database from NCBI to be found on the system, in the `ncbi-db` directory.
+This section is optional, as taxonomic identifiers are assigned using Uniprot, but it can result in better identification. It requires the the `nt` database from NCBI to be found on the system, in the `ncbi-db` directory.
 
-if you don't have the *nt* database installed, it can be downloaded (> 80GB) with this command (you'll need to install `ncftpget`)::
+if you don't have the *nt* database installed, it can be downloaded (> 80GB uncompressed, about 30 compressed) with this command (you'll need to install `ncftpget`)::
 
     $ mkdir ncbi-db
     $ cd ncbi-db
@@ -146,7 +153,7 @@ if you don't have the *nt* database installed, it can be downloaded (> 80GB) wit
 
 To do it, first the nucleotide sequences must be extracted and then use blastn against the `nt` database::
 
-    $ get-gff-info sequence -f assembly.fasta assembly.uniprot.gff \
+    $ get-gff-info sequence -f assembly.fa assembly.uniprot.gff \
         assembly.uniprot.frag.fasta
     $ blastn -query assembly.uniprot.frag.fasta -db ncbi-db/nt -out \
         assembly.uniprot.frag.tab -outfmt 6
@@ -156,7 +163,7 @@ After BLAST completes, we need to download supporting file to associate the resu
     $ download-ncbi-taxa.sh
     $ gunzip -c ncbi-nucl-taxa.gz | taxon-utils to_hdf -n nt
 
-We now need to run the `taxon-utils` (:ref:`taxon-utils`) script to find the LCA for each annotation. BLAST will output too many matches, so we want to also filter this file first, with `filter-gff`. First we convert into GFF the BLAST tab file, then use `filter-gff` to pick only the 95% quantile of sequence identity out of all hits. Finally run `taxon-utils` to get the LCA table::
+We now need to run the `taxon-utils` (:ref:`taxon-utils`) script to find the LCA for each annotation. BLAST will output too many matches, so we want to also filter this file first, with `filter-gff`. First we convert into GFF the BLAST tab file, then use `filter-gff` to pick only the 95% quantile of hit length out of all hits and finally filter to get the 95% of identities. Finally run `taxon-utils` to get the LCA table::
 
     $ blast2gff blastdb -i 3 -r assembly.uniprot.frag.tab | \
         filter-gff sequence -t -a length -f quantile -l 0.95 -c gt | \
@@ -192,7 +199,7 @@ Alignment
 
 The alignment of all reads to the assembly we'll be made with `bowtie2`. The first step is to build the index for the reference (out assembly) with the following command::
 
-    $ bowtie2-build assembly.fasta assembly.fasta
+    $ bowtie2-build assembly.fa assembly.fa
 
 and subsequently start the alignment, using bowtie2 and piping the output SAM file to `samtools` to convert it into BAM files with this command:
 
@@ -200,7 +207,8 @@ and subsequently start the alignment, using bowtie2 and piping the output SAM fi
 
     for file in *.fastq; do
         BASENAME=`basename $file .fastq`
-        bowtie2 -N 1 -x assembly.fasta -U $file \
+        bowtie2 -N 1 -x assembly.fa -U $file \
+        --very-sensitive-local \
         --rg-id $BASENAME --rg PL:454 --rg PU:454 \
         --rg SM:$BASENAME | samtools view -Sb - > $BASENAME.bam;
     done
@@ -223,7 +231,7 @@ The coverage information is added to the GFF and needs to be added for later SNP
 
     $ export SAMPLES=$(for file in *.bam; do echo -a `basename $file .bam`,$file ;done)
     $ add-gff-info coverage $SAMPLES assembly.uniprot.gff | add-gff-info \
-        exp_syn -r assembly.fasta > assembly.uniprot-update.gff
+        exp_syn -r assembly.fa > assembly.uniprot-update.gff
 
     $ mv assembly.uniprot-update.gff assembly.uniprot.gff
     $ unset SAMPLES
@@ -233,7 +241,7 @@ The first line prepares part of the command line for the script and stores it in
 A faster way to add the coverage to a GFF file is to use the *cov_samtools* command instead::
 
     $ for x in *.bam; do samtools depth -aa $x > `basename $x .bam`.depth; done
-    $ add-gff-info cov_samtools $(for file in *.depth; do echo -s `basename $ file .depth` -d $file ;done ) assembly.uniprot.gff assembly.uniprot-update.gff
+    $ add-gff-info cov_samtools $(for file in *.depth; do echo -s `basename file .depth` -d $file ;done) assembly.uniprot.gff assembly.uniprot-update.gff
     $ mv assembly.uniprot-update.gff assembly.uniprot.gff
 
 This requires the creation of *depth* files from samtools, which can be fairly big. The script will accept files compressed with gzip, bzip2 (and xz if the module is available), but will be slower. For this tutorial, each uncompressed depth file is aboud 110MB.
@@ -243,10 +251,6 @@ The *coverage* command memory footprint is tied to the GFF file (kept in memory)
 SNP Calling
 -----------
 
-Before running samtools, which we'll use to do the SNP calling and GATK, to merge the vcf files, the reference `assembly.fa` must be indexed with Picard Tools (tested on version 1.30)::
-
-    $ java -jar picard-tools/picard.jar CreateSequenceDictionary R=assembly.fasta O=assembly.dict
-
 bcftools
 ^^^^^^^^
 
@@ -254,7 +258,7 @@ For calling SNPs, we can use `bcftools` (v 1.8 was tested)
 
 .. code-block:: bash
 
-    bcftools mpileup -f assembly.fasta -Ou *.bam | bcftools call -v -O v --ploidy 1 -A -o assembly.vcf
+    bcftools mpileup -f assembly.fa -Ou *.bam | bcftools call -v -O v --ploidy 1 -A -o assembly.vcf
 
 Data Preparation
 ----------------
@@ -265,7 +269,7 @@ Diversity Analysis
 To use diversity estimates (pN/pS) for the data, we need to first first is aggregate all SNP information from the vcf file into data structures that can be read and analysed by the library. This can be done using the included script `snp_parser`, with this lines of bash::
 
     $ export SAMPLES=$(for file in *.bam; do echo -m `basename $file .bam`;done)
-    $ snp_parser -v -g assembly.uniprot.gff -p assembly.vcf -a assembly.fasta $SAMPLES
+    $ snp_parser -s -v -g assembly.uniprot.gff -p assembly.vcf -a assembly.fa $SAMPLES
     $ unset SAMPLES
 
 .. note::
