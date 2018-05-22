@@ -632,9 +632,11 @@ def load_featurecounts_files(count_files, samples):
     for sample, count_file in zip(samples, count_files):
         for line in open_file(count_file, 'rb'):
             line = line.decode('ascii')
+            if line.startswith('#') or line.lower().startswith('geneid'):
+                continue
             line = line.split('\t')
             uid = line[0]
-            counts[uid] = dict(zip(samples, count_files))
+            counts[uid] = dict(zip(samples, line[-4:]))
     return counts
 
 
