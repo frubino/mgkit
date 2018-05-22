@@ -112,7 +112,6 @@ done
 for file in *.bam; do
 	samtools sort $file `basename $file .bam`-sort;
 	#removes the unsorted file, it's not needed
-	rm $file;
 	mv `basename $file .bam`-sort.bam $file
 	samtools index $file;
 done

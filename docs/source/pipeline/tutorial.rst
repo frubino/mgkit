@@ -218,8 +218,7 @@ We'll have BAM files which we need to sort and index:
 .. code-block:: bash
 
     for file in *.bam; do
-        samtools sort $file `basename $file .bam`-sort;
-        rm $file;
+        samtools sort -o `basename $file .bam`-sort.bam $file;
         mv `basename $file .bam`-sort.bam $file
         samtools index $file;
     done
@@ -241,7 +240,7 @@ The first line prepares part of the command line for the script and stores it in
 A faster way to add the coverage to a GFF file is to use the *cov_samtools* command instead::
 
     $ for x in *.bam; do samtools depth -aa $x > `basename $x .bam`.depth; done
-    $ add-gff-info cov_samtools $(for file in *.depth; do echo -s `basename file .depth` -d $file ;done) assembly.uniprot.gff assembly.uniprot-update.gff
+    $ add-gff-info cov_samtools $(for file in *.depth; do echo -s `basename $file .depth` -d $file ;done) assembly.uniprot.gff assembly.uniprot-update.gff
     $ mv assembly.uniprot-update.gff assembly.uniprot.gff
 
 This requires the creation of *depth* files from samtools, which can be fairly big. The script will accept files compressed with gzip, bzip2 (and xz if the module is available), but will be slower. For this tutorial, each uncompressed depth file is aboud 110MB.
@@ -258,7 +257,7 @@ For calling SNPs, we can use `bcftools` (v 1.8 was tested)
 
 .. code-block:: bash
 
-    bcftools mpileup -f assembly.fa -Ou *.bam | bcftools call -v -O v --ploidy 1 -A -o assembly.vcf
+    bcftools mpileup -f assembly.fa -Ou *.bam | bcftools call -m -v -O v --ploidy 1 -A -o assembly.vcf
 
 Data Preparation
 ----------------
