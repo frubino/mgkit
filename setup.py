@@ -73,6 +73,7 @@ setup(
         'scripts/download-ncbi-taxa.sh',
         'scripts/sort-gff.sh',
     ],
+    setup_requires=['pytest-runner'],
     tests_require=['pytest>=3.5', 'pytest-datadir', 'pytest-console-scripts'],
     entry_points={
         'console_scripts': [
