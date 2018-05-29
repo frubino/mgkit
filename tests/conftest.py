@@ -3,6 +3,7 @@ import requests
 from ftplib import FTP
 import tarfile
 import io
+import os
 from mgkit.taxon import Taxonomy
 
 try:
@@ -11,15 +12,18 @@ try:
 except requests.exceptions.ConnectionError:
     conn_ko = True
 
+# To disable tests that require a remote connection
+if os.environ.get('MGKIT_TESTS_CONN_SKIP', False):
+    conn_ko = True
+
 skip_no_connection = pytest.mark.skipif(conn_ko, reason='No connection available')
 
 
 @pytest.fixture(scope='session')
 def taxonomy_files(tmpdir_factory):
-    try:
-        requests.get('http://www.google.com')
-    except requests.exceptions.ConnectionError:
+    if conn_ko:
         return None
+
     taxdump_dir = tmpdir_factory.mktemp('taxdump')
     tax_file = (taxdump_dir / 'taxdump.tar.gz').strpath
     ftp = FTP('ftp.ncbi.nlm.nih.gov')

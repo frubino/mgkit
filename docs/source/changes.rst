@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.4.0
+-----
+
+Tests that require an internet connection can be skipped by setting before running the tests::
+
+	$ export MGKIT_TESTS_CONN_SKIP=T
+
 0.3.4
 -----
 
