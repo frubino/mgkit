@@ -15,6 +15,7 @@ def test_get_mappings():
         get_mappings('K00001', db_from='KO_ID', db_to='ACC')['K00001']
 
 
+@pytest.mark.skip(reason='There are discrepancies in Uniprot return values')
 @skip_no_connection
 def test_get_gene_info():
     assert get_gene_info(['Q09575', 'Q8DQI6'], ['organism-id']) == \
