@@ -3,7 +3,7 @@
 
 Graph module
 """
-
+from xml.etree import ElementTree
 import itertools
 from future.utils import viewitems
 from xml.etree import ElementTree
@@ -410,3 +410,178 @@ def add_module_compounds(graph, rn_defs):
                     graph.add_edge(cp_id, rn_id, reaction_type=reaction_type)
                 else:
                     graph.add_edge(rn_id, cp_id, reaction_type=reaction_type)
+
+
+class Reaction(object):
+    """
+    .. versionadded:: 0.4.0
+
+    Object used to hold information about a reaction entry in Kegg
+    """
+    kegg_id = None
+    substrates = None
+    products = None
+    reversible_paths = None
+    irreversible_paths = None
+    orthologs = None
+
+    def __init__(self, kegg_id, substrates, products, reversible, orthologs, pathway):
+        self.kegg_id = kegg_id
+        self.substrates = set(substrates)
+        self.products = set(products)
+        self.irreversible_paths = set()
+        self.reversible_paths = set()
+        if reversible:
+            self.reversible_paths.add(pathway)
+        else:
+            self.irreversible_paths.add(pathway)
+        self.orthologs = set(orthologs)
+
+    @property
+    def reversible(self):
+        return len(self.reversible_paths) >= len(self.irreversible_paths)
+
+    @property
+    def pathways(self):
+        return self.irreversible_paths | self.reversible_paths
+
+    def update(self, other):
+        if self.kegg_id != other.kegg_id:
+            raise ValueError('The reactions have different IDs')
+
+        self.substrates.update(other.substrates)
+        self.products.update(other.products)
+        self.reversible_paths.update(other.reversible_paths)
+        self.irreversible_paths.update(other.irreversible_paths)
+        self.orthologs.update(other.orthologs)
+
+    def cmp_compounds(self, other):
+        if (self.substrates != other.substrates) and (self.products != other.products):
+            if self.reversible:
+                return (self.substrates == other.products) and (self.products == other.substrates)
+            else:
+                return False
+        else:
+            return True
+
+    def to_nodes(self):
+        return itertools.chain(
+            [(self.kegg_id, dict(type='reaction'))],
+            [(cpd, dict(type='compound')) for cpd in self.substrates],
+            [(cpd, dict(type='compound')) for cpd in self.products],
+        )
+
+    def to_edges(self):
+        edges = [
+            itertools.product(self.substrates, [self.kegg_id]),
+            itertools.product([self.kegg_id], self.products)
+        ]
+        if self.reversible:
+            edges.extend(
+                [
+                    itertools.product(self.products, [self.kegg_id]),
+                    itertools.product([self.kegg_id], self.substrates)
+                ]
+            )
+        return itertools.chain(*edges), dict(reversible=self.reversible)
+
+    def __eq__(self, other):
+        if (self.kegg_id == other.kegg_id) and (self.reversible == other.reversible) and (self.orthologs == other.orthologs):
+            return self.cmp_compounds(other)
+    def __ne__(self, other):
+        return not (self == other)
+    def __repr__(self):
+        return "{}: s {} {} p {} - ({} - {})".format(
+            self.kegg_id,
+            ','.join(self.substrates),
+            '<=>' if self.reversible else '=>',
+            ','.join(self.products),
+            ','.join(self.orthologs),
+            ','.join(self.pathways)
+        )
+    def __str__(self):
+        return repr(self)
+
+
+def parse_kgml_reactions(kgml):
+    """
+    .. versionadded:: 0.4.0
+
+    Parses a KGML for reactions
+    """
+    pathway = ElementTree.fromstring(kgml)
+    pathway_name = pathway.attrib['name'].replace('path:', '')
+    assert len(pathway_name) == 7
+
+    reaction_data = {}
+
+    for entry in pathway.findall('reaction'):
+        orthologs = tuple(
+            sorted(
+                ortholog.replace('ko:', '')
+                for ortholog in pathway.find("entry/[@id='{}']".format(entry.attrib['id'])).attrib['name'].split(' ')
+            )
+        )
+        assert all(len(x) == 6 for x in orthologs)
+        # the "reaction" defined is equivalent to a EC number, meaning multiple
+        # reactions IDs in kegg may belong to it. They are stored in the name
+        # attribute, separated by space
+        reactions = entry.attrib['name'].split(' ')
+        # definition of the reaction direction, by manual either reversible
+        # or irreversible
+        if entry.attrib['type'] == 'irreversible':
+            reversible = False
+        else:
+            reversible = True
+
+        substrates = set()
+        products = set()
+
+        for compound in entry:
+            cpd_ids = compound.attrib['name'].split(' ')
+            cpd_ids = [cpd_id.split(':')[1].strip() for cpd_id in cpd_ids]
+            assert all(len(cpd_id) ==  6 for cpd_id in cpd_ids)
+            for cpd_id in cpd_ids:
+                if not (cpd_id.startswith('C') or cpd_id.startswith('G')  or cpd_id.startswith('D')):
+                    print cpd_id
+                    continue
+            if compound.tag == 'substrate':
+                substrates.update(cpd_ids)
+            else:
+                products.update(cpd_ids)
+
+        assert len(substrates) + len(products) > 1
+
+        for reaction in reactions:
+            # Each reaction ID is (as usual) prepended by the type "rn", which
+            # we don't need
+            reaction = reaction.split(':')[1]
+            assert len(reaction) == 6
+
+            definition = Reaction(reaction, substrates, products, reversible, orthologs, pathway_name)
+
+            try:
+                reaction_data[reaction].update(definition)
+            except KeyError:
+                reaction_data[reaction] = definition
+
+    return reaction_data
+
+
+def merge_kgmls(kgmls):
+    """
+    .. versionadded:: 0.4.0
+
+    Parses multiple KGMLs and merges the reactions from them
+    """
+    combined_data = {}
+
+    for kgml in kgmls:
+        data = parse_kgml_reactions(kgml)
+        for kegg_id, reaction in data.iteritems():
+            try:
+                combined_data[kegg_id].update(reaction)
+            except KeyError:
+                combined_data[kegg_id] = reaction
+
+    return combined_data
