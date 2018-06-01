@@ -240,9 +240,12 @@ def filter_graph(graph, id_list, filter_func=lambda x: x.startswith('K')):
     return graph
 
 
-def annotate_graph_nodes(graph, attr, id_map, default=None):
+def annotate_graph_nodes(graph, attr, id_map, default=None, conv=None):
     """
     .. versionadded:: 0.1.12
+
+    .. versionchanged:: 0.4.0
+        added *conv* parameter and reworked internals
 
     Add/Changes nodes attribute `attr` using a dictionary of ids->values.
 
@@ -257,14 +260,17 @@ def annotate_graph_nodes(graph, attr, id_map, default=None):
         graph: the graph to annotate
         attr (str): the attribute to annotate
         id_map (dict): the dictionary with the values for each node
-        default: the value used in case an `id` is not found in `id_map`
+        default: the value used in case an `id` is not found in `id_map`, if
+            None, the attribute is not set for missing values
+        conv (func): function to convert the value to another type
     """
-    for node, data in graph.nodes_iter(data=True):
-        try:
-            data[attr] = id_map[data['id']]
-        except KeyError:
-            if default is not None:
-                data[attr] = default
+    for node_id in graph.nodes():
+        value = id_map.get(node_id, default)
+        if value is None:
+            continue
+        if conv is not None:
+            value = conv(value)
+        graph.nodes[node_id][attr] = value
 
 
 def from_kgml(entry, graph=None, rn_ids=None):
