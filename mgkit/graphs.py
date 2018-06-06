@@ -3,6 +3,7 @@
 
 Graph module
 """
+from future.utils import viewitems
 from xml.etree import ElementTree
 import itertools
 from future.utils import viewitems
@@ -549,7 +550,6 @@ def parse_kgml_reactions(kgml):
             assert all(len(cpd_id) ==  6 for cpd_id in cpd_ids)
             for cpd_id in cpd_ids:
                 if not (cpd_id.startswith('C') or cpd_id.startswith('G')  or cpd_id.startswith('D')):
-                    print cpd_id
                     continue
             if compound.tag == 'substrate':
                 substrates.update(cpd_ids)
@@ -584,7 +584,7 @@ def merge_kgmls(kgmls):
 
     for kgml in kgmls:
         data = parse_kgml_reactions(kgml)
-        for kegg_id, reaction in data.iteritems():
+        for kegg_id, reaction in viewitems(data):
             try:
                 combined_data[kegg_id].update(reaction)
             except KeyError:
