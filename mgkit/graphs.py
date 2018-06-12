@@ -446,13 +446,31 @@ class Reaction(object):
 
     @property
     def reversible(self):
+        """
+        Property that returns the reversibility of the reaction according to
+        the information in the pathways. Returns True if the number of pathways
+        in which the reaction was observed as reversible is greater or equal
+        than the number of pathwaysin which the reaction was observerd as
+        irreversible.
+        """
         return len(self.reversible_paths) >= len(self.irreversible_paths)
 
     @property
     def pathways(self):
+        """
+        Set which includes all the pathways in which the reaction was found
+        """
         return self.irreversible_paths | self.reversible_paths
 
     def update(self, other):
+        """
+        Updates the current instance with information from another instance.
+        the underlining sets that hold the information are update with those
+        from the `other` instance.
+
+        Raises:
+            ValueError: if the ID of the reaction is different
+        """
         if self.kegg_id != other.kegg_id:
             raise ValueError('The reactions have different IDs')
 
@@ -463,6 +481,11 @@ class Reaction(object):
         self.orthologs.update(other.orthologs)
 
     def cmp_compounds(self, other):
+        """
+        Compares the substrates and products of the current instance with those
+        of another one, using information about the reversibility of the
+        reaction.
+        """
         if (self.substrates != other.substrates) and (self.products != other.products):
             if self.reversible:
                 return (self.substrates == other.products) and (self.products == other.substrates)
@@ -472,6 +495,11 @@ class Reaction(object):
             return True
 
     def to_nodes(self):
+        """
+        Returns a generator that returns the nodes associated with reaction,
+        to be used in a graph, along with attributes about the type of node
+        (reaction or compound)
+        """
         return itertools.chain(
             [(self.kegg_id, dict(type='reaction'))],
             [(cpd, dict(type='compound')) for cpd in self.substrates],
@@ -479,6 +507,10 @@ class Reaction(object):
         )
 
     def to_edges(self):
+        """
+        Returns a generator of edges to be used when building a graph, along
+        with an attribute that specify if the reaction is reversible.
+        """
         edges = [
             itertools.product(self.substrates, [self.kegg_id]),
             itertools.product([self.kegg_id], self.products)
@@ -493,6 +525,9 @@ class Reaction(object):
         return itertools.chain(*edges), dict(reversible=self.reversible)
 
     def __eq__(self, other):
+        """
+        Tests equality by comparing the IDs and the compounds
+        """
         if (self.kegg_id == other.kegg_id) and (self.reversible == other.reversible) and (self.orthologs == other.orthologs):
             return self.cmp_compounds(other)
     def __ne__(self, other):
@@ -514,7 +549,14 @@ def parse_kgml_reactions(kgml):
     """
     .. versionadded:: 0.4.0
 
-    Parses a KGML for reactions
+    Parses a KGML for reactions, returning a dictionary with instances of
+    :class:`Reaction` as values and the IDs as keys.
+
+    Arguments:
+        kgml (str): the KGML file content as a string (to be passed)
+
+    Returns:
+        dict: dictionary of ID->Reaction
     """
     pathway = ElementTree.fromstring(kgml)
     pathway_name = pathway.attrib['name'].replace('path:', '')
@@ -578,7 +620,14 @@ def merge_kgmls(kgmls):
     """
     .. versionadded:: 0.4.0
 
-    Parses multiple KGMLs and merges the reactions from them
+    Parses multiple KGMLs and merges the reactions from them.
+
+    Arguments:
+        kgmls (iterable): iterable of KGML files (content) to be passed to
+            :func:`parse_kgml_reactions`
+
+    Returns:
+        dict: dictionary with the reactions from amm te KGML files
     """
     combined_data = {}
 
