@@ -91,16 +91,18 @@ Multiple inclusion and exclusion flags can be put::
     $ taxon-utils filter -i 2 -i 2172 -t taxonomy in.gff out.gff
 
 In particular, the inclusion flag is tested first and then the exclusion is
-tested. So a line like this one::
+tested. So a line like this one:
 
-    $ printf "TEST\t838\nTEST\t1485" | taxon-utils filter -p -t taxonomy.pickle -i 2 -i 1485 -e 838
+.. code-block:: bash
 
-Will produce `TEST 1485`, because both Prevotella (838) and Clostridium (1485)
+    printf "TEST\\t838\\nTEST\\t1485" | taxon-utils filter -p -t taxonomy.pickle -i 2 -i 1485 -e 838
+
+Will produce **TEST 1485**, because both Prevotella (838) and Clostridium (1485)
 are Bacteria (2) OR Prevotella, but Prevotella must be excluded according to
 the exclusion option. This line also illustrate that a tab-separated file, where
 the second column contains taxon IDs, can be filtered. In particular it can be
 applied to files produced by `download-ncbi-taxa.sh` or
-`download-uniprot-taxa.sh`.
+`download-uniprot-taxa.sh` (see :ref:`download-taxonomy`).
 
 .. warning::
 

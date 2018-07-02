@@ -14,7 +14,9 @@ The advantage of *msgpack* is faster read/write and better compression ratio; it
 Download Accession/TaxonID
 ==========================
 
-There are 2 separate scripts to download these tables::
+There are 2 separate scripts to download these tables:
 
     * `download-uniprot-taxa.sh` will download a table for Uniprot databases
     * `download-ncbi-taxa.sh` for BLAST DBs from NCBI, by default for *nt*, but *nr* can be downloaded with `download-ncbi-taxa.sh prot`
+
+In particular, **nr** refers to the protein database in NCBI, while **nt** refers to the nucleotidic one. Both Uniprot Swissprot and TrEMBL are downloaded by the first scripts.
