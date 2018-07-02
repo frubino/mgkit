@@ -86,6 +86,22 @@ with values such as 'cellular organisms' that needs to be quoted. Example::
 Which will keep only line that are from Bacteria (taxon_id=2) and exclude those
 from the genus *Prevotella*. It will be also include Archaea.
 
+Multiple inclusion and exclusion flags can be put::
+
+    $ taxon-utils filter -i 2 -i 2172 -t taxonomy in.gff out.gff
+
+In particular, the inclusion flag is tested first and then the exclusion is
+tested. So a line like this one::
+
+    $ printf "TEST\t838\nTEST\t1485" | taxon-utils filter -p -t taxonomy.pickle -i 2 -i 1485 -e 838
+
+Will produce `TEST 1485`, because both Prevotella (838) and Clostridium (1485)
+are Bacteria (2) OR Prevotella, but Prevotella must be excluded according to
+the exclusion option. This line also illustrate that a tab-separated file, where
+the second column contains taxon IDs, can be filtered. In particular it can be
+applied to files produced by `download-ncbi-taxa.sh` or
+`download-uniprot-taxa.sh`.
+
 .. warning::
 
     Annotations with no taxon_id are not included in the output of both filters
@@ -265,7 +281,7 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
               help='''Total number of raw sequences (used to output correct percentages in Krona''')
 @click.option('-f', '--out-format', default='tab', show_default=True,
               type=click.Choice(['krona', 'json', 'tab', 'gff']),
-              help='Output a file that can be read by Krona (text)')
+              help='Format of output file')
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,

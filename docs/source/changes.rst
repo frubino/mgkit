@@ -31,7 +31,7 @@ Scripts
 
 This is a summary of notable changes, it is advised to check the changes in the command line interface for several scripts
 
-* changed several scripts command line interface, to adapt to the use of _click_
+* changed several scripts command line interface, to adapt to the use of *click*
 * `taxon-utils lca` has one options only to specify the output format, also adding the option to output a format that can be used by `add-gff-info addtaxa`
 * `taxon-utils filter` support the filtering of table files, when they are in a 2-columns format, such as those that are downloaded by `download-ncbi-taxa.sh`
 * removed the *eggnog* and *taxonomy* commands from `add-gff-info`, the former since it's not that useful, the latter because it's possible to achieve the same results using taxon-utils with the new output option
