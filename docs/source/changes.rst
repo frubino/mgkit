@@ -4,7 +4,12 @@ Changes
 0.4.0
 -----
 
-Tests that require an internet connection can be skipped by setting before running the tests::
+Tests
+*****
+
+Removed the last portions that used `nosetets` and better integrated pytest with setup.py. Now uses `AppVeyor <https://ci.appveyor.com/project/setsuna80/mgkit>`_ for testing the build and running tests under Python 3.
+
+In cases where the testing environment has no or limited internet connection, tests that require an internet connection can be skipped by setting the following environment variable before running the tests::
 
 	$ export MGKIT_TESTS_CONN_SKIP=T
 

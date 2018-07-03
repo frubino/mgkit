@@ -3,6 +3,7 @@
 
 Graph module
 """
+import logging
 from future.utils import viewitems
 from xml.etree import ElementTree
 import itertools
@@ -14,6 +15,8 @@ try:
     import networkx as nx
 except ImportError:
     raise DependencyError('networkx')
+
+LOG = logging.getLogger(__name__)
 
 
 def build_graph(id_links, name, edge_type='', weight=0.5):
@@ -474,8 +477,23 @@ class Reaction(object):
         if self.kegg_id != other.kegg_id:
             raise ValueError('The reactions have different IDs')
 
-        self.substrates.update(other.substrates)
-        self.products.update(other.products)
+        # case where substrates and products are inverted
+        if (self.substrates == other.products) and (other.substrates == self.products):
+            pass
+        # case in which they are inverted but contain a subset
+        elif (self.substrates & other.products) or (other.substrates & self.products):
+            # checks for substrates
+            if self.substrates & other.products:
+                self.substrates.update(other.substrates - self.products)
+            # checks for products
+            elif self.products & other.substrates:
+                self.products.update(other.products - self.substrates)
+            # logs a warning
+            else:
+                LOG.warning("Unknown State %r", self)
+        else:
+            self.substrates.update(other.substrates)
+            self.products.update(other.products)
         self.reversible_paths.update(other.reversible_paths)
         self.irreversible_paths.update(other.irreversible_paths)
         self.orthologs.update(other.orthologs)
@@ -498,7 +516,7 @@ class Reaction(object):
         """
         Returns a generator that returns the nodes associated with reaction,
         to be used in a graph, along with attributes about the type of node
-        (reaction or compound)
+        (reaction or compound).
         """
         return itertools.chain(
             [(self.kegg_id, dict(type='reaction'))],
@@ -523,6 +541,17 @@ class Reaction(object):
                 ]
             )
         return itertools.chain(*edges), dict(reversible=self.reversible)
+
+    def to_edges_compounds(self):
+        edges = list(itertools.product(self.substrates, self.products))
+        if self.reversible:
+            edges.extend(itertools.product(self.products, self.substrates))
+
+        edges = [(node1, node2, self.kegg_id) for node1, node2 in edges if node1 != node2]
+        # Key is used in MultiGraphs to distinguish the edges of multiple
+        attr = dict(key=self.kegg_id)
+
+        return edges, attr
 
     def __eq__(self, other):
         """
