@@ -7,8 +7,6 @@ import logging
 from future.utils import viewitems
 from xml.etree import ElementTree
 import itertools
-from future.utils import viewitems
-from xml.etree import ElementTree
 from . import DependencyError
 
 try:
@@ -173,6 +171,7 @@ def link_nodes(g, graph1, graph2, id_filter, link_type, weight):
             edge_type=link_type,
             weight=weight
         )
+
 
 EDGE_LINKS = [
     (lambda x: x.startswith('C'), 'CP_LINK', 0.0),
@@ -559,8 +558,10 @@ class Reaction(object):
         """
         if (self.kegg_id == other.kegg_id) and (self.reversible == other.reversible) and (self.orthologs == other.orthologs):
             return self.cmp_compounds(other)
+
     def __ne__(self, other):
         return not (self == other)
+
     def __repr__(self):
         return "{}: s {} {} p {} - ({} - {})".format(
             self.kegg_id,
@@ -570,6 +571,7 @@ class Reaction(object):
             ','.join(self.orthologs),
             ','.join(self.pathways)
         )
+
     def __str__(self):
         return repr(self)
 
@@ -618,9 +620,9 @@ def parse_kgml_reactions(kgml):
         for compound in entry:
             cpd_ids = compound.attrib['name'].split(' ')
             cpd_ids = [cpd_id.split(':')[1].strip() for cpd_id in cpd_ids]
-            assert all(len(cpd_id) ==  6 for cpd_id in cpd_ids)
+            assert all(len(cpd_id) == 6 for cpd_id in cpd_ids)
             for cpd_id in cpd_ids:
-                if not (cpd_id.startswith('C') or cpd_id.startswith('G')  or cpd_id.startswith('D')):
+                if not (cpd_id.startswith('C') or cpd_id.startswith('G') or cpd_id.startswith('D')):
                     continue
             if compound.tag == 'substrate':
                 substrates.update(cpd_ids)

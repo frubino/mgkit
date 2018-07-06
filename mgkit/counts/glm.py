@@ -8,7 +8,6 @@ from __future__ import division
 from builtins import range
 import statsmodels.api as sm
 from scipy import interpolate
-from scipy import optimize
 import pandas as pd
 
 
@@ -29,13 +28,15 @@ def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05,
         it (int): number of iterations used to fit the lowess
         alpha (float): confidence intervals for the bootstrap
         delta (float): passed to :func:`statsmodels.api.nonparametric.lowess`
-        min_value (float): minimum value for the function to avoid out of bounds
-        kind (str): type of interpolation passed to :func:`scipy.interpolate.interp1d`
+        min_value (float): minimum value for the function to avoid out of
+            bounds
+        kind (str): type of interpolation passed to
+            :func:`scipy.interpolate.interp1d`
 
     Returns:
-        tuple: the first element is the function describing the lowest confidence
-        interval, the second element is for the highest confidence interval and
-        the last one for the mean
+        tuple: the first element is the function describing the lowest
+        confidence interval, the second element is for the highest confidence
+        interval and the last one for the mean
 
     .. note::
 
@@ -71,17 +72,21 @@ def lowess_ci_bootstrap(endog, exog, num=100, frac=.2, it=3, alpha=.05,
         alpha, interpolation='nearest'
     ).sort_index()
     q1 = q1.endog[q1.endog > 0].fillna(min_value)
-    q1 = interpolate.interp1d(q1.index, q1, kind=kind, fill_value='extrapolate')
+    q1 = interpolate.interp1d(q1.index, q1, kind=kind,
+                              fill_value='extrapolate')
 
     q2 = boots.groupby('exog').quantile(
         1 - alpha, interpolation='nearest'
     ).sort_index()
     q2 = q2.endog[q2.endog > 0].fillna(min_value)
-    q2 = interpolate.interp1d(q2.index, q2, kind=kind, fill_value='extrapolate')
+    q2 = interpolate.interp1d(q2.index, q2, kind=kind,
+                              fill_value='extrapolate')
 
-    m = fit_lowess_interpolate(data.endog, data.exog, frac=frac, it=it, kind=kind)
+    m = fit_lowess_interpolate(data.endog, data.exog, frac=frac, it=it,
+                               kind=kind)
 
     return q1, q2, m
+
 
 def fit_lowess_interpolate(endog, exog, frac=.2, it=3, kind='slinear'):
     """

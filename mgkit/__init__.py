@@ -29,7 +29,7 @@ CITE = """
 Rubino, F. and Creevey, C.J. (2014).
 MGkit: Metagenomic Framework For The Study Of Microbial Communities.
 
-Available at: http://figshare.com/articles/MGkit_Metagenomic_Framework_For_The_Study_Of_Microbial_Communities/1269288
+Available at: https://bit.ly/2KUunnN
 
 [doi:10.6084/m9.figshare.1269288]
 """

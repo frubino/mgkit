@@ -627,7 +627,8 @@ def map_counts_to_category(counts, gene_map, nomap=False, nomap_id='NOMAP'):
     return pandas.Series(newcounts)
 
 
-def load_counts_from_gff(annotations, elem_func=lambda x: x.uid, sample_func=None, nozero=True):
+def load_counts_from_gff(annotations, elem_func=lambda x: x.uid,
+                         sample_func=None, nozero=True):
     """
     .. versionadded:: 0.2.5
 
@@ -709,21 +710,22 @@ def from_gff(annotations, samples, ann_func=None, sample_func=None):
         treatment2 and control1, control2 into a MultiIndex DataFrame column
 
         >>> sample_func = lambda x: ('T' if x.startswith('t') else 'C', x)
-        >>> from_gff(annotations, ['treatment1', 'treatment2', 'control1', 'control2'], sample_func=sample_func)
+        >>> from_gff(annotations, ['treatment1', 'treatment2', 'control1',
+        'control2'], sample_func=sample_func)
 
         Annotations can be mapped to other levels for example instead of using
-        the *uid* that is the default, it can be mapped to the gene_id, taxon_id
-        information that is included in the annotation, resulting in a MultiIndex
-        index for the rows, with (gene_id, taxon_id) as key.
+        the *uid* that is the default, it can be mapped to the gene_id,
+        taxon_id information that is included in the annotation, resulting in a
+        MultiIndex index for the rows, with (gene_id, taxon_id) as key.
 
         >>> ann_func = lambda x: [(x.gene_id, x.taxon_id)]
         >>> from_gff(annotations, ['SAMPLE1', 'SAMPLE2'], ann_func=ann_func)
     """
     if ann_func is None:
-        ann_func = lambda x: (x.uid, )
+        def ann_func(x): return (x.uid, )
 
     if sample_func is None:
-        sample_func = lambda x: x
+        def sample_func(x): return x
 
     counters = {
         sample_func(sample): Counter()
