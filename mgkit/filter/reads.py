@@ -3,7 +3,6 @@ Some test functions to filter sequences
 """
 from __future__ import division
 from builtins import range
-from .. import DependencyError
 
 import numpy
 

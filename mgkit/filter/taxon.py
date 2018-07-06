@@ -64,7 +64,7 @@ def filter_taxon_by_id_list(taxon_id, filter_list=None, exclude=False,
     """
 
     if func is None:
-        func = lambda t_id, a_id: t_id == a_id
+        def func(t_id, a_id): return t_id == a_id
 
     if filter_list is None:
         raise FilterFails('No filter_list')

@@ -44,7 +44,8 @@ def choose_annotation(ann1, ann2, overlap=100, choose_func=None):
     """
 
     if choose_func is None:
-        choose_func = lambda a1, a2: min(a1, a2, key=lambda el: (el.dbq, el.bitscore, len(el)))
+        def choose_func(a1, a2):
+            return min(a1, a2, key=lambda el: (el.dbq, el.bitscore, len(el)))
 
     intersect = ann1.intersect(ann2)
 
@@ -93,7 +94,7 @@ def filter_annotations(annotations, choose_func=None, sort_func=None,
         choose_func = choose_annotation
 
     if sort_func is None:
-        sort_func = lambda x: x.bitscore
+        def sort_func(x): return x.bitscore
 
     annotations = sorted(annotations, key=sort_func, reverse=reverse)
 

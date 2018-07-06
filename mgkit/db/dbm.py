@@ -38,7 +38,8 @@ def create_gff_dbm(annotations, file_name):
     LOG.info('DB "%s" opened/created', file_name)
 
     for annotation in annotations:
-        database[annotation.uid.encode('ascii')] = annotation.to_gff().encode('ascii')
+        database[annotation.uid.encode('ascii')] = \
+            annotation.to_gff().encode('ascii')
 
     database.sync()
 
