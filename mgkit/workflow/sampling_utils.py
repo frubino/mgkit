@@ -246,7 +246,7 @@ def compare_header(header1, header2, header_type=None):
               the original pair of files.""")
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-m', '--master-file', type=click.File('rb'), required=True,
-    help='Resampled FastQ file that is out of sync with the original pair')
+              help='Resampled FastQ file that is out of sync with the original pair')
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def fq_sync_command(verbose, master_file, input_file, output_file):

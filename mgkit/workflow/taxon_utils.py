@@ -265,7 +265,7 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
               help='Taxonomy file')
 @click.option('-n', '--no-lca', type=click.File('wb'), default=None,
               help='File to which write records with no LCA')
-@click.option('-a', '--only-ranked',is_flag=True, default=False,
+@click.option('-a', '--only-ranked', is_flag=True, default=False,
               help='''If set, only taxa that have a rank will be used in the lineageself. This is not advised for lineages such as Viruses, where the top levels have no rank''')
 @click.option('-b', '--bitscore', default=0, type=click.FLOAT, show_default=True,
               help='Minimum bitscore accepted')
@@ -320,12 +320,13 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
         for annotation in gff.parse_gff(gff_file)
         # only use annotations whose bitscore pass the filter
         # and have a taxon_id
-        if ((annotation.bitscore >= bitscore) or
-            (annotation.bitscore is None)) and
-           (annotation.taxon_id is not None) and
-           # redundant probably, but used in cases when a taxon_id was deleted
-           # from the taxonomy
-           (annotation.taxon_id in taxonomy)
+        if (
+            (annotation.bitscore >= bitscore) or
+            (annotation.bitscore is None)
+            ) and (annotation.taxon_id is not None) and
+            # redundant probably, but used in cases when a taxon_id was deleted
+            # from the taxonomy
+            (annotation.taxon_id in taxonomy)
     )
 
     if sorted:
@@ -427,7 +428,7 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
               help='Taxonomy file')
 @click.option('-n', '--no-lca', type=click.File('wb'), default=None,
               help='File to which write records with no LCA')
-@click.option('-a', '--only-ranked',is_flag=True, default=False,
+@click.option('-a', '--only-ranked', is_flag=True, default=False,
               help='''If set, only taxa that have a rank will be used in the lineageself. This is not advised for lineages such as Viruses, where the top levels have no rank''')
 @click.option('-s', '--separator', default='\t',
               help='separator for taxon_ids (defaults to TAB)')
@@ -619,7 +620,7 @@ def filter_taxa_command(verbose, table, taxonomy, include_taxon_id,
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-n', '--table-name', default='taxa', show_default=True,
               help='Name of the table/storage to use')
-@click.option('-w','--overwrite', default=False, is_flag=True,
+@click.option('-w', '--overwrite', default=False, is_flag=True,
               help='Overwrite the file, instead of appending to it')
 @click.option('-s', '--index-size', default=12, type=click.INT,
               show_default=True,
