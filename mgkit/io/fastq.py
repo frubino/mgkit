@@ -278,7 +278,7 @@ def load_fastq_rename(file_handle, num_qual=False, name_func=None):
     """
 
     if name_func is None:
-        name_func = lambda header: header.split(' ')[0]
+        def name_func(header): return header.split(' ')[0]
 
     for header, seq, qual in load_fastq(file_handle, num_qual=num_qual):
         yield name_func(header), seq, qual

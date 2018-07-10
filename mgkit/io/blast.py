@@ -8,7 +8,6 @@ from builtins import range, zip
 from future.utils import viewitems
 from . import gff
 from . import open_file
-from ..utils.common import deprecated
 
 NUM_LINES = 10 ** 6
 
@@ -99,7 +98,7 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     """
 
     if key_func is None:
-        key_func = lambda x: x
+        def key_func(x): return x
 
     if value_funcs is None:
         value_funcs = [lambda x: x for y in range(len(ret_col))]
@@ -179,7 +178,7 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
     """
 
     if name_func is None:
-        name_func = lambda x: x.split('|')[1]
+        def name_func(x): return x.split('|')[1]
 
     ret_col = (0, 1, 2, 6, 7, 8, 9, 10, 11)
 

@@ -44,7 +44,7 @@ def group_tuples_by_key(iterator, key_func=None, skip_elements=0):
         list: a list of the grouped elements by key
     """
     if key_func is None:
-        key_func = lambda x: x[0]
+        def key_func(x): return x[0]
 
     for index in range(skip_elements):
         next(iterator)

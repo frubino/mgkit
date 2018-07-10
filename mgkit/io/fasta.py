@@ -28,7 +28,7 @@ def load_fasta(file_handle):
         the sequence
     """
     if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
-        file_handle = open_file(file_handle, 'rb')
+        file_handle = mgkit.io.open_file(file_handle, 'rb')
     elif isinstance(file_handle, str):
         file_handle = mgkit.io.open_file(file_handle, 'rb')
     else:
@@ -98,7 +98,7 @@ def load_fasta_rename(file_handle, name_func=None):
     the first space (BLAST behaviour).
     """
     if name_func is None:
-        name_func = lambda x: x.split(' ')[0]
+        def name_func(x): return x.split(' ')[0]
 
     for seq_id, seq in load_fasta(file_handle):
         yield name_func(seq_id), seq
@@ -173,6 +173,6 @@ def split_fasta_file(file_handle, name_mask, num_files):
     """
     records = load_fasta(file_handle)
 
-    write_func = lambda h, r: write_fasta_sequence(h, *r)
+    def write_func(h, r): return write_fasta_sequence(h, *r)
 
     mgkit.io.split_write(records, name_mask, write_func, num_files=num_files)

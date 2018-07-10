@@ -57,7 +57,7 @@ def write_gff(annotations, file_handle, verbose=True):
     """
 
     if isinstance(file_handle, str):
-        file_handle = open_file(file_handle, 'wb')
+        file_handle = mgkit.io.open_file(file_handle, 'wb')
 
     if verbose:
         LOG.info(
@@ -745,7 +745,7 @@ class Annotation(GenomicRange):
         # eliminate gene_id (always present in new ones)
         try:
             attr_keys.remove('gene_id')
-        except:
+        except ValueError:
             pass
 
         # transcript_id don't always be there
@@ -1595,8 +1595,8 @@ def diff_gff(files, key_func=None):
         return
 
     if key_func is None:
-        key_func = lambda x: (x.seq_id, x.strand, x.start, x.end, x.gene_id,
-                              x.bitscore)
+        def key_func(x):
+            return (x.seq_id, x.strand, x.start, x.end, x.gene_id, x.bitscore)
 
     gff_diff = {}
 
@@ -1704,9 +1704,9 @@ def annotation_coverage(annotations, seqs, strand=True):
     """
 
     if strand:
-        key_func = lambda x: (x.seq_id, x.strand)
+        def key_func(x): return (x.seq_id, x.strand)
     else:
-        key_func = lambda x: x.seq_id
+        def key_func(x): return x.seq_id
 
     annotations = group_annotations(
         annotations,
@@ -1753,9 +1753,9 @@ def annotation_coverage_sorted(annotations, seqs, strand=True):
     """
 
     if strand:
-        key_func = lambda x: (x.seq_id, x.strand)
+        def key_func(x): return (x.seq_id, x.strand)
     else:
-        key_func = lambda x: x.seq_id
+        def key_func(x): return x.seq_id
 
     annotations = group_annotations_sorted(
         annotations,
@@ -2227,7 +2227,7 @@ def from_prodigal_frag(main_gff, blast_gff, attr='ID', split_func=None):
 
     """
     if split_func is None:
-        split_func = lambda x: tuple(x.rsplit('_', 1))
+        def split_func(x): return tuple(x.rsplit('_', 1))
 
     prodigal_gff = {}
     for annotation in parse_gff(main_gff, strict=False):
