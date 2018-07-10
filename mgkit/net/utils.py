@@ -2,7 +2,6 @@
 Utility functions for the network package
 """
 import requests
-import gzip
 
 
 def url_open(url, data=None, headers=None, agent=None, get=True, stream=False):

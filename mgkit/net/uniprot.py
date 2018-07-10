@@ -5,7 +5,6 @@ from __future__ import division
 from builtins import range, zip
 import mgkit
 import logging
-import itertools
 from . import url_read
 
 UNIPROT_MAP = 'http://www.uniprot.org/mapping/'

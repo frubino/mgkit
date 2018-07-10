@@ -18,6 +18,7 @@ class ColorFormatter(logging.Formatter):
         'CRITICAL': 'red',
         'DEBUG': 'blue',
     }
+    
     def format(self, record):
         color = self.colors.get(record.levelname, None)
         record.levelname = click.style(record.levelname, fg=color)

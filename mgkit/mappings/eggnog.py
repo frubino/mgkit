@@ -201,7 +201,7 @@ class Kegg2NogMapper(kegg.KeggMapperBase):
             self._egg_to_cat[egg_id] = list(cats)
 
     def gen_ko_to_cat(self):
-        for ko_id, egg_ids in viewitems(elf._ko_map):
+        for ko_id, egg_ids in viewitems(self._ko_map):
             cats = set()
             for egg_id in egg_ids:
                 try:

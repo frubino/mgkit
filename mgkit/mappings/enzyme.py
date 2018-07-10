@@ -106,7 +106,7 @@ def change_mapping_level(ec_map, level=3):
         {'Q9HFQ1': {'1.1'}}
 
     """
-    for gene_id, ecdict in iteritems(ec_map):
+    for gene_id, ecdict in viewitems(ec_map):
         try:
             ec_list = ecdict['ec']
         except KeyError:

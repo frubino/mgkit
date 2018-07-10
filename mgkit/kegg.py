@@ -700,7 +700,7 @@ class KeggData(object):
             self.gen_maps()
         return dict(
             (cp_id, cp.description)
-            for cp_id, cp in viewitems(elf.maps['cp'])
+            for cp_id, cp in viewitems(self.maps['cp'])
         )
 
     def get_ko_rn_links(self, path_filter=None, description=False):
@@ -862,7 +862,7 @@ class KeggData(object):
 class KeggMapperBase(object):
     """
     .. deprecated:: 0.3.4
-    
+
     Base object for Kegg mapping classes
     """
     _ko_map = None
@@ -933,6 +933,7 @@ class KeggMapperBase(object):
 
     def __iter__(self):
         return iter(self._ko_map)
+
 
 BLACK_LIST = [
     'ko05164',  # Influenza A
