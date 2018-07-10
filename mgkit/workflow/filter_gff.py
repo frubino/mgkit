@@ -146,7 +146,6 @@ import click
 import pandas
 
 import mgkit
-from .. import logger
 from . import utils
 from ..io import gff, fasta
 from ..filter import gff as filter_gff
@@ -289,9 +288,9 @@ def coverage_command(verbose, reference, strand_specific, sorted, min_coverage,
     file_iterator = gff.parse_gff(input_file, gff_type=gff.from_gff)
 
     if strand_specific:
-        key_func = lambda x: (x.seq_id, x.strand)
+        def key_func(x): return (x.seq_id, x.strand)
     else:
-        key_func = lambda x: x.seq_id
+        def key_func(x): return x.seq_id
 
     if sorted:
         LOG.info("Input GFF is assumed sorted")
@@ -400,6 +399,7 @@ def setup_filters(str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_lt):
         )
     return filters
 
+
 def validate_params(ctx, param, values, convert=str):
     new_values = []
     for value in values:
@@ -410,6 +410,7 @@ def validate_params(ctx, param, values, convert=str):
             )
         new_values.append((value[0], convert(value[1])))
     return new_values
+
 
 @main.command('values', help="""Filter based on values""")
 @click.option('-v', '--verbose', is_flag=True)
@@ -466,27 +467,28 @@ def make_choose_func(values):
 
     attributes = values.split(',')
 
-    choose_func = lambda a1, a2: function(
-        a1,
-        a2,
-        key=lambda el: tuple(
-            getattr(el, attribute, None) if hasattr(el, attribute) else el.get_attr(attribute, float)
-            for attribute in attributes
+    def choose_func(a1, a2):
+        return function(
+            a1,
+            a2,
+            key=lambda el: tuple(
+                getattr(el, attribute, None) if hasattr(el, attribute) else el.get_attr(attribute, float)
+                for attribute in attributes
+            )
         )
-    )
 
     return choose_func
 
 
 @main.command('overlap', help='Use overlapping filter')
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-s', '--size', type=click.INT, default=100,
+@click.option('-s', '--size', type=click.INT, default=100, show_default=True,
               help='Size of the overlap that triggers the filter')
 @click.option('-t', '--sorted', is_flag=True, default=False,
               help='''If the GFF file is sorted (all of a sequence annotations are contiguos and sorted by strand) can use less memory, `sort -s -k 1,1 -k 7,7` can be used''')
 @click.option('-c', '--choose-func', default='dbq,bitscore,length',
               help='Function to choose between two overlapping annotations')
-@click.option('-a', '--sort-attr', default='bitscore',
+@click.option('-a', '--sort-attr', default='bitscore', show_default=True,
               type=click.Choice(['bitscore', 'identity', 'length']),
               help='Attribute to sort annotations before filtering (default bitscore)')
 @click.argument('input-file', type=click.File('rb'), default='-')

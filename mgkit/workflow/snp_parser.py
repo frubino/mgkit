@@ -34,14 +34,16 @@ import HTSeq
 import logging
 import argparse
 import sys
-if sys.version_info[0] == 2:
-    import cPickle as pickle
-else:
-    import pickle
 from . import utils
 from ..io import gff, compressed_handle, fasta
 from .. import logger
 from ..snps.classes import GeneSNP, SNPType
+
+if sys.version_info[0] == 2:
+    import cPickle as pickle
+else:
+    import pickle
+
 
 LOG = logging.getLogger(__name__)
 

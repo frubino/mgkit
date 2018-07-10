@@ -234,7 +234,7 @@ def gtf_command(verbose, gene_id, gff_file, gtf_file):
 
 @main.command('split', help="""Split annotations from a GFF file [gff-file] to
 several files starting with [prefix]""")
-@click.option('-v','--verbose', is_flag=True,)
+@click.option('-v', '--verbose', is_flag=True,)
 @click.option('-p', '--prefix', default='split', show_default=True,
               help='Prefix for the file name in output')
 @click.option('-n', '--number', type=click.INT, default=10, show_default=True,

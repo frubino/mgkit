@@ -179,12 +179,14 @@ def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
     seqs = load_fasta_file(fasta_file)
 
     if no_split:
-        name_func = lambda x: x
+        def name_func(x): return x
     else:
         if remove_version:
-            name_func = lambda x: x.split(header_sep)[gene_index].split('.')[0]
+            def name_func(x):
+                return x.split(header_sep)[gene_index].split('.')[0]
         else:
-            name_func = lambda x: x.split(header_sep)[gene_index]
+            def name_func(x):
+                return x.split(header_sep)[gene_index]
 
     iterator = blast.parse_uniprot_blast(
         blast_file,
@@ -239,7 +241,7 @@ def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,
     seqs = load_fasta_file(fasta_file)
 
     if no_split is True:
-        name_func = lambda x: x
+        def name_func(x): return x
     else:
         name_func = None
 
