@@ -212,11 +212,8 @@ Changes
 """
 from __future__ import division
 from builtins import zip
-from future.utils import viewitems, viewvalues
-from functools import reduce
+from future.utils import viewitems
 import logging
-import itertools
-import functools
 import pysam
 import json
 import pickle
@@ -230,7 +227,7 @@ from .. import align
 from .. import logger
 from .. import taxon
 from .. import kegg
-from ..io import gff, blast, fasta, compressed_handle, open_file
+from ..io import gff, blast, fasta, open_file
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
 from ..net import pfam
@@ -699,7 +696,7 @@ def parse_hdf5_arg(ctx, param, values):
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-t', '--gene-taxon-table', default=None,
               help="""GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz) or a similar file where GENE/TAXON are tab separated and one per line""")
-@click.option('-a','--gene-attr', default='gene_id',
+@click.option('-a', '--gene-attr', default='gene_id',
               help="""In which attribute the GENEID in the table is stored (defaults to *gene_id*)""")
 @click.option('-f', '--hdf-table', default=None, callback=parse_hdf5_arg,
               help="""HDF5 file and table name to use for taxon_id lookups. The format to pass is the file name, colon and the table file hf5:taxa-table. The index in the table is the accession_id, while the column `taxon_id` stores the taxon_id as int""")
@@ -876,7 +873,7 @@ def samtools_depth_command(verbose, samples, depths, num_seqs, input_file,
         for file_name in depths
     ]
     if len(samples) != len(depths):
-        exit_script('Number of samples different from number of files', 2)
+        utils.exit_script('Number of samples different from number of files', 2)
 
     annotations = gff.parse_gff(input_file)
 

@@ -36,13 +36,12 @@ Changes
 from __future__ import division
 from builtins import range
 import logging
-import sys
 from uuid import uuid4
 
 import click
 import mgkit
 from . import utils
-from mgkit.io import fasta, open_file
+from mgkit.io import fasta
 from ..utils import trans_tables
 from ..utils.sequence import translate_sequence
 

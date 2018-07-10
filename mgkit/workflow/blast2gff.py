@@ -97,7 +97,6 @@ Changes
 import logging
 import click
 import progressbar
-import mgkit
 from .. import logger
 from . import utils
 from ..io import blast, fasta
