@@ -54,6 +54,7 @@ def make_reverse_table(tbl=None):
         trans_table[ord(nuc)] = rev
     return ''.join(trans_table)
 
+
 # The maketrans function is not available on Python3
 if sys.version_info[0] == 2:
     from string import maketrans
@@ -64,6 +65,7 @@ if sys.version_info[0] == 2:
     }
 else:
     REV_COMP_ASCII = u''.maketrans(REV_COMP)
+
 
 def reverse_complement_old(seq, tbl=None):
     """
@@ -825,7 +827,7 @@ def random_sequences_codon(n=1, length=150, codons=list(UNIVERSAL.keys()),
     codons = numpy.array(codons)
 
     if frame is not None:
-        if  (frame < 0) or (frame > 2):
+        if (frame < 0) or (frame > 2):
             frame = 0
         sframe = frame
 

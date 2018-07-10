@@ -83,7 +83,7 @@ import mgkit
 from . import utils
 from ..utils import sequence
 from mgkit.io import fasta, open_file
-from mgkit.io.fastq import load_fastq, write_fastq_sequence
+from mgkit.io.fastq import load_fastq, write_fastq_sequence, choose_header_type
 
 LOG = logging.getLogger(__name__)
 
@@ -256,7 +256,7 @@ def fq_sync_command(verbose, master_file, input_file, output_file):
     master_file = load_fastq(master_file, num_qual=False)
     master_header = next(master_file)[0]
 
-    header_type = fastq.choose_header_type(master_header)
+    header_type = choose_header_type(master_header)
 
     written_count = 0
 

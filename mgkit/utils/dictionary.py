@@ -336,7 +336,7 @@ class HDFDict(object):
         self._hdf = pandas.HDFStore(file_name, mode='r')
         self._table = table
         self._cast = cast
-        if not self._table in self._hdf:
+        if self._table not in self._hdf:
             raise ValueError(
                 "Table ({}) not found in file ({})".format(
                     table,

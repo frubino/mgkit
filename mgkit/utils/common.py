@@ -3,8 +3,6 @@ Utility functions
 """
 from __future__ import division
 from builtins import range
-import itertools
-import operator
 import functools
 import warnings
 
