@@ -4,6 +4,8 @@ Changes
 0.4.0
 -----
 
+Added `--progress` option to several scripts
+
 Tests
 *****
 
@@ -12,6 +14,12 @@ Removed the last portions that used `nosetets` and better integrated pytest with
 In cases where the testing environment has no or limited internet connection, tests that require an internet connection can be skipped by setting the following environment variable before running the tests::
 
 	$ export MGKIT_TESTS_CONN_SKIP=T
+
+Scripts with Changed CLI
+************************
+
+* filter-gff: sequence, values
+* taxon-utils: lca, filter
 
 0.3.4
 -----
