@@ -66,6 +66,9 @@ class GFFDB(object):
         else:
             self.db = db
 
+    def __setitem__(self, uid, annotation):
+        self.db[uid.encode('ascii')] = annotation.to_gff().encode('ascii')
+
     def __getitem__(self, key):
         if not isinstance(key, bytes):
             key = key.encode('ascii')

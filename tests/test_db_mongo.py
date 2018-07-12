@@ -38,6 +38,12 @@ def test_insert_one(annotations, connection):
 
 
 @skip_conn
+def test_insert_one(connection):
+    with pytest.raises(TypeError):
+        connection.insert_one('test')
+
+
+@skip_conn
 def test_insert_many(annotations, connection):
     connection.insert_many(annotations)
 
@@ -65,10 +71,31 @@ def test_values(annotations, connection):
 
 
 @skip_conn
+def test_iter(annotations, connection):
+    connection.insert_many(annotations)
+    assert {annotation.uid for annotation in annotations} == \
+        {annotation.uid for annotation in connection}
+
+
+@skip_conn
+def test_itervalues(annotations, connection):
+    connection.insert_many(annotations)
+    assert {annotation.uid for annotation in annotations} == \
+        {annotation.uid for annotation in connection.itervalues()}
+
+
+@skip_conn
 def test_items(annotations, connection):
     connection.insert_many(annotations)
     assert {annotation for annotation in annotations} == \
         {annotation for uid, annotation in connection.items()}
+
+
+@skip_conn
+def test_iteritems(annotations, connection):
+    connection.insert_many(annotations)
+    assert {annotation for annotation in annotations} == \
+        {annotation for uid, annotation in connection.iteritems()}
 
 
 @skip_conn
