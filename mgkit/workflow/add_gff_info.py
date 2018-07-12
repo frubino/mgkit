@@ -513,7 +513,7 @@ def coverage_command(verbose, sample_alignment, input_file, output_file):
 @main.command('exp_syn', help="""Adds expected synonymous and non-synonymous
               changes information""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-r', '--reference', required=True, type=click.File('rn'),
+@click.option('-r', '--reference', required=True, type=click.File('rb'),
               help='reference sequence in fasta format')
 @click.option('-s', '--split', default=False, is_flag=True,
               help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
