@@ -78,7 +78,7 @@ import click
 import numpy
 import scipy.stats
 import pickle
-
+from tqdm import tqdm
 import mgkit
 from . import utils
 from ..utils import sequence
@@ -96,14 +96,17 @@ def main():
     pass
 
 
-def infer_parameters(file_handle, fastq_bool):
-    LOG.info('Inferring parameters from file')
+def infer_parameters(file_handle, fastq_bool, progress):
+    LOG.info("Extrapolating model from file %s", file_handle.name)
 
     if fastq_bool:
         it = load_fastq(file_handle, num_qual=True)
         quals = []
     else:
         it = fasta.load_fasta(file_handle)
+
+    if progress:
+        it = tqdm(it)
 
     gc_content = []
 
@@ -149,10 +152,12 @@ def infer_parameters(file_handle, fastq_bool):
               help='Save inferred qualities model to a pickle file')
 @click.option('-a', '--read-model', default=None, type=click.File('rb'),
               help='Load qualities model from a pickle file')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('output_file', type=click.File('wb'), default='-')
 def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
                           coding_prop, length, const_model, dist_loc, fastq,
-                          save_model, read_model, output_file):
+                          save_model, read_model, progress, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -166,7 +171,8 @@ def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
         elif infer_params:
             length, gc_content, model = infer_parameters(
                 infer_params,
-                fastq
+                fastq,
+                progress
             )
         elif read_model:
             LOG.info('Reading saved model')
@@ -225,6 +231,9 @@ def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
         )
     else:
         qual_it = itertools.repeat(num_seqs)
+
+    if progress:
+        qual_it = tqdm(qual_it, total=num_seqs)
 
     for seq, qual in zip(seq_it, qual_it):
         seq_id = str(uuid.uuid4())

@@ -37,8 +37,8 @@ from __future__ import division
 from builtins import range
 import logging
 from uuid import uuid4
-
 import click
+from tqdm import tqdm
 import mgkit
 from . import utils
 from mgkit.io import fasta
@@ -105,9 +105,11 @@ def translate_seq(name, seq, trans_table):
 @click.option('-t', '--trans-table', default='universal', show_default=True,
               type=click.Choice([table_name.lower() for table_name in dir(trans_tables) if not table_name.startswith('_')]),
               help='translation table')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def translate_command(verbose, trans_table, fasta_file, output_file):
+def translate_command(verbose, trans_table, progress, fasta_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
         'Writing to file (%s)',
@@ -116,7 +118,11 @@ def translate_command(verbose, trans_table, fasta_file, output_file):
 
     trans_table = load_trans_table(trans_table)
 
-    for name, seq in fasta.load_fasta(fasta_file):
+    iterator = fasta.load_fasta(fasta_file)
+
+    iterator = tqdm(iterator)
+
+    for name, seq in iterator:
         for new_header, new_seq in translate_seq(name, seq, trans_table):
             fasta.write_fasta_sequence(output_file, new_header, new_seq)
 

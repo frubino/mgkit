@@ -22,8 +22,8 @@ Changes
 from __future__ import division
 from builtins import zip
 import logging
-import mgkit
 import click
+import mgkit
 from mgkit.io.fastq import choose_header_type, write_fastq_sequence, load_fastq
 from mgkit.io import fasta
 from . import utils
