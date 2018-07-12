@@ -12,7 +12,7 @@ from mgkit.utils.sequence import reverse_aa_coord, get_variant_sequence, \
     get_seq_number_of_syn, sequence_gc_ratio, sequence_gc_content, \
     sequence_composition, _get_kmers, _sliding_window, _sequence_signature, \
     sequence_signature, sliding_window, get_kmers, random_sequences_codon, \
-    random_sequences
+    random_sequences, calc_n50
 
 
 @pytest.mark.parametrize(
@@ -62,12 +62,14 @@ def test_reverse_complement():
     assert reverse_complement(seq) == rev
 
 
-
 @pytest.mark.parametrize(
     "seq,trl,start,tbl,reverse",
     [
         ('TTTAAAACCGGGGTC', 'FKTGV', 0, trans_tables.UNIVERSAL, False),
+        ('TTTAAAACCGGGGTC', 'FKTGV', 0, None, False),
         ('TTTAAAACCGGGGTC', 'FKTGV', 0, trans_tables.VT_MIT, False),
+        ('TTTAAAACCGGGGTF', 'FKTGX', 0, trans_tables.UNIVERSAL, False),
+        ('TTTAAAACCGGGGTC', 'DPGFK', 0, trans_tables.UNIVERSAL, True),
     ]
 )
 def test_translate_sequence_eq(seq, trl, start, tbl, reverse):
@@ -317,3 +319,7 @@ def test_random_sequences_codon3():
     p = p / p.sum()
 
     assert all(p < (exp_p * 1.1)) and all(p > (exp_p * .9))
+
+
+def test_calc_n50():
+    assert calc_n50(numpy.array([100] * 10 + [200]* 5 + [500] * 3)) == 200
