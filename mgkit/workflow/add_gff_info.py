@@ -217,7 +217,7 @@ import logging
 import pysam
 import json
 import pickle
-import progressbar
+from tqdm import tqdm
 import click
 import msgpack
 import mgkit
@@ -517,9 +517,12 @@ def coverage_command(verbose, sample_alignment, input_file, output_file):
               help='reference sequence in fasta format')
 @click.option('-s', '--split', default=False, is_flag=True,
               help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def exp_syn_command(verbose, reference, split, input_file, output_file):
+def exp_syn_command(verbose, reference, split, progress, input_file,
+                    output_file):
     """
     .. versionadded:: 0.1.16
     """
@@ -538,7 +541,12 @@ def exp_syn_command(verbose, reference, split, input_file, output_file):
         for seq_id, seq in fasta.load_fasta(reference)
     )
 
-    for annotation in gff.parse_gff(input_file):
+    iterator = gff.parse_gff(input_file)
+
+    if progress:
+        iterator = tqdm(iterator)
+
+    for annotation in iterator:
         annotation.add_exp_syn_count(seqs[annotation.seq_id])
 
         annotation.to_file(output_file)
@@ -554,10 +562,12 @@ def exp_syn_command(verbose, reference, split, input_file, output_file):
 @click.option('-m', '--mapping', multiple=True, default=None, required=True,
               type=click.Choice(list(uniprot_io.MAPPINGS.values())),
               help="Mappings to add")
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def uniprot_offline_command(verbose, mapping_file, force_taxon_id, mapping,
-                            input_file, output_file):
+                            progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
@@ -581,9 +591,10 @@ def uniprot_offline_command(verbose, mapping_file, force_taxon_id, mapping,
         num_lines=None
     )
 
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+    if progress:
+        iterator = tqdm(iterator)
 
-    file_mappings = dict(bar(iterator))
+    file_mappings = dict(iterator)
 
     count = 0
 
@@ -646,10 +657,12 @@ def load_featurecounts_files(count_files, samples):
               help="If the counts are FPKMS")
 @click.option('-e', '--featureCounts', default=False, is_flag=True,
               help="""If the counts files are from featureCounts""")
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def counts_command(verbose, samples, count_files, fpkms, featurecounts,
-                   input_file, output_file):
+                   progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
@@ -664,7 +677,12 @@ def counts_command(verbose, samples, count_files, fpkms, featurecounts,
 
     key = "fpkms_{}" if fpkms else "counts_{}"
 
-    for annotation in gff.parse_gff(input_file):
+    iterator = gff.parse_gff(input_file)
+
+    if progress:
+        iterator = tqdm(iterator)
+
+    for annotation in iterator:
         try:
             ann_counts = counts[annotation.uid]
         except KeyError:
@@ -707,11 +725,13 @@ def parse_hdf5_arg(ctx, param, values):
 @click.option('-db', '--taxon-db', default='NONE', help="""DB used to add the taxonomic information""")
 @click.option('-c', '--cache-table', default=False, is_flag=True,
               help="""If used, annotations are not preloaded, but the taxa table is cached, instead""")
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
                     dictionary, skip_no_taxon, taxon_db, cache_table,
-                    input_file, output_file):
+                    progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
@@ -782,9 +802,8 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
     if taxonomy is not None:
         taxonomy = taxon.Taxonomy(taxonomy)
 
-    if hdf_table is not None:
-        bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
-        annotations = bar(annotations)
+    if progress:
+        annotations = tqdm(annotations)
 
     count = 0
     for lineno, annotation in enumerate(annotations):
@@ -855,12 +874,13 @@ def pfam_command(verbose, id_attr, use_accession, input_file, output_file):
 @click.option('-d', '--depths', required=True, multiple=True,
               help='`samtools depth -aa` file')
 @click.option('-n', '--num-seqs', default=0,  type=click.INT,
-              show_default=True,
-              help='''Number of sequences to update the log. If 0, no message is logged''')
+              show_default=True, help='''Number of sequences to update the log. If 0, no message is logged''')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def samtools_depth_command(verbose, samples, depths, num_seqs, input_file,
-                           output_file):
+def samtools_depth_command(verbose, samples, depths, num_seqs, progress,
+                           input_file, output_file):
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     if samples is None:
@@ -877,9 +897,10 @@ def samtools_depth_command(verbose, samples, depths, num_seqs, input_file,
 
     annotations = gff.parse_gff(input_file)
 
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+    if progress:
+        annotations = tqdm(annotations)
 
-    for annotation in bar(annotations):
+    for annotation in annotations:
         coverages = []
         for sample, depth in zip(sample, depths):
             cov = depth.region_coverage(
