@@ -10,9 +10,14 @@ def test_get_sequences_by_ko():
 
 
 @skip_no_connection
-def test_get_mappings():
+def test_get_mappings1():
     assert 'A0A023P6Q7' in \
         get_mappings('K00001', db_from='KO_ID', db_to='ACC')['K00001']
+
+
+def test_get_mappings2():
+    assert 'A0A023P6Q7' in \
+        get_mappings('K00001', db_from='KO_ID', db_to='ACC', out_format='list')
 
 
 @pytest.mark.skip(reason='There are discrepancies in Uniprot return values')
