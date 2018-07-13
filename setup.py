@@ -40,6 +40,8 @@ install_requires = [
     'future',
     'requests',
     'click>=6',
+    #support for enum backported from Python 3.4
+    'enum34;python_version<"3.4"',
 ]
 
 # Build of documentation fails on RTD when pytables is
@@ -52,10 +54,6 @@ if not on_rtd:
 with open('README.rst') as file:
     long_description = file.read()
 
-
-if sys.version_info < (3, 4):
-    #support for enum backported from Python 3.4
-    install_requires.append('enum34')
 
 setup(
     name="mgkit",
@@ -75,7 +73,11 @@ setup(
         'scripts/sort-gff.sh',
     ],
     setup_requires=['pytest-runner'],
-    tests_require=['pytest>=3.5', 'pytest-datadir', 'pytest-console-scripts'],
+    tests_require=[
+        'pytest>=3.5',
+        'pytest-datadir',
+        'pytest-console-scripts'
+    ],
     entry_points={
         'console_scripts': [
             'filter-gff = mgkit.workflow.filter_gff:main',
