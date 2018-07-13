@@ -77,7 +77,8 @@ def test_union_ranges(intervals, result):
         ([(1, 10), (11, 20), (25, 30)], 100, [(21, 24), (31, 100)]),
         ([(1, 10), (11, 20), (25, 30)], None, [(21, 24)]),
         ([(0, 2), (3, 17), (18, 20)], None, []),
-        ([(0, 2), (3, 17), (18, 20)], 100, [(21, 100)])
+        ([(0, 2), (3, 17), (18, 20)], 100, [(21, 100)]),
+        ([(3, 17), (18, 20)], 100, [(1, 2), (21, 100)])
     ]
 )
 def test_complement_ranges(intervals, end, result):
@@ -94,7 +95,7 @@ def test_complement_ranges(intervals, end, result):
         ([(1, 10), (10, 25)], 26),
     ]
 )
-def test_range_intersect(coords, result):
+def test_ranges_length(coords, result):
     assert ranges_length(coords) == result
 
 

@@ -46,7 +46,8 @@ def cite(file_handle=sys.stderr):
         'MGKit Version: {0}'.format(__VERSION__),
         CITE,
         sep='\n',
-        file=file_handle
+        file=file_handle,
+        end=''
     )
 
 

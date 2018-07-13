@@ -181,6 +181,11 @@ def test_sequence_gc_content1():
     sequence_gc_content(seq) == 15 / 29
 
 
+def test_sequence_gc_content2():
+    seq = ''
+    sequence_gc_content(seq) == .5
+
+
 def test_sequence_composition1():
     seq = 'A' * 10 + 'C' * 4 + 'T' * 5 + 'G' * 11
     assert sorted(sequence_composition(seq)) == [('A', 10), ('C', 4), ('G', 11), ('T', 5)]
