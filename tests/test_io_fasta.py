@@ -8,6 +8,11 @@ def nucseq(shared_datadir):
     return str(shared_datadir / 'test-seq-nuc.fa')
 
 
+@pytest.fixture
+def oneseq(shared_datadir):
+    return str(shared_datadir / 'one-seq.fa')
+
+
 def test_load_fasta1(nucseq):
     seq_id, seq = next(fasta.load_fasta(nucseq))
     assert seq == u'ATCGATGTCTGCCGCAATGACGGTGGCACCACGCTGGGCAGAGCGTACGACGGCACCCATACCGACCATGCCACAGCCAATCACCATGACGACATCGATATCTGTTACCTGGGCACGACTGACAGCATGGAAACCCACACTCATCGGTTCGATTAATGCACAGGTGCGGGGTGTCAGCAGTCCTGCGGGGATGACTTTCTCCCAGGGCAGGGCGAGATACTCACACATGGCTCCCCAGCGCTGCACACCTAATGTCTGGTTGTGCTCGCAGGCATTGACACGGTCGTTACGGCATGACGCACATTTTCCACAGTTGGTGTAGGGGTTGACGGTGACGGTCATACCGGGCTTCAGTCCCTCAGGTACGTTCTTGCCAATCTTGACAATCTCCGCACCTACCTCATGACCGGGAACCACAGGCATCTTCACCATCGGGTTACCGCCACGGAAGGTATTCAGGTCACTGCCGCAAAAACC'
@@ -21,6 +26,16 @@ def test_load_fasta2(nucseq):
 def test_load_fasta3(nucseq):
     count = sum(1 for x in fasta.load_fasta(nucseq))
     assert count == 115
+
+
+def test_load_fasta4(oneseq):
+    count = sum(1 for x in fasta.load_fasta(oneseq))
+    assert count == 1
+
+
+def test_load_fasta5(oneseq):
+    seq_id, seq = next(fasta.load_fasta(oneseq))
+    assert len(seq) == 630
 
 
 def test_write_fasta_sequence1(nucseq, tmpdir):
@@ -74,3 +89,14 @@ def test_split_fasta_file2(nucseq, tmpdir):
     count2 = sum(1 for x in fasta.load_fasta_files(files))
 
     assert count1 == count2
+
+
+def test_load_fasta_rename1(oneseq):
+    seq_id, seq = next(fasta.load_fasta_rename(oneseq))
+    assert seq_id == 'M95099.1'
+
+
+def test_load_fasta_rename2(oneseq):
+    nam_func = lambda x: x.split('.')[0]
+    seq_id, seq = next(fasta.load_fasta_rename(oneseq, name_func=nam_func))
+    assert seq_id == 'M95099'

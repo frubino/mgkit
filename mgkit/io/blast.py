@@ -17,6 +17,8 @@ LOG = logging.getLogger(__name__)
 def add_blast_result_to_annotation(annotation, gi_taxa_dict, taxonomy,
                                    threshold=60):
     """
+    .. deprecated:: 0.4.0
+
     Adds blast information to a GFF annotation.
 
     :param annotation: GFF annotation object
@@ -100,11 +102,11 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     if key_func is None:
         def key_func(x): return x
 
-    if value_funcs is None:
-        value_funcs = [lambda x: x for y in range(len(ret_col))]
-
     if ret_col is None:
         ret_col = list(range(12))
+
+    if value_funcs is None:
+        value_funcs = [lambda x: x for y in range(len(ret_col))]
 
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
@@ -291,10 +293,7 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
 
     """
 
-    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
-        file_handle = open_file(file_handle, 'rb')
-    if isinstance(file_handle, str):
-        file_handle = open_file(file_handle, 'r')
+    file_handle = open_file(file_handle, 'rb')
 
     LOG.info(
         "Reading taxonomic information from file (%s)",

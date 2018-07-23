@@ -27,12 +27,7 @@ def load_fasta(file_handle):
         tuple: first element is the sequence name/header, the second element is
         the sequence
     """
-    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
-        file_handle = mgkit.io.open_file(file_handle, 'rb')
-    elif isinstance(file_handle, str):
-        file_handle = mgkit.io.open_file(file_handle, 'rb')
-    else:
-        file_handle = mgkit.io.compressed_handle(file_handle)
+    file_handle = mgkit.io.open_file(file_handle, 'rb')
 
     if getattr(file_handle, 'name', None) is not None:
         LOG.info("Reading fasta file %s", file_handle.name)
@@ -147,8 +142,7 @@ def write_fasta_sequence(file_handle, name, seq, wrap=60, write_mode='a'):
     :param int wrap: int for the line wrapping. If None, the sequence will be
         written in a single line
     """
-    if isinstance(file_handle, str):
-        file_handle = open(file_handle, write_mode)
+    file_handle = mgkit.io.open_file(file_handle, write_mode)
 
     if wrap is not None:
         seq = '\n'.join(

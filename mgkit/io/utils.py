@@ -100,7 +100,7 @@ def open_file(file_name, mode='r'):
     """
 
     if sys.version_info[0] == 2:
-        test_class = file
+        test_class = (file, io.IOBase)
     else:
         test_class = io.IOBase
 
