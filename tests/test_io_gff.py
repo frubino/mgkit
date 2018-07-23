@@ -517,6 +517,23 @@ def test_gff_from_sequence1(nucseq):
         )
 
 
+def test_genomicrange_eq1():
+    a = gff.GenomicRange(start=1)
+    b = gff.GenomicRange(start=2)
+    assert a != b
+
+
+def test_genomicrange_eq2():
+    a = gff.GenomicRange(seq_id='a')
+    b = gff.GenomicRange(seq_id='b')
+    assert a != b
+
+
+def test_genomicrange_get_range():
+    a = gff.GenomicRange(start=1, end=30)
+    assert a.get_range() == (1, 30)
+
+
 @pytest.mark.parametrize(
     "start,end,coords,result",
     [

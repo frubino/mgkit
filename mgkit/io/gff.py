@@ -12,20 +12,12 @@ import itertools
 import logging
 import uuid
 import json
+from collections import OrderedDict
 try:
     from urllib import unquote, quote
 except ImportError:
     # Python3
     from urllib.parse import unquote, quote
-# python 2.7 includes OrderedDict, older versions will use
-# the available as ordereddict in PyPI
-try:
-    # python >= 2.7
-    from collections import OrderedDict
-except ImportError:
-    # it's been added as requirement for installation
-    from ordereddict import OrderedDict
-
 import mgkit.io
 from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
