@@ -50,3 +50,23 @@ def ncbi_taxonomy(taxonomy_files):
     taxonomy = Taxonomy()
     taxonomy.read_from_ncbi_dump(*taxonomy_files)
     return taxonomy
+
+
+EGGNOG_V3_FILES = {
+    'members': 'http://eggnog.embl.de/version_3.0/data/downloads/NOG.members.txt.gz',
+    'description': 'http://eggnog.embl.de/version_3.0/data/downloads/NOG.description.txt.gz',
+    'funccat': 'http://eggnog.embl.de/version_3.0/data/downloads/NOG.funccat.txt.gz',
+}
+
+
+@skip_no_connection
+@pytest.fixture(scope='session')
+def eggnog_v3(tmpdir_factory):
+    eggnog_v3_files_dir = tmpdir_factory.mktemp('eggnog_v3')
+    file_paths = {}
+    for key, url in EGGNOG_V3_FILES.items():
+        file_content = requests.get(url)
+        file_path = (eggnog_v3_files_dir / "{}.gz".format(key)).strpath
+        file_paths[key] = file_path
+        open(file_path, 'wb').write(file_content.content)
+    return file_paths
