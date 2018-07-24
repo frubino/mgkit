@@ -745,9 +745,9 @@ def _sequence_signature(seq, w_size, k_size=4, step=None):
         window used
     """
     kmer_counts = []
-    for subseq in sliding_window(seq, w_size, step):
+    for subseq in _sliding_window(seq, w_size, step):
         kmer_counts.append(
-            collections.Counter(kmer for kmer in get_kmers(subseq, k_size) if 'N' not in kmer)
+            collections.Counter(kmer for kmer in _get_kmers(subseq, k_size) if 'N' not in kmer)
         )
     return kmer_counts
 
