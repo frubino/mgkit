@@ -14,7 +14,6 @@ import itertools
 import collections
 from future.utils import viewitems, viewvalues
 from .io import open_file
-from . import DependencyError
 
 
 LOG = logging.getLogger(__name__)
@@ -533,9 +532,6 @@ class Taxonomy(object):
         Arguments:
             file_handle (str, file): file name to which save the instance data
 
-        Raises:
-            DependencyError: if the file name contains *.msgpack* and the
-            package is not installed
         """
 
         if isinstance(file_handle, str):
@@ -544,10 +540,7 @@ class Taxonomy(object):
         LOG.info("Loading taxonomy from file %s", file_handle.name)
 
         if '.msgpack' in file_handle.name:
-            try:
-                import msgpack
-            except ImportError:
-                raise DependencyError('msgpack')
+            import msgpack
             merged = []
             for taxon_id, taxon in msgpack.Unpacker(file_handle, use_list=False, raw=False):
                 taxon = TaxonTuple(*taxon)
@@ -577,10 +570,6 @@ class Taxonomy(object):
 
         Arguments:
             file_handle (str, file): file name to which save the instance data
-
-        Raises:
-            DependencyError: if the file name contains *.msgpack* and the
-            package is not installed
         """
 
         if isinstance(file_handle, str):
@@ -589,10 +578,7 @@ class Taxonomy(object):
         LOG.info("Saving taxonomy to file %s", file_handle.name)
 
         if '.msgpack' in file_handle.name:
-            try:
-                import msgpack
-            except ImportError:
-                raise DependencyError('msgpack')
+            import msgpack
             for taxon_id, taxon in viewitems(self._taxa):
                 file_handle.write(
                     msgpack.packb((taxon_id, taxon))
@@ -1175,10 +1161,7 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
     Returns:
         pandas.DataFrame: matrix with the pairwise distances of all *taxon_ids*
     """
-    try:
-        import pandas
-    except ImportError:
-        raise DependencyError('pandas')
+    import pandas
 
     matrix = pandas.DataFrame(index=taxon_ids, columns=taxon_ids).fillna(0)
 
