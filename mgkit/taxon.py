@@ -111,6 +111,8 @@ def parse_uniprot_taxon(line, light=True):
     .. versionchanged:: 0.2.1
         added *light* parameter
 
+    .. deprecated:: 0.4.0
+
     Parses a Uniprot taxonomy file (tab delimited) line and returns a
     UniprotTaxonTuple instance. If *light* is True, lineage is not stored to
     decrease the memory usage. This is now the default.
@@ -465,6 +467,9 @@ class Taxonomy(object):
         """
         .. versionchanged:: 0.2.1
             added *light* parameter
+
+        .. deprecated:: 0.4.0
+            use :meth:`Taxonomy.read_from_ncbi_dump`
 
         Reads taxonomy from a file handle.
         The file needs to be a tab separated format return by a query on
@@ -861,7 +866,7 @@ class Taxonomy(object):
                     )
                 )
 
-        if taxon_id is None:
+        if (taxon_id is None) or (self[taxon_id].parent_id != parent_id):
             try:
                 taxon_id = max(self._taxa) + 1
             except ValueError:
@@ -878,7 +883,10 @@ class Taxonomy(object):
 
             # adds the new name to the name map (which is initialised by
             # find_by_name)
-            self._name_map[taxon_name.lower()] = [taxon_id]
+            try:
+                self._name_map[taxon_name.lower()].append(taxon_id)
+            except KeyError:
+                self._name_map[taxon_name.lower()] = [taxon_id]
 
         return taxon_id
 
