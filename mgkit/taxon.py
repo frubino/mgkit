@@ -6,14 +6,14 @@ from builtins import object
 from functools import reduce
 import logging
 import sys
-if sys.version_info[0] == 2:
-    import cPickle as pickle
-else:
-    import pickle
 import itertools
 import collections
 from future.utils import viewitems, viewvalues
 from .io import open_file
+if sys.version_info[0] == 2:
+    import cPickle as pickle
+else:
+    import pickle
 
 
 LOG = logging.getLogger(__name__)
@@ -40,8 +40,8 @@ METAZOA = 33208
 EUKARYOTA = 2759
 
 PROTISTS = {
-    #'apicomplexa', alveolata
-    #'ciliophora', alveolata
+    # 'apicomplexa', alveolata
+    # 'ciliophora', alveolata
     'alveolata': 33630,
     'amoebozoa': 554915,
     'apusozoa': 554296,
@@ -300,6 +300,7 @@ class Taxonomy(object):
         self._name_map = {}
         if fname:
             self.load_data(fname)
+
     @staticmethod
     def parse_gtdb_lineage(lineage, sep=';'):
         """
@@ -319,7 +320,7 @@ class Taxonomy(object):
         for taxon_name in lineage.split(sep):
             rank, taxon_name = taxon_name.split('__')
             if not taxon_name:
-             continue
+                continue
             lineage_dict[ranks[rank]] = taxon_name
         return lineage_dict
 
@@ -1090,6 +1091,7 @@ def last_common_ancestor(taxonomy, taxon_id1, taxon_id2):
                 raise NoLcaFound('No common ancestry')
 
     return lca_id
+
 
 lowest_common_ancestor = last_common_ancestor
 

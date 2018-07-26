@@ -2,7 +2,6 @@
 """
 Simple fasta parser and a few utility functions
 """
-import sys
 import itertools
 import logging
 from builtins import range

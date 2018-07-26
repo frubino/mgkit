@@ -2,7 +2,6 @@
 Blast routines and parsers
 
 """
-import sys
 import logging
 from builtins import range, zip
 from future.utils import viewitems

@@ -2,9 +2,7 @@
 Module containing classes and functions to deal with CaZy data
 """
 
-from requests.exceptions import HTTPError
 import logging
-from .. import kegg
 
 CAZY_FAMILIES = {
     'GH': 'Glycoside Hydrolase',

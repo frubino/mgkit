@@ -8,9 +8,8 @@ import logging
 import pickle
 import random
 import re
-import itertools
 from .utils import dictionary as dict_utils
-from .net import uniprot, url_read
+from .net import url_read
 from .io import open_file
 
 
@@ -656,111 +655,6 @@ BLACK_LIST = [
     'ko05323',  # Rheumatoid arthritis
     'ko00140',  # Steroid hormone biosynthesis
 ]
-
-
-def download_data(fname='kegg.pickle', contact=None):
-    """
-    .. deprecated:: 0.3.4
-    """
-
-    kclient = KeggClientRest()
-    kclient.contact = contact
-    kdata = KeggData()
-
-    LOG.info("Downloading pathway list")
-    path_names = kclient.get_ortholog_pathways()
-    LOG.info("Found %d pathways", len(path_names))
-
-    LOG.info("Downloading KO descriptions")
-    ko_names = kclient.get_kos_descriptions()
-    LOG.info("Found %d KOs", len(ko_names))
-
-    LOG.info("Downloading reactions descriptions")
-    rn_names = kclient.get_reactions_descriptions()
-    LOG.info("Found %d reactions", len(rn_names))
-
-    LOG.info("Downloading compounds descriptions")
-    cpd_names = kclient.get_compounds_descriptions()
-    LOG.info("Found %d compounds", len(cpd_names))
-
-    kos = {}
-    rns = {}
-    cps = {}
-
-    LOG.info("Downloading links pathway-ko (%d)", len(path_names))
-    path_links = kclient.link_ids('ko', path_names.keys())
-    for path_id, ko_list in viewitems(path_links):
-        path = KeggPathway(path_id, path_names[path_id])
-        for ko_id in ko_list:
-            try:
-                name = ko_names[ko_id]
-            except KeyError:
-                # in this case the actual entry for this gene doesn't exists
-                LOG.warning(
-                    "KO %s not found in the descriptions, skipping", ko_id
-                )
-                continue
-            try:
-                ko = kos[ko_id]
-            except KeyError:
-                ko = KeggOrtholog(ko_id, name)
-                kos[ko_id] = ko
-            path[ko_id] = ko
-        kdata.pathways[path_id] = path
-
-    LOG.info("Downloading links ko-reactions (%d)", len(ko_names))
-    ko_links = kclient.link_ids('rn', ko_names.keys())
-    for ko_id, rn_list in viewitems(ko_links):
-        try:
-            ko = kos[ko_id]
-        except KeyError:
-            LOG.warning("KO %s is not found in a pathway, skipping", ko_id)
-            continue
-        for rn_id in rn_list:
-            try:
-                name = rn_names[rn_id]
-            except KeyError:
-                LOG.warning(
-                    "Reaction %s not found in the descriptions," +
-                    " skipping", rn_id)
-            try:
-                rn = rns[rn_id]
-            except KeyError:
-                rn = KeggReaction(rn_id, name)
-                rns[rn_id] = rn
-            ko[rn_id] = rn
-
-    LOG.info("Downloading links reactions-compounds (%d)", len(rn_names))
-    cp_links = kclient.get_reaction_equations(rn_names.keys())
-    for rn_id, cp_dict in viewitems(cp_links):
-        try:
-            rn = rns[rn_id]
-        except KeyError:
-            LOG.warning("Reaction %s is not found in a pathway, skipping",
-                        rn_id)
-            continue
-        for cp_id in cp_dict['in'] + cp_dict['out']:
-            try:
-                name = cpd_names[cp_id]
-            except KeyError:
-                LOG.warning("Compound %s not found in the descriptions, " +
-                            "skipping", rn_id)
-            try:
-                cp = cps[cp_id]
-            except KeyError:
-                cp = KeggCompound(cp_id, name)
-                cps[cp_id] = cp
-            if (cp_id in cp_dict['in']) and (cp_id in cp_dict['out']):
-                LOG.debug(
-                    "Compound %s in both side of reaction %s",
-                    cp_id, rn_id
-                )
-            if cp_id in cp_dict['in']:
-                rn.cp_in[cp_id] = cp
-            if cp_id in cp_dict['out']:
-                rn.cp_out[cp_id] = cp
-
-    kdata.save_data(fname)
 
 
 class KeggModule(object):

@@ -3,7 +3,6 @@ Module dealing with BAM/SAM files
 """
 from future.utils import viewitems
 import logging
-import itertools
 try:
     # In Python2
     from itertools import izip as zip

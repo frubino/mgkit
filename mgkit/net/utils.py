@@ -25,7 +25,7 @@ def url_open(url, data=None, headers=None, agent=None, get=True, stream=False):
     :return: the response handle
     """
     if (agent is not None) and (headers is None):
-         headers = {'user-agent': agent}
+        headers = {'user-agent': agent}
     if get:
         request = requests.get(url, params=data, headers=headers, stream=stream)
     else:

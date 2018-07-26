@@ -5,7 +5,7 @@ import re
 import numpy
 import logging
 
-from .utils import open_file, compressed_handle
+from .utils import open_file
 
 LOG = logging.getLogger(__name__)
 

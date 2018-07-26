@@ -7,9 +7,8 @@ import itertools
 import functools
 import csv
 import copy
-from future.utils import viewitems, viewkeys, viewvalues
+from future.utils import viewitems, viewvalues
 from .filter import pipe_filters
-from .. import DependencyError
 
 import pandas
 import numpy

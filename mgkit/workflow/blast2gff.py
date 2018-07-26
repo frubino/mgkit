@@ -236,7 +236,7 @@ a Uniprot DB and outputs a GFF file [gff-file]
 @click.argument('blast-file', type=click.File('rb'), default='-')
 @click.argument('gff-file', type=click.File('wb'), default='-')
 def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,
-                         bitscore, attr_value, feat_type, progress,blast_file,
+                         bitscore, attr_value, feat_type, progress, blast_file,
                          gff_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
