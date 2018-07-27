@@ -47,10 +47,8 @@ def parse_uniprot_mappings(file_handle, gene_ids=None, mappings=None,
         tuple: the first element is the gene ID, the second is the mapping type
         and third element is the mapped ID
     """
-    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
-        file_handle = open_file(file_handle, 'rb')
-    if isinstance(file_handle, str):
-        file_handle = open_file(file_handle, 'rb')
+
+    file_handle = open_file(file_handle, 'rb')
 
     LOG.info(
         "Loading Uniprot Mappings from file (%s)",
