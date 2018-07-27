@@ -208,7 +208,7 @@ def get_gene_info(gene_ids, columns, max_req=50, contact=None):
         )
 
         info_lines = query_uniprot(
-            ' OR '.join(gene_ids[index:index+max_req]),
+            ' OR '.join('id:{}'.format(gene_id) for gene_id in gene_ids[index:index+max_req]),
             columns=['id'] + columns,
             contact=contact
         )
