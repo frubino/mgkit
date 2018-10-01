@@ -642,7 +642,7 @@ def load_featurecounts_files(count_files, samples):
             line = line.decode('ascii')
             if line.startswith('#') or line.lower().startswith('geneid'):
                 continue
-            line = line.split('\t')
+            line = line.strip().split('\t')
             uid = line[0]
             counts[uid] = dict(zip(samples, line[-4:]))
     return counts
@@ -669,6 +669,8 @@ def counts_command(verbose, samples, count_files, fpkms, featurecounts,
         'Writing to file (%s)',
         getattr(output_file, 'name', repr(output_file))
     )
+
+    LOG.info("Samples passed: %s", ','.join(samples))
 
     if featurecounts:
         counts = load_featurecounts_files(count_files, samples)
