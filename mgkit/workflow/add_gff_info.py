@@ -644,7 +644,7 @@ def load_featurecounts_files(count_files, samples):
                 continue
             line = line.strip().split('\t')
             uid = line[0]
-            counts[uid] = dict(zip(samples, line[-4:]))
+            counts[uid] = dict(zip(samples, line[6:]))
     return counts
 
 
