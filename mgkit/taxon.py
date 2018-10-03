@@ -742,6 +742,37 @@ class Taxonomy(object):
             taxon = [taxon]
         return taxon
 
+    def is_ranked_below(self, taxon_id, rank, equal=True):
+        """
+        .. versionadded:: 0.4.0
+
+        Tests if a taxon_id is below the requested rank.
+
+        Arguments:
+            taxon_id (int): taxo_id to test
+            rank (str): rank requested
+            equal (bool): determines if the taxon_id tested may be of the
+                requested rank
+
+        Returns:
+            bool: If the passed *taxon_id* is below the requested rank, it
+            returns *True*. If *taxon_id* is of the rank requested and *equal*
+            is True, the return value is *True*, if *equal* is False the return
+            value is *False*. The return value is *False* otherwise.
+        """
+        if (self[taxon_id].rank == rank) and equal:
+            return True
+
+        taxon_id = self[taxon_id].parent_id
+
+        while (taxon_id is not None):
+            if self[taxon_id].rank == rank:
+                return True
+            else:
+                taxon_id = self[taxon_id].parent_id
+
+        return False
+
     def get_name_map(self):
         "Returns a taxon_id->s_name dictionary"
 
