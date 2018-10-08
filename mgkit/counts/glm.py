@@ -7,7 +7,7 @@ GLM models with metagenomes and metatranscriptomes. Experimental
 from __future__ import division
 from builtins import range
 import statsmodels.api as sm
-from scipy import interpolate
+from scipy import interpolate, optimize
 import pandas as pd
 
 
@@ -148,3 +148,45 @@ def variance_to_alpha(mu, func, min_alpha=10**-3):
     alpha = (func(mu) - mu) / (mu ** 2)
 
     return min_alpha if alpha <= 0 else alpha
+
+
+def optimise_alpha_scipy_function(args, formula, data, criterion='aic'):
+    """
+    .. versionadded:: 0.4.0
+
+
+    """
+    alpha, = args
+    model = sm.formula.glm(
+        formula,
+        data=data,
+        family=sm.families.NegativeBinomial(alpha=alpha)
+    ).fit()
+    return getattr(model, criterion)
+
+
+def optimise_alpha_scipy(formula, data, mean_func, q1_func, q2_func):
+    """
+    .. versionadded:: 0.4.0
+
+    Used to find an optimal *alpha* parameter for the Negative Binomial
+    distribution used in `statsmodels`, using the lowess functions from
+    :func:`lowess_ci_bootstrap`.
+
+    Arguments:
+        formula (str): the formula used for the regression
+        data (DataFrame): DataFrame for regression
+        mean_func (func): function for the mean :func:`lowess_ci_bootstrap`
+        q1_func (func): function for the q1 :func:`lowess_ci_bootstrap`
+        q2_func (func): function for the q2 :func:`lowess_ci_bootstrap`
+
+    Returns:
+        float: *alpha* value for the Negative Binomial
+    """
+    data_mean = data.mean()[0]
+    return optimize.minimize(
+        optimise_alpha_scipy_function,
+        [variance_to_alpha(data_mean, mean_func)],
+        args=(formula, data),
+        bounds=[(variance_to_alpha(data_mean, q1_func), variance_to_alpha(data_mean, q2_func))]
+    ).x[0]
