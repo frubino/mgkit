@@ -185,13 +185,16 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
 
 def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                         gene_func=None, taxon_func=None, use_uid=False,
-                        flag_values=False, haplotypes=True):
+                        flag_values=False, haplotypes=True, store_uids=False):
     """
     .. versionchanged:: 0.2.2
         added *use_uid* argument
 
     .. versionchanged:: 0.3.1
         added *haplotypes*
+
+    .. versionchanged:: 0.4.0
+        added *store_uids*
 
     Combine a dictionary sample->gene_index->GeneSyn into a
     :class:`pandas.DataFrame`. The dictionary is first filtered with the
@@ -221,10 +224,13 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
             instead of :meth:`mgkit.snps.classes.GeneSNP.calc_ratio`
         haplotypes (bool): if *flag_values* is False, and *haplotypes* is
             True, the 0/0 case will be returned as 0 instead of NaN
+        store_uids (bool): if True a dictionary with the uid used for each
+            cell (e.g. gene/taxon/sample)
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` with the pN/pS values for the
-        input SNPs, with the columns being the samples.
+        input SNPs, with the columns being the samples. if *store_uids* is True
+        the return value is a tuple (DataFrame, dict)
 
     """
     sample_dict = dict((sample, {}) for sample in snps_data)
@@ -234,6 +240,9 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
         gene_func = functools.partial(itertools.repeat, times=1)
     if taxon_func is None:
         taxon_func = functools.partial(itertools.repeat, times=1)
+
+    if store_uids:
+        uids_dict = {}
 
     for sample, genes_dict in viewitems(snps_data):
 
@@ -254,6 +263,12 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                     key = taxon_id
                 else:
                     key = (gene_id, taxon_id)
+
+                if store_uids:
+                    try:
+                        uids_dict[key].add(gene_syn.uid)
+                    except KeyError:
+                        uids_dict[key] = set([gene_syn.uid])
 
                 # we don't care about info about ids and so on, only syn/nonsyn
                 # and coverage, to use the calc_ratio method
@@ -292,7 +307,11 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
     dataframe = pandas.DataFrame(sample_dict, index=multi_index,
                                  columns=sorted(sample_dict.keys()))
 
-    return dataframe[dataframe.count(axis=1) >= min_num]
+    dataframe = dataframe[dataframe.count(axis=1) >= min_num]
+    if store_uids:
+        return (dataframe, uids_dict)
+    else:
+        return dataframe
 
 
 def significance_test(dataframe, taxon_id1, taxon_id2,
