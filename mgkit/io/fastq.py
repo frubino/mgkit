@@ -201,6 +201,8 @@ def load_fastq(file_handle, num_qual=False):
     Arguments:
         file_handle (str, file): fastq file to open, can be a file name or a
             file handle
+        num_qual (bool): if *False* (default), the quality score will be
+            returned as ASCII character, if *True* a numpy array.
 
     Yields:
         tuple: first element is the sequence name/header, the second element is
