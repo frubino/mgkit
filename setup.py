@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'numpy>=1.9.2',
-    'pandas>=0.18',
+    'pandas>=0.24',
     'progressbar2',
     'tqdm>=4.0',
     'HTSeq>=0.9.1',
