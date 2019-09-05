@@ -890,14 +890,25 @@ def samtools_depth_command(verbose, samples, depths, num_seqs, progress,
     else:
         samples = ['{}_cov'.format(sample) for sample in samples]
 
+    max_size_dict = {}
+    annotations = []
+    for annotation in gff.parse_gff(input_file):
+        annotations.append(annotation)
+        max_size_dict[annotation.seq_id] = max(
+            max_size_dict.get(annotation.seq_id, 1),
+            annotation.end
+        )
+
     depths = [
-        align.SamtoolsDepth(file_name, None if num_seqs == 0 else num_seqs)
+        align.SamtoolsDepth(
+            file_name,
+            None if num_seqs == 0 else num_seqs,
+            max_size_dict=max_size_dict
+        )
         for file_name in depths
     ]
     if len(samples) != len(depths):
         utils.exit_script('Number of samples different from number of files', 2)
-
-    annotations = gff.parse_gff(input_file)
 
     if progress:
         annotations = tqdm(annotations)
