@@ -888,7 +888,7 @@ def samtools_depth_command(verbose, samples, depths, num_seqs, progress,
     if samples is None:
         samples = (None,)
     else:
-        sample = ['{}_cov'.format(sample) for sample in samples]
+        samples = ['{}_cov'.format(sample) for sample in samples]
 
     depths = [
         align.SamtoolsDepth(file_name, None if num_seqs == 0 else num_seqs)
@@ -904,7 +904,7 @@ def samtools_depth_command(verbose, samples, depths, num_seqs, progress,
 
     for annotation in annotations:
         coverages = []
-        for sample, depth in zip(sample, depths):
+        for sample, depth in zip(samples, depths):
             cov = depth.region_coverage(
                 annotation.seq_id,
                 annotation.start,
