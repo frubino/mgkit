@@ -4,7 +4,57 @@ Changes
 0.4.0
 -----
 
+Added
+*****
+
 Added `--progress` option to several scripts
+
+:mod:`mgkit.counts.glm`:
+
+* :func:`mgkit.counts.glm.optimise_alpha_scipy`
+* :func:`mgkit.counts.glm.optimise_alpha_scipy_function`
+
+:mod:`mgkit.graphs`
+
+* :class:`mgkit.graphs.Reaction`
+* :func:`mgkit.graphs.merge_kgmls`
+* :func:`mgkit.graphs.parse_kgml_reactions`
+
+:mod:`mgkit.taxon`:
+
+* :meth:`mgkit.taxon.Taxonomy.is_ranked_below`
+
+
+Changed
+*******
+
+Requires `pandas` version >=0.24 because now a pandas.SparseArray is used for `add-gff-info cov_samtools`. Before, when reading the depth files from **samtools** the array for each sequence was kept in memory, while now only the ones in the GFF file are used.
+
+:mod:`mgkit.align`:
+
+* :class:`mgkit.align.SamtoolsDepth`: uses pandas.SparseArray now. It should use less memory, but needs pandas version > 0.24
+* :func:`mgkit.align.read_samtools_depth`: now returns 3 array, instead of 2. Also added seq_ids to skip lines
+
+:mod:`mgkit.io.gff`
+
+* :mod:`mgkit.io.gff.from_gff`: added encoding parameter
+* :mod:`mgkit.io.gff.parse_gff`: In some cases ASCII decoding is not enough, so it is parametrised now
+* :mod:`mgkit.io.gff.split_gff_file`: added encoding parameter
+
+:mod:`mgkit.mappings.eggnog`:
+
+* :class:`mgkit.mappings.eggnog.NOGInfo`: made file reading compatible with Python 3
+
+:mod:`mgkit.snps.funcs`:
+
+* :func:`mgkit.snps.funcs.combine_sample_snps`: added store_uids
+
+Deprecated
+**********
+
+* :func:`mgkit.io.blast.add_blast_result_to_annotation`
+* :meth:`mgkit.taxon.Taxonomy.read_taxonomy`: use Taxonomy.read_from_ncbi_dump()
+* :func:`mgkit.taxon.Taxonomy.parse_uniprot_taxon`
 
 Tests
 *****
@@ -14,12 +64,6 @@ Removed the last portions that used `nosetets` and better integrated pytest with
 In cases where the testing environment has no or limited internet connection, tests that require an internet connection can be skipped by setting the following environment variable before running the tests::
 
 	$ export MGKIT_TESTS_CONN_SKIP=T
-
-Scripts with Changed CLI
-************************
-
-* filter-gff: sequence, values
-* taxon-utils: lca, filter
 
 0.3.4
 -----
