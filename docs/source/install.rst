@@ -8,6 +8,10 @@ Docker Instance (with Jupyter Notebook)
 
 A preconfigured Docker instance (user: mgkit, no password) has been configured at `Docker Hub <https://hub.docker.com/r/frubino/mgkit/>`_, including more packages for testing, available at Docker Hub (frubino/mgkit), with more instruction on its use available there. The version of MGKit targeted is the last development branch, but can be customised using the files available at `github <https://github.com/frubino/mgkit-docker-repo>`_, specifically in the `bootstrap.sh` file.
 
+.. warning::
+
+	The preferred version of Python to use is >=3.5 as this is the one I'm using MGKit with and Python 2.7 will not be mantained anymore starting with 1st January 2020. From MGKit 0.3.4 support for Python 3 was added and from 0.4.x you can expect Python 2.7 supoort to be gradually removed.
+
 Requirements
 ------------
 
@@ -100,7 +104,7 @@ If a compilation error is raised during installation, it's adviced to install ea
 MacOSX
 ^^^^^^
 
-The version of MacOSX is 10.9 that comes with Python 2.7 installed. To install every dependency from source, however it's needed to install the *Xcode* app from the **App Store** which install the compilers, with the exception of `gfortran`. Another solution is using `Homebrew <http://brew.sh>`_ or `Macports <http://www.macports.org>`_, to install the compilers needed.
+Version 10.19 of MacOSX comes with Python 2.7 installed. To install every dependency from source, however it's needed to install the *Xcode* app from the **App Store** which install the compilers, with the exception of `gfortran`. Another solution is using `Homebrew <http://brew.sh>`_ or `Macports <http://www.macports.org>`_, to install the compilers needed.
 
 If you want to use Xcode, you need to install the gfortran compiler, with the package provided `here <http://gcc.gnu.org/wiki/GFortranBinariesMacOS>`_. This should be enough to install most packages from source.
 

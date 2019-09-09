@@ -4,6 +4,8 @@ Changes
 0.4.0
 -----
 
+This version was tested under Python 3.5, but the tests (with tox) were run also under Python 2.7. However, from the next release Python 2.7 will be removed gradually (as Python 2.7 won't be supported/patched anymore from next year).
+
 Added
 *****
 
