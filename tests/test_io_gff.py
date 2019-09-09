@@ -130,6 +130,49 @@ def test_Annotation_get_mapping2(gff_file):
     assert ann.get_mapping('test') == []
 
 
+def test_Annotation_get_mappings1():
+
+    ann = gff.Annotation()
+    ann.set_mapping('ko', ['test'])
+    mappings = ann.get_mappings()
+    assert mappings['ko'] == ['test']
+
+
+def test_Annotation_set_mapping1():
+    ann = gff.Annotation()
+    ann.set_mapping('ko', ['test'])
+    assert ann.attr['map_KO'] == 'test'
+
+
+def test_Annotation_set_mapping2():
+    ann = gff.Annotation()
+    ann.set_mapping('ko', ['test1', 'test2'])
+    assert ann.attr['map_KO'] == 'test1,test2'
+
+
+def test_Annotation_taxon_id_get1():
+    ann = gff.Annotation()
+    assert ann.taxon_id is None
+
+
+def test_Annotation_taxon_id_set1():
+    ann = gff.Annotation()
+    ann.taxon_id = '10'
+    assert ann.taxon_id == 10
+
+
+def test_Annotation_taxon_id_set2():
+    ann = gff.Annotation()
+    ann.taxon_id = 10
+    assert ann.taxon_id == 10
+
+
+def test_Annotation_taxon_id_set3():
+    ann = gff.Annotation()
+    ann.taxon_id = 10.0
+    assert ann.taxon_id == 10
+
+
 def test_Annotation_add_exp_syn_count(gff_file, nucseq):
 
     ann = gff.from_gff(gff_file[0])
@@ -517,6 +560,33 @@ def test_gff_from_sequence1(nucseq):
         )
 
 
+def test_genomicrange_eq1():
+    a = gff.GenomicRange(start=1)
+    b = gff.GenomicRange(start=2)
+    assert a != b
+
+
+def test_genomicrange_eq2():
+    a = gff.GenomicRange(seq_id='a')
+    b = gff.GenomicRange(seq_id='b')
+    assert a != b
+
+
+def test_genomicrange_get_range():
+    a = gff.GenomicRange(start=1, end=30)
+    assert a.get_range() == (1, 30)
+
+
+def test_genomicrange_str():
+    a = gff.GenomicRange(seq_id='seq', start=1, end=20, strand='-')
+    assert str(a) ==  "{0}({1}):{2}-{3}".format('seq', '-', 1, 20)
+
+
+def test_genomicrange_repr():
+    a = gff.GenomicRange(seq_id='seq', start=1, end=20, strand='-')
+    assert repr(a) ==  "{0}({1}):{2}-{3}".format('seq', '-', 1, 20)
+
+
 @pytest.mark.parametrize(
     "start,end,coords,result",
     [
@@ -646,7 +716,7 @@ def test_genomicrange_get_relative_pos_fail(start, end, pos):
         (21, 30, 10, 30),
     ]
 )
-def test_genomicrange_union(start2, end2, ustart, uend):
+def test_genomicrange_union1(start2, end2, ustart, uend):
     gen_range1 = gff.GenomicRange()
     gen_range1.seq_id = 'seq1'
     gen_range1.strand = '+'
@@ -661,6 +731,23 @@ def test_genomicrange_union(start2, end2, ustart, uend):
     gen_range_u = gen_range1.union(gen_range2)
 
     assert (gen_range_u.start, gen_range_u.end) == (ustart, uend)
+
+
+def test_genomicrange_union2():
+    gen_range1 = gff.GenomicRange()
+    gen_range1.seq_id = 'seq1'
+    gen_range1.strand = '+'
+    gen_range1.start = 10
+    gen_range1.end = 20
+    gen_range2 = gff.GenomicRange()
+    gen_range2.seq_id = 'seq1'
+    gen_range2.strand = '+'
+    gen_range2.start = 21
+    gen_range2.end = 30
+
+    gen_range_u = gen_range1 | gen_range2
+
+    assert (gen_range_u.start, gen_range_u.end) == (10, 30)
 
 
 @pytest.mark.parametrize(
@@ -728,6 +815,15 @@ def test_genomicrange_intersect3():
     gen_range2 = gff.GenomicRange(seq_id='seq1', strand='+', start=12, end=18)
 
     gen_range_u = gen_range1.intersect(gen_range2)
+
+    assert len(gen_range_u) == len(gen_range2)
+
+
+def test_genomicrange_intersect4():
+    gen_range1 = gff.GenomicRange(seq_id='seq1', strand='+', start=10, end=20)
+    gen_range2 = gff.GenomicRange(seq_id='seq1', strand='+', start=12, end=18)
+
+    gen_range_u = gen_range1 & gen_range2
 
     assert len(gen_range_u) == len(gen_range2)
 

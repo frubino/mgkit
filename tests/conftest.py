@@ -3,6 +3,7 @@ import requests
 from ftplib import FTP
 import tarfile
 import io
+import os
 from mgkit.taxon import Taxonomy
 
 try:
@@ -11,15 +12,18 @@ try:
 except requests.exceptions.ConnectionError:
     conn_ko = True
 
+# To disable tests that require a remote connection
+if os.environ.get('MGKIT_TESTS_CONN_SKIP', False):
+    conn_ko = True
+
 skip_no_connection = pytest.mark.skipif(conn_ko, reason='No connection available')
 
 
 @pytest.fixture(scope='session')
 def taxonomy_files(tmpdir_factory):
-    try:
-        requests.get('http://www.google.com')
-    except requests.exceptions.ConnectionError:
+    if conn_ko:
         return None
+
     taxdump_dir = tmpdir_factory.mktemp('taxdump')
     tax_file = (taxdump_dir / 'taxdump.tar.gz').strpath
     ftp = FTP('ftp.ncbi.nlm.nih.gov')
@@ -46,3 +50,23 @@ def ncbi_taxonomy(taxonomy_files):
     taxonomy = Taxonomy()
     taxonomy.read_from_ncbi_dump(*taxonomy_files)
     return taxonomy
+
+
+EGGNOG_V3_FILES = {
+    'members': 'http://eggnog.embl.de/version_3.0/data/downloads/NOG.members.txt.gz',
+    'description': 'http://eggnog.embl.de/version_3.0/data/downloads/NOG.description.txt.gz',
+    'funccat': 'http://eggnog.embl.de/version_3.0/data/downloads/NOG.funccat.txt.gz',
+}
+
+
+@skip_no_connection
+@pytest.fixture(scope='session')
+def eggnog_v3(tmpdir_factory):
+    eggnog_v3_files_dir = tmpdir_factory.mktemp('eggnog_v3')
+    file_paths = {}
+    for key, url in EGGNOG_V3_FILES.items():
+        file_content = requests.get(url)
+        file_path = (eggnog_v3_files_dir / "{}.gz".format(key)).strpath
+        file_paths[key] = file_path
+        open(file_path, 'wb').write(file_content.content)
+    return file_paths

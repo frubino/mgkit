@@ -12,20 +12,12 @@ import itertools
 import logging
 import uuid
 import json
+from collections import OrderedDict
 try:
     from urllib import unquote, quote
 except ImportError:
     # Python3
     from urllib.parse import unquote, quote
-# python 2.7 includes OrderedDict, older versions will use
-# the available as ordereddict in PyPI
-try:
-    # python >= 2.7
-    from collections import OrderedDict
-except ImportError:
-    # it's been added as requirement for installation
-    from ordereddict import OrderedDict
-
 import mgkit.io
 from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
@@ -57,7 +49,7 @@ def write_gff(annotations, file_handle, verbose=True):
     """
 
     if isinstance(file_handle, str):
-        file_handle = open_file(file_handle, 'wb')
+        file_handle = mgkit.io.open_file(file_handle, 'wb')
 
     if verbose:
         LOG.info(
@@ -745,7 +737,7 @@ class Annotation(GenomicRange):
         # eliminate gene_id (always present in new ones)
         try:
             attr_keys.remove('gene_id')
-        except:
+        except ValueError:
             pass
 
         # transcript_id don't always be there
@@ -1121,12 +1113,15 @@ class DuplicateKeyError(Exception):
     pass
 
 
-def from_gff(line, strict=True):
+def from_gff(line, strict=True, encoding='ascii'):
     """
     .. versionadded:: 0.1.12
 
     .. versionchanged:: 0.2.6
         added *strict* parameter
+
+    .. versionchanged:: 0.4.0
+        added *encoding* parameter
 
     Parse GFF line and returns an :class:`Annotation` instance
 
@@ -1142,7 +1137,7 @@ def from_gff(line, strict=True):
 
     """
     if isinstance(line, bytes):
-        line = line.decode('ascii')
+        line = line.decode(encoding)
     line = line.rstrip()
     line = line.split('\t')
 
@@ -1520,8 +1515,14 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
     return annotation
 
 
-def parse_gff(file_handle, gff_type=from_gff, strict=True):
+def parse_gff(file_handle, gff_type=from_gff, strict=True, encoding='ascii'):
     """
+    .. versionchanged:: 0.4.0
+        In some cases ASCII decoding is not enough, so it is parametrised now
+
+    .. versionchanged:: 0.3.4
+        added decoding from binary for compatibility with Python3
+
     .. versionchanged:: 0.2.6
         added *strict* parameter
 
@@ -1539,6 +1540,7 @@ def parse_gff(file_handle, gff_type=from_gff, strict=True):
         file_handle (str, file): file name or file handle to read from
         gff_type (class): class/function used to parse a GFF annotation
         strict (bool): if True duplicate keys raise an exception
+        encoding (str): encoding of the file, if ascii fails, use utf8
 
     Yields:
         Annotation: an iterator of :class:`Annotation` instances
@@ -1554,7 +1556,10 @@ def parse_gff(file_handle, gff_type=from_gff, strict=True):
     index = 0
 
     for index, line in enumerate(file_handle):
-        line = line.decode('ascii')
+        try:
+            line = line.decode(encoding)
+        except UnicodeError:
+            raise UnicodeError("Impossible to decode line to {}: {}".format(encoding, line))
         # the first is for GFF with comments and the second for
         # GFF with the fasta file attached
         if line.startswith('#'):
@@ -1595,8 +1600,8 @@ def diff_gff(files, key_func=None):
         return
 
     if key_func is None:
-        key_func = lambda x: (x.seq_id, x.strand, x.start, x.end, x.gene_id,
-                              x.bitscore)
+        def key_func(x):
+            return (x.seq_id, x.strand, x.start, x.end, x.gene_id, x.bitscore)
 
     gff_diff = {}
 
@@ -1704,9 +1709,9 @@ def annotation_coverage(annotations, seqs, strand=True):
     """
 
     if strand:
-        key_func = lambda x: (x.seq_id, x.strand)
+        def key_func(x): return (x.seq_id, x.strand)
     else:
-        key_func = lambda x: x.seq_id
+        def key_func(x): return x.seq_id
 
     annotations = group_annotations(
         annotations,
@@ -1753,9 +1758,9 @@ def annotation_coverage_sorted(annotations, seqs, strand=True):
     """
 
     if strand:
-        key_func = lambda x: (x.seq_id, x.strand)
+        def key_func(x): return (x.seq_id, x.strand)
     else:
-        key_func = lambda x: x.seq_id
+        def key_func(x): return x.seq_id
 
     annotations = group_annotations_sorted(
         annotations,
@@ -1909,12 +1914,15 @@ def group_annotations_by_ancestor(annotations, ancestors, taxonomy):
     return ann_dict, unknown
 
 
-def split_gff_file(file_handle, name_mask, num_files=2):
+def split_gff_file(file_handle, name_mask, num_files=2, encoding='ascii'):
     """
     .. versionadded:: 0.1.14
 
     .. versionchanged:: 0.2.6
         now accept a file object as sole input
+
+    .. versionchanged:: 0.4.0
+        added *encoding* parameter
 
     Splits a GFF, or a list of them, into a number of files. It is assured that
     annotations for the same sequence are kept in the same file, which is
@@ -1958,7 +1966,7 @@ def split_gff_file(file_handle, name_mask, num_files=2):
     seq_ids = {}
 
     for line in file_handle:
-        line = line.decode('ascii')
+        line = line.decode(encoding)
         if line.startswith('#'):
             continue
         if line.startswith('>'):
@@ -1976,7 +1984,7 @@ def split_gff_file(file_handle, name_mask, num_files=2):
 
 
 def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
-                       include_taxa=None):
+                       include_taxa=None, encoding='ascii'):
     """
     This function is useful if the number of annotations in a GFF is high or
     there are memory constraints on the system. It returns a dictionary that
@@ -1991,6 +1999,7 @@ def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
         include_taxa (int, iterable): a taxon_id or list thereof to be passed
             to :meth:`mgkit.taxon.taxonomy.is_ancestor`, so only the taxa that
             have the those taxon_id(s) as ancestor(s) are kept
+        encoding (str): passed to :func:`parse_gff`
 
     Returns:
         dict: dictionary where the key is :attr:`Annotation.uid` and the value
@@ -2003,7 +2012,7 @@ def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
     infos = {}
 
     for fname in files:
-        for annotation in parse_gff(fname):
+        for annotation in parse_gff(fname, encoding=encoding):
             # no information on taxa - exclude
             if annotation.taxon_id is None:
                 continue
@@ -2021,7 +2030,7 @@ def load_gff_base_info(files, taxonomy=None, exclude_ids=None,
 
 
 def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
-                      include_taxa=None):
+                      include_taxa=None, encoding='ascii'):
     """
     This function is useful if the number of annotations in a GFF is high or
     there are memory constraints on the system. It returns a dictionary that
@@ -2038,6 +2047,7 @@ def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
         include_taxa (int, iterable): a taxon_id or list thereof to be passed
             to :meth:`mgkit.taxon.taxonomy.is_ancestor`, so only the taxa that
             have the those taxon_id(s) as ancestor(s) are kept
+        encoding (str): passed to :func:`parse_gff`
 
     Returns:
         dict: dictionary where the key is :attr:`Annotation.gene_id` and the
@@ -2048,7 +2058,7 @@ def load_gff_mappings(files, map_db, taxonomy=None, exclude_ids=None,
     infos = {}
 
     for fname in files:
-        for annotation in parse_gff(fname):
+        for annotation in parse_gff(fname, encoding=encoding):
             # skips genes that are already in the mapping
             if annotation.gene_id in infos:
                 continue
@@ -2227,7 +2237,7 @@ def from_prodigal_frag(main_gff, blast_gff, attr='ID', split_func=None):
 
     """
     if split_func is None:
-        split_func = lambda x: tuple(x.rsplit('_', 1))
+        def split_func(x): return tuple(x.rsplit('_', 1))
 
     prodigal_gff = {}
     for annotation in parse_gff(main_gff, strict=False):

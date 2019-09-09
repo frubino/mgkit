@@ -2,13 +2,11 @@
 Blast routines and parsers
 
 """
-import sys
 import logging
 from builtins import range, zip
 from future.utils import viewitems
 from . import gff
 from . import open_file
-from ..utils.common import deprecated
 
 NUM_LINES = 10 ** 6
 
@@ -18,6 +16,8 @@ LOG = logging.getLogger(__name__)
 def add_blast_result_to_annotation(annotation, gi_taxa_dict, taxonomy,
                                    threshold=60):
     """
+    .. deprecated:: 0.4.0
+
     Adds blast information to a GFF annotation.
 
     :param annotation: GFF annotation object
@@ -99,13 +99,13 @@ def parse_blast_tab(file_handle, seq_id=0, ret_col=(0, 1, 2, 6, 7, 11),
     """
 
     if key_func is None:
-        key_func = lambda x: x
-
-    if value_funcs is None:
-        value_funcs = [lambda x: x for y in range(len(ret_col))]
+        def key_func(x): return x
 
     if ret_col is None:
         ret_col = list(range(12))
+
+    if value_funcs is None:
+        value_funcs = [lambda x: x for y in range(len(ret_col))]
 
     if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'r')
@@ -179,7 +179,7 @@ def parse_uniprot_blast(file_handle, bitscore=40, db='UNIPROT-SP', dbq=10,
     """
 
     if name_func is None:
-        name_func = lambda x: x.split('|')[1]
+        def name_func(x): return x.split('|')[1]
 
     ret_col = (0, 1, 2, 6, 7, 8, 9, 10, 11)
 
@@ -292,10 +292,7 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
 
     """
 
-    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
-        file_handle = open_file(file_handle, 'rb')
-    if isinstance(file_handle, str):
-        file_handle = open_file(file_handle, 'r')
+    file_handle = open_file(file_handle, 'rb')
 
     LOG.info(
         "Reading taxonomic information from file (%s)",
@@ -306,6 +303,8 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
         acc_ids = set(acc_ids)
 
     zero_acc = 0
+
+    idx = 0
 
     for idx, line in enumerate(file_handle):
         line = line.decode('ascii')
@@ -341,4 +340,7 @@ def parse_accession_taxa_table(file_handle, acc_ids=None, key=1, value=2,
     if no_zero and (zero_acc > 0):
         LOG.warning("%d accessions have taxon_id 0", zero_acc)
 
-    LOG.info("Parsed %d lines", idx + 1)
+    if idx == 0:
+        LOG.error("The file passed is empty")
+    else:
+        LOG.info("Parsed %d lines", idx + 1)

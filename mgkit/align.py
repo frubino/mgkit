@@ -3,7 +3,6 @@ Module dealing with BAM/SAM files
 """
 from future.utils import viewitems
 import logging
-import itertools
 try:
     # In Python2
     from itertools import izip as zip
@@ -163,9 +162,12 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
         )
 
 
-def read_samtools_depth(file_handle, num_seqs=10000):
+def read_samtools_depth(file_handle, num_seqs=10000, seq_ids=None):
     """
-    ..versionchanged:: 0.3.4
+    .. versionchanged:: 0.4.0
+        now returns 3 array, instead of 2. Also added *seq_ids* to skip lines
+
+    .. versionchanged:: 0.3.4
         *num_seqs* can be None to avoid a log message
 
     .. versionadded:: 0.3.0
@@ -187,12 +189,16 @@ def read_samtools_depth(file_handle, num_seqs=10000):
         file_handle (file): file handle of the coverage file
         num_seqs (int or None): number of sequence that fires a log message. If
             None, no message is triggered
+        seq_ids (dict, set): a hashed container like a dictionary or set with
+            the sequences to return
 
     Yields:
-        tuple: the first element is the sequence identifier and the second one
-        is the *numpy* array with the positions
+        tuple: the first element is the sequence identifier, the second one
+        is the *numpy* array with the positions, the third element is the
+        *numpy* array with the coverages
     """
     curr_key = ''
+    curr_pos = []
     curr_cov = []
 
     file_handle = open_file(file_handle, 'rb')
@@ -205,28 +211,38 @@ def read_samtools_depth(file_handle, num_seqs=10000):
     for line in file_handle:
         line = line.decode('ascii')
         name, pos, cov = line.strip().split('\t')
+        pos = int(pos)
         cov = int(cov)
+        if (seq_ids is not None) and (name not in seq_ids):
+            continue
         if curr_key == name:
+                curr_pos.append(pos)
                 curr_cov.append(cov)
         else:
             if curr_key == '':
                 curr_cov.append(cov)
+                curr_pos.append(pos)
                 curr_key = name
             else:
                 line_no += 1
                 if (num_seqs is not None) and (line_no % num_seqs == 0):
                     LOG.info('Read %d sequence coverage', line_no)
-                yield curr_key, numpy.array(curr_cov)
+                yield curr_key, numpy.array(curr_pos), numpy.array(curr_cov)
                 curr_key = name
                 curr_cov = [cov]
+                curr_cov = [pos]
     else:
-        yield curr_key, numpy.array(curr_cov)
+        yield curr_key, numpy.array(curr_pos), numpy.array(curr_cov)
 
     LOG.info('Read a total of %d sequence coverage', line_no + 1)
 
 
 class SamtoolsDepth(object):
     """
+    .. versionchanged:: 0.4.0
+        uses pandas.SparseArray now. It should use less memory, but needs
+        pandas version > 0.24
+
     .. versionadded:: 0.3.0
 
     A class used to cache the results of :func:`read_samtools_depth`, while
@@ -234,19 +250,40 @@ class SamtoolsDepth(object):
     """
     file_handle = None
     data = None
+    max_size = None
+    max_size_dict = None
 
-    def __init__(self, file_handle, num_seqs=10**4):
+    def __init__(self, file_handle, num_seqs=10**4, max_size=10**6,
+                 max_size_dict=None):
         """
+        .. versionchanged:: 0.4.0
+            added *max_size* and max_size_dict
+
         Arguments:
             file_handle (file): the file handle to pass to
                 :func:`read_samtools_depth`
             num_seqs (int): number of sequence that fires a log message
+            max_size (int): max size to use in the SparseArray
+            max_size_dict (dict): dictionary with max size for each seq_id
+                requested. If None, *max_size* is used
         """
-        self.file_handle = read_samtools_depth(file_handle, num_seqs=num_seqs)
+        self.max_size = max_size
+        if max_size_dict is None:
+            self.max_size_dict = {}
+        else:
+            self.max_size_dict = max_size_dict
+
+        self.file_handle = read_samtools_depth(
+            file_handle,
+            num_seqs=num_seqs,
+            seq_ids=max_size_dict
+        )
         self.data = {}
+
 
     def region_coverage(self, seq_id, start, end):
         """
+
         Returns the mean coverage of a region. The *start* and *end* parameters
         are expected to be 1-based coordinates, like the correspondent
         attributes in :class:`mgkit.io.gff.Annotation` or
@@ -266,12 +303,30 @@ class SamtoolsDepth(object):
         try:
             cov = self.data[seq_id][start-1:end]
         except KeyError:
-            for key, value in self.file_handle:
+            for key, pos_array, cov_array in self.file_handle:
+                # If the max_size_dict was passed, skips arrays that are not in
+                # of interests
+                if self.max_size_dict and (key not in self.max_size_dict):
+                    continue
+                # Init a SparseArray (by passing the correct dtype)
+                value = pandas.Series(
+                    # brings start position to 0
+                    dict(zip(pos_array - 1, cov_array)),
+                    dtype="Sparse[int]"
+                # reindex to the correct size to allow
+                ).reindex(
+                    range(self.max_size_dict.get(seq_id, self.max_size)),
+                    fill_value=0
+                )
                 self.data[key] = value
                 # if the key is the one requested, the loop is stopped and and
                 # the value is kept
                 if key == seq_id:
                     cov = value[start-1:end]
                     break
+            else:
+                raise ValueError(
+                    "No coverage information found for {}".format(seq_id)
+                )
 
         return cov.mean()

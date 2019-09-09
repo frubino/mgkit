@@ -212,15 +212,12 @@ Changes
 """
 from __future__ import division
 from builtins import zip
-from future.utils import viewitems, viewvalues
-from functools import reduce
+from future.utils import viewitems
 import logging
-import itertools
-import functools
 import pysam
 import json
 import pickle
-import progressbar
+from tqdm import tqdm
 import click
 import msgpack
 import mgkit
@@ -230,7 +227,7 @@ from .. import align
 from .. import logger
 from .. import taxon
 from .. import kegg
-from ..io import gff, blast, fasta, compressed_handle, open_file
+from ..io import gff, blast, fasta, open_file
 from ..io import uniprot as uniprot_io
 from ..net import uniprot as uniprot_net
 from ..net import pfam
@@ -516,13 +513,16 @@ def coverage_command(verbose, sample_alignment, input_file, output_file):
 @main.command('exp_syn', help="""Adds expected synonymous and non-synonymous
               changes information""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-r', '--reference', required=True, type=click.File('rn'),
+@click.option('-r', '--reference', required=True, type=click.File('rb'),
               help='reference sequence in fasta format')
 @click.option('-s', '--split', default=False, is_flag=True,
               help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def exp_syn_command(verbose, reference, split, input_file, output_file):
+def exp_syn_command(verbose, reference, split, progress, input_file,
+                    output_file):
     """
     .. versionadded:: 0.1.16
     """
@@ -541,7 +541,12 @@ def exp_syn_command(verbose, reference, split, input_file, output_file):
         for seq_id, seq in fasta.load_fasta(reference)
     )
 
-    for annotation in gff.parse_gff(input_file):
+    iterator = gff.parse_gff(input_file)
+
+    if progress:
+        iterator = tqdm(iterator)
+
+    for annotation in iterator:
         annotation.add_exp_syn_count(seqs[annotation.seq_id])
 
         annotation.to_file(output_file)
@@ -557,10 +562,12 @@ def exp_syn_command(verbose, reference, split, input_file, output_file):
 @click.option('-m', '--mapping', multiple=True, default=None, required=True,
               type=click.Choice(list(uniprot_io.MAPPINGS.values())),
               help="Mappings to add")
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def uniprot_offline_command(verbose, mapping_file, force_taxon_id, mapping,
-                            input_file, output_file):
+                            progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
@@ -584,9 +591,10 @@ def uniprot_offline_command(verbose, mapping_file, force_taxon_id, mapping,
         num_lines=None
     )
 
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+    if progress:
+        iterator = tqdm(iterator)
 
-    file_mappings = dict(bar(iterator))
+    file_mappings = dict(iterator)
 
     count = 0
 
@@ -634,9 +642,9 @@ def load_featurecounts_files(count_files, samples):
             line = line.decode('ascii')
             if line.startswith('#') or line.lower().startswith('geneid'):
                 continue
-            line = line.split('\t')
+            line = line.strip().split('\t')
             uid = line[0]
-            counts[uid] = dict(zip(samples, line[-4:]))
+            counts[uid] = dict(zip(samples, line[6:]))
     return counts
 
 
@@ -649,16 +657,20 @@ def load_featurecounts_files(count_files, samples):
               help="If the counts are FPKMS")
 @click.option('-e', '--featureCounts', default=False, is_flag=True,
               help="""If the counts files are from featureCounts""")
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def counts_command(verbose, samples, count_files, fpkms, featurecounts,
-                   input_file, output_file):
+                   progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
         'Writing to file (%s)',
         getattr(output_file, 'name', repr(output_file))
     )
+
+    LOG.info("Samples passed: %s", ','.join(samples))
 
     if featurecounts:
         counts = load_featurecounts_files(count_files, samples)
@@ -667,7 +679,12 @@ def counts_command(verbose, samples, count_files, fpkms, featurecounts,
 
     key = "fpkms_{}" if fpkms else "counts_{}"
 
-    for annotation in gff.parse_gff(input_file):
+    iterator = gff.parse_gff(input_file)
+
+    if progress:
+        iterator = tqdm(iterator)
+
+    for annotation in iterator:
         try:
             ann_counts = counts[annotation.uid]
         except KeyError:
@@ -699,7 +716,7 @@ def parse_hdf5_arg(ctx, param, values):
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-t', '--gene-taxon-table', default=None,
               help="""GIDs taxonomy table (e.g. gi_taxid_nucl.dmp.gz) or a similar file where GENE/TAXON are tab separated and one per line""")
-@click.option('-a','--gene-attr', default='gene_id',
+@click.option('-a', '--gene-attr', default='gene_id',
               help="""In which attribute the GENEID in the table is stored (defaults to *gene_id*)""")
 @click.option('-f', '--hdf-table', default=None, callback=parse_hdf5_arg,
               help="""HDF5 file and table name to use for taxon_id lookups. The format to pass is the file name, colon and the table file hf5:taxa-table. The index in the table is the accession_id, while the column `taxon_id` stores the taxon_id as int""")
@@ -710,11 +727,13 @@ def parse_hdf5_arg(ctx, param, values):
 @click.option('-db', '--taxon-db', default='NONE', help="""DB used to add the taxonomic information""")
 @click.option('-c', '--cache-table', default=False, is_flag=True,
               help="""If used, annotations are not preloaded, but the taxa table is cached, instead""")
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
                     dictionary, skip_no_taxon, taxon_db, cache_table,
-                    input_file, output_file):
+                    progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
@@ -785,9 +804,8 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
     if taxonomy is not None:
         taxonomy = taxon.Taxonomy(taxonomy)
 
-    if hdf_table is not None:
-        bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
-        annotations = bar(annotations)
+    if progress:
+        annotations = tqdm(annotations)
 
     count = 0
     for lineno, annotation in enumerate(annotations):
@@ -858,33 +876,46 @@ def pfam_command(verbose, id_attr, use_accession, input_file, output_file):
 @click.option('-d', '--depths', required=True, multiple=True,
               help='`samtools depth -aa` file')
 @click.option('-n', '--num-seqs', default=0,  type=click.INT,
-              show_default=True,
-              help='''Number of sequences to update the log. If 0, no message is logged''')
+              show_default=True, help='''Number of sequences to update the log. If 0, no message is logged''')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def samtools_depth_command(verbose, samples, depths, num_seqs, input_file,
-                           output_file):
+def samtools_depth_command(verbose, samples, depths, num_seqs, progress,
+                           input_file, output_file):
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     if samples is None:
         samples = (None,)
     else:
-        sample = ['{}_cov'.format(sample) for sample in samples]
+        samples = ['{}_cov'.format(sample) for sample in samples]
+
+    max_size_dict = {}
+    annotations = []
+    for annotation in gff.parse_gff(input_file):
+        annotations.append(annotation)
+        max_size_dict[annotation.seq_id] = max(
+            max_size_dict.get(annotation.seq_id, 1),
+            annotation.end
+        )
 
     depths = [
-        align.SamtoolsDepth(file_name, None if num_seqs == 0 else num_seqs)
+        align.SamtoolsDepth(
+            file_name,
+            None if num_seqs == 0 else num_seqs,
+            max_size_dict=max_size_dict
+        )
         for file_name in depths
     ]
     if len(samples) != len(depths):
-        exit_script('Number of samples different from number of files', 2)
+        utils.exit_script('Number of samples different from number of files', 2)
 
-    annotations = gff.parse_gff(input_file)
+    if progress:
+        annotations = tqdm(annotations)
 
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
-
-    for annotation in bar(annotations):
+    for annotation in annotations:
         coverages = []
-        for sample, depth in zip(sample, depths):
+        for sample, depth in zip(samples, depths):
             cov = depth.region_coverage(
                 annotation.seq_id,
                 annotation.start,

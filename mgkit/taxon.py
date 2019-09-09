@@ -6,15 +6,14 @@ from builtins import object
 from functools import reduce
 import logging
 import sys
-if sys.version_info[0] == 2:
-    import cPickle as pickle
-else:
-    import pickle
 import itertools
 import collections
 from future.utils import viewitems, viewvalues
 from .io import open_file
-from . import DependencyError
+if sys.version_info[0] == 2:
+    import cPickle as pickle
+else:
+    import pickle
 
 
 LOG = logging.getLogger(__name__)
@@ -41,8 +40,8 @@ METAZOA = 33208
 EUKARYOTA = 2759
 
 PROTISTS = {
-    #'apicomplexa', alveolata
-    #'ciliophora', alveolata
+    # 'apicomplexa', alveolata
+    # 'ciliophora', alveolata
     'alveolata': 33630,
     'amoebozoa': 554915,
     'apusozoa': 554296,
@@ -110,6 +109,8 @@ def parse_uniprot_taxon(line, light=True):
 
     .. versionchanged:: 0.2.1
         added *light* parameter
+
+    .. deprecated:: 0.4.0
 
     Parses a Uniprot taxonomy file (tab delimited) line and returns a
     UniprotTaxonTuple instance. If *light* is True, lineage is not stored to
@@ -299,6 +300,7 @@ class Taxonomy(object):
         self._name_map = {}
         if fname:
             self.load_data(fname)
+
     @staticmethod
     def parse_gtdb_lineage(lineage, sep=';'):
         """
@@ -318,7 +320,7 @@ class Taxonomy(object):
         for taxon_name in lineage.split(sep):
             rank, taxon_name = taxon_name.split('__')
             if not taxon_name:
-             continue
+                continue
             lineage_dict[ranks[rank]] = taxon_name
         return lineage_dict
 
@@ -466,6 +468,9 @@ class Taxonomy(object):
         .. versionchanged:: 0.2.1
             added *light* parameter
 
+        .. deprecated:: 0.4.0
+            use :meth:`Taxonomy.read_from_ncbi_dump`
+
         Reads taxonomy from a file handle.
         The file needs to be a tab separated format return by a query on
         Uniprot.  If *light* is True, lineage is not stored to decrease the
@@ -528,9 +533,6 @@ class Taxonomy(object):
         Arguments:
             file_handle (str, file): file name to which save the instance data
 
-        Raises:
-            DependencyError: if the file name contains *.msgpack* and the
-            package is not installed
         """
 
         if isinstance(file_handle, str):
@@ -539,10 +541,7 @@ class Taxonomy(object):
         LOG.info("Loading taxonomy from file %s", file_handle.name)
 
         if '.msgpack' in file_handle.name:
-            try:
-                import msgpack
-            except ImportError:
-                raise DependencyError('msgpack')
+            import msgpack
             merged = []
             for taxon_id, taxon in msgpack.Unpacker(file_handle, use_list=False, raw=False):
                 taxon = TaxonTuple(*taxon)
@@ -572,10 +571,6 @@ class Taxonomy(object):
 
         Arguments:
             file_handle (str, file): file name to which save the instance data
-
-        Raises:
-            DependencyError: if the file name contains *.msgpack* and the
-            package is not installed
         """
 
         if isinstance(file_handle, str):
@@ -584,10 +579,7 @@ class Taxonomy(object):
         LOG.info("Saving taxonomy to file %s", file_handle.name)
 
         if '.msgpack' in file_handle.name:
-            try:
-                import msgpack
-            except ImportError:
-                raise DependencyError('msgpack')
+            import msgpack
             for taxon_id, taxon in viewitems(self._taxa):
                 file_handle.write(
                     msgpack.packb((taxon_id, taxon))
@@ -750,6 +742,37 @@ class Taxonomy(object):
             taxon = [taxon]
         return taxon
 
+    def is_ranked_below(self, taxon_id, rank, equal=True):
+        """
+        .. versionadded:: 0.4.0
+
+        Tests if a taxon_id is below the requested rank.
+
+        Arguments:
+            taxon_id (int): taxo_id to test
+            rank (str): rank requested
+            equal (bool): determines if the taxon_id tested may be of the
+                requested rank
+
+        Returns:
+            bool: If the passed *taxon_id* is below the requested rank, it
+            returns *True*. If *taxon_id* is of the rank requested and *equal*
+            is True, the return value is *True*, if *equal* is False the return
+            value is *False*. The return value is *False* otherwise.
+        """
+        if (self[taxon_id].rank == rank) and equal:
+            return True
+
+        taxon_id = self[taxon_id].parent_id
+
+        while (taxon_id is not None):
+            if self[taxon_id].rank == rank:
+                return True
+            else:
+                taxon_id = self[taxon_id].parent_id
+
+        return False
+
     def get_name_map(self):
         "Returns a taxon_id->s_name dictionary"
 
@@ -861,7 +884,7 @@ class Taxonomy(object):
                     )
                 )
 
-        if taxon_id is None:
+        if (taxon_id is None) or (self[taxon_id].parent_id != parent_id):
             try:
                 taxon_id = max(self._taxa) + 1
             except ValueError:
@@ -878,7 +901,10 @@ class Taxonomy(object):
 
             # adds the new name to the name map (which is initialised by
             # find_by_name)
-            self._name_map[taxon_name.lower()] = [taxon_id]
+            try:
+                self._name_map[taxon_name.lower()].append(taxon_id)
+            except KeyError:
+                self._name_map[taxon_name.lower()] = [taxon_id]
 
         return taxon_id
 
@@ -1097,6 +1123,7 @@ def last_common_ancestor(taxonomy, taxon_id1, taxon_id2):
 
     return lca_id
 
+
 lowest_common_ancestor = last_common_ancestor
 
 
@@ -1167,10 +1194,7 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
     Returns:
         pandas.DataFrame: matrix with the pairwise distances of all *taxon_ids*
     """
-    try:
-        import pandas
-    except ImportError:
-        raise DependencyError('pandas')
+    import pandas
 
     matrix = pandas.DataFrame(index=taxon_ids, columns=taxon_ids).fillna(0)
 

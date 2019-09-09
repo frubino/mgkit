@@ -40,6 +40,12 @@ def test_gffdb_getitem(gff_db, annotations):
     assert gff_db['u1'] == annotations[0]
 
 
+def test_gff_db_init_path(tmpdir, annotations):
+    db = GFFDB(tmpdir.join('test2.db').strpath)
+    db['u1'] = annotations[0]
+    assert db['u1'] == annotations[0]
+
+
 def test_gffdb_iter(gff_db, annotations):
     assert set(x.uid for x in annotations) == set(x for x in gff_db)
 
@@ -48,5 +54,13 @@ def test_gffdb_values(gff_db, annotations):
     assert set(x.uid for x in annotations) == set(x.uid for x in gff_db.values())
 
 
+def test_gffdb_itervalues(gff_db, annotations):
+    assert set(x.uid for x in annotations) == set(x.uid for x in gff_db.itervalues())
+
+
 def test_gffdb_items(gff_db, annotations):
     assert set(x.uid for x in annotations) == set(x[0] for x in gff_db.items())
+
+
+def test_gffdb_iteritems(gff_db, annotations):
+    assert set(x.uid for x in annotations) == set(x[0] for x in gff_db.iteritems())

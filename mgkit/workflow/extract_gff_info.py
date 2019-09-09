@@ -88,12 +88,11 @@ Changes
 """
 
 from __future__ import division
-import sys
 import logging
 import functools
 import json
 import click
-
+from tqdm import tqdm
 import mgkit
 from . import utils
 from mgkit.io import gff, fasta
@@ -123,10 +122,12 @@ annotations from [gff-file] to [fasta-file]''')
               help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
 @click.option('-f', '--reference', type=click.File('rb'), default=None,
               help='Fasta file containing the reference sequences of the GFF file')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('fasta-file', type=click.File('wb'), default='-')
-def sequence_command(verbose, reverse, no_wrap, split, reference, gff_file,
-                     fasta_file):
+def sequence_command(verbose, reverse, no_wrap, split, reference, progress,
+                     gff_file, fasta_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -149,6 +150,9 @@ def sequence_command(verbose, reverse, no_wrap, split, reference, gff_file,
     ann_iter = gff.parse_gff(gff_file, gff_type=gff.from_gff)
 
     seq_iter = gff.extract_nuc_seqs(ann_iter, seqs, reverse=reverse)
+
+    if progress:
+        seq_iter = tqdm(seq_iter)
 
     for name, seq in seq_iter:
         fasta.write_fasta_sequence(fasta_file, name, seq, wrap=wrap)
@@ -176,9 +180,12 @@ and makes output for MongoDB [output-file]''')
               help='No cache for the lineage function')
 @click.option('-i', '--indent', type=click.INT, default=None,
               help='If used, the json will be written in a human readble form')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def mongodb_command(verbose, taxonomy, no_cache, indent, gff_file, output_file):
+def mongodb_command(verbose, taxonomy, no_cache, indent, progress, gff_file,
+                    output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -199,7 +206,12 @@ def mongodb_command(verbose, taxonomy, no_cache, indent, gff_file, output_file):
             LOG.info('Using cached calls to lineage')
             lineage_func = simple_cache.memoize(lineage_func)
 
-    for annotation in gff.parse_gff(gff_file):
+    iterator = gff.parse_gff(gff_file)
+
+    if progress:
+        iterator = tqdm(iterator)
+
+    for annotation in iterator:
         output_file.write(
             annotation.to_mongodb(
                 lineage_func=lineage_func,
@@ -235,7 +247,7 @@ def gtf_command(verbose, gene_id, gff_file, gtf_file):
 
 @main.command('split', help="""Split annotations from a GFF file [gff-file] to
 several files starting with [prefix]""")
-@click.option('-v','--verbose', is_flag=True,)
+@click.option('-v', '--verbose', is_flag=True,)
 @click.option('-p', '--prefix', default='split', show_default=True,
               help='Prefix for the file name in output')
 @click.option('-n', '--number', type=click.INT, default=10, show_default=True,
@@ -275,10 +287,12 @@ by annotations in [gff-file]""")
               help='If the coverage must be calculated on each strand')
 @click.option('-r', '--rename', default=False, is_flag=True,
               help='Emulate BLAST output (use only the header part before the first space)')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def coverage_command(verbose, reference, json_out, strand_specific, rename,
-                     gff_file, output_file):
+                     progress, gff_file, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -290,6 +304,8 @@ def coverage_command(verbose, reference, json_out, strand_specific, rename,
         sequences,
         strand=strand_specific
     )
+    if progress:
+        iterator = tqdm(iterator)
 
     contig_coverage = {}
 

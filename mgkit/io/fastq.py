@@ -5,7 +5,7 @@ import re
 import numpy
 import logging
 
-from .utils import open_file, compressed_handle
+from .utils import open_file
 
 LOG = logging.getLogger(__name__)
 
@@ -154,8 +154,7 @@ def write_fastq_sequence(file_handle, name, seq, qual, write_mode='a'):
     :param str seq: sequence to write
     :param str qual: quality string
     """
-    if isinstance(file_handle, str):
-        file_handle = open(file_handle, write_mode)
+    file_handle = open_file(file_handle, write_mode)
 
     if isinstance(qual[0], (int, numpy.integer)):
         qual = ''.join(chr(q + 33) for q in qual)
@@ -202,6 +201,8 @@ def load_fastq(file_handle, num_qual=False):
     Arguments:
         file_handle (str, file): fastq file to open, can be a file name or a
             file handle
+        num_qual (bool): if *False* (default), the quality score will be
+            returned as ASCII character, if *True* a numpy array.
 
     Yields:
         tuple: first element is the sequence name/header, the second element is
@@ -218,10 +219,7 @@ def load_fastq(file_handle, num_qual=False):
         (min 0, max 40) or illumina-1.8 (0, 41)
     """
 
-    if isinstance(file_handle, str):
-        file_handle = open_file(file_handle, 'r')
-    else:
-        file_handle = compressed_handle(file_handle)
+    file_handle = open_file(file_handle, 'r')
 
     if getattr(file_handle, 'name', None) is not None:
         LOG.info("Reading fastq file (%s)", file_handle.name)
@@ -278,7 +276,7 @@ def load_fastq_rename(file_handle, num_qual=False, name_func=None):
     """
 
     if name_func is None:
-        name_func = lambda header: header.split(' ')[0]
+        def name_func(header): return header.split(' ')[0]
 
     for header, seq, qual in load_fastq(file_handle, num_qual=num_qual):
         yield name_func(header), seq, qual

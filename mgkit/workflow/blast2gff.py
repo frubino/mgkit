@@ -96,8 +96,7 @@ Changes
 
 import logging
 import click
-import progressbar
-import mgkit
+from tqdm import tqdm
 from .. import logger
 from . import utils
 from ..io import blast, fasta
@@ -161,11 +160,14 @@ outputs a GFF file [gff-file]
               default=None, help='''Additional attribute and value to add to each annotation, in the form attr:value''')
 @click.option('-ft', '--feat-type', show_default=True, default='CDS',
               help='Feature type to use in the GFF')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('blast-file', type=click.File('rb'), default='-')
 @click.argument('gff-file', type=click.File('wb'), default='-')
 def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
                          remove_version, fasta_file, db_quality, bitscore,
-                         attr_value, feat_type, blast_file, gff_file):
+                         attr_value, feat_type, progress, blast_file,
+                         gff_file):
     """
     .. versionadded:: 0.2.2
     """
@@ -180,12 +182,14 @@ def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
     seqs = load_fasta_file(fasta_file)
 
     if no_split:
-        name_func = lambda x: x
+        def name_func(x): return x
     else:
         if remove_version:
-            name_func = lambda x: x.split(header_sep)[gene_index].split('.')[0]
+            def name_func(x):
+                return x.split(header_sep)[gene_index].split('.')[0]
         else:
-            name_func = lambda x: x.split(header_sep)[gene_index]
+            def name_func(x):
+                return x.split(header_sep)[gene_index]
 
     iterator = blast.parse_uniprot_blast(
         blast_file,
@@ -197,8 +201,10 @@ def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
         seq_lengths=seqs
     )
 
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
-    for annotation in bar(iterator):
+    if progress:
+        iterator = tqdm(iterator)
+
+    for annotation in iterator:
         if attr_value is not None:
             for key, value in attr_value:
                 annotation.set_attr(key, value)
@@ -225,10 +231,13 @@ a Uniprot DB and outputs a GFF file [gff-file]
               default=None, help='''Additional attribute and value to add to each annotation, in the form attr:value''')
 @click.option('-ft', '--feat-type', default='CDS', show_default=True,
               help='Feature type to use in the GFF')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('blast-file', type=click.File('rb'), default='-')
 @click.argument('gff-file', type=click.File('wb'), default='-')
 def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,
-                         bitscore, attr_value, feat_type, blast_file, gff_file):
+                         bitscore, attr_value, feat_type, progress, blast_file,
+                         gff_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -240,7 +249,7 @@ def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,
     seqs = load_fasta_file(fasta_file)
 
     if no_split is True:
-        name_func = lambda x: x
+        def name_func(x): return x
     else:
         name_func = None
 
@@ -254,8 +263,10 @@ def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,
         seq_lengths=seqs
     )
 
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
-    for annotation in bar(iterator):
+    if progress:
+        iterator = tqdm(iterator)
+
+    for annotation in iterator:
         if attr_value is not None:
             for key, value in attr_value:
                 annotation.set_attr(key, value)

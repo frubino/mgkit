@@ -1,7 +1,9 @@
 import pytest
-
+from conftest import skip_no_connection
+import numpy
 from mgkit.snps.classes import GeneSNP, SNPType
 from mgkit.snps.funcs import combine_sample_snps, flat_sample_snps
+from mgkit.snps.conv_func import get_rank_dataframe, get_full_dataframe
 
 import numpy
 
@@ -429,3 +431,18 @@ def test_combine_sample_snps_index3():
         index_type='taxon'
     )
     assert df.index.tolist() == [838, 839]
+
+
+@skip_no_connection
+def test_get_rank_dataframe(ncbi_taxonomy):
+    df = get_rank_dataframe(SNP_DATA2, ncbi_taxonomy, min_num=1, rank='genus')
+    assert (df.loc[838, 'sample1'] == .75) and (df.loc[838, 'sample2'] == .375)
+
+
+@skip_no_connection
+def test_get_full_dataframe(ncbi_taxonomy):
+    df = get_full_dataframe(SNP_DATA2, ncbi_taxonomy, min_num=1)
+    assert df.loc['gene2'].loc[838, 'sample1'] == .5
+    assert numpy.isnan(df.loc[('gene2', 838), 'sample2'])
+    assert df.loc[('gene1', 839), 'sample1'] == 1.
+    assert df.loc[('gene1', 839), 'sample2'] == .375

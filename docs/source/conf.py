@@ -57,11 +57,11 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 blockdiag_antialias = True
 blockdiag_html_image_format = 'SVG'
 blockdiag_latex_image_format = 'PDF'
-import urllib2
-response = urllib2.urlopen(
+import requests
+response = requests.get(
     'https://github.com/opensourcedesign/fonts/raw/master/gnu-freefont_freemono/FreeMono.ttf'
 )
-open('FreeMono.ttf', 'w').write(response.read())
+open('FreeMono.ttf', 'wb').write(response.content)
 blockdiag_fontpath = 'FreeMono.ttf'
 
 #graphviz
@@ -97,7 +97,7 @@ copyright = u'2013-2015, Francesco Rubino'
 #
 # The short X.Y version.
 
-__VERSION__ = '0.3.4'
+__VERSION__ = '0.4.0'
 
 version = __VERSION__
 # The full version, including alpha/beta/rc tags.

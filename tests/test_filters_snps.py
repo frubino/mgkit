@@ -47,7 +47,6 @@ def test_snps_taxon1_rev(ncbi_taxonomy):
     )
 
 
-
 @skip_no_connection
 def test_snps_taxon2(ncbi_taxonomy):
     # will find it
@@ -86,7 +85,27 @@ def test_snps_taxon2_rev(ncbi_taxonomy):
     )
 
 
-def test_snps_taxon3_exc1():
+@skip_no_connection
+def test_snps_taxon3(ncbi_taxonomy):
+    # will find it
+    filter_list = [
+        taxon.taxon_id
+        for taxon in ncbi_taxonomy
+        if 'clostridium' in taxon.s_name
+    ]
+    taxon_id = ncbi_taxonomy.find_by_name('methanobrevibacter')[0]
+    gene_syn = GeneSNP(taxon_id=taxon_id)
+
+    assert not filter_genesyn_by_taxon_id(
+        gene_syn,
+        ncbi_taxonomy,
+        filter_list=filter_list,
+        exclude=False,
+        func=mgkit.taxon.is_ancestor
+    )
+
+
+def test_snps_taxon4_exc1():
     gene_syn = GeneSNP()
     with pytest.raises(FilterFails):
         filter_genesyn_by_taxon_id(
@@ -94,7 +113,7 @@ def test_snps_taxon3_exc1():
         )
 
 
-def test_snps_taxon3_exc2():
+def test_snps_taxon4_exc2():
     gene_syn = GeneSNP()
     with pytest.raises(FilterFails):
         filter_genesyn_by_taxon_id(

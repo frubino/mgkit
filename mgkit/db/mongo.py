@@ -123,7 +123,7 @@ class GFFDB(object):
         """
         if not isinstance(annotation, gff.Annotation):
             raise TypeError(
-                'An mgkit.io.gff.Annotation instance is required got {}'.format(
+                'An mgkit.io.gff.Annotation instance is required: {}'.format(
                     type(annotation)
                 )
             )

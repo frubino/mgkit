@@ -86,6 +86,24 @@ with values such as 'cellular organisms' that needs to be quoted. Example::
 Which will keep only line that are from Bacteria (taxon_id=2) and exclude those
 from the genus *Prevotella*. It will be also include Archaea.
 
+Multiple inclusion and exclusion flags can be put::
+
+    $ taxon-utils filter -i 2 -i 2172 -t taxonomy in.gff out.gff
+
+In particular, the inclusion flag is tested first and then the exclusion is
+tested. So a line like this one:
+
+.. code-block:: bash
+
+    printf "TEST\\t838\\nTEST\\t1485" | taxon-utils filter -p -t taxonomy.pickle -i 2 -i 1485 -e 838
+
+Will produce **TEST 1485**, because both Prevotella (838) and Clostridium (1485)
+are Bacteria (2) OR Prevotella, but Prevotella must be excluded according to
+the exclusion option. This line also illustrate that a tab-separated file, where
+the second column contains taxon IDs, can be filtered. In particular it can be
+applied to files produced by `download-ncbi-taxa.sh` or
+`download-uniprot-taxa.sh` (see :ref:`download-taxonomy`).
+
 .. warning::
 
     Annotations with no taxon_id are not included in the output of both filters
@@ -134,12 +152,13 @@ import json
 import click
 import mgkit
 import pandas as pd
+from tqdm import tqdm
 from . import utils
 from mgkit.io import gff, fasta, blast
 from mgkit import taxon
 from mgkit.simple_cache import memoize
 from mgkit.filter.taxon import filter_taxon_by_id_list
-import progressbar
+
 
 LOG = logging.getLogger(__name__)
 
@@ -243,11 +262,10 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
 @main.command('lca', help="""Finds the last common ancestor for each sequence
               in a GFF file""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-t', '--taxonomy', type=click.File('rb'), required=True,
-              help='Taxonomy file')
+@click.option('-t', '--taxonomy', required=True, help='Taxonomy file')
 @click.option('-n', '--no-lca', type=click.File('wb'), default=None,
               help='File to which write records with no LCA')
-@click.option('-a', '--only-ranked',is_flag=True, default=False,
+@click.option('-a', '--only-ranked', is_flag=True, default=False,
               help='''If set, only taxa that have a rank will be used in the lineageself. This is not advised for lineages such as Viruses, where the top levels have no rank''')
 @click.option('-b', '--bitscore', default=0, type=click.FLOAT, show_default=True,
               help='Minimum bitscore accepted')
@@ -265,12 +283,15 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
               help='''Total number of raw sequences (used to output correct percentages in Krona''')
 @click.option('-f', '--out-format', default='tab', show_default=True,
               type=click.Choice(['krona', 'json', 'tab', 'gff']),
-              help='Output a file that can be read by Krona (text)')
+              help='Format of output file')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
                        rename, sorted, feat_type, reference, simple_table,
-                       krona_total, out_format, gff_file, output_file):
+                       krona_total, out_format, progress, gff_file,
+                       output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
         'Writing to file (%s)',
@@ -302,12 +323,13 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
         for annotation in gff.parse_gff(gff_file)
         # only use annotations whose bitscore pass the filter
         # and have a taxon_id
-        if ((annotation.bitscore >= bitscore) or
-            (annotation.bitscore is None)) and
-           (annotation.taxon_id is not None) and
-           # redundant probably, but used in cases when a taxon_id was deleted
-           # from the taxonomy
-           (annotation.taxon_id in taxonomy)
+        if (
+            (annotation.bitscore >= bitscore) or
+            (annotation.bitscore is None)
+            ) and (annotation.taxon_id is not None) and
+            # redundant probably, but used in cases when a taxon_id was deleted
+            # from the taxonomy
+            (annotation.taxon_id in taxonomy)
     )
 
     if sorted:
@@ -325,6 +347,8 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
 
     count = 0
     lca_dict = {}
+    if progress:
+        annotations = tqdm(annotations)
     for seq_ann in annotations:
         count += 1
         seq_id = seq_ann[0].seq_id
@@ -405,11 +429,10 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
 @main.command('lca_line', help="""Finds the last common ancestor for all IDs in
               a text file line""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-t', '--taxonomy', type=click.File('rb'), required=True,
-              help='Taxonomy file')
+@click.option('-t', '--taxonomy', required=True, help='Taxonomy file')
 @click.option('-n', '--no-lca', type=click.File('wb'), default=None,
               help='File to which write records with no LCA')
-@click.option('-a', '--only-ranked',is_flag=True, default=False,
+@click.option('-a', '--only-ranked', is_flag=True, default=False,
               help='''If set, only taxa that have a rank will be used in the lineageself. This is not advised for lineages such as Viruses, where the top levels have no rank''')
 @click.option('-s', '--separator', default='\t',
               help='separator for taxon_ids (defaults to TAB)')
@@ -511,8 +534,7 @@ def validate_taxon_names(taxon_names, taxonomy):
 @main.command('filter', help="Filter a GFF file or a table based on taxonomy")
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-p', '--table', is_flag=True, default=False)
-@click.option('-t', '--taxonomy', type=click.File('rb'), required=True,
-              help='Taxonomy file')
+@click.option('-t', '--taxonomy', required=True, help='Taxonomy file')
 @click.option('-i', '--include-taxon-id', multiple=True, default=None,
               type=click.INT, help='Include only taxon_ids')
 @click.option('-in', '--include-taxon-name', multiple=True, default=None,
@@ -521,11 +543,13 @@ def validate_taxon_names(taxon_names, taxonomy):
               type=click.INT, help='Exclude taxon_ids')
 @click.option('-en', '--exclude-taxon-name', multiple=True, default=None,
               help='Exclude taxon_names')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def filter_taxa_command(verbose, table, taxonomy, include_taxon_id,
                         include_taxon_name, exclude_taxon_id,
-                        exclude_taxon_name, input_file, output_file):
+                        exclude_taxon_name, progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
@@ -573,8 +597,9 @@ def filter_taxa_command(verbose, table, taxonomy, include_taxon_id,
     if table:
         iterator = blast.parse_accession_taxa_table(input_file, key=0, value=1,
                                                     num_lines=None)
-        bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
-        for acc_id, taxon_id in bar(iterator):
+        if progress:
+            iterator = tqdm(iterator)
+        for acc_id, taxon_id in iterator:
             if include_func is not None:
                 if not include_func(taxon_id):
                     continue
@@ -583,7 +608,10 @@ def filter_taxa_command(verbose, table, taxonomy, include_taxon_id,
                     continue
             output_file.write("{}\t{}\n".format(acc_id, taxon_id).encode('ascii'))
     else:
-        for annotation in gff.parse_gff(input_file):
+        iterator = gff.parse_gff(input_file)
+        if progress:
+            iterator = tqdm(iterator)
+        for annotation in iterator:
             if annotation.taxon_id is None:
                 continue
             if include_func is not None:
@@ -601,7 +629,7 @@ def filter_taxa_command(verbose, table, taxonomy, include_taxon_id,
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-n', '--table-name', default='taxa', show_default=True,
               help='Name of the table/storage to use')
-@click.option('-w','--overwrite', default=False, is_flag=True,
+@click.option('-w', '--overwrite', default=False, is_flag=True,
               help='Overwrite the file, instead of appending to it')
 @click.option('-s', '--index-size', default=12, type=click.INT,
               show_default=True,
@@ -609,10 +637,12 @@ def filter_taxa_command(verbose, table, taxonomy, include_taxon_id,
 @click.option('-c', '--chunk-size', default=5000000, type=click.INT,
               show_default=True,
               help='Chunk size to use when reading the input file')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input_file', type=click.File('rb'), default='-')
 @click.argument('output_file', default='taxa-table.hf5')
 def taxa_table_command(verbose, table_name, overwrite, index_size, chunk_size,
-                       input_file, output_file):
+                       progress, input_file, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -636,8 +666,9 @@ def taxa_table_command(verbose, table_name, overwrite, index_size, chunk_size,
         table_name,
         overwrite
     )
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
-    for chunk in bar(iterator):
+    if progress:
+        iterator = tqdm(iterator)
+    for chunk in iterator:
         hdf.append(
             table_name,
             chunk,

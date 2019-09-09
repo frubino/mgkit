@@ -3,7 +3,8 @@ import functools
 
 from mgkit.io.gff import Annotation
 from mgkit.filter.gff import choose_annotation, filter_annotations, \
-    filter_base, filter_len, filter_attr_num, filter_attr_str, filter_base_num
+    filter_base, filter_len, filter_attr_num, filter_attr_str, \
+    filter_base_num, filter_attr_num_s
 
 
 def test_choose_annotation_contained1():
@@ -59,6 +60,29 @@ def test_filter_annotations1():
         Annotation(start=21, end=30, bitscore=40),
     ]
     choose_func = functools.partial(choose_annotation, overlap=2)
+
+    assert filter_annotations(annotations, choose_func=choose_func) == \
+        set(
+            [
+                annotations[1],
+                annotations[2],
+                annotations[3],
+                annotations[5],
+            ]
+        )
+
+
+def test_filter_annotations1():
+
+    annotations = [
+        Annotation(start=1, end=10, bitscore=20),
+        Annotation(start=5, end=10, bitscore=30),
+        Annotation(start=9, end=15, bitscore=10),
+        Annotation(start=16, end=20, bitscore=30),
+        Annotation(start=16, end=20, bitscore=20),
+        Annotation(start=21, end=30, bitscore=40),
+    ]
+    choose_func = None
 
     assert filter_annotations(annotations, choose_func=choose_func) == \
         set(
@@ -170,6 +194,7 @@ def test_filter_attr_num_ge_ok2():
     assert filter_attr_num(a, 'bitscore', 10, True)
 
 
+
 def test_filter_attr_num_ge_fail1():
     a = Annotation(bitscore=10)
     assert not filter_attr_num(a, 'bitscore', 15, True)
@@ -198,6 +223,20 @@ def test_filter_attr_num_le_fail1():
 def test_filter_attr_num_le_fail2():
     a = Annotation()
     assert not filter_attr_num(a, 'bitscore', 5, False)
+
+
+@pytest.mark.parametrize(
+    "annotation,attr,value,greater,result",
+    [
+        (Annotation(bitscore=11), 'bitscore', 10, True, True),
+        (Annotation(bitscore=10), 'bitscore', 10, True, False),
+        (Annotation(bitscore=None), 'bitscore', 10, True, False),
+        (Annotation(bitscore=11), 'bitscore', 10, False, False),
+        (Annotation(bitscore=9), 'bitscore', 10, False, True),
+    ]
+)
+def test_filter_attr_num_s(annotation, attr, value, greater, result):
+    assert filter_attr_num_s(annotation, attr, value, greater) == result
 
 
 def test_filter_attr_str_eq_ok1():

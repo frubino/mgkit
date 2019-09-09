@@ -144,9 +144,8 @@ import logging
 import functools
 import click
 import pandas
-
+from tqdm import tqdm
 import mgkit
-from .. import logger
 from . import utils
 from ..io import gff, fasta
 from ..filter import gff as filter_gff
@@ -222,10 +221,12 @@ def find_comparison(comparison):
 @click.option('-c', '--comparison', default='ge', show_default=True,
               type=click.Choice(['gt', 'ge', 'lt', 'le']),
               help='Type of comparison (e.g. ge -> greater than or equal to)')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def filter_perseq(verbose, sorted, attribute, function, value, comparison,
-                  input_file, output_file):
+                  progress, input_file, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -250,6 +251,9 @@ def filter_perseq(verbose, sorted, attribute, function, value, comparison,
         grouped = viewvalues(gff.group_annotations(
             file_iterator, lambda x: x.seq_id
         ))
+
+    if progress:
+        grouped = tqdm(grouped)
 
     for annotations in grouped:
         threshold = perseq_calc_threshold(
@@ -276,10 +280,12 @@ def filter_perseq(verbose, sorted, attribute, function, value, comparison,
               help='Minimum coverage for the contig/strand')
 @click.option('-r', '--rename', default=False, is_flag=True,
               help='Emulates BLAST in reading the FASTA file (keeps only the header before the first space)')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def coverage_command(verbose, reference, strand_specific, sorted, min_coverage,
-                     rename, input_file, output_file):
+                     rename, progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     LOG.info(
         'Writing to file (%s)',
@@ -289,9 +295,9 @@ def coverage_command(verbose, reference, strand_specific, sorted, min_coverage,
     file_iterator = gff.parse_gff(input_file, gff_type=gff.from_gff)
 
     if strand_specific:
-        key_func = lambda x: (x.seq_id, x.strand)
+        def key_func(x): return (x.seq_id, x.strand)
     else:
-        key_func = lambda x: x.seq_id
+        def key_func(x): return x.seq_id
 
     if sorted:
         LOG.info("Input GFF is assumed sorted")
@@ -309,6 +315,9 @@ def coverage_command(verbose, reference, strand_specific, sorted, min_coverage,
         seq_id: len(seq)
         for seq_id, seq in seq_iter
     }
+
+    if progress:
+        grouped = tqdm(grouped)
 
     for annotations in grouped:
         covered = ranges_length(
@@ -400,6 +409,7 @@ def setup_filters(str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_lt):
         )
     return filters
 
+
 def validate_params(ctx, param, values, convert=str):
     new_values = []
     for value in values:
@@ -410,6 +420,7 @@ def validate_params(ctx, param, values, convert=str):
             )
         new_values.append((value[0], convert(value[1])))
     return new_values
+
 
 @main.command('values', help="""Filter based on values""")
 @click.option('-v', '--verbose', is_flag=True)
@@ -434,10 +445,12 @@ def validate_params(ctx, param, values, convert=str):
 @click.option('--num-lt', multiple=True,
               callback=functools.partial(validate_params, convert=float),
               help="Same as '--num-ge' but 'value' is a number which is less than")
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def filter_values(verbose, str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_lt,
-                  input_file, output_file):
+                  progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
@@ -447,7 +460,11 @@ def filter_values(verbose, str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_l
 
     filters = setup_filters(str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_lt)
 
-    for annotation in gff.parse_gff(input_file, gff_type=gff.from_gff):
+    iterator = gff.parse_gff(input_file, gff_type=gff.from_gff)
+    if progress:
+        iterator = tqdm(iterator)
+
+    for annotation in iterator:
         if all(filter_func(annotation) for filter_func in filters):
             annotation.to_file(output_file)
 
@@ -466,33 +483,36 @@ def make_choose_func(values):
 
     attributes = values.split(',')
 
-    choose_func = lambda a1, a2: function(
-        a1,
-        a2,
-        key=lambda el: tuple(
-            getattr(el, attribute, None) if hasattr(el, attribute) else el.get_attr(attribute, float)
-            for attribute in attributes
+    def choose_func(a1, a2):
+        return function(
+            a1,
+            a2,
+            key=lambda el: tuple(
+                getattr(el, attribute, None) if hasattr(el, attribute) else el.get_attr(attribute, float)
+                for attribute in attributes
+            )
         )
-    )
 
     return choose_func
 
 
 @main.command('overlap', help='Use overlapping filter')
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-s', '--size', type=click.INT, default=100,
+@click.option('-s', '--size', type=click.INT, default=100, show_default=True,
               help='Size of the overlap that triggers the filter')
 @click.option('-t', '--sorted', is_flag=True, default=False,
               help='''If the GFF file is sorted (all of a sequence annotations are contiguos and sorted by strand) can use less memory, `sort -s -k 1,1 -k 7,7` can be used''')
 @click.option('-c', '--choose-func', default='dbq,bitscore,length',
               help='Function to choose between two overlapping annotations')
-@click.option('-a', '--sort-attr', default='bitscore',
+@click.option('-a', '--sort-attr', default='bitscore', show_default=True,
               type=click.Choice(['bitscore', 'identity', 'length']),
               help='Attribute to sort annotations before filtering (default bitscore)')
+@click.option('--progress', default=False, is_flag=True,
+              help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def filter_overlaps(verbose, size, sorted, choose_func, sort_attr, input_file,
-                    output_file):
+def filter_overlaps(verbose, size, sorted, choose_func, sort_attr, progress,
+                    input_file, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -516,6 +536,9 @@ def filter_overlaps(verbose, size, sorted, choose_func, sort_attr, input_file,
         overlap=size,
         choose_func=choose_func
     )
+
+    if progress:
+        grouped = tqdm(grouped)
 
     for annotations in grouped:
         filtered = filter_gff.filter_annotations(

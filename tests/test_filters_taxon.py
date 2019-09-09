@@ -3,6 +3,7 @@ import random
 import functools
 from conftest import skip_no_connection
 
+from mgkit.filter.common import FilterFails
 from mgkit.filter.taxon import filter_taxon_by_id_list
 from mgkit.taxon import is_ancestor
 
@@ -60,3 +61,16 @@ def test_taxon_id_list2_anc(ncbi_taxonomy):
         exclude=True,
         func=functools.partial(is_ancestor, ncbi_taxonomy)
     )
+
+
+def test_taxon_id_list_exception():
+    # at least prevotella as genus should be among the others
+    taxon_id = 839
+    filter_list = None
+    with pytest.raises(FilterFails):
+        filter_taxon_by_id_list(
+            taxon_id,
+            filter_list,
+            exclude=True,
+            func=None
+        )

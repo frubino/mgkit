@@ -38,7 +38,8 @@ def create_gff_dbm(annotations, file_name):
     LOG.info('DB "%s" opened/created', file_name)
 
     for annotation in annotations:
-        database[annotation.uid.encode('ascii')] = annotation.to_gff().encode('ascii')
+        database[annotation.uid.encode('ascii')] = \
+            annotation.to_gff().encode('ascii')
 
     database.sync()
 
@@ -64,6 +65,9 @@ class GFFDB(object):
             self.db = semidbm.open(db, 'c')
         else:
             self.db = db
+
+    def __setitem__(self, uid, annotation):
+        self.db[uid.encode('ascii')] = annotation.to_gff().encode('ascii')
 
     def __getitem__(self, key):
         if not isinstance(key, bytes):

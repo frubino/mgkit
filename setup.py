@@ -20,14 +20,15 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
-__VERSION__ = "0.3.4"
+__VERSION__ = "0.4.0"
 
 from setuptools import setup, find_packages
 
 install_requires = [
     'numpy>=1.9.2',
-    'pandas>=0.18',
+    'pandas>=0.24',
     'progressbar2',
+    'tqdm>=4.0',
     'HTSeq>=0.9.1',
     'semidbm>=0.5.1',
     'pymongo>=3.1.1',
@@ -39,6 +40,8 @@ install_requires = [
     'future',
     'requests',
     'click>=6',
+    #support for enum backported from Python 3.4
+    'enum34;python_version<"3.4"',
 ]
 
 # Build of documentation fails on RTD when pytables is
@@ -51,10 +54,6 @@ if not on_rtd:
 with open('README.rst') as file:
     long_description = file.read()
 
-
-if sys.version_info < (3, 4):
-    #support for enum backported from Python 3.4
-    install_requires.append('enum34')
 
 setup(
     name="mgkit",
@@ -73,7 +72,12 @@ setup(
         'scripts/download-ncbi-taxa.sh',
         'scripts/sort-gff.sh',
     ],
-    tests_require=['pytest>=3.5', 'pytest-datadir', 'pytest-console-scripts'],
+    setup_requires=['pytest-runner'],
+    tests_require=[
+        'pytest>=3.5',
+        'pytest-datadir',
+        'pytest-console-scripts'
+    ],
     entry_points={
         'console_scripts': [
             'filter-gff = mgkit.workflow.filter_gff:main',
