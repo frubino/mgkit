@@ -27,9 +27,16 @@ Sphinx = ">=1.7"
 jupyter_console = "*"
 HTSeq = "*"
 Pygments = "*"
+tox = "*"
+pytest = "*"
+setuptools = "*"
+pytest-datadir = "*"
+pathlib = "*"
+cython = "*"
+pytest-console-scripts = "*"
 
 [packages]
-mgkit = {editable = true,path = "."}
+mgkit = {path = ".",editable = true}
 
 [requires]
 python_version = "3.5"

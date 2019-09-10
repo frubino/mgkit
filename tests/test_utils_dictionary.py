@@ -114,8 +114,8 @@ def test_merge_dictionaries():
         (5, [1, 2, 4], {1: [1.0, 2.0]}, {2: [2.0, 3.0], 4: [7.0]}),
     ]
 )
-def test_split_dictionary_by_value(threshold, key_filter, result_dict1, result_dict2):
-    assert split_dictionary_by_value(valuedict(), threshold, sum, key_filter) == (result_dict1, result_dict2)
+def test_split_dictionary_by_value(threshold, key_filter, result_dict1, result_dict2, valuedict):
+    assert split_dictionary_by_value(valuedict, threshold, sum, key_filter) == (result_dict1, result_dict2)
 
 
 def test_apply_func_to_values():
