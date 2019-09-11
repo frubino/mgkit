@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from uuid import uuid4
 
 try:
-    MongoClient(serverSelectionTimeoutMS=2).database_names()
+    MongoClient(serverSelectionTimeoutMS=2).list_database_names()
     db_offline = False
 except ServerSelectionTimeoutError:
     db_offline = True
