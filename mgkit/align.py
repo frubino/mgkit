@@ -12,7 +12,7 @@ from builtins import object
 import pandas
 import numpy
 import pysam
-import progressbar
+from tqdm import tqdm
 from mgkit.io.utils import open_file
 
 LOG = logging.getLogger(__name__)
@@ -82,8 +82,7 @@ def covered_annotation_bp(files, annotations, min_cov=1, progress=False):
         alg_file = pysam.AlignmentFile(file_name, 'rb')
 
         if progress:
-            bar = progressbar.ProgressBar(max_value=len(annotations))
-            annotations = bar(annotations)
+            annotations = tqdm(annotations)
 
         for uid, seq_id, start, end in annotations:
             cov = get_region_coverage(alg_file, seq_id, start, end)
