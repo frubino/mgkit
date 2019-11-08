@@ -25,7 +25,7 @@ __VERSION__ = "0.4.0"
 from setuptools import setup, find_packages
 
 install_requires = [
-    '>=1.9.2',
+    'numpy>=1.9.2',
     'pandas>=0.24',
     'tqdm>=4.0',
     'HTSeq>=0.9.1',
@@ -36,6 +36,7 @@ install_requires = [
     'matplotlib>=2',
     'msgpack-python>=0.4.6',
     'statsmodels>=0.8',
+    'networkx',
     'future',
     'requests',
     'click>=6',

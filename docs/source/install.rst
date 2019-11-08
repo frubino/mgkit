@@ -78,6 +78,7 @@ Building Documentation
 The requirements are detailed in `docs_req.txt` of the repository. Other libraries:
 
 * latex (for pdf output - `make latexpdf`)
+* pandoc
 
 Troubleshooting (for older versions)
 ------------------------------------
