@@ -13,6 +13,6 @@ Module contents
 ---------------
 
 .. automodule:: mgkit.db
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

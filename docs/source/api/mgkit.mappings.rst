@@ -18,6 +18,6 @@ Module contents
 ---------------
 
 .. automodule:: mgkit.mappings
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

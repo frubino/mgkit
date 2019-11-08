@@ -16,6 +16,6 @@ Module contents
 ---------------
 
 .. automodule:: mgkit.snps
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -15,6 +15,6 @@ Module contents
 ---------------
 
 .. automodule:: mgkit.net
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

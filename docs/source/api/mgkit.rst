@@ -6,16 +6,16 @@ Subpackages
 
 .. toctree::
 
-    mgkit.counts
-    mgkit.db
-    mgkit.filter
-    mgkit.io
-    mgkit.mappings
-    mgkit.net
-    mgkit.plots
-    mgkit.snps
-    mgkit.utils
-    mgkit.workflow
+   mgkit.counts
+   mgkit.db
+   mgkit.filter
+   mgkit.io
+   mgkit.mappings
+   mgkit.net
+   mgkit.plots
+   mgkit.snps
+   mgkit.utils
+   mgkit.workflow
 
 Submodules
 ----------
@@ -34,6 +34,6 @@ Module contents
 ---------------
 
 .. automodule:: mgkit
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

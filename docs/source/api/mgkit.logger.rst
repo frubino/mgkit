@@ -2,6 +2,6 @@ mgkit.logger module
 ===================
 
 .. automodule:: mgkit.logger
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

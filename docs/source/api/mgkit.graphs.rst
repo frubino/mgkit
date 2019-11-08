@@ -2,6 +2,6 @@ mgkit.graphs module
 ===================
 
 .. automodule:: mgkit.graphs
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

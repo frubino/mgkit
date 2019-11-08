@@ -23,6 +23,6 @@ Module contents
 ---------------
 
 .. automodule:: mgkit.workflow
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

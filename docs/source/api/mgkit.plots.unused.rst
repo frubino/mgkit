@@ -1,7 +1,7 @@
-mgkit.filter.reads module
+mgkit.plots.unused module
 =========================
 
-.. automodule:: mgkit.filter.reads
+.. automodule:: mgkit.plots.unused
    :members:
    :undoc-members:
    :show-inheritance:
