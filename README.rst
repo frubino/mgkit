@@ -32,5 +32,5 @@ a citation is also available using the *mgkit.cite()* function or using the `--c
 Links
 -----
 
-.. [#] `<https://bitbucket.org/setsuna80/mgkit>`_
+.. [#] `<https://github.com/frubino/mgkit>`_
 .. [#] `<http://dx.doi.org/10.6084/m9.figshare.1588384>`_
