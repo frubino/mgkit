@@ -21,4 +21,4 @@ a citation is also available using the :func:`mgkit.cite()` function or using th
 Links
 -----
 
-.. [#] `<https://bitbucket.org/setsuna80/mgkit>`_
+.. [#] `<https://github.com/frubino/mgkit>`_

@@ -98,7 +98,7 @@ setup(
     description="Metagenomics Framework",
     license="GPL2+",
     keywords="metagenomics library biology bioinformatics snps gff fasta",
-    url="https://bitbucket.org/setsuna80/mgkit/",
+    url="https://github.com/frubino/mgkit",
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',

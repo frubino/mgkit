@@ -20,6 +20,8 @@ ipykernel = "*"
 pygments = "*"
 tox = "*"
 bumpversion = "*"
+twine = "*"
+cython = "*"
 
 [packages]
 pysam = "*"
@@ -37,6 +39,7 @@ future = "*"
 requests = "*"
 click = "*"
 mgkit = {editable = true,path = "."}
+cython = "*"
 
 [requires]
 python_version = "3.6"

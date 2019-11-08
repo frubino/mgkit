@@ -52,6 +52,14 @@ and the environment activated with::
 
 	`enum34` is installed with Python version < 3.4
 
+To recreate the `.c` files for the `mgkit.io.utils.sequences`, set the environment variable USE_CYTHON::
+
+	$ export USE_CYTHON=TRUE
+
+and then::
+
+	$ python setup.py build
+
 Using the repository
 ^^^^^^^^^^^^^^^^^^^^
 
