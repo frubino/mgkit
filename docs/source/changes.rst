@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.4.1
+-----
+
+Sanity checks for several mistakes, including never changed the Programming language version in the setup.py from 2.7. Tested installation under Python 3.6, with tox. Also removed the last bit of code using progressbar2.
+
 0.4.0
 -----
 
