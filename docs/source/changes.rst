@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.4.2
+-----
+
+Fixed reading of Expasy files. The reading was not changed to adopt Python3 conventions like the rest of the routines. Included a test that dowload the expasy file and parses it.
+
 0.4.1
 -----
 

@@ -70,3 +70,24 @@ def eggnog_v3(tmpdir_factory):
         file_paths[key] = file_path
         open(file_path, 'wb').write(file_content.content)
     return file_paths
+
+
+EXPASY_SERVER = "ftp.expasy.org"
+EXPASY_DIR = "/databases/enzyme/"
+EXPASY_FILE = "enzclass.txt"
+
+
+@skip_no_connection
+@pytest.fixture(scope='session')
+def expasy_file(tmpdir_factory):
+    expasy_file_dir = tmpdir_factory.mktemp('expasy')
+    expasy_file_path = (expasy_file_dir / EXPASY_FILE).strpath
+
+    ftp = FTP(EXPASY_SERVER)
+    ftp.login()
+    ftp.cwd(EXPASY_DIR)
+    expasy_file_handle = io.open(expasy_file_path, 'wb')
+    ftp.retrbinary('RETR {}'.format(EXPASY_FILE), expasy_file_handle.write, 1000)
+    ftp.quit()
+    expasy_file_handle.close()
+    return expasy_file_path
