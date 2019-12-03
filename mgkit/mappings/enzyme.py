@@ -28,6 +28,9 @@ Used to get the description for the higher level enzyme classes from the file
 
 def parse_expasy_file(file_name):
     """
+    .. versionchanged:: 0.4.2
+        changed to work on python 3.x
+
     Used to load enzyme descriptions from the file *enzclass.txt* on
     `expasy <http://expasy.org>`_.
 
@@ -36,7 +39,8 @@ def parse_expasy_file(file_name):
     """
     labels = {}
 
-    for line in open_file(file_name, mode='r'):
+    for line in open_file(file_name, mode='rb'):
+        line = line.decode('ascii')
         match = re.search(ENZCLASS_REGEX, line)
 
         if match is None:
