@@ -6,6 +6,11 @@ Changes
 
 Fixed reading of Expasy files. The reading was not changed to adopt Python3 conventions like the rest of the routines. Included a test that dowload the expasy file and parses it.
 
+Added
+*****
+
+* :func:`mgkit.mappings.enzyme.parse_expasy_dat`
+
 0.4.1
 -----
 

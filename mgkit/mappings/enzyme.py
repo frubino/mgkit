@@ -187,3 +187,69 @@ def get_enzyme_full_name(ec_id, ec_names, sep=', '):
             break
 
     return sep.join(reversed(name_list))
+
+
+def parse_expasy_dat_section(expasy_dat_section, skip_comments=True, skip_codes=None):
+    """
+    .. versionadded:: 0.4.2
+
+    Parses an entry of the `enzyme.dat` file in expasy, used internally by
+    :func:`mgkit.mappings.enzyme.parse_expasy_dat`, with the other arguments
+    being passed over from it.
+
+    Returns:
+        dict: dictionary with the entry, with keys being the codes of the entry
+        and the values the lines
+    """
+    parsed_lines = {}
+    for line in expasy_dat_section:
+        if skip_comments and line.startswith('CC'):
+            continue
+        key, value = line.rstrip().split(maxsplit=1)
+        if (skip_codes is not None) and (key in skip_codes):
+            continue
+        try:
+            parsed_lines[key].append(value)
+        except KeyError:
+            parsed_lines[key] = [value]
+
+    if 'CA' in parsed_lines:
+        ca_lines = ''.join(parsed_lines['CA'])
+        parsed_lines['CA'] = ca_lines.rstrip('.').split('. ')
+
+    return parsed_lines
+
+def parse_expasy_dat(expasy_dat, keep_empty=False, skip_comments=True, skip_codes=None):
+    """
+    .. versionadded:: 0.4.2
+
+    Parses the information in `enzyme.dat` file in expasy, a flat file
+    containting the information about the enzyme classification.
+
+    It can be downloaded at:
+    `<ftp://ftp.expasy.org/databases/enzyme/enzyme.dat>`_
+
+    Arguments:
+        expasy_dat (str): file name or handle to an expasy.dat file
+        keep_empty (bool): section that are empty are removed by default
+        skip_comments (bool): used to avoid returning comments (lines starting)
+            with `CC` in the file
+        skip_codes (set, tuple): set or tuple or list to skip specific parts
+            of the file, like `skip_comments`
+    Yields:
+        dict: dictionary with each entry in the file, where the keys are the
+        codes and the values are the lines included in the file
+    """
+    section = []
+    for line in open_file(expasy_dat, 'rb'):
+        line = line.decode('ascii')
+
+        # section end
+        if line.startswith('//'):
+            parsed_section = parse_expasy_dat_section(section, skip_comments=skip_comments, skip_codes=skip_codes)
+            section = []
+            if parsed_section or keep_empty:
+                yield parsed_section
+            continue
+
+        section.append(line)
