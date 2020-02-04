@@ -55,13 +55,53 @@ Adding Coverage from samtools depth
 ***********************************
 
 The *cov_samtools* allows the use of the output of *samtools* **depth**
-command. The *-aa* options must be used to pass information about all base
-pairs and sequences coverage in the BAM/SAM file. The command work similarly to
-*coverage*, accepting compressed *depth* files as well. If only one *depth*
-file is passed and no sample is passed, the attribute in the GFF will be *cov*,
-otherwise the attribute will be *sample1_cov*, *sample2_cov*, etc.
+command. The command work similarly to *coverage*, accepting compressed *depth*
+files as well. If only one *depth* file is passed and no sample is passed, the
+attribute in the GFF will be *cov*, otherwise the attribute will be
+*sample1_cov*, *sample2_cov*, etc.
 
-To create samtools *depth* files, this command must be used::
+.. note::
+
+    From version 0.4.2 the behaviour is different in the following ways:
+
+    * the GFF file is loaded in memory to get information that helps reduce
+        the memory size
+    * the depth file is scanned and each time a sequence in the GFF file is
+        found, coverage data is added, this way memory is freed more often
+    * the GFF file is written at the very end, so chaining multiple commands
+        (one for each sample) doesn't give any advantage now
+    * there's no need to use the `-aa` option of `samtools depth`, since some
+        assumptions are made when scanning the fils (see next point)
+    * when the depth file is scanned completely, the sequences in the GFF file
+        with coverage information are set coverage 0.0, instead of raising an
+        error
+    * average coverage is only calculated if requested, with the `-m` option
+
+The GFF file is first loaded in memory to get information about the maximum
+array size for each sequence, then the script proceeds for each depth file, to
+scan it until a) all sequences in the GFF are found or b) until the end of the
+file. If b) is the case, all sequences with not found in the depth file are set
+to a coverage of 0.0. A warning with the number of sequences lacking coverage
+is printed, for diagnostic purposes. If the the mean coverage is requested with
+the `-m` option, coverage is then calculated
+
+To create samtools *depth* files, you can use this command::
+
+    $ samtools depth [bam_file] > [depth_file]
+
+    where [bam_file] is the alignment to be used and [depth_file] where the
+    file will be stored (by redirection). You could create a gzipped file, as
+    the file can be huge (and in my experience compressing reduces by ~10x the
+    file size)::
+
+    $ samtools depth [bam_file] | gzip > [depth_file.gz]
+
+.. warning::
+
+    if version < 0.4.2:
+
+    The *-aa* options must be used to pass information about all base
+    pairs and sequences coverage in the BAM/SAM file.
 
     $ samtools depth -aa bam_file
 
@@ -162,6 +202,11 @@ warning message is logged.
 Changes
 *******
 
+.. versionchanged:: 0.4.2
+    added *-m* option for *cov_samtools* command, to calculate the average
+    coverage for an annotation (*cov* attribute). Fixed loading compressed
+    files
+
 .. versionchanged:: 0.3.4
     removed the *taxonomy* command, since a similar result can be obtained with
     *taxon-utils lca* and *add-gff-info addtaxa*. Removed *eggnog* command and
@@ -214,6 +259,7 @@ from __future__ import division
 from builtins import zip
 from future.utils import viewitems
 import logging
+import itertools
 import pysam
 import json
 import pickle
@@ -869,8 +915,23 @@ def pfam_command(verbose, id_attr, use_accession, input_file, output_file):
         annotation.to_file(output_file)
 
 
+def update_annotation_coverage(annotations, depth, sample):
+    for annotation in annotations:
+        cov = depth.region_coverage(
+            annotation.seq_id,
+            annotation.start,
+            annotation.end
+        )
+        if sample is None:
+            annotation.set_attr('cov', cov)
+        else:
+            annotation.set_attr(sample, cov)
+
+
+
 @main.command('cov_samtools', help="""Adds information from samtools_depth""")
 @click.option('-v', '--verbose', is_flag=True)
+@click.option('-m', '--average', is_flag=True, help='if one or more samples are provided, the average coverage is calculated')
 @click.option('-s', '--samples', default=None, multiple=True,
               help='''Sample name, will add a `sample_cov` in the GFF file. If not passed, the attribute will be `cov`''')
 @click.option('-d', '--depths', required=True, multiple=True,
@@ -881,50 +942,96 @@ def pfam_command(verbose, id_attr, use_accession, input_file, output_file):
               help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def samtools_depth_command(verbose, samples, depths, num_seqs, progress,
+def samtools_depth_command(verbose, average, samples, depths, num_seqs, progress,
                            input_file, output_file):
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-    if samples is None:
+    if not samples:
         samples = (None,)
     else:
         samples = ['{}_cov'.format(sample) for sample in samples]
 
     max_size_dict = {}
-    annotations = []
-    for annotation in gff.parse_gff(input_file):
-        annotations.append(annotation)
-        max_size_dict[annotation.seq_id] = max(
-            max_size_dict.get(annotation.seq_id, 1),
-            annotation.end
-        )
+    annotations = gff.group_annotations(gff.parse_gff(input_file), key_func=lambda x: x.seq_id)
+
+    if progress:
+        it = tqdm(annotations.items(), desc='Max lengths')
+    else:
+        it = annotations.items()
+    for seq_id, seq_annotations in it:
+        max_size_dict[seq_id] = max(annotation.end for annotation in seq_annotations)
 
     depths = [
         align.SamtoolsDepth(
             file_name,
-            None if num_seqs == 0 else num_seqs,
-            max_size_dict=max_size_dict
+            num_seqs=None if num_seqs == 0 else num_seqs,
+            max_size_dict=max_size_dict,
         )
         for file_name in depths
     ]
     if len(samples) != len(depths):
         utils.exit_script('Number of samples different from number of files', 2)
 
-    if progress:
-        annotations = tqdm(annotations)
+    if progress and (len(samples) > 1):
+        depth_it = tqdm(zip(samples, depths), desc='Samples', total=len(samples))
+    else:
+        depth_it = zip(samples, depths)
 
-    for annotation in annotations:
-        coverages = []
-        for sample, depth in zip(samples, depths):
-            cov = depth.region_coverage(
-                annotation.seq_id,
-                annotation.start,
-                annotation.end
-            )
-            coverages.append(cov)
-            if sample is not None:
-                annotation.set_attr(sample, cov)
+    for sample, depth in depth_it:
+        seq_found = set()
 
-        annotation.set_attr('cov', sum(coverages) / len(coverages))
+        if progress:
+            seq_bar = tqdm(desc='Sequences', total=len(annotations))
+        while True:
+            seq_id = depth.advance_file()
+            # sequence is in the annotations
+            if seq_id in annotations:
+                update_annotation_coverage(annotations[seq_id], depth, sample)
+                seq_found.add(seq_id)
+                depth.drop_sequence(seq_id)
+                if progress:
+                    seq_bar.update(n=1)
+            # reached the end of the file
+            # updated the remaining sequences
+            elif seq_id is None:
+                for not_found in set(annotations) - seq_found:
+                    update_annotation_coverage(annotations[not_found], depth,
+                                                sample)
+                    if progress:
+                        seq_bar.update(n=1)
+                LOG.warning('Cannot find %d of %d sequences in sample %s depth file',
+                    len(depth.not_found), len(annotations), sample)
+                break
+            # found all sequences, no need to continue scanning the file
+            elif len(seq_found) == len(annotations):
+                LOG.info("Found all sequences in GFF file (sample %s)", sample)
+                break
+            # the sequence was not in the annotations, skip
+            # continue scanning the depth file and drop the seq_id
+            # (redundat?)
+            elif seq_id not in annotations:
+                depth.drop_sequence(seq_id)
 
+            # some debug code, to check the density of the SparseArray(s)
+            # if (num_seqs > 0) and (len(depth.density) % num_seqs == 0):
+            #     LOG.debug(sum(depth.density) / len(depth.density))
+
+        # closes the progress bar
+        if progress:
+            seq_bar.close()
+
+    # If no sample was provided it's assumed that the average was calculated
+    if average and (samples[0] is not None):
+        max_coverage = 0
+
+        LOG.info('Calculating average coverage')
+        for seq_annotations in annotations.values():
+            for annotation in seq_annotations:
+                d = annotation.sample_coverage
+                annotation.set_attr('cov', sum(d.values()) / len(d))
+                max_coverage = max(max_coverage, max(d.values()))
+        LOG.info('Maximum Coverage found: %d', max_coverage)
+
+    LOG.info('Writing annotations to file (%r)', output_file)
+    for annotation in itertools.chain(*annotations.values()):
         annotation.to_file(output_file)
