@@ -1138,8 +1138,7 @@ def from_gff(line, strict=True, encoding='ascii'):
     """
     if isinstance(line, bytes):
         line = line.decode(encoding)
-    line = line.rstrip()
-    line = line.split('\t')
+    line = line.rstrip().split('\t')
 
     # in case the last column (attributes) is empty
     if len(line) < 9:
@@ -1545,8 +1544,8 @@ def parse_gff(file_handle, gff_type=from_gff, strict=True, encoding='ascii'):
     Yields:
         Annotation: an iterator of :class:`Annotation` instances
     """
-    if isinstance(file_handle, str):
-        file_handle = mgkit.io.open_file(file_handle, 'rb')
+
+    file_handle = mgkit.io.open_file(file_handle, 'rb')
 
     LOG.info(
         "Loading GFF from file (%s)",
