@@ -3,6 +3,7 @@ Module dealing with BAM/SAM files
 """
 from future.utils import viewitems
 import logging
+import weakref
 try:
     # In Python2
     from itertools import izip as zip
@@ -163,6 +164,10 @@ def add_coverage_info(annotations, bam_files, samples, attr_suff='_cov'):
 
 def read_samtools_depth(file_handle, num_seqs=10000, seq_ids=None):
     """
+    .. versionchanged:: 0.4.2
+        the function returns **lists** instead of numpy arrays for speed (at
+        least in my tests it seems ~4x increase)
+
     .. versionchanged:: 0.4.0
         now returns 3 array, instead of 2. Also added *seq_ids* to skip lines
 
@@ -175,6 +180,13 @@ def read_samtools_depth(file_handle, num_seqs=10000, seq_ids=None):
     array of each base coverage on a per-sequence base.
 
     .. note::
+
+        There's no need anymore to use `samtools depth -aa`, because the
+        function returns the position array and this can be used to create a
+        Pandas SparseArray which can be reindexed to include missing positions
+        (with values of 0)
+
+        **Valid for version < 0.4.0**:
 
         The information on position is not used, to use numpy and save memory.
         samtools *depth* should be called with the `-aa` option::
@@ -193,8 +205,8 @@ def read_samtools_depth(file_handle, num_seqs=10000, seq_ids=None):
 
     Yields:
         tuple: the first element is the sequence identifier, the second one
-        is the *numpy* array with the positions, the third element is the
-        *numpy* array with the coverages
+        is the list with the positions, the third element is the list with the
+        coverages
     """
     curr_key = ''
     curr_pos = []
@@ -209,7 +221,10 @@ def read_samtools_depth(file_handle, num_seqs=10000, seq_ids=None):
     line_no = 0
     for line in file_handle:
         line = line.decode('ascii')
-        name, pos, cov = line.strip().split('\t')
+        # From Python3 the default is Universal newlines, and it's not expected
+        # to have more than '\n' at the end of the line - increases speed
+        # slightly
+        name, pos, cov = line[:-1].split('\t')
         pos = int(pos)
         cov = int(cov)
         if (seq_ids is not None) and (name not in seq_ids):
@@ -226,35 +241,77 @@ def read_samtools_depth(file_handle, num_seqs=10000, seq_ids=None):
                 line_no += 1
                 if (num_seqs is not None) and (line_no % num_seqs == 0):
                     LOG.info('Read %d sequence coverage', line_no)
-                yield curr_key, numpy.array(curr_pos), numpy.array(curr_cov)
+                yield curr_key, curr_pos, curr_cov
                 curr_key = name
                 curr_cov = [cov]
                 curr_cov = [pos]
     else:
-        yield curr_key, numpy.array(curr_pos), numpy.array(curr_cov)
+        yield curr_key, curr_pos, curr_cov
 
     LOG.info('Read a total of %d sequence coverage', line_no + 1)
 
 
 class SamtoolsDepth(object):
     """
+    .. versionchanged:: 0.4.2
+        several optimisations and changes to support a scanning approach,
+        instead of lookup table. No exception is raised when a sequence is not
+        found in the file, instead assuming that the coverage is 0
+
     .. versionchanged:: 0.4.0
         uses pandas.SparseArray now. It should use less memory, but needs
         pandas version > 0.24
 
     .. versionadded:: 0.3.0
 
-    A class used to cache the results of :func:`read_samtools_depth`, while
-    reading only the necessary data from a`samtools depth -aa` file.
+    This a class that helps use the results from :func:`read_samtools_depth`.
+
+    There are 2 modes of operations:
+
+        1) Request a region coverage via :meth:`SamtoolsDepth.get_region_coverage`
+
+        2) Advance the `samtools depth` file until a sequence coverage is read
+
+    The method 1) was the default in MGKit < 0.4.2, when the user would request
+    a region coverage and this class would advance the reading until the
+    requested region is found. While scanning, all the sequences encountered
+    are kept as pandas Series with SparseArray declared, reindexed from 0 to
+    the *max_size_dict* values if provided, or *max_size*. The advantage is that
+    the it's easier to use, but with bigger datasets will keep high memory
+    usage. This is the case for case 2) which involves calling directly
+    :meth:`SamtoolsDepth.advance_file` returning the sequence ID read. Then the
+    region coverage can be requested the same way as before, but won't involve
+    scanning the file.
+
+    The use of a SparseArray in a pandas Series allows the use of `samtools depth` files
+    that weren't produced with `samtools depth -aa`.
+
+    .. note::
+
+        Starting with MGKit 0.4.2, the internal dictionary to keep the SparseArray(s)
+        is a :class:`weakre.WeakValueDictionary`, which should improve the release
+        of memory. However, the amount of memory used is still fairly high, especially
+        with the increasing number of sequences in a GFF/Depth file. It is recoommended
+        to use max_size_dict to 1) only creates arrays for sequences needed and 2) use
+        arrays of smaller size
+
     """
     file_handle = None
     data = None
     max_size = None
     max_size_dict = None
+    not_found = None
+    closed = False
+    density = None
 
     def __init__(self, file_handle, num_seqs=10**4, max_size=10**6,
-                 max_size_dict=None):
+                 max_size_dict=None, calc_density=False, dtype='uint32'):
         """
+        .. versionchanged:: 0.4.2
+            added *raise_error* to control sequences not found in depth files,
+            *calc_density* to debug the density of the SparseArray used and
+            also dtype to control the dtype to use in the SparseArray
+
         .. versionchanged:: 0.4.0
             added *max_size* and max_size_dict
 
@@ -265,6 +322,10 @@ class SamtoolsDepth(object):
             max_size (int): max size to use in the SparseArray
             max_size_dict (dict): dictionary with max size for each seq_id
                 requested. If None, *max_size* is used
+            calc_density (bool): If True, the density of the SparseArray(s)
+                used are kept in :attr:`SamtoolsDepth.density`
+            dtype (str): dtype to pass to the SparseArray
+
         """
         self.max_size = max_size
         if max_size_dict is None:
@@ -277,11 +338,49 @@ class SamtoolsDepth(object):
             num_seqs=num_seqs,
             seq_ids=max_size_dict
         )
-        self.data = {}
+        self.not_found = set()
+        self.closed = False
+        self.data = weakref.WeakValueDictionary()
+        self.dtype = 'Sparse[{}]'.format(dtype)
+        if calc_density:
+            self.density = []
 
+    def advance_file(self):
+        """
+        .. versionadded:: 0.4.2
+
+        Requests the scan of the file and returns the sequence found, the
+        coverage can then be retrivied with :meth:`SamtoolsDepth.region_coverage`
+
+        Returns:
+            (str, None): the return value is None if the file is fully read,
+            otherwise the the sequnece ID found is returned
+        """
+        # continue scanning the file
+        try:
+            key, pos_array, cov_array = next(self.file_handle)
+        except StopIteration:
+            self.closed = True
+            return None
+        # Init a SparseArray (by passing the correct dtype)
+        value = pandas.Series(
+            # brings start position to 0
+            dict(zip((pos - 1 for pos in pos_array), cov_array)),
+            dtype=self.dtype
+        # reindex to the correct size to allow
+        ).reindex(
+            range(self.max_size_dict.get(key, self.max_size)),
+            fill_value=0
+        )
+        self.data[key] = value
+        if self.density is not None:
+            self.density.append(value.sparse.density)
+        return key
 
     def region_coverage(self, seq_id, start, end):
         """
+        .. versionchanged:: 0.4.2
+            now using :meth:`SamtoolsDepth.advance_file` to scan the file
 
         Returns the mean coverage of a region. The *start* and *end* parameters
         are expected to be 1-based coordinates, like the correspondent
@@ -299,33 +398,32 @@ class SamtoolsDepth(object):
         Returns:
             float: mean coverage of the requested region
         """
-        try:
-            cov = self.data[seq_id][start-1:end]
-        except KeyError:
-            for key, pos_array, cov_array in self.file_handle:
-                # If the max_size_dict was passed, skips arrays that are not in
-                # of interests
-                if self.max_size_dict and (key not in self.max_size_dict):
-                    continue
-                # Init a SparseArray (by passing the correct dtype)
-                value = pandas.Series(
-                    # brings start position to 0
-                    dict(zip(pos_array - 1, cov_array)),
-                    dtype="Sparse[int]"
-                # reindex to the correct size to allow
-                ).reindex(
-                    range(self.max_size_dict.get(seq_id, self.max_size)),
-                    fill_value=0
-                )
-                self.data[key] = value
-                # if the key is the one requested, the loop is stopped and and
-                # the value is kept
-                if key == seq_id:
-                    cov = value[start-1:end]
-                    break
-            else:
-                raise ValueError(
-                    "No coverage information found for {}".format(seq_id)
-                )
+        if seq_id in self.data:
+            # data already in dictionary
+            return self.data[seq_id][start-1:end].mean()
+        elif seq_id in self.not_found:
+            # already asked for and not found in depth file
+            return 0.
+            # depth file is closed and we assume
+            # so no coverage is available
+        elif self.closed:
+            self.not_found.add(seq_id)
+            return 0.
+        else:
+            while True:
+                key = self.advance_file()
+                if key is None:
+                    self.not_found.add(seq_id)
+                    self.closed = True
+                    return 0.
+                elif key == seq_id:
+                    return self.data[seq_id][start-1:end].mean()
 
-        return cov.mean()
+    def drop_sequence(self, seq_id):
+        """
+        .. versionadded:: 0.4.2
+
+        Remove the sequence passed from the internal dictionary
+        """
+        if seq_id in self.data:
+            del self.data[seq_id]
