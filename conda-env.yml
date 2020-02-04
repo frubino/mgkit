@@ -15,11 +15,15 @@ dependencies:
   - curl=7.65.3=h22ea746_0
   - cycler=0.10.0=py_2
   - decorator=4.4.1=py_0
+  - filelock=3.0.10=py_0
   - freetype=2.10.0=h24853df_1
   - future=0.18.2=py37_0
   - hdf5=1.10.5=nompi_h3e39495_1104
   - htseq=0.11.2=py37h1702cab_1
   - idna=2.8=py37_1000
+  - importlib_metadata=0.23=py37_0
+  - inflect=4.1.0=py37_0
+  - jaraco.itertools=5.0.0=py_0
   - kiwisolver=1.1.0=py37ha1b3eb9_0
   - krb5=1.16.3=hcfa6398_1001
   - libblas=3.8.0=14_openblas
@@ -69,9 +73,12 @@ dependencies:
   - sqlite=3.30.1=h93121df_0
   - statsmodels=0.10.2=py37h3b54f70_0
   - tk=8.6.10=hbbe82c9_0
+  - toml=0.10.0=py_0
   - tornado=6.0.3=py37h0b31af3_0
+  - tox=3.14.3=py_0
   - tqdm=4.40.0=py_0
   - urllib3=1.25.7=py37_0
+  - virtualenv=16.7.5=py_0
   - wheel=0.33.6=py37_0
   - xz=5.2.4=h1de35cc_1001
   - zlib=1.2.11=h0b31af3_1006
