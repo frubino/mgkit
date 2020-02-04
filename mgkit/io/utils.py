@@ -80,6 +80,10 @@ def open_file(file_name, mode='r'):
     .. versionchanged:: 0.3.4
         using *io.open*, always in binary mode
 
+    .. versionchanged:: 0.4.2
+        when a file handle is detected, it is passed to :func:`compressed_handle`
+        to detect if the handle is a compressed file
+
     Opens a file using the extension as a guide to which module to use.
 
     .. note::
@@ -105,7 +109,7 @@ def open_file(file_name, mode='r'):
         test_class = io.IOBase
 
     if isinstance(file_name, test_class):
-        return file_name
+        return compressed_handle(file_name)
 
     mode = mode + 'b' if 'b' not in mode else mode
 
@@ -141,6 +145,8 @@ def compressed_handle(file_handle):
         UnsupportedFormat: if the module to open the file is not available
 
     """
+    LOG.info('Detecting Compressed File Handle')
+
     if file_handle.name.endswith('.gz'):
         file_handle = gzip.GzipFile(fileobj=file_handle, mode='rb')
     elif file_handle.name.endswith('.xz'):
