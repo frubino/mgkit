@@ -10,6 +10,18 @@ Added
 *****
 
 * :func:`mgkit.mappings.enzyme.parse_expasy_dat`
+* :meth:`mgkit.align.SamtoolsDepth.advance_file`
+* option `-m` to calculate average coverage in `add-gff-info cov_samtools`
+
+Changed
+*******
+
+* fix for detection of compressed files :func:`mgkit.io.gff.parse_gff`
+* Fix for compressed files already opened in :func:`mgkit.io.utils.open_file`
+* :class:`mgkit.align.SamtoolsDepth`: several optimisations and changes to support a scanning approach, instead of lookup table. No exception is raised when a sequence is not found in the file, instead assuming that the coverage is 0
+* :func:`mgkit.align.read_samtools_depth` was changed, and now it returns lists instead of numpy arrays - this increases the speed of reading to about 3-4x in some tests
+* :func:`mgkit.align.read_samtools_depth` also assumes that lines read have a '\n' at the end and avoid using `strip` this should be a safe assumptions under Pyuthon3
+* :class:`mgkit.align.SamtoolsDepth` now uses a weakref.WeakValueDictionary for :class:`SamtoolsDepth.data` to improve release of memory
 
 0.4.1
 -----

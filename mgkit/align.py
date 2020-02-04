@@ -268,7 +268,7 @@ class SamtoolsDepth(object):
 
     There are 2 modes of operations:
 
-        1) Request a region coverage via :meth:`SamtoolsDepth.get_region_coverage`
+        1) Request a region coverage via :meth:`SamtoolsDepth.region_coverage`
 
         2) Advance the `samtools depth` file until a sequence coverage is read
 
@@ -289,7 +289,7 @@ class SamtoolsDepth(object):
     .. note::
 
         Starting with MGKit 0.4.2, the internal dictionary to keep the SparseArray(s)
-        is a :class:`weakre.WeakValueDictionary`, which should improve the release
+        is a :class:`weakref.WeakValueDictionary`, which should improve the release
         of memory. However, the amount of memory used is still fairly high, especially
         with the increasing number of sequences in a GFF/Depth file. It is recoommended
         to use max_size_dict to 1) only creates arrays for sequences needed and 2) use
