@@ -28,8 +28,8 @@ jobs:
 
     - name: Install MGKit
       run: |
-        conda env -f conda-env.yml
-        pip install --no-deps .
+        conda env create -f conda-env.yml
+        pip install .
 
     - name: Test with pytest
       run: |
