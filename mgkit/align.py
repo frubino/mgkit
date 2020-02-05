@@ -225,10 +225,12 @@ def read_samtools_depth(file_handle, num_seqs=10000, seq_ids=None):
         # to have more than '\n' at the end of the line - increases speed
         # slightly
         name, pos, cov = line[:-1].split('\t')
-        pos = int(pos)
-        cov = int(cov)
         if (seq_ids is not None) and (name not in seq_ids):
             continue
+        # only converts if sequence is to be used
+        pos = int(pos)
+        cov = int(cov)
+
         if curr_key == name:
                 curr_pos.append(pos)
                 curr_cov.append(cov)
