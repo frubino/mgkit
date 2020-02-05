@@ -374,3 +374,5 @@ pdf_toc_depth = 9999
 pdf_use_numbered_links = False
 # Background images fitting mode
 pdf_fit_background_mode = 'scale'
+
+autodoc_mock_imports = ['pysam']
