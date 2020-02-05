@@ -20,6 +20,7 @@ jobs:
         conda-channels: conda-forge, defaults, bioconda
         activate-environment: mgkit-dev
         environment-file: conda-env.yml
+    - name: Conda Info
       run: conda info
     - name: Lint with flake8
       run: |
