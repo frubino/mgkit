@@ -22,11 +22,13 @@ jobs:
         environment-file: conda-env.yml
 
     - name: Conda Info
-      run: conda info
+      run: |
+        conda info
+        conda env list
 
     - name: Install MGKit
       run: |
-        conda install --name mgkit-dev -f conda-env.yml
+        conda create --name mgkit-dev -f conda-env.yml
         pip install --no-deps .
 
     - name: Test with pytest
