@@ -29,10 +29,12 @@ jobs:
     - name: Install MGKit
       run: |
         conda env create -f conda-env.yml
+        conda activate mgkit-dev
         pip install .
 
     - name: Test with pytest
       run: |
+        conda activate mgkit-dev
         pip install pytest cython pytest-datadir pytest-console-scripts
         pytest tests
 
