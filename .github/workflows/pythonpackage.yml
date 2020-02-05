@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setup Conda
+
     - uses: s-weigand/setup-conda@v1
       with:
         update-conda: true
@@ -20,8 +20,10 @@ jobs:
         conda-channels: conda-forge, defaults, bioconda
         activate-environment: mgkit-dev
         environment-file: conda-env.yml
+
     - name: Conda Info
       run: conda info
+
     - name: Lint with flake8
       run: |
         pip install flake8
@@ -29,8 +31,10 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
     - name: Install MGKit
       run: pip install .
+
     - name: Test with pytest
       run: |
         pip install pytest cython pytest-datadir pytest-console-scripts
