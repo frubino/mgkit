@@ -56,15 +56,7 @@ def make_reverse_table(tbl=None):
 
 
 # The maketrans function is not available on Python3
-if sys.version_info[0] == 2:
-    from string import maketrans
-    REV_COMP_ASCII = maketrans('ATCG', 'TAGC')
-    REV_COMP_UNICODE = {
-        ord(unicode(key)): unicode(value)
-        for key, value in viewitems(REV_COMP)
-    }
-else:
-    REV_COMP_ASCII = u''.maketrans(REV_COMP)
+REV_COMP_ASCII = u''.maketrans(REV_COMP)
 
 
 def reverse_complement_old(seq, tbl=None):
@@ -91,11 +83,6 @@ def reverse_complement(seq, tbl=REV_COMP_ASCII):
 
     :return str: returns the reverse complement of a nucleotide sequence
     """
-    # Python 2.7 hack with unicode, make sure futurize doesn't change to str
-    # since on Python 3 the first condition won't be true, the second won't be
-    # evaluated
-    if (sys.version_info[0] == 2) and isinstance(seq, unicode):
-        tbl = REV_COMP_UNICODE
     return seq[::-1].translate(tbl)
 
 

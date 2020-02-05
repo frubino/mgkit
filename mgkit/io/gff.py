@@ -1945,11 +1945,7 @@ def split_gff_file(file_handle, name_mask, num_files=2, encoding='ascii'):
         >>> name_mask = 'split-file-{0}.gff'
         >>> split_gff_file(files, name_mask, 5)
     """
-    if sys.version_info[0] == 2:
-        test_class = file
-    else:
-        test_class = IOBase
-    if not isinstance(file_handle, test_class):
+    if not isinstance(file_handle, IOBase):
         if isinstance(file_handle, str):
             file_handle = [file_handle]
 

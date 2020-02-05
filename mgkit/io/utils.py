@@ -7,14 +7,7 @@ import logging
 import gzip
 import bz2
 import io
-
-try:
-    if sys.version_info >= (3, 3):
-        import lzma
-    else:
-        from backports import lzma
-except ImportError:
-    lzma = None
+import lzma
 
 LOG = logging.getLogger(__name__)
 
@@ -103,10 +96,7 @@ def open_file(file_name, mode='r'):
 
     """
 
-    if sys.version_info[0] == 2:
-        test_class = (file, io.IOBase)
-    else:
-        test_class = io.IOBase
+    test_class = io.IOBase
 
     if isinstance(file_name, test_class):
         return compressed_handle(file_name)

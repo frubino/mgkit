@@ -123,8 +123,6 @@ class KeggClientRest(object):
             request, should not exceed 50
         :return dict: dictionary mapping requested id to target id(s)
         """
-        if (sys.version_info[0] == 2) and isinstance(kegg_ids, unicode):
-            kegg_ids = [kegg_ids]
         if isinstance(kegg_ids, str):
             kegg_ids = [kegg_ids]
 

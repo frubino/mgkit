@@ -47,9 +47,7 @@ def load_htseq_counts(file_handle, conv_func=int):
 
     """
 
-    if (sys.version_info[0] == 2) and isinstance(file_handle, unicode):
-        file_handle = open_file(file_handle, 'rb')
-    elif isinstance(file_handle, str):
+    if isinstance(file_handle, str):
         file_handle = open_file(file_handle, 'rb')
 
     if getattr(file_handle, 'name', None) is not None:

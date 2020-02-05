@@ -38,11 +38,7 @@ from . import utils
 from ..io import gff, compressed_handle, fasta
 from .. import logger
 from ..snps.classes import GeneSNP, SNPType
-
-if sys.version_info[0] == 2:
-    import cPickle as pickle
-else:
-    import pickle
+import pickle
 
 
 LOG = logging.getLogger(__name__)

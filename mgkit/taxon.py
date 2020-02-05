@@ -10,10 +10,7 @@ import itertools
 import collections
 from future.utils import viewitems, viewvalues
 from .io import open_file
-if sys.version_info[0] == 2:
-    import cPickle as pickle
-else:
-    import pickle
+import pickle
 
 
 LOG = logging.getLogger(__name__)
