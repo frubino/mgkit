@@ -13,11 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: goanpeca/setup-miniconda@v1
-        with:
-           activate-environment: anaconda-client-env
-           environment-file: conda-env.yml
-           python-version: ${{ matrix.python-version }}
-           auto-activate-base: false
+      with:
+        activate-environment: anaconda-client-env
+        environment-file: conda-env.yml
+        python-version: ${{ matrix.python-version }}
+        auto-activate-base: false
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
