@@ -25,6 +25,7 @@ jobs:
       run: conda info
 
     - name: Install MGKit
+      run: conda install --name mgkit-dev -f conda-env.yml
       run: pip install --no-deps .
 
     - name: Test with pytest
