@@ -181,7 +181,7 @@ def grouped_spine(groups, labels, ax, which='y', spine='right',
     ax.spines[spine].set_edgecolor(spine_args['ec'])
     ax.spines[spine].set_linewidth(spine_args['group_lw'])
 
-    if which is 'y':
+    if which == 'y':
         axis = ax.yaxis
     else:
         axis = ax.xaxis
