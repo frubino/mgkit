@@ -8,17 +8,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8]
+        python-version: [3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
+    - name: Setup Conda
     - uses: s-weigand/setup-conda@v1
       with:
+        update-conda: true
+        python-version: ${{ matrix.python-version }}
+        conda-channels: conda-forge, defaults, bioconda
         activate-environment: mgkit-dev
         environment-file: conda-env.yml
-        python-version: ${{ matrix.python-version }}
-        auto-activate-base: false
-        conda-channels: bioconda, conda-forge, defaults
+      run: conda info
     - name: Lint with flake8
       run: |
         pip install flake8
