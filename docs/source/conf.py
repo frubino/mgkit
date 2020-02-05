@@ -375,4 +375,4 @@ pdf_use_numbered_links = False
 # Background images fitting mode
 pdf_fit_background_mode = 'scale'
 
-autodoc_mock_imports = ['pysam']
+autodoc_mock_imports = ['pysam', 'HTSeq']

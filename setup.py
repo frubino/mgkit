@@ -28,7 +28,6 @@ install_requires = [
     'numpy>=1.9.2',
     'pandas>=0.24',
     'tqdm>=4.0',
-    'HTSeq>=0.9.1',
     'semidbm>=0.5.1',
     'pymongo>=3.1.1',
     'scipy>=0.15.1',
@@ -48,6 +47,7 @@ install_requires = [
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 if not on_rtd:
     install_requires.append('tables>=3.4.2')
+    install_requires.append('HTSeq>=0.9.1')
     install_requires.append('pysam>=0.14')
 
 
