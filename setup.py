@@ -31,7 +31,6 @@ install_requires = [
     'HTSeq>=0.9.1',
     'semidbm>=0.5.1',
     'pymongo>=3.1.1',
-    'pysam>=0.14',
     'scipy>=0.15.1',
     'matplotlib>=2',
     'msgpack-python>=0.4.6',
@@ -49,6 +48,7 @@ install_requires = [
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 if not on_rtd:
     install_requires.append('tables>=3.4.2')
+    install_requires.append('pysam>=0.14')
 
 
 with open('README.rst') as file:

@@ -4,10 +4,6 @@ MGKit: Metagenomics Framework
 .. image:: https://github.com/frubino/mgkit/workflows/Python%20package/badge.svg
     :alt: Building
 
-.. note::
-
-	The official repository is now: at GitHub `https://github.com/frubino/mgkit`_
-
 The aim of this library [#]_ is to provide a series of useful modules and packages to make it easier to build custom pipelines for metagenomics or any kind of bioinformatics analysis. It integrates other well known python libraries in bioinformatics, like `HTSeq <http://www-huber.embl.de/users/anders/HTSeq/>`_, `pysam <https://code.google.com/p/pysam/>`_, `numpy <http://www.numpy.org>`_ and `scipy <http://www.scipy.org>`_.
 
 A tutorial pipeline is provided in the `Documentation <http://mgkit.readthedocs.io/en/latest/>`_. Data and scripts used in the documentations are available at [#]_.
