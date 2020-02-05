@@ -35,7 +35,7 @@ dependencies:
   - libdeflate=1.3
   - libedit=3.1.20170329
   - libffi=3.2.1
-  - libgfortran=4.0.0
+  - libgfortran=3.0.0
   - liblapack=3.8.0
   - libllvm8=8.0.1
   - libopenblas=0.3.7
@@ -162,4 +162,3 @@ dependencies:
     - webcolors==1.10
     - webencodings==0.5.1
     - zipp==0.6.0
-
