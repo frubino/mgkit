@@ -1,7 +1,8 @@
 MGKit: Metagenomics Framework
 =============================
 
-`Python package (https://github.com/frubino/mgkit/workflows/Python%20package/badge.svg`_
+.. image:: https://github.com/frubino/mgkit/workflows/Python%20package/badge.svg
+    :alt: Building
 
 .. note::
 
