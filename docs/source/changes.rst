@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.4.3
+-----
+
+Fixes
+*****
+
+:class:`mgkit.align.SamtoolsDepth` in version 0.4.2 was using a :class:`weakref.WeakValueDictionary` to speed up the recovery of memory from the internal dictionary. In the tests on MacOS the memory was mostly kept, but on Linux when submitted as a job it seems to be freed instantly. This also impact the `add-gff-info cov_samtools` command, since it uses this class - it will run, but reports that the number of sequences not found in the samtools depth file is the same as the number of sequences in the GFF file.
+
 0.4.2
 -----
 

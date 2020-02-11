@@ -3,7 +3,6 @@ Module dealing with BAM/SAM files
 """
 from future.utils import viewitems
 import logging
-import weakref
 try:
     # In Python2
     from itertools import izip as zip
@@ -285,17 +284,23 @@ class SamtoolsDepth(object):
     region coverage can be requested the same way as before, but won't involve
     scanning the file.
 
-    The use of a SparseArray in a pandas Series allows the use of `samtools depth` files
-    that weren't produced with `samtools depth -aa`.
+    The use of a SparseArray in a pandas Series allows the use of
+    `samtools depth` files that weren't produced with `samtools depth -aa` and
+    save memory.
 
     .. note::
 
-        Starting with MGKit 0.4.2, the internal dictionary to keep the SparseArray(s)
-        is a :class:`weakref.WeakValueDictionary`, which should improve the release
-        of memory. However, the amount of memory used is still fairly high, especially
-        with the increasing number of sequences in a GFF/Depth file. It is recoommended
-        to use max_size_dict to 1) only creates arrays for sequences needed and 2) use
+        The amount of memory used is fairly high, especially with the increasing
+        number of sequences in a GFF/Depth file. It is recoommended to use
+        max_size_dict to 1) only creates arrays for sequences needed and 2) use
         arrays of smaller size
+
+    .. warning::
+
+        In MGKit 0.4.2, the internal dictionary to keep the SparseArray(s)
+        is a :class:`weakref.WeakValueDictionary`, to improve the release
+        of memory. That on Linux seems to release the array **too fast**.
+        Upgrade to MGKit version 0.4.3 if this class is needed
 
     """
     file_handle = None
@@ -342,7 +347,7 @@ class SamtoolsDepth(object):
         )
         self.not_found = set()
         self.closed = False
-        self.data = weakref.WeakValueDictionary()
+        self.data = {}
         self.dtype = 'Sparse[{}]'.format(dtype)
         if calc_density:
             self.density = []
