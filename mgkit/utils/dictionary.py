@@ -365,3 +365,81 @@ class HDFDict(object):
         return self._cast(df.values)
 
     __getitem__ = _getitem_hdf
+
+
+def dict_to_text(stream, dictionary, header=None, comment=None, sep='\t'):
+    """
+    .. versionadded:: 0.4.4
+
+    Writes the content of a dictionary to a stream (supports *write*), like
+    io.StringIO or an opened file. Intended to be used only for dictionaries
+    with key-value of type integer/strings, other data types are better served
+    by more complex options, like JSON, etc.
+
+    .. warning::
+
+        The file is expected to be opened in text mode ('r')
+
+    Arguments:
+        stream (file): stream to write to, to output a string, use io.StringIO
+        dictionary (dict): dictionary to write
+        header (iterable): a tuple/list to be used as header
+        comment (str): a comment at the start of the file - '# ' will be
+            prepended to the value passed.
+        sep (str): column separator to use
+    """
+    if comment is not None:
+        stream.write('# {}\n'.format(comment))
+    if header is not None:
+        stream.write('{}\n'.format(sep.join(header)))
+    for key, value in dictionary.items():
+        stream.write(f'{key}{sep}{value}\n')
+
+
+def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
+                    key_func=str, value_func=str, encoding=None):
+    """
+    .. versionadded:: 0.4.4
+
+    Reads a dictionary form a table file, the passed file is assumed to be
+    opened as text, not binary - in which case you need to pass the encoding
+    (e.g. *ascii*). The file may have multiple columns, so the key and value
+    columns can be chosen with *key_index* and *value_index*, respectively.
+
+    Arguments:
+        stream (file): stream that can be read as a file
+        skip_lines (int): number of lines to skip at the start of the file
+        sep (str): column separator to use
+        key_index (int): zero-based column number of keys
+        value_index (int): zero-based column number of values
+        key_func (func): function to apply to the keys (defaults to *str*)
+        value_func (func): function to apply to the values (defaults to *str*)
+        encoding (None, str): if *None* is passed, the file is assumed to be
+            opened in text mode, otherwise the encoding of the file must be
+            passed
+
+    Yields:
+        tuple: the keys and values that can be passed to *dict*
+    """
+
+    for index, line in enumerate(stream):
+
+        if skip_lines > 0:
+            skip_lines -= 1
+            continue
+
+        if encoding is not None:
+            line = line.decode(encoding)
+
+        line = line.rstrip()
+
+        # line empty, so skip
+        if not line:
+            continue
+
+        line = line.split(sep)
+
+        key = key_func(line[key_index])
+        value = value_func(line[value_index])
+
+        yield key, value
