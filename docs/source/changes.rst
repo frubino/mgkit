@@ -1,6 +1,19 @@
 Changes
 =======
 
+0.4.4
+-----
+
+Added
+*****
+
+* :func:`mgkit.utils.dictionary.dict_to_text` :func:`mgkit.utils.dictionary.text_to_dict` to read/write simple dictionary files (tables)
+
+Changed
+*******
+
+* `download-ncbi-taxa.sh` and `download-uniprot-taxa.sh` (:ref:`download-taxonomy`): if a `PROGBAR` enviroment variable is set, the progress bar (default in `wget`) is used
+
 0.4.3
 -----
 

@@ -1,6 +1,11 @@
 #!/bin/bash
 
 # .. versionadded:: 0.3.1
+#
+# .. versionchanged:: 0.4.4
+#    added check for enviroment variable, if PROGBAR is set, `wget` progress
+#    uses the bar instead of dots
+#
 # Downloads Taxa IDs for NCBI (GenBank), either the *nt* collection by using
 # *nucl* as parameter (default) or *nr* by using *prot*.
 # The file is then processed to remove the first line and keep the non-versioned
@@ -26,4 +31,11 @@ fi
 
 TABFILE=ncbi-$TYPE-taxa.gz
 
-wget --progress=dot -O - ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/$FILE | gunzip -c | tail -n+2 | cut -f 1,3 | gzip > $TABFILE
+if [ -z "$PROGBAR" ];
+	then
+		PROGBAR=dot
+	else
+		PROGBAR=bar
+fi
+
+wget --progress=$PROGBAR -O - ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/$FILE | gunzip -c | tail -n+2 | cut -f 1,3 | gzip > $TABFILE

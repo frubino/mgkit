@@ -20,3 +20,7 @@ There are 2 separate scripts to download these tables:
     * `download-ncbi-taxa.sh` for BLAST DBs from NCBI, by default for *nt*, but *nr* can be downloaded with `download-ncbi-taxa.sh prot`
 
 In particular, **nr** refers to the protein database in NCBI, while **nt** refers to the nucleotidic one. Both Uniprot Swissprot and TrEMBL are downloaded by the first scripts.
+
+.. note::
+
+    Since version 0.4.4, if a PROGBAR enviroment variable is set, the progress bar (default in `wget`) is used, instead of the *dot* progress, which is more suitable for interactive use of the script
