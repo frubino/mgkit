@@ -135,11 +135,16 @@ def compressed_handle(file_handle):
         UnsupportedFormat: if the module to open the file is not available
 
     """
-    LOG.info('Detecting Compressed File Handle')
+    # LOG.info('Detecting Compressed File Handle')
 
-    if file_handle.name.endswith('.gz'):
+    file_name = getattr(file_handle, 'name', None)
+
+    if file_name is None:
+        return file_handle
+
+    if file_name.endswith('.gz'):
         file_handle = gzip.GzipFile(fileobj=file_handle, mode='rb')
-    elif file_handle.name.endswith('.xz'):
+    elif file_name.endswith('.xz'):
         if lzma:
             raise UnsupportedFormat("Cannot import lzma module")
         else:

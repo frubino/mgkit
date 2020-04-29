@@ -136,7 +136,7 @@ def infer_parameters(file_handle, fastq_bool, progress):
               help='Number of sequences to generate')
 @click.option('-gc', '--gc-content', default=.5, type=click.FLOAT, show_default=True,
               help='GC content (defaults to .5 out of 1)')
-@click.option('-i', '--infer-params', default=None, type=click.File('rb'),
+@click.option('-i', '--infer-params', default=None, type=click.File('rb', lazy=False),
               help='Infer parameters GC content and Quality model from file')
 @click.option('-r', '--coding-prop', default=0., type=click.FLOAT, show_default=True,
               help='Proportion of coding sequences')
@@ -148,13 +148,13 @@ def infer_parameters(file_handle, fastq_bool, progress):
               help='Use as the starting point quality')
 @click.option('-q', '--fastq', default=False, is_flag=True,
               help='The output file is a FastQ file')
-@click.option('-m', '--save-model', default=None, type=click.File('wb'),
+@click.option('-m', '--save-model', default=None, type=click.File('wb', lazy=False),
               help='Save inferred qualities model to a pickle file')
-@click.option('-a', '--read-model', default=None, type=click.File('rb'),
+@click.option('-a', '--read-model', default=None, type=click.File('rb', lazy=False),
               help='Load qualities model from a pickle file')
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
-@click.argument('output_file', type=click.File('wb'), default='-')
+@click.argument('output_file', type=click.File('wb', lazy=False), default='-')
 def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
                           coding_prop, length, const_model, dist_loc, fastq,
                           save_model, read_model, progress, output_file):
@@ -254,10 +254,10 @@ def compare_header(header1, header2, header_type=None):
 @main.command('sync', help="""Syncs a FastQ file generated with *sample* with
               the original pair of files.""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-m', '--master-file', type=click.File('rb'), required=True,
+@click.option('-m', '--master-file', type=click.File('rb', lazy=False), required=True,
               help='Resampled FastQ file that is out of sync with the original pair')
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def fq_sync_command(verbose, master_file, input_file, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -296,7 +296,7 @@ def fq_sync_command(verbose, master_file, input_file, output_file):
               help='The input file is a fastq file')
 @click.option('-z', '--gzip', is_flag=True, default=False,
               help='gzip output files')
-@click.argument('input-file', type=click.File('rb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
 def sample_command(verbose, prefix, number, prob, max_seq, fastq, gzip,
                    input_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -361,8 +361,8 @@ def sample_command(verbose, prefix, number, prob, max_seq, fastq, gzip,
               help='Maximum number of sequences')
 @click.option('-q', '--fastq', default=False, is_flag=True,
               help='The input file is a fastq file')
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def stream_sample_command(verbose, prob, max_seq, fastq, input_file,
                           output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
