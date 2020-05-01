@@ -97,7 +97,7 @@ copyright = u'2013-2015, Francesco Rubino'
 #
 # The short X.Y version.
 
-__VERSION__ = '0.4.3'
+__VERSION__ = '0.4.4'
 
 version = __VERSION__
 # The full version, including alpha/beta/rc tags.
