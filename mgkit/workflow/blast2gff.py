@@ -162,8 +162,8 @@ outputs a GFF file [gff-file]
               help='Feature type to use in the GFF')
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
-@click.argument('blast-file', type=click.File('rb'), default='-')
-@click.argument('gff-file', type=click.File('wb'), default='-')
+@click.argument('blast-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('gff-file', type=click.File('wb', lazy=False), default='-')
 def convert_from_blastdb(verbose, db_used, no_split, header_sep, gene_index,
                          remove_version, fasta_file, db_quality, bitscore,
                          attr_value, feat_type, progress, blast_file,
@@ -233,8 +233,8 @@ a Uniprot DB and outputs a GFF file [gff-file]
               help='Feature type to use in the GFF')
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
-@click.argument('blast-file', type=click.File('rb'), default='-')
-@click.argument('gff-file', type=click.File('wb'), default='-')
+@click.argument('blast-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('gff-file', type=click.File('wb', lazy=False), default='-')
 def convert_from_uniprot(verbose, db_used, no_split, fasta_file, db_quality,
                          bitscore, attr_value, feat_type, progress, blast_file,
                          gff_file):

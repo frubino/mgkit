@@ -300,8 +300,8 @@ def main():
               help='Add pathways ID involved')
 @click.option('-m', '--kegg-id', default='gene_id',
               help="""In which attribute the Kegg ID is stored (defaults to *gene_id*)""")
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def kegg_command(verbose, email, description, pathways, kegg_id, input_file,
                  output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -430,7 +430,7 @@ def add_uniprot_info(annotations, email, force_taxon_id, taxon_id, lineage,
                     if 'organism' in columns:
                         annotation.attr['taxon_name'] = gene_info['organism']
             elif column.startswith('lineage'):
-                    annotation.attr['lineage'] = gene_info['lineage(ALL)']
+                annotation.attr['lineage'] = gene_info['lineage(ALL)']
             elif column.startswith('database'):
                 annotation.attr[
                     'map_{0}'.format(
@@ -471,8 +471,8 @@ def add_uniprot_info(annotations, email, force_taxon_id, taxon_id, lineage,
               help='Add Uniprot description')
 @click.option('-m', '--mapping', multiple=True, default=None,
               help='Add any DB mappings to annotations')
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def uniprot_command(verbose, email, buffer, force_taxon_id, taxon_id, lineage,
                     eggnog, enzymes, kegg_orthologs, protein_names, mapping,
                     input_file, output_file):
@@ -535,8 +535,8 @@ def split_sample_alg(ctx, param, values):
 @click.option('-a', '--sample-alignment', multiple=True, required=True,
               callback=split_sample_alg,
               help='sample name and correspondent alignment file separated by comma')
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def coverage_command(verbose, sample_alignment, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     samples = []
@@ -559,14 +559,14 @@ def coverage_command(verbose, sample_alignment, input_file, output_file):
 @main.command('exp_syn', help="""Adds expected synonymous and non-synonymous
               changes information""")
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('-r', '--reference', required=True, type=click.File('rb'),
+@click.option('-r', '--reference', required=True, type=click.File('rb', lazy=False),
               help='reference sequence in fasta format')
 @click.option('-s', '--split', default=False, is_flag=True,
               help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def exp_syn_command(verbose, reference, split, progress, input_file,
                     output_file):
     """
@@ -610,8 +610,8 @@ def exp_syn_command(verbose, reference, split, progress, input_file,
               help="Mappings to add")
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def uniprot_offline_command(verbose, mapping_file, force_taxon_id, mapping,
                             progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -705,8 +705,8 @@ def load_featurecounts_files(count_files, samples):
               help="""If the counts files are from featureCounts""")
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def counts_command(verbose, samples, count_files, fpkms, featurecounts,
                    progress, input_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -775,8 +775,8 @@ def parse_hdf5_arg(ctx, param, values):
               help="""If used, annotations are not preloaded, but the taxa table is cached, instead""")
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
                     dictionary, skip_no_taxon, taxon_db, cache_table,
                     progress, input_file, output_file):
@@ -890,8 +890,8 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-i', '--id-attr', default='gene_id', help="""In which attribute the Pfam ID/ACCESSION is stored (defaults to *gene_id*)""")
 @click.option('-a', '--use-accession', default=False, is_flag=True, help="""If used, the attribute value is the Pfam ACCESSION (e.g. PF06894), not ID (e.g. Phage_TAC_2)""")
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def pfam_command(verbose, id_attr, use_accession, input_file, output_file):
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -928,7 +928,6 @@ def update_annotation_coverage(annotations, depth, sample):
             annotation.set_attr(sample, cov)
 
 
-
 @main.command('cov_samtools', help="""Adds information from samtools_depth""")
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-m', '--average', is_flag=True, help='if one or more samples are provided, the average coverage is calculated')
@@ -940,8 +939,8 @@ def update_annotation_coverage(annotations, depth, sample):
               show_default=True, help='''Number of sequences to update the log. If 0, no message is logged''')
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
-@click.argument('input-file', type=click.File('rb'), default='-')
-@click.argument('output-file', type=click.File('wb'), default='-')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def samtools_depth_command(verbose, average, samples, depths, num_seqs, progress,
                            input_file, output_file):
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -996,10 +995,11 @@ def samtools_depth_command(verbose, average, samples, depths, num_seqs, progress
             elif seq_id is None:
                 for not_found in set(annotations) - seq_found:
                     update_annotation_coverage(annotations[not_found], depth,
-                                                sample)
+                                               sample)
                     if progress:
                         seq_bar.update(n=1)
-                LOG.warning('Cannot find %d of %d sequences in sample %s depth file',
+                LOG.warning(
+                    'Cannot find %d of %d sequences in sample %s depth file',
                     len(depth.not_found), len(annotations), sample)
                 break
             # found all sequences, no need to continue scanning the file
