@@ -137,6 +137,10 @@ Changes
     moved to use *click* for argument parsing reworked the *values*, *sequence*
     commands
 
+.. versionchanged:: 0.4.4
+    *overlap* command: added option to not use the strand information and
+    added an option to make multiple passes of overlap for each sequence
+
 """
 from __future__ import division
 from future.utils import viewvalues
@@ -507,12 +511,17 @@ def make_choose_func(values):
 @click.option('-a', '--sort-attr', default='bitscore', show_default=True,
               type=click.Choice(['bitscore', 'identity', 'length']),
               help='Attribute to sort annotations before filtering (default bitscore)')
+@click.option('-d', '--no-strand', default=False, is_flag=True,
+              help="Strand information is not used, if '-t' is used, sort GFF file with `sort -s -k 1,1`")
+@click.option('-n', '--iterations', type=click.IntRange(min=1, max=10),
+              default=1,
+              help="Max number of iteration over which filter the overlaps")
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def filter_overlaps(verbose, size, sorted, choose_func, sort_attr, progress,
-                    input_file, output_file):
+def filter_overlaps(verbose, size, sorted, choose_func, sort_attr, no_strand,
+                    iterations, progress, input_file, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -523,13 +532,23 @@ def filter_overlaps(verbose, size, sorted, choose_func, sort_attr, progress,
         getattr(output_file, 'name', repr(output_file))
     )
 
+    LOG.info("Max number of iterations: %d", iterations)
+
     file_iterator = gff.parse_gff(input_file, gff_type=gff.from_gff)
+
+    if no_strand:
+        LOG.info("Annotations strand will be ignored")
+        def group_key_func(a): return a.seq_id
+    else:
+        def group_key_func(a): return (a.seq_id, a.strand)
 
     if sorted:
         LOG.info("Input GFF is assumed sorted")
-        grouped = gff.group_annotations_sorted(file_iterator)
+        grouped = gff.group_annotations_sorted(file_iterator,
+                                               key_func=group_key_func)
     else:
-        grouped = viewvalues(gff.group_annotations(file_iterator))
+        grouped = viewvalues(gff.group_annotations(file_iterator,
+                             key_func=group_key_func))
 
     choose_func = functools.partial(
         filter_gff.choose_annotation,
@@ -541,11 +560,21 @@ def filter_overlaps(verbose, size, sorted, choose_func, sort_attr, progress,
         grouped = tqdm(grouped)
 
     for annotations in grouped:
-        filtered = filter_gff.filter_annotations(
-            annotations,
-            choose_func=choose_func,
-            sort_func=lambda x: x.get_attr(sort_attr, float),
-            reverse=True
-        )
+        prev_filtered = set(annotations)
+        for num_iteration in range(iterations):
+            filtered = filter_gff.filter_annotations(
+                prev_filtered,
+                choose_func=choose_func,
+                sort_func=lambda x: x.get_attr(sort_attr, float),
+                reverse=True
+            )
+            # if the number of annotations is the same, there's no need to
+            # keep going
+            if prev_filtered == filtered:
+                # LOG.debug("Number of iterations %d", num_iteration + 1)
+                break
+            else:
+                prev_filtered = filtered
+
         for annotation in filtered:
             annotation.to_file(output_file)

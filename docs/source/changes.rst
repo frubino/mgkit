@@ -8,6 +8,7 @@ Added
 *****
 
 * :func:`mgkit.utils.dictionary.dict_to_text` :func:`mgkit.utils.dictionary.text_to_dict` to read/write simple dictionary files (tables)
+* *filter-gff overlap* command, added option to not use the strand information in filtering the overlaps and also to make multiple iterations (max 10) to better remove overlaps
 
 Changed
 *******
