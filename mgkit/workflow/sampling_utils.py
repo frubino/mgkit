@@ -162,6 +162,9 @@ def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     if fastq:
+        # default values, unless infer_parameters is used
+        min_qual = 0
+        max_qual = 60
         if const_model:
             LOG.info("Using constant model with loc=%.1f", dist_loc)
             model = sequence.qualities_model_constant(
@@ -174,6 +177,8 @@ def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
                 fastq,
                 progress
             )
+            min_qual, max_qual = model[2:]
+            model = model[:2]
         elif read_model:
             LOG.info('Reading saved model')
             read_model = pickle.load(read_model)
@@ -184,6 +189,12 @@ def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
                 lw,
                 getattr(scipy.stats, read_model['dist_family'])(*read_model['dist'])
             )
+            # tries to read the min/max quality params, otherwise keep defaults
+            try:
+                min_qual = read_model['min_qual']
+                max_qual = read_model['max_qual']
+            except KeyError:
+                pass
         else:
             LOG.info("Using decrease model with loc=%.1f", dist_loc)
             model = sequence.qualities_model_decrease(
@@ -196,7 +207,8 @@ def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
                      getattr(save_model, 'name', repr(save_model)))
             pickle.dump(
                 dict(lw=model[0], dist=model[1].args, dist_family='norm',
-                     gc_content=gc_content),
+                     gc_content=gc_content, max_qual=max_qual,
+                     min_qual=min_qual),
                 save_model
             )
 
@@ -227,7 +239,9 @@ def rand_sequence_command(verbose, num_seqs, gc_content, infer_params,
         qual_it = sequence.random_qualities(
             n=num_seqs,
             length=length,
-            model=model
+            model=model,
+            max_qual=max_qual,
+            min_qual=min_qual,
         )
     else:
         qual_it = itertools.repeat(num_seqs)

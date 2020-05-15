@@ -10,7 +10,6 @@ Module containing functions related to sequence data
 from __future__ import division  # add check to use only on python 2.x
 from builtins import range, zip
 from future.utils import viewitems, viewvalues
-import sys
 import itertools
 import logging
 import random
@@ -896,6 +895,10 @@ def extrapolate_model(quals, frac=.5, scale_adj=.5):
     """
     .. versionadded:: 0.3.3
 
+    .. versionchanged:: 0.4.4
+        returns now the minimum and maximum quality scores found, along with
+        some messages for the stages of the function
+
     Extrapolate a quality model from a list of qualities. It uses internally
     a LOWESS as the base, which is used to estimate the noise as a normal
     distribution.
@@ -910,15 +913,21 @@ def extrapolate_model(quals, frac=.5, scale_adj=.5):
 
     Returns:
         tuple: the first element is the qualities fit with a LOWESS, the second
-        element is the distribution
+        element is the distribution, the third is the minimum quality score and
+        the fourth element is the maximum quality score found in the sequences
     """
     if not isinstance(quals, list):
         quals = list(quals)
 
     endog = numpy.hstack(quals)
+    min_qual = endog.min()
+    max_qual = endog.max()
+    LOG.info("Max: %d Min: %d", max_qual, min_qual)
     exog = numpy.hstack(
         [numpy.arange(len(qual)) + 1 for qual in quals]
     )
+
+    LOG.info("Starting LOWESS fit")
 
     lowess = sm.nonparametric.lowess(endog, exog, frac=frac)
     lowess = interpolate.interp1d(
@@ -929,6 +938,9 @@ def extrapolate_model(quals, frac=.5, scale_adj=.5):
         fill_value='extrapolate'
     )
     lowess = lowess(numpy.arange(exog.max()) + 1)
+
+    LOG.info("Starting normal distribution fit")
+
     dist = numpy.hstack([
         qual - lowess[:len(qual)]
         for qual in quals
@@ -936,28 +948,47 @@ def extrapolate_model(quals, frac=.5, scale_adj=.5):
     dist_args = stats.norm.fit(dist)
     dist_args = (dist_args[0], dist_args[1] * scale_adj)
     dist = stats.norm(*dist_args)
-    return lowess, dist
+    return lowess, dist, min_qual, max_qual
 
 
-def random_qualities(n=1, length=150, model=None):
+def random_qualities(n=1, length=150, model=None, max_qual=60, min_qual=0):
     """
     .. versionadded:: 0.3.3
+
+    .. versionchanged: 0.4.4
+        added *max_qual* and *min_qual* parameters, also the max quality value
+        output is 60 now
 
     Arguments:
         n (int): number of quality arrays to yield
         length (int): length of the quality array
         model (tuple): a tuple specifying the qualities and error distribution,
             if *None* :func:`qualities_model_decrease` is used
+        max_qual (int): max quality values allowed, since rarely the quality
+            exceed 60 in sequencing data
 
     Yields:
-        numpy.array: numpy array of qualities, with the maximum value of 40
+        numpy.array: numpy array of qualities, with the maximum value of 60
+        by default, or *max_qual*, same with *min_qual*
     """
     if model is None:
         model = qualities_model_decrease(length=length)
 
     base, dist = model
+    num_high_qual = 0
+    num_low_qual = 0
 
     for x in range(n):
         qual = numpy.round(base + dist.rvs(size=length)).astype(int)
-        qual[qual > 40] = 40
+        if qual.max() > max_qual:
+            qual[qual > max_qual] = max_qual
+            num_high_qual += 1
+        if qual.min() < min_qual:
+            qual[qual < min_qual] = min_qual
+            num_low_qual += 1
         yield qual
+
+    LOG.debug('Number of quality sequences over %d was %d out of %d', max_qual,
+              num_high_qual, n)
+    LOG.debug('Number of quality sequences below %d was %d out of %d',
+              min_qual, num_low_qual, n)
