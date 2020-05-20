@@ -842,9 +842,53 @@ class Annotation(GenomicRange):
         """
         .. versionadded:: 0.1.13
 
+        .. versionchanged:: 0.4.4
+            a standard attribute can now be set
+
         Generic method to set an attribute
         """
+
+        if attr in ('seq_id', 'source', 'feat_type', 'start', 'end', 'score',
+                    'strand', 'phase'):
+            setattr(self, attr, value)
+            return None
+
         self.attr[attr] = value
+
+    def has_attr(self, attr):
+        """
+        .. versionadded:: 0.4.4
+
+        Tests if an attributes is present in the Annotation
+
+        Arguments:
+            attr (str): attribute to test
+
+        Returns:
+            bool: True if the attributes is present
+
+        """
+        if attr in ('seq_id', 'source', 'feat_type', 'start', 'end', 'score',
+                    'strand', 'phase'):
+            return True
+
+        return attr in self.attr
+
+    def del_attr(self, attr):
+        """
+        .. versionadded:: 0.4.4
+
+        Removes attributes from the Annotation
+        """
+
+        if attr in ('seq_id', 'source', 'feat_type', 'start', 'end', 'score',
+                    'strand', 'phase'):
+            return None
+
+        try:
+            del self.attr[attr]
+        except KeyError:
+            pass
 
     @property
     def coverage(self):
