@@ -593,7 +593,10 @@ def exp_syn_command(verbose, reference, split, progress, input_file,
         iterator = tqdm(iterator)
 
     for annotation in iterator:
-        annotation.add_exp_syn_count(seqs[annotation.seq_id])
+        curr_seq = seqs[annotation.seq_id]
+        if len(curr_seq) < annotation.end:
+            LOG.error("Annotation (uid %s) is outside the the sequence (sequence length %d): %s", annotation.uid, len(curr_seq), annotation)
+        annotation.add_exp_syn_count(curr_seq)
 
         annotation.to_file(output_file)
 

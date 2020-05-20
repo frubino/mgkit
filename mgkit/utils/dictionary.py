@@ -397,7 +397,7 @@ def dict_to_text(stream, dictionary, header=None, comment=None, sep='\t'):
 
 
 def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
-                    key_func=str, value_func=str, encoding=None):
+                 key_func=str, value_func=str, encoding=None):
     """
     .. versionadded:: 0.4.4
 

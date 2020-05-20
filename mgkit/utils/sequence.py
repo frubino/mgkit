@@ -217,6 +217,9 @@ def get_syn_matrix_all(trans_table=None):
 
 def get_seq_expected_syn_count(seq, start=0, syn_matrix=None):
     """
+    .. versionchanged:: 0.4.4
+        if codon contains *N* or is not a multiple of 3, it is skipped
+
     Calculate the expected number of synonymous and non-synonymous changes in a
     nucleotide sequence. Assumes that the sequence is already in the correct
     frame and its length is a multiple of 3.
@@ -236,6 +239,9 @@ def get_seq_expected_syn_count(seq, start=0, syn_matrix=None):
 
     for idx in range(start, len(seq), 3):
         codon = seq[idx:idx+3]
+        # if an ambiguity *N* is found, skip the codon
+        if ('N' in codon) or (len(codon) != 3):
+            continue
         seq_syn += syn_matrix[codon]['syn']
         seq_nonsyn += syn_matrix[codon]['nonsyn']
 
