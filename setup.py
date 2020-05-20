@@ -91,6 +91,7 @@ setup(
             'json2gff = mgkit.workflow.json2gff:main',
             'fasta-utils = mgkit.workflow.fasta_utils:main',
             'sampling-utils = mgkit.workflow.sampling_utils:main',
+            'edit-gff = mgkit.workflow.edit_gff:main',
         ],
     },
     author="Francesco Rubino",

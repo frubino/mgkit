@@ -9,11 +9,16 @@ Added
 
 * :func:`mgkit.utils.dictionary.dict_to_text` :func:`mgkit.utils.dictionary.text_to_dict` to read/write simple dictionary files (tables)
 * *filter-gff overlap* command, added option to not use the strand information in filtering the overlaps and also to make multiple iterations (max 10) to better remove overlaps
+* :meth:`mgkit.io.gff.Annotation.has_attr` and :meth:`mgkit.io.gff.Annotation.del_attr`
+* a new script, *edit-gff* to view a GFF as table and perform general edits on it
 
 Changed
 *******
 
 * `download-ncbi-taxa.sh` and `download-uniprot-taxa.sh` (:ref:`download-taxonomy`): if a `PROGBAR` enviroment variable is set, the progress bar (default in `wget`) is used
+* changed :meth:`mgkit.io.gff.Annotation.set_attr` to allow changing standard attributes
+* added some checks for unexpected lengths in *add-gff-info exp_syn*, check the log for this cases
+* :func:`mgkit.utils.sequence.get_seq_expected_syn_count` silently skips codons containing *N* or which is not of length 3
 
 0.4.3
 -----
