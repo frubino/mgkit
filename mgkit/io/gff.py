@@ -1040,9 +1040,13 @@ class Annotation(GenomicRange):
 
         self.set_attr('gc_ratio', gc_ratio)
 
-    def is_syn(self, seq, pos, change, tbl=None, abs_pos=True, start=0):
+    def is_syn(self, seq, pos, change, tbl=None, abs_pos=True, start=0,
+               strict=True):
         """
         .. versionadded:: 0.1.16
+
+        .. versionchanged:: 0.4.4
+            added *strict* parameter
 
         Return if a SNP is synonymous or non-synonymous.
 
@@ -1056,9 +1060,16 @@ class Annotation(GenomicRange):
                 not a position relative to the annotation
             start (int or None): phase to be used to get the start position of
                 the codon. if None, the Annotation phase will be used
+            strict (bool): if a variant codon is not found, a KeyError is
+                raised, otherwise *False* is returned
 
         Returns:
-            bool: True if the SNP is synonymous, false if it's non-synonymous
+            bool: True if the SNP is synonymous, false if it's non-synonymous.
+            Behaviour in case of variant codons not found in the translation
+            table changes based on *strict*
+
+        Raises:
+            KeyError: if the variant codon is not found and *strict* is True
         """
         if abs_pos:
             rel_pos = self.get_relative_pos(pos)
@@ -1090,7 +1101,16 @@ class Annotation(GenomicRange):
             codon = seq_utils.reverse_complement(codon)
             var_codon = seq_utils.reverse_complement(var_codon)
 
-        return UNIVERSAL[codon] == UNIVERSAL[var_codon]
+        try:
+            return UNIVERSAL[codon] == UNIVERSAL[var_codon]
+        except KeyError:
+            LOG.warning("""Annotation %s has an unrecognised codon:
+                        reference %s, variant %s""", self.uid, codon,
+                        var_codon)
+            if strict:
+                raise KeyError("Variant codon not found %s", var_codon)
+            else:
+                return False
 
 
 def from_glimmer3(header, line, feat_type='CDS'):
