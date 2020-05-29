@@ -33,7 +33,6 @@ from builtins import zip
 import HTSeq
 import logging
 import argparse
-import sys
 from . import utils
 from ..io import gff, compressed_handle, fasta
 from .. import logger
@@ -56,7 +55,7 @@ def set_parser():
         '-o',
         '--output-file',
         default='snp_data.pickle',
-        type=argparse.FileType('w'),
+        type=argparse.FileType('wb'),
         help='Ouput file'
     )
     parser.add_argument(
@@ -87,7 +86,7 @@ def set_parser():
         '-g',
         '--gff-file',
         required=True,
-        type=argparse.FileType('r'),
+        type=argparse.FileType('rb'),
         action='store',
         help='GFF file with annotations'
     )
@@ -103,7 +102,7 @@ def set_parser():
         '-a',
         '--reference',
         required=True,
-        type=argparse.FileType('r'),
+        type=argparse.FileType('rb'),
         help='Fasta file with the GFF Reference'
     )
     parser.add_argument(
@@ -177,7 +176,7 @@ def check_snp_in_set(samples, snp_data, pos, change, annotations, seq):
         if pos not in annotation:
             continue
 
-        if annotation.is_syn(seq, pos, change):
+        if annotation.is_syn(seq, pos, change, strict=False):
             snp_type = SNPType.syn
         else:
             snp_type = SNPType.nonsyn
