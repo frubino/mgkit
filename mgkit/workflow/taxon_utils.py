@@ -119,8 +119,22 @@ be used with the *addtaxa* command in :ref:`add-gff-info`.
 The advantage is a faster lookup of the IDs. The other is a smaller memory
 footprint when a great number of annotations are kept in memory.
 
+Extract taxonomy
+****************
+
+This command allows to print the taxonomy in a file created with MGKit. The
+default behaviour is to print the scientific name, taxon_id, rank and lineage
+(only ranked taxa) in a tab separated file (or standard output).
+
+Besides the option to change the column separator, it is possible to only
+print specific taxa (case insensitive search, but need the correct name) and
+print headers for the output table.
+
 Changes
 *******
+
+.. versionchanged:: 0.5.0
+    added *get* command to taxon-utils to print the taxonomy or search in it
 
 .. versionchanged:: 0.3.4
     changed interface and behaviour for *filter*, also now can filter tables;
@@ -686,3 +700,50 @@ def taxa_table_command(verbose, table_name, overwrite, index_size, chunk_size,
         "e.g. ptrepack --propindexes --complevel 9 --complib blosc %s:/ taxa-table-compressed.hf5:/",
         output_file
     )
+
+
+def output_taxon_line(taxonomy, taxon_id, sep='\t'):
+    taxon_name = taxonomy[taxon_id].s_name
+    lineage = taxonomy.get_lineage_string(taxon_id)
+    rank = taxonomy[taxon_id].rank
+
+    return sep.join([taxon_name, str(taxon_id), rank, lineage]) + '\n'
+
+
+@main.command('get', help="""Extract the taxonomy as a CSV file""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-d', '--header', is_flag=True,
+              help='Include header in the output')
+@click.option('-s', '--separator', default='\t', help='column separator')
+@click.option('-o', '--only-names', multiple=True, type=click.STRING,
+              help='Only get matched taxon names')
+@click.argument('taxonomy_file', type=click.File('rb'))
+@click.argument('output_file', type=click.File('w'), default='-')
+def get_taxonomy(verbose, header, separator, only_names, taxonomy_file,
+                 output_file):
+    """
+    .. versionadded:: 0.5.0
+    """
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    taxonomy = taxon.Taxonomy(taxonomy_file)
+
+    if header:
+        output_file.write(separator.join(
+            ['Taxon Name', 'taxon_id', 'Rank', 'Lineage']) + '\n')
+
+    if only_names:
+        taxon_ids = []
+        for taxon_name in only_names:
+            try:
+                taxon_ids.extend(taxonomy.find_by_name(taxon_name))
+            except KeyError:
+                LOG.error("Taxon '%s' not found", taxon_name)
+        for taxon_id in taxon_ids:
+            line = output_taxon_line(taxonomy, taxon_id, sep=separator)
+            output_file.write(line)
+    else:
+        for taxon_obj in taxonomy:
+            line = output_taxon_line(taxonomy, taxon_obj.taxon_id,
+                                     sep=separator)
+            output_file.write(line)
