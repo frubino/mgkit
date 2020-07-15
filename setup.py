@@ -92,6 +92,7 @@ setup(
             'fasta-utils = mgkit.workflow.fasta_utils:main',
             'sampling-utils = mgkit.workflow.sampling_utils:main',
             'edit-gff = mgkit.workflow.edit_gff:main',
+            'pnps-gen = mgkit.workflow.pnps_gen:main',
         ],
     },
     author="Francesco Rubino",
