@@ -11,7 +11,7 @@ Calculate Rank pN/pS
 The `rank` command of the script reads SNPs information and calculate for each
 element of a specific taxonomic rank (species, genus, family, etc.) its pN/pS.
 
-For example, choosing the rank *genus* a table will be produced, similar to:
+For example, choosing the rank *genus* a table will be produced, similar to::
 
     Prevotella,0.0001,1,1.1,0.4
     Methanobrevibacter,1,0.5,0.6,0.8
@@ -34,7 +34,7 @@ table file can be provided, which can be passed in two column formats.
 
 The default in MGKit is to use Uniprot gene IDs for the functions, but we may
 want to examine the Kegg Orthologs instead. A table can be passed where the
-first column in the gene_id stored in the GFF file and the second is the KO:
+first column in the gene_id stored in the GFF file and the second is the KO::
 
     Q7N6F9  K05685
     Q7N6F9  K01242
@@ -45,7 +45,7 @@ and this format needs to be selected using the `-2` option of the command.
 
 The default type of table expected by the command is a table with a gene ID as
 first column one or more tab separated columns with mappings. The previous
-table would look like this:
+table would look like this::
 
     Q7N6F9  K05685  K01242
     G7E4F2  K05625
@@ -53,8 +53,7 @@ table would look like this:
 These tables can be created from the original GFF file, assuming that mappings
 to KO, EC Numbers are included, with a command line like this::
 
-     edit-gff view -a gene_id -a map_KO final.contigs-a3.gff.gz | \
-        tr ',' '\t'
+     edit-gff view -a gene_id -a map_KO final.contigs-a3.gff.gz | tr ',' '\t'
 
 Extracting the KOs (which are comma separated in a MGKit GFF file) and changing
 any comma to *tab*. This table can be passed to the script and will make it

@@ -26,13 +26,18 @@ def taxonomy_files(tmpdir_factory):
 
     taxdump_dir = tmpdir_factory.mktemp('taxdump')
     tax_file = (taxdump_dir / 'taxdump.tar.gz').strpath
-    ftp = FTP('ftp.ncbi.nlm.nih.gov')
-    ftp.login()
-    ftp.cwd('/pub/taxonomy/')
-    tax_handle = io.open(tax_file, 'wb')
-    ftp.retrbinary('RETR taxdump.tar.gz', tax_handle.write, 1000)
-    ftp.quit()
-    tax_handle.close()
+    # Seems like the NCBI FTP is not FTP anymore, pointing to the new resource
+    url = 'https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz'
+    file_content = requests.get(url)
+    open(tax_file, 'wb').write(file_content.content)
+    # old code (for FTP)
+    # ftp = FTP('ftp.ncbi.nlm.nih.gov')
+    # ftp.login()
+    # ftp.cwd('/pub/taxonomy/')
+    # tax_handle = io.open(tax_file, 'wb')
+    # ftp.retrbinary('RETR taxdump.tar.gz', tax_handle.write, 1000)
+    # ftp.quit()
+    # tax_handle.close()
 
     tarfile.open(tax_file, mode='r|gz').extractall(
         taxdump_dir.strpath
@@ -72,10 +77,13 @@ def eggnog_v3(tmpdir_factory):
     return file_paths
 
 
-EXPASY_SERVER = "ftp.expasy.org"
-EXPASY_DIR = "/databases/enzyme/"
+# Same for EXPASY, not anymore an FTP file, like for NCBI
+# EXPASY_SERVER = "ftp.expasy.org"
+# EXPASY_DIR = "/databases/enzyme/"
 EXPASY_FILE = "enzclass.txt"
+EXPASY_FILE_URL = 'https://ftp.expasy.org/databases/enzyme/enzclass.txt'
 EXPASY_DAT = "enzyme.dat"
+EXPASY_DAT_URL = 'https://ftp.expasy.org/databases/enzyme/enzyme.dat'
 
 
 @skip_no_connection
@@ -85,15 +93,22 @@ def expasy_files(tmpdir_factory):
     expasy_file_path = (expasy_file_dir / EXPASY_FILE).strpath
     expasy_dat_path = (expasy_file_dir / EXPASY_DAT).strpath
 
-    ftp = FTP(EXPASY_SERVER)
-    ftp.login()
-    ftp.cwd(EXPASY_DIR)
-    expasy_file_handle = io.open(expasy_file_path, 'wb')
-    ftp.retrbinary('RETR {}'.format(EXPASY_FILE), expasy_file_handle.write, 1000)
-    expasy_file_handle.close()
-    expasy_dat_handle = io.open(expasy_dat_path, 'wb')
-    ftp.retrbinary('RETR {}'.format(EXPASY_DAT), expasy_dat_handle.write, 1000)
-    expasy_dat_handle.close()
-    ftp.quit()
+    file_content = requests.get(EXPASY_FILE_URL)
+    open(expasy_file_path, 'wb').write(file_content.content)
+
+    file_content = requests.get(EXPASY_DAT_URL)
+    open(expasy_dat_path, 'wb').write(file_content.content)
+
+    # old code for reference
+    # ftp = FTP(EXPASY_SERVER)
+    # ftp.login()
+    # ftp.cwd(EXPASY_DIR)
+    # expasy_file_handle = io.open(expasy_file_path, 'wb')
+    # ftp.retrbinary('RETR {}'.format(EXPASY_FILE), expasy_file_handle.write, 1000)
+    # expasy_file_handle.close()
+    # expasy_dat_handle = io.open(expasy_dat_path, 'wb')
+    # ftp.retrbinary('RETR {}'.format(EXPASY_DAT), expasy_dat_handle.write, 1000)
+    # expasy_dat_handle.close()
+    # ftp.quit()
 
     return expasy_file_path, expasy_dat_path
