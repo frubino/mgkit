@@ -1,6 +1,16 @@
 Changes
 =======
 
+0.5.0
+-----
+
+Added
+*****
+
+* `taxon-utils get` command to query a taxonomy file
+* `pnps-gen` to generate a table of pN/pS values
+* 
+
 0.4.4
 -----
 
