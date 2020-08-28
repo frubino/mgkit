@@ -18,3 +18,5 @@ This section detailed information about the scripts included
    fastq-utils
    json2gff
    sampling-utils
+   edit_gff
+   pnps_gen
