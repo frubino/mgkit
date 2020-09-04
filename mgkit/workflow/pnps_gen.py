@@ -10,6 +10,8 @@ Calculate Rank pN/pS
 
 The `rank` command of the script reads SNPs information and calculate for each
 element of a specific taxonomic rank (species, genus, family, etc.) its pN/pS.
+Another option is the *None* rank, which makes the script use the taxonomic ID
+found in the annotations.
 
 For example, choosing the rank *genus* a table will be produced, similar to::
 
@@ -94,8 +96,8 @@ def main():
 @click.option('-s', '--snp-data', type=click.File('rb', lazy=False),
               help="SNP data, output of `snp_parser`", required=True)
 @click.option('-r', '--rank', default='order', help='Taxonomic rank',
-              type=click.Choice(taxon.TAXON_RANKS, case_sensitive=False),
-              show_default=True)
+              type=click.Choice(taxon.TAXON_RANKS + ('None',),
+                                case_sensitive=False), show_default=True)
 @click.option('-m', '--min-num', default=2, type=click.IntRange(min=2),
               help='Minimum number of samples with a pN/pS to accept',
               show_default=True)
@@ -157,9 +159,9 @@ def read_gene_map_two_columns(file_handle, separator):
               help="Taxonomy file", required=True)
 @click.option('-s', '--snp-data', type=click.File('rb', lazy=False),
               help="SNP data, output of `snp_parser`", required=True)
-@click.option('-r', '--rank', default=None, help='Taxonomic rank',
-              type=click.Choice(taxon.TAXON_RANKS, case_sensitive=False),
-              show_default=True)
+@click.option('-r', '--rank', default='order', help='Taxonomic rank',
+              type=click.Choice(taxon.TAXON_RANKS + ('None',),
+                                case_sensitive=False), show_default=True)
 @click.option('-m', '--min-num', default=2, type=click.IntRange(min=2),
               help='Minimum number of samples with a pN/pS to accept',
               show_default=True)
