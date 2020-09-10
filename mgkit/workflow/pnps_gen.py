@@ -80,6 +80,18 @@ import mgkit.snps.filter as snp_filter
 
 LOG = logging.getLogger(__name__)
 
+# changing the value for the script to remove subclass as rank
+taxon.TAXON_RANKS = tuple(rank for rank in taxon.TAXON_RANKS
+                          if not rank.startswith('sub'))
+
+
+def get_lineage(taxonomy, taxon_id):
+    if taxon_id not in taxonomy:
+        return taxon_id
+    return taxonomy.get_lineage_string(taxon_id, only_ranked=True,
+                                       with_last=True,
+                                       sep=';')
+
 
 @click.group()
 @click.version_option()
@@ -106,9 +118,13 @@ def main():
               show_default=True)
 @click.option('-i', '--taxon_ids', type=click.INT, multiple=True,
               help='Taxon IDs to include', default=(2,), show_default=True)
+@click.option('-u', '--unstack', is_flag=True, show_default=True,
+              help='Samples are not in columns but as an array')
+@click.option('-l', '--lineage', is_flag=True, show_default=True,
+              help='Use lineage string instead of taxon_id')
 @click.argument('txt_file', type=click.File('w', lazy=False), default='-')
 def gen_rank(verbose, taxonomy, snp_data, rank, min_num, min_cov,
-             taxon_ids, txt_file):
+             taxon_ids, unstack, lineage, txt_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -124,6 +140,14 @@ def gen_rank(verbose, taxonomy, snp_data, rank, min_num, min_cov,
 
     pnps = conv_func.get_rank_dataframe(snp_data, taxonomy, min_num=min_num,
                                         rank=rank, filters=filters)
+
+    if lineage:
+        pnps.rename(lambda x: get_lineage(taxonomy, x), inplace=True)
+
+    pnps.index.names = ['taxon']
+
+    if unstack:
+        pnps = pnps.unstack()
 
     pnps.to_csv(txt_file)
 
@@ -176,9 +200,12 @@ def read_gene_map_two_columns(file_handle, separator):
               help='gene-map is a two columns table with repeated keys')
 @click.option('-p', '--separator', default='\t', show_default=True,
               help='column separator for gene-map file')
+@click.option('-l', '--lineage', is_flag=True, show_default=True,
+              help='Use lineage string instead of taxon_id')
 @click.argument('txt_file', type=click.File('w', lazy=False), default='-')
 def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
-             taxon_ids, gene_map, two_columns, separator, txt_file):
+             taxon_ids, gene_map, two_columns, separator, lineage,
+             txt_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -202,5 +229,10 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
     pnps = conv_func.get_gene_taxon_dataframe(
         snp_data, taxonomy, gene_map, min_num=min_num, rank=rank,
         filters=filters)
+
+    if lineage:
+        pnps.rename(lambda x:  get_lineage(taxonomy, x), inplace=True)
+
+    pnps.index.names = ['gene', 'taxon']
 
     pnps.to_csv(txt_file)
