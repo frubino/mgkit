@@ -210,7 +210,7 @@ def get_gene_taxon_dataframe(snp_data, taxonomy, gene_map, min_num=3,
         min_num,
         filters,
         taxon_func=taxon_func,
-        gene_func=gene_func,
+        gene_func=None if gene_map is None else gene_func,
         index_type=index_type
     )
 
