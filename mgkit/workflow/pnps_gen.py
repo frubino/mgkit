@@ -62,8 +62,18 @@ any comma to *tab*. This table can be passed to the script and will make it
 possible to calculate the pN/pS for the KOs associated to the genes. Only gene
 IDs present in this file have a calculated pN/pS.
 
+Normally you combine the all isoforms with the same the *gene_id* to produce a
+single pN/pS, but if it's needed, the `-u` option can be used to calculate a
+pN/pS for each line in the GFF file.
+
 Changes
 *******
+
+.. versionchange:: 0.5.1
+
+    * added option to include the lineage as a string
+    * added option to use the *uids* from the GFF instead of *gene_id*, this
+      does not require the GFF file, they are embedded into the *.pickle* file
 
 .. versionadded:: 0.5.0
 """
@@ -194,6 +204,8 @@ def read_gene_map_two_columns(file_handle, separator):
               show_default=True)
 @click.option('-i', '--taxon_ids', type=click.INT, multiple=True,
               help='Taxon IDs to include', default=(2,), show_default=True)
+@click.option('-u', '--use-uid', is_flag=True, show_default=True,
+              help='Use uids from the GFF file instead of gene_id as genes')
 @click.option('-g', '--gene-map', type=click.File(mode='r', lazy=False),
               help='Dictionary to map *gene_id* to another ID', default=None)
 @click.option('-2', '--two-columns', is_flag=True,
@@ -204,7 +216,7 @@ def read_gene_map_two_columns(file_handle, separator):
               help='Use lineage string instead of taxon_id')
 @click.argument('txt_file', type=click.File('w', lazy=False), default='-')
 def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
-             taxon_ids, gene_map, two_columns, separator, lineage,
+             taxon_ids, use_uid, gene_map, two_columns, separator, lineage,
              txt_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -228,7 +240,7 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
 
     pnps = conv_func.get_gene_taxon_dataframe(
         snp_data, taxonomy, gene_map, min_num=min_num, rank=rank,
-        filters=filters)
+        filters=filters, use_uid=use_uid)
 
     if lineage:
         pnps.rename(lambda x:  get_lineage(taxonomy, x), inplace=True)

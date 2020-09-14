@@ -155,12 +155,16 @@ def get_full_dataframe(snp_data, taxonomy, min_num=3, index_type=None,
 
 
 def get_gene_taxon_dataframe(snp_data, taxonomy, gene_map, min_num=3,
-                             rank='genus', index_type=None, filters=None):
+                             rank='genus', index_type=None, filters=None,
+                             use_uid=False):
     """
     .. versionadded:: 0.1.12
 
     .. versionchanged:: 0.2.2
         added *filters* argument
+
+    .. versionchanged:: 0.5.1
+        gene_map can be *None*, use_uid can be passed to the underline function
 
     .. todo::
 
@@ -183,6 +187,7 @@ def get_gene_taxon_dataframe(snp_data, taxonomy, gene_map, min_num=3,
         index_type (str, None): type of index to return
         filters (iterable): list of filters to apply, otherwise uses the
             default filters
+        use_uid (bool): instead of using *gene_id*, uses *uid* as gene ID
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` of pN/pS values. The index type
@@ -211,7 +216,8 @@ def get_gene_taxon_dataframe(snp_data, taxonomy, gene_map, min_num=3,
         filters,
         taxon_func=taxon_func,
         gene_func=None if gene_map is None else gene_func,
-        index_type=index_type
+        index_type=index_type,
+        use_uid=use_uid
     )
 
     return dataframe
