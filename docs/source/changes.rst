@@ -1,6 +1,15 @@
 Changes
 =======
 
+0.5.1
+-----
+
+* get_gene_taxon_dataframe: changed: Changed in version 0.5.1: gene_map can be None, use_uid can be passed to the underline function
+* added option to include the lineage as a string in *pnps-gen*
+* added option to use the *uids* from the GFF instead of *gene_id*, this does not require the GFF file, they are embedded into the *.pickle* file
+* by default *pnps-gen* returns the taxon included in the GFF and not a ranked taxon
+* added option to make a different type of table in *pnps-gen rank*
+
 0.5.0
 -----
 
@@ -9,7 +18,6 @@ Added
 
 * `taxon-utils get` command to query a taxonomy file
 * `pnps-gen` to generate a table of pN/pS values
-* 
 
 0.4.4
 -----
