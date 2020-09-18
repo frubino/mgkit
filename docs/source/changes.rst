@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.5.2
+-----
+
+* Fixed a bug when using *--rank None* in `pnps-gen`
+
 0.5.1
 -----
 

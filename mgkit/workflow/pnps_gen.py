@@ -69,7 +69,10 @@ pN/pS for each line in the GFF file.
 Changes
 *******
 
-.. versionchange:: 0.5.1
+.. versionchanged:: 0.5.1
+    bug fix
+
+.. versionchanged:: 0.5.1
 
     * added option to include the lineage as a string
     * added option to use the *uids* from the GFF instead of *gene_id*, this
@@ -141,12 +144,15 @@ def gen_rank(verbose, taxonomy, snp_data, rank, min_num, min_cov,
     taxonomy = taxon.Taxonomy(taxonomy)
 
     LOG.info('Only taxa below %s will be included', ', '.join(taxonomy[taxon_id].s_name for taxon_id in taxon_ids))
-    LOG.info('Rank %s and above will be included', rank)
+    LOG.info('Rank "%s" and above will be included', rank)
 
     snp_data = pickle.load(snp_data)
 
     filters = snp_filter.get_default_filters(taxonomy, min_cov=min_cov,
                                              include_only=taxon_ids)
+
+    if rank not in taxon.TAXON_RANKS:
+        rank = None
 
     pnps = conv_func.get_rank_dataframe(snp_data, taxonomy, min_num=min_num,
                                         rank=rank, filters=filters)
@@ -231,9 +237,12 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
     taxonomy = taxon.Taxonomy(taxonomy)
 
     LOG.info('Only taxa below %s will be included', ', '.join(taxonomy[taxon_id].s_name for taxon_id in taxon_ids))
-    LOG.info('Rank %s and above will be included', rank)
+    LOG.info('Rank "%s" and above will be included', rank)
 
     snp_data = pickle.load(snp_data)
+
+    if rank not in taxon.TAXON_RANKS:
+        rank = None
 
     filters = snp_filter.get_default_filters(taxonomy, min_cov=min_cov,
                                              include_only=taxon_ids)

@@ -53,7 +53,7 @@ def get_rank_dataframe(snp_data, taxonomy, min_num=3, rank='order',
         snp_data,
         min_num,
         filters,
-        taxon_func=taxon_func,
+        taxon_func=None if rank is None else taxon_func,
         gene_func=None,
         index_type=index_type
     )
