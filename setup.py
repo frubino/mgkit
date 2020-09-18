@@ -20,7 +20,7 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
-__VERSION__ = "0.5.1"
+__VERSION__ = "0.5.2"
 
 from setuptools import setup, find_packages
 
@@ -28,7 +28,7 @@ install_requires = [
     'numpy>=1.9.2',
     'pandas>=0.24',
     'tqdm>=4.0',
-    'semidbm>=0.5.1',
+    'semidbm>=0.5.2',
     'pymongo>=3.1.1',
     'scipy>=0.15.1',
     'matplotlib>=2',
