@@ -5,12 +5,11 @@ to filter, order and group data by taxa
 from builtins import object
 from functools import reduce
 import logging
-import sys
 import itertools
 import collections
+import pickle
 from future.utils import viewitems, viewvalues
 from .io import open_file
-import pickle
 
 
 LOG = logging.getLogger(__name__)
