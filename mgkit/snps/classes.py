@@ -1,7 +1,7 @@
 """
 Manage SNP data.
-
 """
+
 from __future__ import division
 from builtins import object
 import logging
@@ -137,6 +137,29 @@ class RatioMixIn(object):
                 # There's no changes in the gene at at all. It should be
                 # checked if that gene has coverage.
                 return -3
+
+    def calc_ps(self):
+        """
+        Method that returns only the pS part of the pN/pS ratio.
+
+        Returns:
+            float: the pS value, unless self.syn is 0, in which case `numpy.nan` is returned
+        """
+        if self.syn == 0:
+            return numpy.nan
+        return self.syn / self.exp_syn
+
+
+    def calc_pn(self):
+        """
+        Method that returns only the pN part of the pN/pS ratio.
+
+        Returns:
+            float: the pN value, unless self.nonsyn is 0, in which case `numpy.nan` is returned
+        """
+        if self.nonsyn == 0:
+            return numpy.nan
+        return self.nonsyn / self.exp_nonsyn
 
 
 class SNPType(enum.Enum):

@@ -40,3 +40,4 @@ docs/tutorial-data/
 .tox/
 htmlcov/
 .eggs/
+.vscode/
