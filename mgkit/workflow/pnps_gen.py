@@ -85,11 +85,14 @@ Changes
 import logging
 import click
 import pickle
-from . import utils
-from .. import logger
+import functools
 from mgkit import taxon
 from mgkit.snps import conv_func
+import mgkit.snps.mapper
+import mgkit.snps.funcs
 import mgkit.snps.filter as snp_filter
+from . import utils
+from .. import logger
 
 LOG = logging.getLogger(__name__)
 
@@ -135,9 +138,13 @@ def main():
               help='Samples are not in columns but as an array')
 @click.option('-l', '--lineage', is_flag=True, show_default=True,
               help='Use lineage string instead of taxon_id')
+@click.option('-ps', '--only-ps', is_flag=True, show_default=True,
+              help='Only calculate pS values')
+@click.option('-pn', '--only-pn', is_flag=True, show_default=True,
+              help='Only calculate pN values')
 @click.argument('txt_file', type=click.File('w', lazy=False), default='-')
 def gen_rank(verbose, taxonomy, snp_data, rank, min_num, min_cov,
-             taxon_ids, unstack, lineage, txt_file):
+             taxon_ids, unstack, lineage, only_ps, only_pn, txt_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -153,9 +160,27 @@ def gen_rank(verbose, taxonomy, snp_data, rank, min_num, min_cov,
 
     if rank not in taxon.TAXON_RANKS:
         rank = None
+    
+    if rank is None:
+        taxon_func = None
+    else:
+        taxon_func = functools.partial(
+            mgkit.snps.mapper.map_taxon_id_to_rank,
+            taxonomy=taxonomy,
+            rank=rank
+        )
+    
+    partial_calc = False
+    partial_syn = True
+    if only_ps or only_pn:
+        partial_calc = True
+        if only_pn:
+            partial_syn = False
+        LOG.info('Only "%s" will be calculated ', "pS"  if partial_syn else "pN")
 
-    pnps = conv_func.get_rank_dataframe(snp_data, taxonomy, min_num=min_num,
-                                        rank=rank, filters=filters)
+    pnps = mgkit.snps.funcs.combine_sample_snps(snp_data, min_num, filters, index_type='taxon',
+                                                taxon_func=taxon_func, partial_calc=partial_calc,
+                                                partial_syn=partial_syn)
 
     if lineage:
         pnps.rename(lambda x: get_lineage(taxonomy, x), inplace=True)
@@ -220,10 +245,14 @@ def read_gene_map_two_columns(file_handle, separator):
               help='column separator for gene-map file')
 @click.option('-l', '--lineage', is_flag=True, show_default=True,
               help='Use lineage string instead of taxon_id')
+@click.option('-ps', '--only-ps', is_flag=True, show_default=True,
+              help='Only calculate pS values')
+@click.option('-pn', '--only-pn', is_flag=True, show_default=True,
+              help='Only calculate pN values')
 @click.argument('txt_file', type=click.File('w', lazy=False), default='-')
 def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
              taxon_ids, use_uid, gene_map, two_columns, separator, lineage,
-             txt_file):
+             only_ps, only_pn, txt_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -233,6 +262,11 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
             gene_map = read_gene_map_two_columns(gene_map, separator)
         else:
             gene_map = read_gene_map_default(gene_map, separator)
+        
+        gene_map = functools.partial(
+            mgkit.snps.mapper.map_gene_id,
+            gene_map=gene_map
+        )
 
     taxonomy = taxon.Taxonomy(taxonomy)
 
@@ -243,13 +277,30 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
 
     if rank not in taxon.TAXON_RANKS:
         rank = None
+    
+    if rank is None:
+        taxon_func = None
+    else:
+        taxon_func = functools.partial(
+            mgkit.snps.mapper.map_taxon_id_to_rank,
+            taxonomy=taxonomy,
+            rank=rank
+        )
 
     filters = snp_filter.get_default_filters(taxonomy, min_cov=min_cov,
                                              include_only=taxon_ids)
 
-    pnps = conv_func.get_gene_taxon_dataframe(
-        snp_data, taxonomy, gene_map, min_num=min_num, rank=rank,
-        filters=filters, use_uid=use_uid)
+    partial_calc = False
+    partial_syn = True
+    if only_ps or only_pn:
+        partial_calc = True
+        if only_pn:
+            partial_syn = False
+        LOG.info('Only "%s" will be calculated ', "pS"  if partial_syn else "pN")
+
+    pnps = mgkit.snps.funcs.combine_sample_snps(snp_data, min_num, filters, gene_func=gene_map,
+                                                taxon_func=taxon_func, use_uid=use_uid,
+                                                partial_calc=partial_calc, partial_syn=partial_syn)
 
     if lineage:
         pnps.rename(lambda x:  get_lineage(taxonomy, x), inplace=True)
