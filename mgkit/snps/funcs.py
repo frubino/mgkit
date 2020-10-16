@@ -185,7 +185,8 @@ def order_ratios(ratios, aggr_func=numpy.median, reverse=False,
 
 def combine_sample_snps(snps_data, min_num, filters, index_type=None,
                         gene_func=None, taxon_func=None, use_uid=False,
-                        flag_values=False, haplotypes=True, store_uids=False):
+                        flag_values=False, haplotypes=True, store_uids=False,
+                        partial_calc=False, partial_syn=True):
     """
     .. versionchanged:: 0.2.2
         added *use_uid* argument
@@ -195,6 +196,9 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
 
     .. versionchanged:: 0.4.0
         added *store_uids*
+    
+    .. versionchanged:: 0.5.3
+        added *partial_calc* and *partial_type*
 
     Combine a dictionary sample->gene_index->GeneSyn into a
     :class:`pandas.DataFrame`. The dictionary is first filtered with the
@@ -226,6 +230,11 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
             True, the 0/0 case will be returned as 0 instead of NaN
         store_uids (bool): if True a dictionary with the uid used for each
             cell (e.g. gene/taxon/sample)
+        partial_calc (bool): if True, only pS or pN values will be calculated,
+            depending on the value of *partial_syn*
+        partial_syn (bool): if both *partial_calc* and this are True, only pS
+            values will be calculated. If this parameter is False, pN values
+            will be calculated
 
     Returns:
         DataFrame: :class:`pandas.DataFrame` with the pN/pS values for the
@@ -243,6 +252,15 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
 
     if store_uids:
         uids_dict = {}
+    
+    if flag_values:
+        calc_method = 'calc_ratio_flag'
+    if partial_calc:
+        if partial_syn:
+            calc_method = 'calc_ps'
+        else:
+            calc_method = 'calc_pn'
+        
 
     for sample, genes_dict in viewitems(snps_data):
 
@@ -298,7 +316,7 @@ def combine_sample_snps(snps_data, min_num, filters, index_type=None,
         (
             sample,
             dict(
-                (key, gene.calc_ratio_flag() if flag_values else gene.calc_ratio(haplotypes=haplotypes))
+                (key, getattr(gene, calc_method)() if (flag_values or partial_calc) else gene.calc_ratio(haplotypes=haplotypes))
                 for key, gene in viewitems(row_dict)
             )
         )
