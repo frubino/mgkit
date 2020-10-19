@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.5.3
+-----
+
+* Added parameters to support the partial pN/pS calculations to `mgkit.snps.funcs.combine_sample_snps`
+* Added options to pnps-gen script to output only pS or pN to script `pnps-gen`
+
 0.5.2
 -----
 
