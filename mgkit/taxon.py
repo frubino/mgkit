@@ -982,6 +982,15 @@ class Taxonomy(object):
             del self._taxa[taxon_id]
 
         self._name_map = {}
+    
+    def iter_ids(self):
+        """
+        .. versionadded:: 0.5.4
+
+        Iterates over the taxon_ids
+        """
+        for taxon_id in self._taxa:
+            yield taxon_id
 
     def __getitem__(self, taxon_id):
         """
