@@ -987,7 +987,7 @@ class Taxonomy(object):
         """
         .. versionadded:: 0.5.4
 
-        Iterates over the taxon_ids
+        Iterates over the taxon IDs
         """
         for taxon_id in self._taxa:
             yield taxon_id

@@ -166,6 +166,7 @@ import json
 import click
 import mgkit
 import pandas as pd
+import difflib
 from tqdm import tqdm
 from . import utils
 from mgkit.io import gff, fasta, blast
@@ -717,10 +718,14 @@ def output_taxon_line(taxonomy, taxon_id, sep='\t'):
 @click.option('-s', '--separator', default='\t', help='column separator')
 @click.option('-o', '--only-names', multiple=True, type=click.STRING,
               help='Only get matched taxon names')
+@click.option('-p', '--partial', is_flag=True,
+              help='Use partial matches if any found (implies -o)')
+@click.option('-c', '--include-children', is_flag=True,
+              help='Include taxa that are children of the requested (implies -o)')
 @click.argument('taxonomy_file', type=click.File('rb'))
 @click.argument('output_file', type=click.File('w'), default='-')
-def get_taxonomy(verbose, header, separator, only_names, taxonomy_file,
-                 output_file):
+def get_taxonomy(verbose, header, separator, only_names, partial,
+                 include_children, taxonomy_file, output_file):
     """
     .. versionadded:: 0.5.0
     """
@@ -735,10 +740,34 @@ def get_taxonomy(verbose, header, separator, only_names, taxonomy_file,
     if only_names:
         taxon_ids = []
         for taxon_name in only_names:
+            taxon_name = taxon_name.lower()
             try:
                 taxon_ids.extend(taxonomy.find_by_name(taxon_name))
             except KeyError:
-                LOG.error("Taxon '%s' not found", taxon_name)
+                LOG.warning("Taxon '%s' not found, switching to partial match", taxon_name)
+                alt_names = []
+                for n_name in taxonomy._name_map:
+                    if taxon_name in n_name:
+                        alt_names.append(n_name)
+                if not alt_names:
+                    LOG.warning('Still no match, attempting fuzzy search')
+                    alt_names.extend(
+                        difflib.get_close_matches(taxon_name, taxonomy._name_map, n=6)
+                    )
+                LOG.info("Similar names to Taxon '%s': %s", taxon_name, ', '.join(alt_names))
+                if partial and alt_names:
+                    for alt_name in alt_names:
+                        taxon_ids.extend(taxonomy.find_by_name(alt_name))
+                
+        taxon_ids = set(taxon_ids)
+        if include_children:
+            LOG.info("Including Children Taxa")
+            children = set()
+            for taxon_id in taxonomy.iter_ids():
+                if taxonomy.is_ancestor(taxon_id, taxon_ids):
+                    children.add(taxon_id)
+            taxon_ids.update(children)
+
         for taxon_id in taxon_ids:
             line = output_taxon_line(taxonomy, taxon_id, sep=separator)
             output_file.write(line)
