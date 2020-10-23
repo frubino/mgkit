@@ -126,9 +126,16 @@ This command allows to print the taxonomy in a file created with MGKit. The
 default behaviour is to print the scientific name, taxon_id, rank and lineage
 (only ranked taxa) in a tab separated file (or standard output).
 
+Match names
+###########
+
 Besides the option to change the column separator, it is possible to only
 print specific taxa (case insensitive search, but need the correct name) and
-print headers for the output table.
+print headers for the output table. A partial and fuzzy search are performed,
+however these are only reported, unless option `-p` is passed.
+
+The lineage is printed only for the taxa requested, but all children can be
+included by using the `-c` option.
 
 Changes
 *******

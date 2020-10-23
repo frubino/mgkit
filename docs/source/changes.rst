@@ -1,6 +1,19 @@
 Changes
 =======
 
+0.5.4
+-----
+
+* added :meth:`mgkit.taxon.Taxonomy.iter_ids` to iterate over Taxonomy, yielding Taxon IDs
+* added options `-p` and `-c` to `taxon-utils get`
+
+taxon-utils get
+***************
+
+When using `-o` option in `taxon-utils get` the script will try an exact match, followed by a partial and finally a fuzzy search of the names passed. The alternative names will be reported but not used, unless the `-p` option is used.
+
+The `-c` option will output also all the taxa that are children of the passed names.
+
 0.5.3
 -----
 
