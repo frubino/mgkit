@@ -95,9 +95,9 @@ def open_file(file_name, mode='r'):
 
     """
 
-    test_class = io.IOBase
-
-    if isinstance(file_name, test_class):
+    # Using io.Base was not working - possibly different versions of python?
+    # better just assume that if it's not a string, it's a stream and just write to it. 
+    if getattr(file_name, 'endswith', None) is None:
         return compressed_handle(file_name)
 
     mode = mode + 'b' if 'b' not in mode else mode
@@ -134,7 +134,6 @@ def compressed_handle(file_handle):
         UnsupportedFormat: if the module to open the file is not available
 
     """
-    # LOG.info('Detecting Compressed File Handle')
 
     file_name = getattr(file_handle, 'name', None)
 
