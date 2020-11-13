@@ -31,6 +31,9 @@ Changes
 .. versionchanged:: 0.3.4
     ported to *click*
 
+.. versionchanged:: 0.5.5
+    added option `-1` to output only the forward/frame0 and `-w` to avoid wrap at 60 chars to the *translate* command
+
 """
 
 from __future__ import division
@@ -105,12 +108,18 @@ def translate_seq(name, seq, trans_table):
 @click.option('-t', '--trans-table', default='universal', show_default=True,
               type=click.Choice([table_name.lower() for table_name in dir(trans_tables) if not table_name.startswith('_')]),
               help='translation table')
+@click.option('-1', '--one-seq', default=False, is_flag=True, show_default=True,
+              help='Only translate the sequence, instead of all 6 frames')
+@click.option('-w', '--no-wrap', default=False, is_flag=True, show_default=True,
+              help='Make a sequence use only 1 line (2 including header)')
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def translate_command(verbose, trans_table, progress, fasta_file, output_file):
+def translate_command(verbose, trans_table, one_seq, no_wrap, progress, fasta_file, output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+    if one_seq:
+        LOG.info("Assuming the sequences are in the correct frame")
     LOG.info(
         'Writing to file (%s)',
         getattr(output_file, 'name', repr(output_file))
@@ -120,11 +129,21 @@ def translate_command(verbose, trans_table, progress, fasta_file, output_file):
 
     iterator = fasta.load_fasta(fasta_file)
 
-    iterator = tqdm(iterator)
+    if progress:
+        iterator = tqdm(iterator)
+    
+    if no_wrap:
+        wrap = None
+    else:
+        wrap = 60
 
     for name, seq in iterator:
-        for new_header, new_seq in translate_seq(name, seq, trans_table):
-            fasta.write_fasta_sequence(output_file, new_header, new_seq)
+        if one_seq:
+            new_seq = translate_sequence(seq, 0, trans_table, False)
+            fasta.write_fasta_sequence(output_file, name, new_seq, wrap=wrap)
+        else:
+            for new_header, new_seq in translate_seq(name, seq, trans_table):
+                fasta.write_fasta_sequence(output_file, new_header, new_seq, wrap=wrap)
 
 
 @main.command('uid', help="""Changes each header of a FASTA file [file-file] to
