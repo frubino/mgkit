@@ -100,10 +100,16 @@ second (1). The table may contains some headers, so the first N rows can be
 skipped with `-r`. Also, the field separator can be chosen, as well as only
 the edited annotation be printed (`-o` option).
 
+If there are comments in the file, for example lines starting with '#', it is
+possible to specify the option `-c '#'` to skip those lines and avoid errors.
+
 Changes
 *******
 
 .. versionadded:: 0.4.4
+
+.. versionchanged:: 0.5.5
+    added `-c` option to *table* command
 
 """
 
@@ -272,6 +278,8 @@ def print_fields(verbose, header, keep_empty, attributes, separator,
               help="Number of rows to skip at the start of the file")
 @click.option('-s', '--separator', default='\t',
               help="Fields separator, default to `TAB`")
+@click.option('-c', '--comment', default=None,
+              help="Characters for comments in file (eg '#'). defaults to None")
 @click.option('-t', '--table-file', type=click.File('rb', lazy=False),
               required=True)
 @click.option('-ki', '--key-index', default=0, show_default=True,
@@ -281,7 +289,7 @@ def print_fields(verbose, header, keep_empty, attributes, separator,
 @click.argument('input_file', type=click.File('rb', lazy=False), default='-')
 @click.argument('output_file', type=click.File('wb', lazy=False), default='-')
 def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
-                          separator, table_file, key_index, attr_index,
+                          separator, comment, table_file, key_index, attr_index,
                           input_file, output_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -296,7 +304,8 @@ def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
     fields = dict(
         text_to_dict(open_file(table_file), skip_lines=skip_rows,
                      sep=separator, key_index=key_index,
-                     value_index=attr_index, encoding='ascii')
+                     value_index=attr_index, encoding='ascii',
+                     skip_empty=True, skip_comment=comment)
     )
 
     changed = 0
