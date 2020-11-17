@@ -3,10 +3,12 @@ Dictionary utils
 
 """
 from builtins import range
+import logging
 from future.utils import viewitems, viewkeys
 import numpy
 import pandas
 
+LOG = logging.getLogger(__name__)
 
 def merge_dictionaries(dicts):
     """
@@ -397,9 +399,13 @@ def dict_to_text(stream, dictionary, header=None, comment=None, sep='\t'):
 
 
 def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
-                 key_func=str, value_func=str, encoding=None):
+                 key_func=str, value_func=str, encoding=None, skip_empty=False,
+                 skip_comment=None):
     """
     .. versionadded:: 0.4.4
+
+    .. versionchanged:: 0.5.5
+        added *skip_comment* and *skip_empty*
 
     Reads a dictionary form a table file, the passed file is assumed to be
     opened as text, not binary - in which case you need to pass the encoding
@@ -417,10 +423,15 @@ def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
         encoding (None, str): if *None* is passed, the file is assumed to be
             opened in text mode, otherwise the encoding of the file must be
             passed
+        skip_empty (bool): if True, an empty value will not be yielded
+        skip_comment (None, str): if a value other than None is passed, lines
+            starting with this parameter value will be skipped
 
     Yields:
         tuple: the keys and values that can be passed to *dict*
     """
+
+    count = 0
 
     for index, line in enumerate(stream):
 
@@ -431,15 +442,20 @@ def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
         if encoding is not None:
             line = line.decode(encoding)
 
-        line = line.rstrip()
+        line = line.rstrip('\n')
 
         # line empty, so skip
-        if not line:
+        if (not line) or ((skip_comment is not None) and line.startswith(skip_comment)):
             continue
 
         line = line.split(sep)
 
         key = key_func(line[key_index])
         value = value_func(line[value_index])
+        if skip_empty and (not value):
+            continue
 
+        count += 1
         yield key, value
+    
+    LOG.info("Used %d lines out of %d", count, index + 1)
