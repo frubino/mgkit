@@ -1,6 +1,17 @@
 Changes
 =======
 
+0.5.5
+-----
+
+* `fasta-utils translate` gained an option to translate the current frame of a sequence, assumes the sequences are ORFs
+* `edit-gff table` gained an option to skip comments, user can indicated the string for comments. For example `-c '#'` for comments starting with '#'
+
+Changed
+*******
+
+* :func:`mgkit.utils.dictionary.text_to_dict`
+
 0.5.4
 -----
 
