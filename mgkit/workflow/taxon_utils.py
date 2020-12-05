@@ -57,6 +57,12 @@ separated), that can be used with::
 Note the use of *-q* to make the script count the lineages. Sequences with no
 LCA found will be marked as *No LCA* in the graph, the *-n* is not required.
 
+If a fasta file is passed, the format is changed to add the number of base pairs
+for each contig, showing the number of bases for each taxonomic assignment. The
+option `-kt` is not needed in this case. In that case, to generate a Krona plot::
+
+    $ ktImportText taxon_utils_ouput
+
 .. note::
 
     Please note that the output won't include any sequence that didn't have a
@@ -247,7 +253,7 @@ def write_no_lca(file_handle, seq_id, taxon_ids, extra=None):
     )
 
 
-def write_krona(file_handle, taxonomy, taxon_id, only_ranked):
+def write_krona(file_handle, taxonomy, taxon_id, only_ranked, base_pairs=None):
     if taxon_id is None:
         lineage = ['No LCA']
     else:
@@ -258,6 +264,9 @@ def write_krona(file_handle, taxonomy, taxon_id, only_ranked):
             only_ranked=only_ranked,
             with_last=True
         )
+    if base_pairs is not None:
+        # Adds the length of the contig
+        lineage.insert(0, str(base_pairs))
     file_handle.write(
         '{}\n'.format('\t'.join(lineage)).encode('ascii')
     )
@@ -298,7 +307,7 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
 @click.option('-ft', '--feat-type', default='LCA', show_default=True,
               help='Feature type used if the output is a GFF (default is *LCA*)')
 @click.option('-r', '--reference', default=None, type=click.File('rb'),
-              help='Reference file for the GFF, if supplied a GFF file is the output')
+              help='Required reference file for the GFF, if krona is the format, contig lengths are added')
 @click.option('-p', '--simple-table', is_flag=True, default=False,
               help='Uses a 2 column table format (seq_id taxon_id) TAB separated')
 @click.option('-kt', '--krona-total', type=click.INT, default=None,
@@ -371,9 +380,15 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
     lca_dict = {}
     if progress:
         annotations = tqdm(annotations)
+    assigned_contigs = set()
     for seq_ann in annotations:
         count += 1
         seq_id = seq_ann[0].seq_id
+        assigned_contigs.add(seq_id)
+        if seqs is None:
+            base_pairs = None
+        else:
+            base_pairs = len(seqs[seq_id])
         try:
             taxon_id = taxon.last_common_ancestor_multiple(
                 taxonomy,
@@ -395,7 +410,7 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
                     )
                 )
             if out_format == 'krona':
-                write_krona(output_file, taxonomy, None, False)
+                write_krona(output_file, taxonomy, None, False, base_pairs=base_pairs)
             continue
 
         taxon_name, lineage = get_taxon_info(
@@ -418,7 +433,8 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
                 output_file,
                 taxonomy,
                 taxon_id,
-                only_ranked
+                only_ranked,
+                base_pairs=base_pairs
             )
         elif out_format == 'json':
             write_json(
@@ -440,9 +456,13 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
                     taxonomy[taxon_id].rank,
                     lineage
                 )
-    if (out_format == 'krona') and (krona_total is not None):
-        for index in range(count, krona_total):
-            output_file.write('Unknown\n'.encode('ascii'))
+    if (out_format == 'krona'):
+        if (krona_total is not None) and (seqs is None):
+            for index in range(count, krona_total):
+                output_file.write('Unknown\n'.encode('ascii'))
+        elif seqs is not None:
+            for seq_id in set(seqs) - assigned_contigs:
+                output_file.write('{}\tUnknown\n'.format(len(seqs[seq_id])).encode('ascii'))
 
     if out_format == 'json':
         output_file.write(json.dumps(lca_dict, indent=4).encode('ascii'))
