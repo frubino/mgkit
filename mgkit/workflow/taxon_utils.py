@@ -488,7 +488,7 @@ def lca_line_command(verbose, taxonomy, no_lca, only_ranked, separator,
                 taxon_ids
             )
         except taxon.NoLcaFound as error:
-            LOG.error("No LCA found for %s (%s)", taxon_ids, error)
+            LOG.warning("No LCA found for %s (%s)", taxon_ids, error)
             if no_lca is not None:
                 write_no_lca(
                     no_lca,
