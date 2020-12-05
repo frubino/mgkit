@@ -442,7 +442,7 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
                 )
     if (out_format == 'krona') and (krona_total is not None):
         for index in range(count, krona_total):
-            output_file.write('Unknown\n')
+            output_file.write('Unknown\n'.encode('ascii'))
 
     if out_format == 'json':
         output_file.write(json.dumps(lca_dict, indent=4).encode('ascii'))

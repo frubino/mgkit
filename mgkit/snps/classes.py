@@ -31,7 +31,7 @@ class RatioMixIn(object):
 
             \\frac {pN}{pS} = \\frac{ ^{oN}/_{eN}}{ ^{oS}/_{eS}}
 
-        WHere:
+        Where:
 
         * oN (number of non-synonymous - **nonsyn**)
         * eN (expected number of non-synonymous - **exp_nonsyn**)

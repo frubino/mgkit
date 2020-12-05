@@ -96,7 +96,7 @@ def open_file(file_name, mode='r'):
     """
 
     # Using io.Base was not working - possibly different versions of python?
-    # better just assume that if it's not a string, it's a stream and just write to it. 
+    # better just assume that if it's not a string, it's a stream and just write to it.
     if getattr(file_name, 'endswith', None) is None:
         return compressed_handle(file_name)
 
