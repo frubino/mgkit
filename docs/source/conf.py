@@ -49,7 +49,7 @@ extensions = [
 #import sphinx_bootstrap_theme
 #import sphinx_readable_theme
 #import solar_theme
-import sphinx_rtd_theme
+#import sphinx_rtd_theme
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -142,7 +142,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme' # 'readable' 'sphinx_rtd_theme' 'solar_theme' 'bootstrap' 'graphite'
+html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -150,7 +150,7 @@ html_theme = 'sphinx_rtd_theme' # 'readable' 'sphinx_rtd_theme' 'solar_theme' 'b
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['./_themes/', sphinx_rtd_theme.get_html_theme_path()]
+#html_theme_path = ['./_themes/', sphinx_rtd_theme.get_html_theme_path()]
 #bootstrap theme
 #html_theme_path = [solar_theme.theme_path] #sphinx_bootstrap_theme.get_html_theme_path()
 

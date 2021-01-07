@@ -28,13 +28,13 @@ The `-c` option will output also all the taxa that are children of the passed na
 0.5.3
 -----
 
-* Added parameters to support the partial pN/pS calculations to `mgkit.snps.funcs.combine_sample_snps`
-* Added options to pnps-gen script to output only pS or pN to script `pnps-gen`
+* Added parameters to support the partial pN/pS calculations to :func:`mgkit.snps.funcs.combine_sample_snps`
+* Added options to pnps-gen script to output only pS or pN to script ``pnps-gen``
 
 0.5.2
 -----
 
-* Fixed a bug when using *--rank None* in `pnps-gen`
+* Fixed a bug when using *--rank None* in ``pnps-gen``
 
 0.5.1
 -----
@@ -52,7 +52,7 @@ Added
 *****
 
 * `taxon-utils get` command to query a taxonomy file
-* `pnps-gen` to generate a table of pN/pS values
+* ``pnps-gen`` to generate a table of pN/pS values
 
 0.4.4
 -----
