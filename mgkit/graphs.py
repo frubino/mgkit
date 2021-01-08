@@ -349,8 +349,8 @@ def from_kgml(entry, graph=None, rn_ids=None):
                     graph.add_node(substrate, node_type='substrate')
                 else:
                     # cases where the substrate is product of other reactions
-                    if graph.node[substrate]['node_type'] != 'substrate':
-                        graph.node[substrate]['node_type'] = 'mixed'
+                    if graph.nodes[substrate]['node_type'] != 'substrate':
+                        graph.nodes[substrate]['node_type'] = 'mixed'
 
                 graph.add_edge(
                     substrate,
@@ -370,8 +370,8 @@ def from_kgml(entry, graph=None, rn_ids=None):
                     graph.add_node(product, node_type='product')
                 else:
                     # cases where the product is product of other reactions
-                    if graph.node[product]['node_type'] != 'product':
-                        graph.node[product]['node_type'] = 'mixed'
+                    if graph.nodes[product]['node_type'] != 'product':
+                        graph.nodes[product]['node_type'] = 'mixed'
 
                 graph.add_edge(
                     reaction,
