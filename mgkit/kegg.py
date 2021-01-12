@@ -745,19 +745,26 @@ class KeggModule(object):
         self.name = entryd['NAME'][0]
 
         self.classes = entryd['CLASS'][0].split('; ')
-        self.compounds = [
-            re.search(r"(C\d{5})\s+.+", line).group(1)
-            for line in entryd['COMPOUND']
-        ]
-
+        # not always present
+        if 'COMPOUND' in entryd:
+            self.compounds = []
+            for line in entryd['COMPOUND']:
+                self.compounds.append(
+                    line.strip().split('  ')
+                )
+        else:
+            self.compounds = []
         self.reactions = []
-
-        for reaction in entryd['REACTION']:
-            reaction = self.parse_reaction(reaction, ko_ids=None)
-            self.reactions.append(reaction)
+        if 'REACTION' in entryd:
+            for reaction in entryd['REACTION']:
+                # avoid empty lines
+                if not reaction:
+                    continue
+                reaction = self.parse_reaction(reaction, ko_ids=None)
+                self.reactions.append(reaction)
+            self._reactions = entryd['REACTION']
 
         self._orthologs = entryd['DEFINITION'][0].split(' ')
-        self._reactions = entryd['REACTION']
 
     @staticmethod
     def parse_reaction(line, ko_ids=None):
@@ -774,7 +781,8 @@ class KeggModule(object):
         # some reaction lines have only one space
         rn_ids, reaction = line.replace('  ', ' ').split(' ', 1)
         rn_ids = tuple(x.strip() for x in rn_ids.replace('+', ',').split(','))
-        comp1, comp2 = reaction.split(' -> ')
+        # some reactions have now a specific reversible notation?
+        comp1, comp2 = reaction.replace('<->', '->').split(' -> ')
         comp1 = comp1.replace('(spontaneous)', '')
         comp2 = comp2.replace('(spontaneous)', '')
         comp1 = tuple(x.strip() for x in comp1.replace('+', ',').split(','))
@@ -830,6 +838,9 @@ class KeggModule(object):
         """
         sub_modules = []
         sub_module = None
+        # in case there are no reaction, the "else" clause of the loop is called
+        if not self.reactions:
+            return sub_modules
         for rn_ids, (left_cpds, right_cpds) in self.reactions:
             if sub_module is None:
                 sub_module = [left_cpds, right_cpds]
