@@ -180,7 +180,8 @@ class KeggClientRest(object):
             mapping[kegg_id] = None
 
         return {
-            kegg_id: list(value)
+            # avoid duplicates
+            kegg_id: list(set(value))
             for kegg_id, value in viewitems(mapping)
             if (kegg_id in kegg_ids) and (value is not None)
         }
