@@ -7,7 +7,7 @@ import logging
 
 from . import logger
 
-__VERSION__ = "0.5.5"
+__VERSION__ = "0.5.6"
 
 __version__ = __VERSION__
 
