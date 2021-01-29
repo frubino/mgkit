@@ -4,23 +4,25 @@ from mgkit.net.uniprot import get_sequences_by_ko, get_mappings, get_gene_info, 
 from conftest import skip_no_connection
 
 
+@pytest.mark.skip(reason='Problem with API')
 @skip_no_connection
 def test_get_sequences_by_ko():
     assert get_sequences_by_ko('K00001', 2)[0] == '>'
 
 
+@pytest.mark.skip(reason='Problem with API')
 @skip_no_connection
 def test_get_mappings1():
     assert 'A0A023P6Q7' in \
         get_mappings('K00001', db_from='KO_ID', db_to='ACC')['K00001']
 
 
+@pytest.mark.skip(reason='Problem with API')
 def test_get_mappings2():
     assert 'A0A023P6Q7' in \
         get_mappings('K00001', db_from='KO_ID', db_to='ACC', out_format='list')
 
 
-# @pytest.mark.skip(reason='There are discrepancies in Uniprot return values')
 @skip_no_connection
 def test_get_gene_info():
     assert get_gene_info(['Q09575', 'Q8DQI6'], ['organism-id']) == \
