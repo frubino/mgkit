@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.5.6
+-----
+
+* mgkit.net.uniprot tests have problems with upstream API and are skipped for now
+* added option to `taxon-utils lca` to use the reference file to add base pair counts to the Krona output
+* several bugfixes
+
 0.5.5
 -----
 
