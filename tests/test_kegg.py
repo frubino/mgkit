@@ -9,7 +9,7 @@ def keggclient():
 pytestmark = skip_no_connection
 
 def test_keggclient_link1(keggclient):
-    assert keggclient.link_ids('rn', 'K00201') == {'K00201': ['R03015', 'R08060']}
+    assert set(keggclient.link_ids('rn', 'K00201')['K00201']) == {'R03015', 'R08060'}
 
 
 def test_keggclient_list1(keggclient):
