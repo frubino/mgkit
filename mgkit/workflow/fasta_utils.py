@@ -20,6 +20,11 @@ uid command
 Used to change a FASTA file headers to a unique ID. A table (tab separated)
 with the changes made can be kept, using the *--table* option.
 
+filter
+******
+
+Used to filter a FASTA file by length and also for sequence/header if a pattern is contained.
+
 Changes
 *******
 
@@ -33,6 +38,9 @@ Changes
 
 .. versionchanged:: 0.5.5
     added option `-1` to output only the forward/frame0 and `-w` to avoid wrap at 60 chars to the *translate* command
+
+.. versionchanged:: 0.5.7
+    added `filter` command for simple fasta file filtering
 
 """
 
@@ -172,3 +180,38 @@ def uid_command(verbose, table, fasta_file, output_file):
             table.write("{}\t{}\n".format(uid, name).encode('ascii'))
 
         fasta.write_fasta_sequence(output_file, uid, seq)
+
+
+@main.command('filter', help="""Filters a FASTA file [file-file]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('--len-gt', default=None, type=click.IntRange(min=1), help='Keeps sequences whose length is greater than')
+@click.option('--len-lt', default=None, type=click.IntRange(min=1), help='Keeps sequences whose length is less than')
+@click.option('--header-contains', default=None, type=click.STRING, help='Keeps sequences whose header contains the string')
+@click.option('--seq-pattern', default=None, type=click.STRING, help='Keeps sequences that contains the string')
+@click.option('-w', '--wrap', default=False, is_flag=True, help='Wraps the output sequences to 60 characters')
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, wrap, fasta_file, output_file):
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+    
+    if wrap:
+        wrap = 60
+    else:
+        wrap = None
+
+    for name, seq in fasta.load_fasta(fasta_file):
+        seq_len = len(seq)
+        if len_gt is not None:
+            if not (seq_len > len_gt):
+                continue
+        if len_lt is not None:
+            if not (seq_len < len_lt):
+                continue
+        if header_contains is not None:
+            if header_contains not in name:
+                continue
+        if seq_pattern is not None:
+            if seq_pattern not in seq:
+                continue
+        
+        fasta.write_fasta_sequence(output_file, name, seq, wrap=wrap)
