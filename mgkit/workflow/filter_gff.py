@@ -484,6 +484,7 @@ def make_choose_func(values):
         values = values[1:]
     else:
         function = min
+        values = values.strip('-')
 
     attributes = values.split(',')
 
