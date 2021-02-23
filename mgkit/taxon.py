@@ -777,11 +777,12 @@ class Taxonomy(object):
             for taxon in self
         )
 
-    def get_lineage(self, taxon_id, names=False, only_ranked=True, with_last=True):
+    def get_lineage(self, taxon_id, names=False, only_ranked=True, with_last=True, **kwd):
         """
         .. versionadded:: 0.3.1
 
-        Proxy for :func:`get_lineage`, with changed defaults
+        Proxy for :func:`get_lineage`, with changed defaults. Other keyword arguments are
+        passed to :func:`get_lineage`
 
         Arguments:
             taxon_id (int): taxon_id to return the lineage
@@ -799,17 +800,19 @@ class Taxonomy(object):
             taxon_id,
             names=names,
             only_ranked=only_ranked,
-            with_last=with_last
+            with_last=with_last,
+            **kwd
         )
 
     def get_lineage_string(self, taxon_id, only_ranked=True, with_last=True,
-                           sep=';', rank=None):
+                           sep=';', rank=None, **kwd):
         """
         .. versionadded:: 0.3.3
 
         Generates a lineage string, with the possibility of getting another
         ranked taxon (via :meth:`Taxonomy.get_ranked_taxon`) to another
-        rank, such as *phylum*.
+        rank, such as *phylum*. Other keyword arguments are passed to
+        called functions
 
         Arguments:
             taxon_id (int): taxon_id to return the lineage
@@ -831,7 +834,8 @@ class Taxonomy(object):
                 taxon_id,
                 only_ranked=only_ranked,
                 with_last=with_last,
-                names=True
+                names=True,
+                **kwd
             )
         )
 
@@ -1212,7 +1216,7 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
 
 
 def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
-                with_last=False):
+                with_last=False, add_rank=False):
     """
     .. versionadded:: 0.2.1
 
@@ -1221,6 +1225,9 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
 
     .. versionchanged:: 0.3.0
         added *with_last*
+
+    .. versionchanged:: 0.5.7
+        added *add_rank*
 
     Returns the lineage of a taxon_id, as a list of taxon_id or taxa names
 
@@ -1233,6 +1240,8 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
             data:`TAXON_RANKS` will be returned
         with_last (bool): if True, the passed taxon_id is included in the
             lineage
+        add_rank (bool): prepend the names in the lineage with the first
+                letter of the rank and 2 underscores
 
     Returns:
         list: lineage of the taxon_id, the elements are `int` if names is False,
@@ -1254,10 +1263,14 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
         lineage.append(taxon_id)
 
     if names:
-        lineage = [
-            taxonomy[x].s_name if taxonomy[x].s_name else taxonomy[x].c_name
-            for x in lineage
-        ]
+        lineage_names = []
+        for taxon_id in lineage:
+            taxon_name = taxonomy[taxon_id].s_name if taxonomy[taxon_id].s_name else taxonomy[taxon_id].c_name
+            if add_rank:
+                if (taxonomy[taxon_id].rank is not None) and (taxonomy[taxon_id].rank != 'no rank'):
+                    taxon_name = taxonomy[taxon_id].rank[0] + '__' + taxon_name
+            lineage_names.append(taxon_name)
+        lineage = lineage_names
 
     return list(reversed(lineage))
 
