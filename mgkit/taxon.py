@@ -1268,6 +1268,10 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
             taxon_name = taxonomy[taxon_id].s_name if taxonomy[taxon_id].s_name else taxonomy[taxon_id].c_name
             if add_rank:
                 if (taxonomy[taxon_id].rank is not None) and (taxonomy[taxon_id].rank != 'no rank'):
+                    if prefix == 'superkingdom':
+                        prefix = 'k'
+                    else:
+                        prefix = taxonomy[taxon_id].rank[0]
                     taxon_name = taxonomy[taxon_id].rank[0] + '__' + taxon_name
             lineage_names.append(taxon_name)
         lineage = lineage_names
