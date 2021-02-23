@@ -25,6 +25,11 @@ filter
 
 Used to filter a FASTA file by length and also for sequence/header if a pattern is contained.
 
+info
+****
+
+Gets information about a FASTA file, prints seq_id (trimmed at first space), length and hash (default sha1) and optionally the sequence.
+
 Changes
 *******
 
@@ -49,6 +54,7 @@ from builtins import range
 import logging
 from uuid import uuid4
 import click
+import hashlib
 from tqdm import tqdm
 import mgkit
 from . import utils
@@ -192,6 +198,11 @@ def uid_command(verbose, table, fasta_file, output_file):
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, wrap, fasta_file, output_file):
+    """
+    .. versionadded:: 0.5.7
+
+    Filters a fasta file
+    """
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
     
     if wrap:
@@ -215,3 +226,42 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, wrap, 
                 continue
         
         fasta.write_fasta_sequence(output_file, name, seq, wrap=wrap)
+
+
+@main.command('info', help="""Gets information of FASTA file [file-file]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-h', '--header', is_flag=True, default=False,
+    help="Prints header")
+@click.option('-s', '--include-seq', is_flag=True, default=False,
+    help="Prints header")
+@click.option('-r', '--no-rename', is_flag=True, default=False,
+    help="Do not split sequence name at first space")
+@click.option('-a', '--hash-type', type=click.Choice(['sha1', 'md5', 'sha256']),
+    default='sha1', show_default=True)
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('w'), default='-')
+def info_command(verbose, header, include_seq, no_rename, hash_type, fasta_file, output_file):
+    """
+    .. versionadded:: 0.5.7
+
+    Makes a tabular format file with hash, length and optionally the sequence
+    """
+    hash_func = getattr(hashlib, hash_type)
+    if no_rename:
+        LOG.info("Sequence names will not be split at the first space")
+        load_func = fasta.load_fasta
+    else:
+        load_func = fasta.load_fasta_rename
+
+    if header:
+        columns = ["seq_id", "length", "hash"]
+        if include_seq:
+            columns.append('sequence')
+        print(*columns, sep='\t', file=output_file)
+    
+    for name, seq in load_func(fasta_file):
+        values = [name, len(seq), hash_func(seq.encode('ascii')).hexdigest()]
+        if include_seq:
+            values.append(seq)
+        print(*values, sep='\t', file=output_file)
+    
