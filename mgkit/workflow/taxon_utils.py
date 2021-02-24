@@ -130,7 +130,19 @@ Extract taxonomy
 
 This command allows to print the taxonomy in a file created with MGKit. The
 default behaviour is to print the scientific name, taxon_id, rank and lineage
-(only ranked taxa) in a tab separated file (or standard output).
+(only ranked taxa) in a tab separated file (or standard output). IDs can also
+be passed along with names:
+
+.. code-block:: bash
+
+    taxon-utils get -i 2147 -o prevotella -i 3688 -i 1485 -o methanobrevibacter taxonomy.msgpack
+
+    INFO - mgkit.taxon: Loading taxonomy from file taxonomy.msgpack
+    Acholeplasma    2147    genus   Bacteria;Tenericutes;Mollicutes;Acholeplasmatales;Acholeplasmataceae;Acholeplasma
+    Prevotella      838     genus   Bacteria;Bacteroidetes;Bacteroidia;Bacteroidales;Prevotellaceae;Prevotella
+    Salicaceae      3688    family  Eukaryota;Viridiplantae;Streptophyta;Magnoliopsida;Malpighiales;Salicaceae
+    Methanobrevibacter      2172    genus   Archaea;Euryarchaeota;Methanobacteria;Methanobacteriales;Methanobacteriaceae;Methanobrevibacter
+    Clostridium     1485    genus   Bacteria;Firmicutes;Clostridia;Clostridiales;Clostridiaceae;Clostridium
 
 Match names
 ###########
@@ -145,6 +157,9 @@ included by using the `-c` option.
 
 Changes
 *******
+
+.. versionchanged:: 0.5.7
+    added *--only-ids* option to *get* command
 
 .. versionchanged:: 0.5.0
     added *get* command to taxon-utils to print the taxonomy or search in it
@@ -745,13 +760,15 @@ def output_taxon_line(taxonomy, taxon_id, sep='\t'):
 @click.option('-s', '--separator', default='\t', help='column separator')
 @click.option('-o', '--only-names', multiple=True, type=click.STRING,
               help='Only get matched taxon names')
+@click.option('-i', '--only-ids', multiple=True, type=click.INT,
+              help='Only get matched taxon IDs')
 @click.option('-p', '--partial', is_flag=True,
               help='Use partial matches if any found (implies -o)')
 @click.option('-c', '--include-children', is_flag=True,
               help='Include taxa that are children of the requested (implies -o)')
 @click.argument('taxonomy_file', type=click.File('rb'))
 @click.argument('output_file', type=click.File('w'), default='-')
-def get_taxonomy(verbose, header, separator, only_names, partial,
+def get_taxonomy(verbose, header, separator, only_names, only_ids, partial,
                  include_children, taxonomy_file, output_file):
     """
     .. versionadded:: 0.5.0
@@ -764,8 +781,10 @@ def get_taxonomy(verbose, header, separator, only_names, partial,
         output_file.write(separator.join(
             ['Taxon Name', 'taxon_id', 'Rank', 'Lineage']) + '\n')
 
+    
+    taxon_ids = []
+
     if only_names:
-        taxon_ids = []
         for taxon_name in only_names:
             taxon_name = taxon_name.lower()
             try:
@@ -787,6 +806,11 @@ def get_taxonomy(verbose, header, separator, only_names, partial,
                         taxon_ids.extend(taxonomy.find_by_name(alt_name))
                 
         taxon_ids = set(taxon_ids)
+
+    if only_ids:
+        taxon_ids = set(taxon_ids) | set(only_ids)
+
+    if (only_names or only_ids) and include_children:
         if include_children:
             LOG.info("Including Children Taxa")
             children = set()
@@ -798,8 +822,14 @@ def get_taxonomy(verbose, header, separator, only_names, partial,
         for taxon_id in taxon_ids:
             line = output_taxon_line(taxonomy, taxon_id, sep=separator)
             output_file.write(line)
-    else:
-        for taxon_obj in taxonomy:
-            line = output_taxon_line(taxonomy, taxon_obj.taxon_id,
-                                     sep=separator)
+    
+    if not taxon_ids:
+        taxon_ids = taxonomy.iter_ids()
+
+    for taxon_id in taxon_ids:
+        try:
+            line = output_taxon_line(taxonomy, taxon_id, sep=separator)
             output_file.write(line)
+        except KeyError:
+            LOG.error("Cannot find taxon ID %d", taxon_id)
+        
