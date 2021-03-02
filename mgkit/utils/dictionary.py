@@ -406,6 +406,9 @@ def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
 
     .. versionchanged:: 0.5.5
         added *skip_comment* and *skip_empty*
+    
+    .. versionchanged::0.5.7
+        added *verbose* parameter
 
     Reads a dictionary form a table file, the passed file is assumed to be
     opened as text, not binary - in which case you need to pass the encoding
@@ -426,6 +429,7 @@ def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
         skip_empty (bool): if True, an empty value will not be yielded
         skip_comment (None, str): if a value other than None is passed, lines
             starting with this parameter value will be skipped
+        verbose (bool): if True logs informations about the file read
 
     Yields:
         tuple: the keys and values that can be passed to *dict*
@@ -458,4 +462,5 @@ def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
         count += 1
         yield key, value
     
-    LOG.info("Used %d lines out of %d", count, index + 1)
+    if verbose:
+        LOG.info("Used %d lines out of %d", count, index + 1)
