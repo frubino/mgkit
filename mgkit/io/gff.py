@@ -1393,7 +1393,8 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False,
     Keyword Args:
         feat_type (str): feature type in the GFF
         seq_len (int): sequence length, if supplied, the phase for strand '-'
-            can be assigned, otherwise is assigned a 0
+            can be assigned, otherwise is assigned a 0 and the sequence
+            coverage are added
         **kwd: any additional column
 
     Returns:
@@ -1413,6 +1414,10 @@ def from_nuc_blast(hit, db, feat_type='CDS', seq_len=None, to_nuc=False,
         strand = '-'
         if seq_len is not None:
             phase = (seq_len - end) % 3
+
+    if seq_len is not None:
+        query_coverage = (end - start + 1.) / seq_len * 100
+        kwd['query_coverage'] = query_coverage
 
     if strand == '+':
         phase = (start - 1) % 3

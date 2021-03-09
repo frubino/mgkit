@@ -68,6 +68,9 @@ the options of later changing the *gene_id* in the output GFF if necessary.
 Changes
 *******
 
+.. versionchanged:: 0.5.7
+    in command *blastdb* if the fasta file is passed, the query coverage is calculated
+
 .. versionchanged:: 0.3.4
     using *click* instead of *argparse*
 
