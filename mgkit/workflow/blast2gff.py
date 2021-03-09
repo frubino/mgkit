@@ -154,7 +154,7 @@ outputs a GFF file [gff-file]
 @click.option('-r', '--remove-version', is_flag=True,
               help='''if used, the script removes the *version* information from the gene_id''')
 @click.option('-a', '--fasta-file', type=click.Path(readable=True),
-              help='Optional FASTA file with the query sequences')
+              help='Optional FASTA file with the query sequences, if passed, query coverage is calculated')
 @click.option('-dbq', '--db-quality', type=click.INT, show_default=True,
               default=10, help='Quality of the DB used')
 @click.option('-b', '--bitscore', type=click.FLOAT, show_default=True,
