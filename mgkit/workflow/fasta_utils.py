@@ -233,7 +233,7 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, wrap, 
 @click.option('-h', '--header', is_flag=True, default=False,
     help="Prints header")
 @click.option('-s', '--include-seq', is_flag=True, default=False,
-    help="Prints header")
+    help="Includes the sequence")
 @click.option('-r', '--no-rename', is_flag=True, default=False,
     help="Do not split sequence name at first space")
 @click.option('-a', '--hash-type', type=click.Choice(['sha1', 'md5', 'sha256']),
