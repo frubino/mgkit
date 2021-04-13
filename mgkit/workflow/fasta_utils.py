@@ -58,7 +58,7 @@ import hashlib
 from tqdm import tqdm
 import mgkit
 from . import utils
-from mgkit.io import fasta
+from mgkit.io import fasta, gff
 from ..utils import trans_tables
 from ..utils.sequence import translate_sequence
 
@@ -238,14 +238,19 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, wrap, 
     help="Do not split sequence name at first space")
 @click.option('-a', '--hash-type', type=click.Choice(['sha1', 'md5', 'sha256']),
     default='sha1', show_default=True)
+@click.option('-g', '--out-gff', is_flag=True, default=False, show_default=True,
+    help='Outputs a GFF file')
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('w'), default='-')
-def info_command(verbose, header, include_seq, no_rename, hash_type, fasta_file, output_file):
+def info_command(verbose, header, include_seq, no_rename, hash_type, out_gff, fasta_file, output_file):
     """
     .. versionadded:: 0.5.7
 
-    Makes a tabular format file with hash, length and optionally the sequence
+    Makes a tabular format file with hash, length and optionally the sequence. Alternatively, a GFF
+    can be the output.
     """
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
     hash_func = getattr(hashlib, hash_type)
     if no_rename:
         LOG.info("Sequence names will not be split at the first space")
@@ -253,15 +258,21 @@ def info_command(verbose, header, include_seq, no_rename, hash_type, fasta_file,
     else:
         load_func = fasta.load_fasta_rename
 
-    if header:
-        columns = ["seq_id", "length", "hash"]
-        if include_seq:
-            columns.append('sequence')
-        print(*columns, sep='\t', file=output_file)
-    
-    for name, seq in load_func(fasta_file):
-        values = [name, len(seq), hash_func(seq.encode('ascii')).hexdigest()]
-        if include_seq:
-            values.append(seq)
-        print(*values, sep='\t', file=output_file)
-    
+    if out_gff:
+        for name, seq in load_func(fasta_file):
+            seq_hash = hash_func(seq.encode('ascii')).hexdigest()
+            annotation = gff.from_sequence(name, seq, seq_hash=seq_hash)
+            print(annotation.to_gff(), file=output_file)
+    else:
+        if header:
+            columns = ["seq_id", "length", "hash"]
+            if include_seq:
+                columns.append('sequence')
+            print(*columns, sep='\t', file=output_file)
+        
+        for name, seq in load_func(fasta_file):
+            values = [name, len(seq), hash_func(seq.encode('ascii')).hexdigest()]
+            if include_seq:
+                values.append(seq)
+            print(*values, sep='\t', file=output_file)
+        
