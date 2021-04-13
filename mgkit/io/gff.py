@@ -445,6 +445,15 @@ class Annotation(GenomicRange):
         Length of the annotation, uses `len(self)`
         """
         return len(self)
+    
+    @property
+    def seq_hash(self):
+        """
+        .. versionadded:: 0.5.7
+
+        Hash of the original sequence, if added
+        """
+        return self.attr.get('seq_hash', None)
 
     @property
     def region(self):
