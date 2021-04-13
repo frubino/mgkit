@@ -262,7 +262,7 @@ def info_command(verbose, header, include_seq, no_rename, hash_type, out_gff, fa
         for name, seq in load_func(fasta_file):
             seq_hash = hash_func(seq.encode('ascii')).hexdigest()
             annotation = gff.from_sequence(name, seq, seq_hash=seq_hash)
-            print(annotation.to_gff(), file=output_file)
+            output_file.write(annotation.to_gff())
     else:
         if header:
             columns = ["seq_id", "length", "hash"]
