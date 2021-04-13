@@ -790,7 +790,10 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
         getattr(output_file, 'name', repr(output_file))
     )
 
+    LOG.info("Using (%s) as key", gene_attr)
+
     if (gene_taxon_table is not None) and (not cache_table):
+        LOG.info("Caching Annotations")
         annotations = []
         gene_ids = set()
 
@@ -811,6 +814,7 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
             )
         )
     elif (gene_taxon_table is not None) and cache_table:
+        LOG.info("Caching Table File")
         annotations = gff.parse_gff(input_file)
         gene_ids = cache_dict_file(
             blast.parse_accession_taxa_table(
@@ -821,6 +825,7 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
             )
         )
     elif hdf_table is not None:
+        LOG.info("Using HDF5 Table (%s) from file %s", hdf_table[1], hdf_table[0])
         try:
             gene_ids = HDFDict(hdf_table[0], hdf_table[1])
         except ValueError as e:
@@ -836,6 +841,7 @@ def addtaxa_command(verbose, gene_taxon_table, hdf_table, gene_attr, taxonomy,
         gene_ids = {}
 
     if (dictionary is not None) and (hdf_table is None):
+        LOG.info("Using dictionary, will take precedence over table")
         dict_file = open_file(dictionary, 'r')
         if '.json' in dictionary:
             gene_ids.update(json.load(dict_file))
