@@ -321,6 +321,8 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
               help='''If the GFF file is sorted (all of a sequence annotations are contiguos) can use less memory, `sort -s -k 1,1` can be used''')
 @click.option('-ft', '--feat-type', default='LCA', show_default=True,
               help='Feature type used if the output is a GFF (default is *LCA*)')
+@click.option('-g', '--group-by-attr', default='seq_id', show_default=True,
+              help='Attribute to get the LCA for - default to sequence')
 @click.option('-r', '--reference', default=None, type=click.File('rb'),
               help='Required reference file for the GFF, if krona is the format, contig lengths are added')
 @click.option('-p', '--simple-table', is_flag=True, default=False,
@@ -335,7 +337,7 @@ def write_json(lca_dict, seq_id, taxonomy, taxon_id, only_ranked):
 @click.argument('gff-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
-                       rename, sorted, feat_type, reference, simple_table,
+                       rename, sorted, feat_type, group_by_attr, reference, simple_table,
                        krona_total, out_format, progress, gff_file,
                        output_file):
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
@@ -382,13 +384,13 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
         LOG.info("Input GFF is assumed sorted")
         annotations = gff.group_annotations_sorted(
             annotations_iter,
-            lambda annotation: annotation.seq_id
+            lambda annotation: annotation.get_attr(group_by_attr)
         )
     else:
         # groups the annotations by sequence, in case they're not sorted
         annotations = viewvalues(gff.group_annotations(
             annotations_iter,
-            lambda annotation: annotation.seq_id
+            lambda annotation: annotation.get_attr(group_by_attr)
         ))
 
     count = 0
