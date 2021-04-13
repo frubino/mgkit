@@ -370,8 +370,8 @@ def lca_contig_command(verbose, taxonomy, no_lca, only_ranked, bitscore,
         # only use annotations whose bitscore pass the filter
         # and have a taxon_id
         if (
-            (annotation.bitscore >= bitscore) or
-            (annotation.bitscore is None)
+            (annotation.bitscore is None) or
+            (annotation.bitscore >= bitscore)
             ) and (annotation.taxon_id is not None) and
             # redundant probably, but used in cases when a taxon_id was deleted
             # from the taxonomy
