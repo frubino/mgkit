@@ -30,6 +30,11 @@ info
 
 Gets information about a FASTA file, prints seq_id (trimmed at first space), length and hash (default sha1) and optionally the sequence.
 
+rename
+******
+
+Renames the headers of a FASTA file, appending a random suffix and an optional prefix
+
 Changes
 *******
 
@@ -55,6 +60,9 @@ import logging
 from uuid import uuid4
 import click
 import hashlib
+import pathlib
+import string
+import random
 from tqdm import tqdm
 import mgkit
 from . import utils
@@ -63,7 +71,6 @@ from ..utils import trans_tables
 from ..utils.sequence import translate_sequence
 
 LOG = logging.getLogger(__name__)
-
 
 @click.group()
 @click.version_option()
@@ -276,3 +283,57 @@ def info_command(verbose, header, include_seq, no_rename, hash_type, out_gff, fa
                 values.append(seq)
             print(*values, sep='\t', file=output_file)
         
+
+@main.command('rename', help="""Rename Sequence headers of FASTA file [file-file]
+                Adds 2 possible elements to the sequence header, separated by a
+                character 1) a suffix (random string of characters) and 2) a prefix
+                (optional).
+
+                The character used as separator should be a '|' (default), '#' or other
+                character that is not truncated in other software (space is).
+
+                In fact, this script will truncate the header at the first space
+                """)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-p', '--prefix', default=None, type=click.STRING,
+              help="Adds a prefix to the header")
+@click.option('-f', '--file-name', is_flag=True, default=False,
+              help="Adds filename as prefix (Useful for adding the file name")
+@click.option('-s', '--separator', default='|', type=click.STRING,
+              help="Separator for the elements of the new header")
+@click.option('-l', '--suffix-len', default=5, type=click.IntRange(1, 20),
+              help="Number of random characters to use")
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def rename_command(verbose, prefix, file_name, separator, suffix_len, fasta_file, output_file):
+    """
+    .. versionadded:: 0.5.7
+
+    Renames headers of a fasta file
+    """
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    random_pop = string.ascii_letters + string.digits
+    if prefix is not None:
+        if ' ' in prefix:
+            utils.exit_script("Prefix contains spaces: `{}`".format(prefix), 1)
+    if file_name:
+        file_name = pathlib.Path(fasta_file.name).name
+        if file_name == '<stdin>':
+            utils.exit_script("Standard input used, cannot use `-f`", 2)
+
+    base_elements = []
+    if prefix is not None:
+        base_elements.append(prefix)
+    if file_name:
+        base_elements.append(file_name)
+
+    for name, seq in fasta.load_fasta_rename(fasta_file):
+        
+        elements = [
+            name,
+            ''.join(
+                random.sample(random_pop, k=suffix_len)
+            )
+        ]
+        fasta.write_fasta_sequence(output_file, separator.join(base_elements + elements), seq)
