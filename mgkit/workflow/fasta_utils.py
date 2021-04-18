@@ -301,7 +301,7 @@ def info_command(verbose, header, include_seq, no_rename, hash_type, out_gff, fa
               help="Adds filename as prefix (Useful for adding the file name")
 @click.option('-s', '--separator', default='|', type=click.STRING,
               help="Separator for the elements of the new header")
-@click.option('-l', '--suffix-len', default=5, type=click.IntRange(1, 20),
+@click.option('-l', '--suffix-len', default=5, type=click.IntRange(0, 20),
               help="Number of random characters to use")
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
@@ -329,11 +329,9 @@ def rename_command(verbose, prefix, file_name, separator, suffix_len, fasta_file
         base_elements.append(file_name)
 
     for name, seq in fasta.load_fasta_rename(fasta_file):
-        
-        elements = [
-            name,
-            ''.join(
-                random.sample(random_pop, k=suffix_len)
+        elements = base_elements + [name]
+        if suffix_len > 0:
+            elements.append(
+                ''.join(random.sample(random_pop, k=suffix_len))
             )
-        ]
-        fasta.write_fasta_sequence(output_file, separator.join(base_elements + elements), seq)
+        fasta.write_fasta_sequence(output_file, separator.join(elements), seq)
