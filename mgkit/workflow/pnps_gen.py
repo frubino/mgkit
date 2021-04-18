@@ -5,6 +5,12 @@ Calculates pN/pS values
 This script calculates pN/pS using the data produced by the script
 :ref:`snp_parser`. The result table is a CSV file.
 
+Parse VCF Files
+***************
+
+The `vcf` command will parse a VCF file to produce the pickle file that is used
+to calculate the pN/pS.
+
 Calculate Rank pN/pS
 ********************
 
@@ -70,6 +76,7 @@ Changes
 *******
 
 .. versionchanged:: 0.5.7
+    added *vcf* command to parse VCF files and generate data for the script
 
 .. versionchanged:: 0.5.1
     bug fix

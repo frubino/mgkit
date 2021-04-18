@@ -37,6 +37,7 @@ install_requires = [
     'networkx',
     'future',
     'requests',
+    'vcf',
     'click>=6',
     #support for enum backported from Python 3.4
     'enum34;python_version<"3.4"',
@@ -47,7 +48,7 @@ install_requires = [
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 if not on_rtd:
     install_requires.append('tables>=3.4.2')
-    install_requires.append('HTSeq>=0.9.1')
+    #install_requires.append('HTSeq>=0.9.1')
     install_requires.append('pysam>=0.14')
 
 
