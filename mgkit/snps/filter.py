@@ -12,7 +12,7 @@ def filter_genesyn_by_taxon_id(gene_syn, taxonomy=None, filter_list=None,
                                exclude=False, func=None):
     """
     Checks if the `taxon_id` attribute of `gene_syn` is the `filter_list`.
-    Excelude reverses the result. If func is supplied, it's used to traverse
+    Exclude reverses the result. If func is supplied, it's used to traverse
     the `taxonomy`.
 
     Arguments:

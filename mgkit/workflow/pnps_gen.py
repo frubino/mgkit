@@ -237,7 +237,7 @@ def read_gene_map_two_columns(file_handle, separator):
               help="Taxonomy file", required=True)
 @click.option('-s', '--snp-data', type=click.File('rb', lazy=False),
               help="SNP data, output of `snp_parser`", required=True)
-@click.option('-r', '--rank', default='order', help='Taxonomic rank',
+@click.option('-r', '--rank', default=None, help='Taxonomic rank',
               type=click.Choice(taxon.TAXON_RANKS + ('None',),
                                 case_sensitive=False), show_default=True)
 @click.option('-m', '--min-num', default=2, type=click.IntRange(min=2),
@@ -246,8 +246,8 @@ def read_gene_map_two_columns(file_handle, separator):
 @click.option('-c', '--min-cov', default=4, type=click.IntRange(min=1),
               help='Minimum coverage for SNPs to be accepted',
               show_default=True)
-@click.option('-i', '--taxon_ids', type=click.INT, multiple=True,
-              help='Taxon IDs to include', default=(2,), show_default=True)
+@click.option('-i', '--taxon-ids', type=click.INT, multiple=True,
+              help='Taxon IDs to include', default=None, show_default=True)
 @click.option('-u', '--use-uid', is_flag=True, show_default=True,
               help='Use uids from the GFF file instead of gene_id as genes')
 @click.option('-g', '--gene-map', type=click.File(mode='r', lazy=False),
@@ -283,8 +283,8 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
 
     taxonomy = taxon.Taxonomy(taxonomy)
 
-    LOG.info('Only taxa below %s will be included', ', '.join(taxonomy[taxon_id].s_name for taxon_id in taxon_ids))
-    LOG.info('Rank "%s" and above will be included', rank)
+    if rank is not None:
+        LOG.info('Rank "%s" and above will be included', rank)
 
     snp_data = pickle.load(snp_data)
 
@@ -300,8 +300,25 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
             rank=rank
         )
 
-    filters = snp_filter.get_default_filters(taxonomy, min_cov=min_cov,
-                                             include_only=taxon_ids)
+    filters = [
+        functools.partial(
+            snp_filter.filter_genesyn_by_coverage,
+            min_cov=min_cov
+        )
+    ]
+
+    if taxon_ids:
+        LOG.info('Only taxa below %s will be included', ', '.join(
+            taxonomy[taxon_id].s_name for taxon_id in taxon_ids))
+        filters.append(
+            functools.partial(
+                snp_filter.filter_genesyn_by_taxon_id,
+                taxonomy=taxonomy,
+                filter_list=taxon_ids,
+                exclude=False,
+                func=taxon.is_ancestor
+            )
+        )
 
     partial_calc = False
     partial_syn = True
