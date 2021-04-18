@@ -69,6 +69,8 @@ pN/pS for each line in the GFF file.
 Changes
 *******
 
+.. versionchanged:: 0.5.7
+
 .. versionchanged:: 0.5.1
     bug fix
 
@@ -86,11 +88,15 @@ import logging
 import click
 import pickle
 import functools
+import vcf
+from tqdm import tqdm
 from mgkit import taxon
 from mgkit.snps import conv_func
 import mgkit.snps.mapper
 import mgkit.snps.funcs
 import mgkit.snps.filter as snp_filter
+from ..snps.classes import GeneSNP, SNPType
+from ..io import gff, fasta
 from . import utils
 from .. import logger
 
@@ -308,3 +314,238 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
     pnps.index.names = ['gene', 'taxon']
 
     pnps.to_csv(txt_file)
+
+
+def init_count_set(annotations, seqs):
+    LOG.info("Init data structures")
+
+    samples = list(annotations[0].sample_coverage.keys())
+
+    snp_data = dict(
+        (sample, {}) for sample in samples
+    )
+
+    for annotation in tqdm(annotations):
+
+        taxon_id = annotation.taxon_id
+
+        uid = annotation.uid
+
+        sample_coverage = annotation.sample_coverage
+        annotation.add_exp_syn_count(seqs[annotation.seq_id])
+
+        for sample in sample_coverage:
+            snp_data[sample][uid] = GeneSNP(
+                uid=uid,
+                gene_id=annotation.gene_id,
+                taxon_id=taxon_id,
+                exp_syn=annotation.exp_syn,
+                exp_nonsyn=annotation.exp_nonsyn,
+                coverage=sample_coverage[sample],
+            )
+
+    return snp_data
+
+
+def check_snp_in_set(samples, snp_data, pos, change, annotations, seq):
+    """
+    Used by :func:`parse_vcf` to check if a SNP
+
+    :param iterable samples: list of samples that contain the SNP
+    :param dict snp_data: dictionary from :func:`init_count_set` with per
+        sample SNPs information
+    """
+
+    for annotation in annotations:
+        if pos not in annotation:
+            continue
+
+        if annotation.is_syn(seq, pos, change, strict=False):
+            snp_type = SNPType.syn
+        else:
+            snp_type = SNPType.nonsyn
+
+        uid = annotation.uid
+        rel_pos = annotation.get_relative_pos(pos)
+
+        for sample in samples:
+            snp_data[sample][uid].add_snp(rel_pos, change, snp_type=snp_type)
+
+
+def parse_vcf(vcf_handle, snp_data, annotations, seqs, min_qual, min_reads, min_freq, 
+                sample_ids, num_lines):
+
+    # total number of SNPs accepted
+    accepted_snps = 0
+    # number of SNPs skipped for low depth
+    skip_dp = 0
+    # number of SNPs skipped for low allele frequency
+    skip_af = 0
+    # number of SNPs skipped for low quality
+    skip_qual = 0
+    # indels
+    skip_indels = 0
+
+    for line_no, vcf_record in enumerate(vcf_handle):
+        if vcf_record.CHROM not in annotations:
+            continue
+
+        if vcf_record.is_indel:
+            continue
+
+        if vcf_record.INFO['DP'] < min_reads:
+            # not enough reads (depth) for the SNP
+            skip_dp += 1
+            continue
+
+        if vcf_record.QUAL < min_qual:
+            # low quality SNP
+            skip_qual += 1
+            continue
+
+        alleles_freq = dict(zip(map(str, vcf_record.ALT), vcf_record.aaf))
+        # Used to keep track of the presence of an allele on which sample
+        alleles_sample = {
+            str(allele): set()
+            for allele in vcf_record.ALT
+        }
+
+        for sample_info in vcf_record.samples:
+            # equivalent to GT=. no call was made
+            if sample_info.gt_bases is None:
+                continue
+            # Not considering phases/unphased
+            # but we really are looking at haployd
+            # stress in documentation and examples
+            sample_info_gt = sample_info.gt_bases.replace('!', '/')
+            if '/' in sample_info_gt:
+                sample_info_gt = sample_info_gt.split('/')
+            # Haployd
+            else:
+                sample_info_gt = [sample_info_gt]
+
+            for change in sample_info_gt:
+                # if it's the reference continue
+                if change == vcf_record.REF:
+                    continue
+                allele_freq = alleles_freq.get(change, 0)
+                if allele_freq < min_freq:
+                    continue
+                alleles_sample[change].add(sample_info.sample)
+
+        seq = seqs[vcf_record.CHROM]
+        ann_seq = annotations[vcf_record.CHROM]
+
+        for change, samples in alleles_sample.items():
+            if not samples:
+                continue
+            check_snp_in_set(samples, snp_data, vcf_record.POS,
+                             change, ann_seq, seq)
+            accepted_snps += 1
+
+        if line_no % (num_lines) == 0:
+            LOG.info(
+                "Line %d, SNPs passed %d; skipped for: qual %d, " +
+                "depth %d, freq %d, indels %d",
+                line_no, accepted_snps, skip_qual, skip_dp, skip_af, skip_indels
+            )
+    LOG.info(
+        "Finished parsing, SNPs passed %d; skipped for: qual %d, " +
+        "depth %d, freq %d, indels %d",
+        accepted_snps, skip_qual, skip_dp, skip_af, skip_indels
+    )
+
+
+def save_data(output_file, snp_data):
+    """
+    Pickle data structures to the disk.
+
+    :param str output_file: base name for pickle files
+    :param dict snp_data: dictionary from :func:`init_count_set` with per
+        sample SNPs information
+    """
+
+    LOG.info("Saving sample SNPs to %s", output_file)
+    pickle.dump(snp_data, output_file, -1)
+
+
+@main.command('vcf', help="""parse a VCF file and a GFF file to produce the
+                data used for `pnps-gen`
+                """)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-ft', '--feature', default='CDS', type=click.STRING,
+              show_default=True, help="Feature to use in the GFF file")
+@click.option('-g', '--gff-file', type=click.File('rb'), required=True,
+              help="GFF file to use")
+@click.option('-a', '--fasta-file', type=click.File('rb'), required=True,
+              help="Reference file (FASTA) for the GFF")
+@click.option('-q', '--min-qual', default=30, type=click.INT, show_default=True,
+              help="Minimum quality for SNPs (Phred score)")
+@click.option('-f', '--min-freq', default=.01, type=click.FLOAT, show_default=True,
+              help="Minimum allele frequency")
+@click.option('-r', '--min-reads', default=4, type=click.INT, show_default=True,
+              help="Minimum number of reads to accept the SNP")
+@click.option('-m', '--sample-ids', multiple=True, default=None,
+              type=click.STRING, help='''the ids of the samples used in the analysis,
+              must be the same as in the GFF file''')
+@click.option('-n', '--num-lines', default=10**5, type=click.INT, show_default=True,
+              help="Number of VCF lines after which printing status")
+@click.argument('vcf-file', type=click.File('r'), default='-')
+@click.argument('output-file', type=click.File('wb'))
+def parse_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq,
+                  min_reads, sample_ids, num_lines, vcf_file, output_file):
+
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    vcf_handle = vcf.Reader(fsock=vcf_file)
+
+    if len(vcf_handle.samples) != len(sample_ids):
+        utils.exit_script("The number of sample names is wrong: VCF ({}) -> Passed ({})".format(
+            ','.join(vcf_handle.samples), ','.join(sample_ids)), 1
+        )
+
+    # Loads them as list because it's easier to init the data structure
+    LOG.info("Reading annotations from GFF File, using feat_type: %s", feature)
+    annotations = []
+    seq_ids = set()
+    test_names = True
+    for annotation in gff.parse_gff(gff_file):
+        if annotation.feat_type != feature:
+            continue
+        annotations.append(annotation)
+        seq_ids.add(annotation.seq_id)
+        # checks if sample names are wrong
+        if test_names:
+            sample_names_gff = set(annotation.sample_coverage.keys())
+            if sample_names_gff != set(sample_ids):
+                utils.exit_script("Sample names are wrong: GFF ({}) -> Passed ({})".format(
+                    ','.join(sample_names_gff), ','.join(sample_ids)), 2
+                )
+            else:
+                test_names = False
+
+    if set(annotations[0].sample_coverage.keys()) != set(sample_ids):
+        utils.exit_script("The number of sample names is wrong: VCF ({}) -> Passed ({})".format(
+            ','.join(vcf_handle.samples), ','.join(sample_ids)), 1
+        )
+
+    sample_ids = dict(zip(vcf_handle.samples, sample_ids))
+    LOG.info("Sample IDs from VCF to GFF: %r", sample_ids)
+
+    seqs = {
+        seq_id: seq
+        for seq_id, seq in fasta.load_fasta(fasta_file)
+        if seq_id in seq_ids
+    }
+
+    snp_data = init_count_set(annotations, seqs)
+
+    annotations = gff.group_annotations(
+        annotations,
+        key_func=lambda x: x.seq_id
+    )
+
+    parse_vcf(vcf_handle, snp_data, annotations, seqs,
+              min_qual, min_reads, min_freq, sample_ids, num_lines)
+
+    save_data(output_file, snp_data)
