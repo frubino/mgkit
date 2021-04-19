@@ -8,6 +8,7 @@ import logging
 import itertools
 import collections
 import pickle
+from tqdm import tqdm
 from future.utils import viewitems, viewvalues
 from .io import open_file
 
@@ -296,6 +297,142 @@ class Taxonomy(object):
         self._name_map = {}
         if fname:
             self.load_data(fname)
+    
+    @staticmethod
+    def parse_phylophlan_lineage(lineage, sep='|', field_sep='\t', id_col=10, name_col=9):
+        """
+        .. versionadded:: 0.5.7
+
+        Parses a line from PhyloPhlan 3 taxonomy 
+
+        Arguments:
+            lineage (str): line of PhyloPhlan 3 taxonomy
+            sep (str): separator for the taxa string
+            field_sep (str): field separator
+            id_col (int): index of the column with NCBI IDs
+            name_col (int): index of the column with the lineage
+        
+        Returns:
+            list: list of dictionaries, with values that can be used with
+            :class:`TaxonTuple`
+        """
+        fields = lineage.strip().split(field_sep)
+
+        ranks = dict(k='superkingdom', f='family', p='phylum',
+                     o='order', g='genus', s='species', c='class', t='strain')
+
+        lineage = fields[name_col].split(sep)
+        taxon_ids = [int(taxon_id) if taxon_id else None for taxon_id in fields[id_col].split(sep)]
+
+        taxa_info = []
+
+        for idx, (taxon_id, taxon_name) in enumerate(zip(taxon_ids, lineage)):
+            # but split into rank/name
+            rank, s_name = taxon_name.split('__', 1)
+            taxon_info = dict(
+                # as defined in the taxonomy
+                c_name=taxon_name,
+                s_name=s_name,
+                rank=ranks[rank],
+                taxon_id=taxon_id,
+                # additional information columns (Unknown, ID)
+                lineage=(None,) if idx < len(taxon_ids) - \
+                    1 else (fields[7], fields[1]),
+                parent_id=None if idx == 0 else taxon_ids[idx - 1]
+            )
+            taxa_info.append(taxon_info)
+
+        return taxa_info
+    
+    def read_from_phylophlan_taxonomy(self, file_name, field_sep='\t'):
+        """
+        .. versionadded:: 0.5.7
+
+        Parses a PhyloPhlan 3 taxonomy
+
+        Arguments:
+            file_name (str): file name of the taxonomy
+            field_sep (str): field separator in the file
+
+        """
+
+        LOG.info("First pass for taxa with NCBI IDs")
+        lineages = []
+
+        name_cache = {}
+
+        for line in open_file(file_name, 'rb'):
+            line = line.decode('ascii')
+            if line.startswith('#'):
+                continue
+            taxa_info = self.parse_phylophlan_lineage(line, field_sep=field_sep)
+            lineage = []
+            # Adds the taxa with a taxon_id set
+            for taxon_info in taxa_info:
+                taxon_id = taxon_info['taxon_id']
+                # It's a NCBI taxon_id
+                if taxon_id is not None:
+                    name_cache[(taxon_info['s_name'], taxon_info['rank'])] = taxon_id
+                    # We have a NCBI taxonomy that will be updated
+                    if taxon_id in self:
+                        # No need to add, any parent_id will be correct
+                        continue
+                    else:
+                        self[taxon_id] = TaxonTuple(
+                            taxon_id,
+                            taxon_info['s_name'],
+                            taxon_info['c_name'],
+                            taxon_info['rank'],
+                            taxon_info['lineage'],
+                            taxon_info['parent_id']
+                        )
+                # if it's None, an ID will be assigned later
+                else:
+                    lineage.append(taxon_info)
+            if lineage:
+                lineages.append(lineage)
+
+        LOG.info("Second pass for new IDs")
+
+        for lineage in tqdm(lineages):
+            #print('-'* 30)
+            #print(lineage)
+            for idx, taxon_info in enumerate(lineage):
+                #print(idx, taxon_info)
+                s_name = taxon_info['s_name']
+                rank = taxon_info['rank']
+                
+                taxon_id = name_cache.get((s_name, rank), None)
+                
+                if taxon_id is None:
+                    # negative numbers are for non-NCBI taxa
+                    taxon_id = self.min_id - 1
+                    create = True
+                else:
+                    create = False
+                # we add back the taxon_id to make sure it will
+                # be read by the next taxon iteration
+                taxon_info['taxon_id'] = taxon_id
+                # it's part of a branch new to this taxonomy
+                parent_id = taxon_info['parent_id']
+                
+                if parent_id is None:
+                    parent_id = lineage[idx - 1]['taxon_id']
+                    taxon_info['parent_id'] = parent_id
+
+                if create:
+                    self[taxon_id] = TaxonTuple(
+                        taxon_id,
+                        s_name,
+                        taxon_info['c_name'],
+                        rank,
+                        taxon_info['lineage'],
+                        parent_id
+                    )
+                    name_cache[(s_name, rank)] = taxon_id
+
+            #print('\n'.join(repr(x) for x in lineage))
+
 
     @staticmethod
     def parse_gtdb_lineage(lineage, sep=';'):
@@ -839,8 +976,12 @@ class Taxonomy(object):
             )
         )
 
-    def add_taxon(self, taxon_name, common_name='', rank='no rank', parent_id=None):
+    def add_taxon(self, taxon_name, common_name='', rank='no rank', parent_id=None,
+                  lineage=(None,)):
         """
+        .. versionchanged:: 0.5.7
+            added *lineage*
+
         .. versionadded:: 0.3.1
 
         Adds a taxon to the taxonomy. If a taxon with the same name and rank is
@@ -852,6 +993,7 @@ class Taxonomy(object):
             rank (str): rank, defaults to 'no rank'
             parent_id (int): taxon_id of the parent, defaults to *None*, which
                 is the taxonomy root
+            lineage (tuple): lineage attribute in :class:`TaxonTuple`
 
         Returns:
             int: the taxon_id of the added taxon (if new), or the taxon_id of
@@ -895,7 +1037,7 @@ class Taxonomy(object):
                 taxon_name,
                 common_name,
                 rank,
-                (None,),
+                lineage,
                 parent_id
             )
 
@@ -986,6 +1128,24 @@ class Taxonomy(object):
             del self._taxa[taxon_id]
 
         self._name_map = {}
+
+    @property
+    def max_id(self):
+        """
+        .. versionadded:: 0.5.7
+
+        Gets the highest taxon_id in the taxonomy
+        """
+        return max(self._taxa) if self._taxa else 0
+
+    @property
+    def min_id(self):
+        """
+        .. versionadded:: 0.5.7
+
+        Gets the lowest taxon_id in the taxonomy
+        """
+        return min(self._taxa) if self._taxa else 0
     
     def iter_ids(self):
         """
@@ -1216,7 +1376,7 @@ def taxa_distance_matrix(taxonomy, taxon_ids):
 
 
 def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
-                with_last=False, add_rank=False):
+                with_last=False, add_rank=False, use_cname=False):
     """
     .. versionadded:: 0.2.1
 
@@ -1227,7 +1387,7 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
         added *with_last*
 
     .. versionchanged:: 0.5.7
-        added *add_rank*
+        added *add_rank* and *use_cname*
 
     Returns the lineage of a taxon_id, as a list of taxon_id or taxa names
 
@@ -1242,6 +1402,8 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
             lineage
         add_rank (bool): prepend the names in the lineage with the first
                 letter of the rank and 2 underscores
+        use_cnames (bool): Use common name (c_name) instead of scientific name
+            (s_name)
 
     Returns:
         list: lineage of the taxon_id, the elements are `int` if names is False,
@@ -1265,14 +1427,17 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
     if names:
         lineage_names = []
         for taxon_id in lineage:
-            taxon_name = taxonomy[taxon_id].s_name if taxonomy[taxon_id].s_name else taxonomy[taxon_id].c_name
+            if use_cname:
+                taxon_name = taxonomy[taxon_id].c_name if taxonomy[taxon_id].c_name else taxonomy[taxon_id].s_name
+            else:
+                taxon_name = taxonomy[taxon_id].s_name if taxonomy[taxon_id].s_name else taxonomy[taxon_id].c_name
             if add_rank:
                 if (taxonomy[taxon_id].rank is not None) and (taxonomy[taxon_id].rank != 'no rank'):
-                    if prefix == 'superkingdom':
+                    if taxonomy[taxon_id].rank == 'superkingdom':
                         prefix = 'k'
                     else:
                         prefix = taxonomy[taxon_id].rank[0]
-                    taxon_name = taxonomy[taxon_id].rank[0] + '__' + taxon_name
+                    taxon_name = prefix + '__' + taxon_name
             lineage_names.append(taxon_name)
         lineage = lineage_names
 
