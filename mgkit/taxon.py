@@ -348,12 +348,12 @@ class Taxonomy(object):
         """
         .. versionadded:: 0.5.7
 
-        Parses a PhyloPhlan 3 taxonomy
+        Parses a PhyloPhlan 3 taxonomy. NCBI IDs will be kept, new IDs
+        will be negative to avoid confusion with NCBI IDs.
 
         Arguments:
             file_name (str): file name of the taxonomy
             field_sep (str): field separator in the file
-
         """
 
         LOG.info("First pass for taxa with NCBI IDs")
@@ -432,7 +432,6 @@ class Taxonomy(object):
                     name_cache[(s_name, rank)] = taxon_id
 
             #print('\n'.join(repr(x) for x in lineage))
-
 
     @staticmethod
     def parse_gtdb_lineage(lineage, sep=';'):

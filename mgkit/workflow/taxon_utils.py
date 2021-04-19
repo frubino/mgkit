@@ -144,6 +144,10 @@ be passed along with names:
     Methanobrevibacter      2172    genus   Archaea;Euryarchaeota;Methanobacteria;Methanobacteriales;Methanobacteriaceae;Methanobrevibacter
     Clostridium     1485    genus   Bacteria;Firmicutes;Clostridia;Clostridiales;Clostridiaceae;Clostridium
 
+
+The taxa separator can be changed from **;** with `-x` and common names instead of scientific names
+can be used with the `-a` option.
+
 Match names
 ###########
 
@@ -155,11 +159,24 @@ however these are only reported, unless option `-p` is passed.
 The lineage is printed only for the taxa requested, but all children can be
 included by using the `-c` option.
 
+Import Taxonomy
+***************
+
+The `import` command allows the use of taxonomies other than NCBI and write a file that can be
+used with other scripts. At the moment only PhyloPhlan is supported.
+
+PhyloPhlan
+##########
+
+Tested with version 3 of the script, the taxonomy file name is similar to `SGB.Sep20.txt.bz2`.
+The file contains also NCBI IDs for known taxa and those will be kept. The IDs created
+for non-NCBI taxa will be *negative* integers, to distinguish them.
+
 Changes
 *******
 
 .. versionchanged:: 0.5.7
-    added *--only-ids* option to *get* command
+    added *--only-ids* *-x* and *-a* option to *get* command. Added *import* command
 
 .. versionchanged:: 0.5.0
     added *get* command to taxon-utils to print the taxonomy or search in it
@@ -747,9 +764,9 @@ def taxa_table_command(verbose, table_name, overwrite, index_size, chunk_size,
     )
 
 
-def output_taxon_line(taxonomy, taxon_id, sep='\t'):
+def output_taxon_line(taxonomy, taxon_id, sep='\t', use_cname=False, taxonomy_sep=';'):
     taxon_name = taxonomy[taxon_id].s_name
-    lineage = taxonomy.get_lineage_string(taxon_id)
+    lineage = taxonomy.get_lineage_string(taxon_id, use_cname=use_cname, sep=taxonomy_sep)
     rank = taxonomy[taxon_id].rank
 
     return sep.join([taxon_name, str(taxon_id), rank, lineage]) + '\n'
@@ -759,7 +776,11 @@ def output_taxon_line(taxonomy, taxon_id, sep='\t'):
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-d', '--header', is_flag=True,
               help='Include header in the output')
+@click.option('-a', '--use-cname', is_flag=True,
+              help='Use the common name if present')
 @click.option('-s', '--separator', default='\t', help='column separator')
+@click.option('-x', '--tax-sep', default=';', help='taxa separator',
+                show_default=True)
 @click.option('-o', '--only-names', multiple=True, type=click.STRING,
               help='Only get matched taxon names')
 @click.option('-i', '--only-ids', multiple=True, type=click.INT,
@@ -770,10 +791,13 @@ def output_taxon_line(taxonomy, taxon_id, sep='\t'):
               help='Include taxa that are children of the requested (implies -o)')
 @click.argument('taxonomy_file', type=click.File('rb'))
 @click.argument('output_file', type=click.File('w'), default='-')
-def get_taxonomy(verbose, header, separator, only_names, only_ids, partial,
-                 include_children, taxonomy_file, output_file):
+def get_taxonomy(verbose, header, use_cname, separator, tax_sep, only_names, only_ids,
+                 partial, include_children, taxonomy_file, output_file):
     """
     .. versionadded:: 0.5.0
+
+    .. versionchanged:: 0.5.7
+        added -x and -a options
     """
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -822,7 +846,8 @@ def get_taxonomy(verbose, header, separator, only_names, only_ids, partial,
             taxon_ids.update(children)
 
         for taxon_id in taxon_ids:
-            line = output_taxon_line(taxonomy, taxon_id, sep=separator)
+            line = output_taxon_line(taxonomy, taxon_id, sep=separator, 
+                use_cname=use_cname, taxonomy_sep=tax_sep)
             output_file.write(line)
     
     if not taxon_ids:
@@ -830,8 +855,31 @@ def get_taxonomy(verbose, header, separator, only_names, only_ids, partial,
 
     for taxon_id in taxon_ids:
         try:
-            line = output_taxon_line(taxonomy, taxon_id, sep=separator)
+            line = output_taxon_line(taxonomy, taxon_id, sep=separator, 
+                use_cname=use_cname, taxonomy_sep=tax_sep)
             output_file.write(line)
         except KeyError:
             LOG.error("Cannot find taxon ID %d", taxon_id)
         
+
+@main.command('import', help="""Create a MGKit taxonomy from an alternative taxonomy""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-t', '--tax-type', default='phylophlan', type=click.Choice(['phylophlan']),
+              show_default=True, help='Type of taxonomy to import')
+@click.argument('import_file', type=click.Path(exists=True, readable=True, file_okay=True))
+@click.argument('taxonomy_file', type=click.Path(writable=True, file_okay=True))
+def import_taxonomy(verbose, tax_type, import_file, taxonomy_file):
+    """
+    .. versionadded:: 0.5.7
+
+    Imports the taxonomy from sources other than NCBI
+    """
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    LOG.info("Taxonomy (%s) will be imported from file %s", tax_type, import_file)
+
+    taxonomy = taxon.Taxonomy()
+    taxonomy.read_from_phylophlan_taxonomy(str(import_file))
+    
+    LOG.info("Saving to file %s", taxonomy_file)
+    taxonomy.save_data(str(taxonomy_file))
