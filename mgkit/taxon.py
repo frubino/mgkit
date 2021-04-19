@@ -329,6 +329,7 @@ class Taxonomy(object):
         for idx, (taxon_id, taxon_name) in enumerate(zip(taxon_ids, lineage)):
             # but split into rank/name
             rank, s_name = taxon_name.split('__', 1)
+            s_name = s_name.replace('_', ' ')
             taxon_info = dict(
                 # as defined in the taxonomy
                 c_name=taxon_name,
