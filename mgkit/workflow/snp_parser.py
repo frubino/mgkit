@@ -1,4 +1,11 @@
 """
+
+.. deprecated:: 0.5.7
+    This script is deprecated now, use `pnps-gen vcf` instead
+
+.. note::
+    if you need to use the script, install HTSeq
+
 This script parses results of SNPs analysis from any tool for SNP calling [#]_
 and integrates them into a format that can be later used for other scripts in
 the pipeline.
@@ -30,14 +37,14 @@ Changes
 
 from __future__ import division
 from builtins import zip
-import HTSeq
 import logging
 import argparse
+import pickle
+import HTSeq
 from . import utils
 from ..io import gff, compressed_handle, fasta
 from .. import logger
 from ..snps.classes import GeneSNP, SNPType
-import pickle
 
 
 LOG = logging.getLogger(__name__)
@@ -48,7 +55,7 @@ def set_parser():
     Sets command line arguments parser
     """
     parser = argparse.ArgumentParser(
-        description='SNPs analysis, requires a vcf file and SNPDat results',
+        description='DEPRECATED, use `pnps-gen vcf` SNPs analysis, requires a vcf file',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
@@ -362,7 +369,3 @@ def main():
     )
 
     save_data(options.output_file, snp_data)
-
-
-if __name__ == '__main__':
-    main()
