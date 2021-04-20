@@ -4,8 +4,13 @@ Dictionary utils
 """
 from builtins import range
 import logging
+import pathlib
+import collections
+import json
 from future.utils import viewitems, viewkeys
 import numpy
+from tqdm import tqdm
+
 import pandas
 
 LOG = logging.getLogger(__name__)
@@ -400,13 +405,13 @@ def dict_to_text(stream, dictionary, header=None, comment=None, sep='\t'):
 
 def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
                  key_func=str, value_func=str, encoding=None, skip_empty=False,
-                 skip_comment=None):
+                 skip_comment=None, verbose=False):
     """
     .. versionadded:: 0.4.4
 
     .. versionchanged:: 0.5.5
         added *skip_comment* and *skip_empty*
-    
+
     .. versionchanged::0.5.7
         added *verbose* parameter
 
@@ -449,7 +454,8 @@ def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
         line = line.rstrip('\n')
 
         # line empty, so skip
-        if (not line) or ((skip_comment is not None) and line.startswith(skip_comment)):
+        if (not line) or ((skip_comment is not None) and \
+                line.startswith(skip_comment)):
             continue
 
         line = line.split(sep)
@@ -461,6 +467,6 @@ def text_to_dict(stream, skip_lines=0, sep='\t', key_index=0, value_index=1,
 
         count += 1
         yield key, value
-    
+
     if verbose:
         LOG.info("Used %d lines out of %d", count, index + 1)
