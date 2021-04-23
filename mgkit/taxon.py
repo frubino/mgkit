@@ -324,6 +324,10 @@ class Taxonomy(object):
 
         lineage = fields[name_col].split(sep)
         taxon_ids = [int(taxon_id) if taxon_id else None for taxon_id in fields[id_col].split(sep)]
+        if len(lineage) == (len(taxon_ids) + 1):
+            taxon_ids.append(None)
+        elif len(lineage) != len(taxon_ids):
+            LOG.error("Fields have unexpected length: lineage %d, taxon_ids %d", len(lineage), len(taxon_ids))
 
         taxa_info = []
 
@@ -338,8 +342,7 @@ class Taxonomy(object):
                 rank=ranks[rank],
                 taxon_id=taxon_id,
                 # additional information columns (Unknown, ID)
-                lineage=(None,) if idx < len(taxon_ids) - \
-                    1 else (fields[7], fields[1]),
+                lineage=(None,) if idx < (len(taxon_ids) - 1) else (fields[7], fields[1]),
                 parent_id=None if idx == 0 else taxon_ids[idx - 1]
             )
             taxa_info.append(taxon_info)
@@ -385,7 +388,7 @@ class Taxonomy(object):
                         (taxa_info[idx - 1]['s_name'], taxa_info[idx - 1]['rank'])
                     ]
                     taxon_info['parent_id'] = parent_id
-                if taxon_id in self:
+                if (taxon_id in self) and (taxon_info['lineage'] == (None,)):
                     # No need to add, any parent_id will be correct
                     continue
                 else:
