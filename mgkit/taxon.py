@@ -295,6 +295,7 @@ class Taxonomy(object):
         """
         self._taxa = {}
         self._name_map = {}
+        self._alt_map = {}
         if fname:
             self.load_data(fname)
     
@@ -357,82 +358,62 @@ class Taxonomy(object):
             field_sep (str): field separator in the file
         """
 
-        LOG.info("First pass for taxa with NCBI IDs")
-        lineages = []
+        LOG.info("Reading taxonomy from %s", file_name)
 
         name_cache = {}
 
-        for line in open_file(file_name, 'rb'):
+        for line in tqdm(open_file(file_name, 'rb')):
             line = line.decode('ascii')
             if line.startswith('#'):
                 continue
-            taxa_info = self.parse_phylophlan_lineage(line, field_sep=field_sep)
-            lineage = []
+            taxa_info = self.parse_phylophlan_lineage(
+                line, field_sep=field_sep)
             # Adds the taxa with a taxon_id set
-            for taxon_info in taxa_info:
+            for idx, taxon_info in enumerate(taxa_info):
                 taxon_id = taxon_info['taxon_id']
                 # It's a NCBI taxon_id
-                if taxon_id is not None:
-                    name_cache[(taxon_info['s_name'], taxon_info['rank'])] = taxon_id
-                    # We have a NCBI taxonomy that will be updated
-                    if taxon_id in self:
-                        # No need to add, any parent_id will be correct
-                        continue
-                    else:
-                        self[taxon_id] = TaxonTuple(
-                            taxon_id,
-                            taxon_info['s_name'],
-                            taxon_info['c_name'],
-                            taxon_info['rank'],
-                            taxon_info['lineage'],
-                            taxon_info['parent_id']
-                        )
-                # if it's None, an ID will be assigned later
-                else:
-                    lineage.append(taxon_info)
-            if lineage:
-                lineages.append(lineage)
-
-        LOG.info("Second pass for new IDs")
-
-        for lineage in tqdm(lineages):
-            #print('-'* 30)
-            #print(lineage)
-            for idx, taxon_info in enumerate(lineage):
-                #print(idx, taxon_info)
-                s_name = taxon_info['s_name']
-                rank = taxon_info['rank']
-                
-                taxon_id = name_cache.get((s_name, rank), None)
-                
                 if taxon_id is None:
-                    # negative numbers are for non-NCBI taxa
-                    taxon_id = self.min_id - 1
-                    create = True
-                else:
-                    create = False
-                # we add back the taxon_id to make sure it will
-                # be read by the next taxon iteration
-                taxon_info['taxon_id'] = taxon_id
-                # it's part of a branch new to this taxonomy
-                parent_id = taxon_info['parent_id']
-                
-                if parent_id is None:
-                    parent_id = lineage[idx - 1]['taxon_id']
+                    try:
+                        # Check in cache first
+                        taxon_id = name_cache[(taxon_info['s_name'], taxon_info['rank'])]
+                    except KeyError:
+                        # New ID
+                        taxon_id = self.min_id - 1
+                # needs to set parent_id for non superkingdom
+                if (taxon_info['parent_id'] is None) and (taxon_info['rank'] != 'superkingdom'):
+                    parent_id = name_cache[
+                        (taxa_info[idx - 1]['s_name'], taxa_info[idx - 1]['rank'])
+                    ]
                     taxon_info['parent_id'] = parent_id
-
-                if create:
+                if taxon_id in self:
+                    # No need to add, any parent_id will be correct
+                    continue
+                else:
+                    # adds it to the taxonomy
                     self[taxon_id] = TaxonTuple(
                         taxon_id,
-                        s_name,
+                        taxon_info['s_name'],
                         taxon_info['c_name'],
-                        rank,
+                        taxon_info['rank'],
                         taxon_info['lineage'],
-                        parent_id
+                        taxon_info['parent_id']
                     )
-                    name_cache[(s_name, rank)] = taxon_id
+                    name_cache[(taxon_info['s_name'],
+                                taxon_info['rank'])] = taxon_id
 
-            #print('\n'.join(repr(x) for x in lineage))
+    def gen_alt_map(self):
+        for taxon in self:
+            if taxon.lineage != (None,):
+                self._alt_map[taxon.lineage] = taxon.taxon_id
+    
+    def get_by_lineage(self, lineage):
+        if not self._alt_map:
+            self.gen_alt_map()
+
+        if isinstance(lineage, str):
+            lineage = tuple(lineage.split('_'))
+        
+        return self._alt_map.get(lineage)
 
     @staticmethod
     def parse_gtdb_lineage(lineage, sep=';'):
@@ -456,6 +437,8 @@ class Taxonomy(object):
                 continue
             lineage_dict[ranks[rank]] = taxon_name
         return lineage_dict
+
+    
 
     def read_from_gtdb_taxonomy(self, file_handle, use_gtdb_name=True, sep='\t'):
         """
