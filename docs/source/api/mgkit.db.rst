@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 3
 
    mgkit.db.dbm
    mgkit.db.mongo

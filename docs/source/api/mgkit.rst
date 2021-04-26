@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 3
 
    mgkit.counts
    mgkit.db
@@ -21,6 +22,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 3
 
    mgkit.align
    mgkit.consts

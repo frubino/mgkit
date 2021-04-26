@@ -2,8 +2,8 @@
 Calculates pN/pS values
 ***********************
 
-This script calculates pN/pS using the data produced by the script
-:ref:`snp_parser`. The result table is a CSV file.
+This script calculates pN/pS using the data produced by the script `vcf`
+command. The result table is a CSV file.
 
 Parse VCF Files
 ***************

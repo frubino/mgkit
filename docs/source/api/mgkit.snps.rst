@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 3
 
    mgkit.snps.classes
    mgkit.snps.conv_func
