@@ -199,8 +199,44 @@ The options allow to specify in which attribute the ID/ACCESSION is stored
 attribute (defaults to *ID*). if no description is found for the family, a
 warning message is logged.
 
+Adding information about Bins
+*****************************
+
+.. warning::
+    The taxonomy used must have been created using the `taxon-utils import` command
+    on the same DB the results is based upon. At the moment, only PhyloPhlan is
+    supported
+
+The script needs to know to which Bin the annotation belongs to, which can be
+defined at the moment in 3 different ways (the priority given is in reverse order):
+
+    * passing the Bin ID defined in the first column of PhyloPhlan results
+    * pass the attribute in the GFF file that contains the Bin ID
+    * the seq_id (FASTA headers) contain the Bin ID
+
+The first way to operate relies on `-i` to indicate the exact bin_id to use. This can
+only be passed once, so the whole input GFF will set to that Bin ID.
+
+The secondo option `-a` relies on an attribute being set in the GFF, this can be used
+if annotations in the GFF file comes from different Bins
+
+The third option `-h` relies on the fact that the sequences were renames in a way that
+can help find the Bin ID. It relies on the sequences being renamed by `fasta-utils rename`
+in a form similar to NCBI. By default expects something like this as `seq_id`:
+
+    BinID.fa|contig_1221|xXAS
+
+The script will split the header `-s '|'`, then picking the first element `-x 0` and
+finally replacing `-e .fa` from it::
+
+    BinID.fa|contig_1221|xXAS -> BinID.fa -> BinID
+
+
 Changes
 *******
+
+.. versionchanged:: 0.5.7
+    added *bins* command and `--manual` option to script
 
 .. versionchanged:: 0.4.2
     added *-m* option for *cov_samtools* command, to calculate the average
@@ -255,7 +291,7 @@ Changes
 
 .. versionadded:: 0.1.12
 """
-from __future__ import division
+from __future__ import annotations, division
 from builtins import zip
 from future.utils import viewitems
 import logging
@@ -283,9 +319,21 @@ from ..utils.dictionary import cache_dict_file, HDFDict
 LOG = logging.getLogger(__name__)
 
 
+def manual_callback(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo_via_pager(__doc__)
+    ctx.exit()
+
+
+manual_option = click.option('--manual', is_flag=True, callback=manual_callback,
+                           expose_value=False, is_eager=True)
+
+
 @click.group()
 @click.version_option()
 @utils.cite_option
+@manual_option
 def main():
     "Main function"
     pass
@@ -1043,4 +1091,96 @@ def samtools_depth_command(verbose, average, samples, depths, num_seqs, progress
 
     LOG.info('Writing annotations to file (%r)', output_file)
     for annotation in itertools.chain(*annotations.values()):
+        annotation.to_file(output_file)
+
+
+def phylophlan_results_parser(pp_results, idx_line=1):
+    bins_info = {}
+    for line in open(pp_results):
+        if line.startswith('#'):
+            continue
+        line = line.strip().split('\t')
+        bin_id = line[0]
+        sgb_id, rank, lineage, avg_dist = line[idx_line].split(':')
+        bins_info[bin_id] = dict(
+            pp_sgb_id=sgb_id,
+            pp_rank=rank,
+            pp_lineage=lineage,
+            pp_avg_dist=avg_dist
+        )
+    return bins_info
+
+
+def add_bin_information(annotation, bin_info, taxon_id):
+    """
+    .. versionadded:: 0.5.7
+
+    Adds bin information to the GFF annotation
+    """
+    annotation.attr.update(bin_info)
+    annotation.taxon_id = taxon_id
+
+
+@main.command('bins', help="""Adds information about bins""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-t', '--taxonomy', type=click.Path(exists=True, readable=True),
+                default=None, required=True, help='Taxonomy file')
+@click.option('-r', '--bins-results', type=click.Path(exists=True, readable=True),
+                default=None, required=True, help='Bins taxonomy results')
+@click.option('-y', '--results-type', type=click.Choice(['phylophlan']),
+              default='phylophlan', show_default=True, help='Software used')
+@click.option('-i', '--bin-id', default=None, type=click.STRING,
+                show_default=True, help="Bin ID from PhyloPhlan results to use")
+@click.option('-a', '--bin-attribute', default=None, show_default=True,
+                help="The Bin ID is stored as attribute in the annotation")
+@click.option('-h', '--header-bin', default=False, is_flag=True,
+                help="The Bin ID is stored as part of the FASTA header")
+@click.option('-e', '--header-replace', default='.fa', show_default=True,
+                help='String to replace in the FASTA header')
+@click.option('-s', '--header-separator', default='|', show_default=True,
+                help='Separator for FASTA header items')
+@click.option('-x', '--header-index', default=0, show_default=True, type=click.INT,
+                help='Index for item to use in FASTA header')
+@click.argument('input-file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output-file', type=click.File('wb', lazy=False), default='-')
+def bins_command(verbose, taxonomy, bins_results, results_type, bin_id, bin_attribute,
+                header_bin, header_replace, header_separator, header_index, 
+                input_file, output_file):
+    """
+    .. versionadded:: 0.5.7
+
+    Adds information about bins, in particular about the taxonomy
+    """
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    LOG.info('Adding Taxonomic Information')
+    taxonomy = taxon.Taxonomy(str(taxonomy))
+
+    if results_type == 'phylophlan':
+        LOG.info('Using Phylophlan Results')
+        taxonomy.gen_alt_map()
+        bins_info = phylophlan_results_parser(bins_results)
+    
+    annotations = gff.parse_gff(input_file, strict=False)
+
+    for annotation in annotations:
+        if bin_attribute is not None:
+            try:
+                bin_id = annotation.get_attr(bin_attribute)
+            except gff.AttributeNotFound:
+                LOG.critical("Attribute (%s) not found", bin_attribute)
+                bin_id = None
+        
+        if header_bin:
+            bin_id = annotation.seq_id.split(header_separator)[header_index].replace(header_replace, '')
+
+        if bin_id not in bins_info:
+            utils.exit_script("Bin ID (%s) not found in Results File" % bin_id, 4)
+
+        taxon_id = taxonomy.get_by_lineage(bins_info[bin_id]['pp_sgb_id'])
+        add_bin_information(annotation, bins_info[bin_id], taxon_id)
+
+        if bin_attribute is None:
+            annotation.set_attr('bin_id', bin_id)
+
         annotation.to_file(output_file)
