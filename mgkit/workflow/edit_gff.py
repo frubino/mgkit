@@ -103,6 +103,20 @@ the edited annotation be printed (`-o` option).
 If there are comments in the file, for example lines starting with '#', it is
 possible to specify the option `-c '#'` to skip those lines and avoid errors.
 
+Rename
+******
+
+The command `rename` allows to change attribute names, by passing the attributes::
+
+    $ edit-gff rename -a taxo_ID taxon_id input.gff output.gff
+
+Will rename all instances of the attribute `taxo_ID` to `taxon_id`. Between the
+old and new attribute names, a space must be put.
+
+By default, the command won't stop execution if an attribute is not found, it will
+just silently continue. Using `-s` will force the script to stop if one of the
+attributes passed is not found.
+
 Changes
 *******
 
@@ -110,6 +124,9 @@ Changes
 
 .. versionchanged:: 0.5.5
     added `-c` option to *table* command
+
+.. versionchanged:: 0.5.7
+    added *rename* command
 
 """
 
@@ -167,6 +184,11 @@ def view_fields(verbose, num_ann, gff_file, txt_file):
 @click.argument('output_file', type=click.File('wb', lazy=False), default='-')
 def add_fields(verbose, attributes, overwrite, only_edited, uids, input_file,
                output_file):
+    """
+    .. versionadded:: 0.5.7
+
+    Renames attributes in a GFF file
+    """
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -325,3 +347,31 @@ def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
         annotation.to_file(output_file)
 
     LOG.info('Changed %d annotations', changed)
+
+
+@main.command('rename', help="""Rename Attributes in GFF files""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-s', '--strict', is_flag=True, default=False,
+              help='If the attribute is not found, stop running')
+@click.option('-a', '--attributes', multiple=True, nargs=2, required=True,
+              help="""Attributes to rename. For example `-a taxon_id taxonID` will change taxon_id attributes to taxonID. Multiple attributes can be set, for example: `-a taxon_id taxonID -a gene_id GeneID`""")
+@click.argument('input_file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output_file', type=click.File('wb', lazy=False), default='-')
+def rename_fields(verbose, strict, attributes, input_file, output_file):
+
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    for old_attr, new_attr in attributes:
+        LOG.info("Renaming attribute %s -> %s", old_attr, new_attr)
+
+    for annotation in gff.parse_gff(input_file):
+
+        for old_attr, new_attr in attributes:
+            try:
+                value = annotation.get_attr(old_attr)
+                annotation.set_attr(new_attr, value)
+                del annotation.attr[old_attr]
+            except gff.AttributeNotFound:
+                if strict:
+                    utils.exit_script("Attribute %s not found" % old_attr, 2)
+            annotation.to_file(output_file)
