@@ -360,7 +360,10 @@ class Annotation(GenomicRange):
 
     @taxon_id.setter
     def taxon_id(self, value):
-        self.attr['taxon_id'] = int(value)
+        try:
+            self.attr['taxon_id'] = int(value)
+        except TypeError:
+            pass
 
     @property
     def db(self):
