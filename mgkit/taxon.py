@@ -410,13 +410,19 @@ class Taxonomy(object):
                 self._alt_map[taxon.lineage] = taxon.taxon_id
     
     def get_by_lineage(self, lineage):
+        """
+        .. versionadded:: 0.5.7
+
+        Returns the taxon_id provided an ID stored in the `lineage`
+        attribute of the Taxon
+        """
         if not self._alt_map:
             self.gen_alt_map()
 
         if isinstance(lineage, str):
             lineage = tuple(lineage.split('_'))
         
-        return self._alt_map.get(lineage)
+        return self._alt_map.get(lineage, None)
 
     @staticmethod
     def parse_gtdb_lineage(lineage, sep=';'):
