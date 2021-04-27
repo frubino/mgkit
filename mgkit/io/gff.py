@@ -360,6 +360,12 @@ class Annotation(GenomicRange):
 
     @taxon_id.setter
     def taxon_id(self, value):
+        """
+        .. versionchanged:: 0.5.7
+
+        No Exception is raised if the value cannot be converted, but
+        the taxon_id won't be set
+        """
         try:
             self.attr['taxon_id'] = int(value)
         except TypeError:
