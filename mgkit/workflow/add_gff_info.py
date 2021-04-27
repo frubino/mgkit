@@ -1141,11 +1141,13 @@ def add_bin_information(annotation, bin_info, taxon_id):
                 help='Separator for FASTA header items')
 @click.option('-x', '--header-index', default=0, show_default=True, type=click.INT,
                 help='Index for item to use in FASTA header')
+@click.option('-s', '--ignore-missing-bin', default=False, is_flag=True,
+                help='Bins not found will have an ID set')
 @click.argument('input-file', type=click.File('rb', lazy=False), default='-')
 @click.argument('output-file', type=click.File('wb', lazy=False), default='-')
 def bins_command(verbose, taxonomy, bins_results, results_type, bin_id, bin_attribute,
                 header_bin, header_replace, header_separator, header_index, 
-                input_file, output_file):
+                ignore_missing_bin, input_file, output_file):
     """
     .. versionadded:: 0.5.7
 
@@ -1160,6 +1162,12 @@ def bins_command(verbose, taxonomy, bins_results, results_type, bin_id, bin_attr
         LOG.info('Using Phylophlan Results')
         taxonomy.gen_alt_map()
         bins_info = phylophlan_results_parser(bins_results)
+        if ignore_missing_bin:
+            bins_info['NoBin'] = dict(
+                pp_sgb_id='NoID',
+                pp_rank='none',
+                pp_lineage="Unknown",
+            )
     
     annotations = gff.parse_gff(input_file, strict=False)
 
@@ -1175,7 +1183,10 @@ def bins_command(verbose, taxonomy, bins_results, results_type, bin_id, bin_attr
             bin_id = annotation.seq_id.split(header_separator)[header_index].replace(header_replace, '')
 
         if bin_id not in bins_info:
-            utils.exit_script("Bin ID (%s) not found in Results File" % bin_id, 4)
+            if ignore_missing_bin:
+                bin_id = 'NoBin'
+            else:
+                utils.exit_script("Bin ID (%s) not found in Results File" % bin_id, 4)
 
         taxon_id = taxonomy.get_by_lineage(bins_info[bin_id]['pp_sgb_id'])
         add_bin_information(annotation, bins_info[bin_id], taxon_id)
