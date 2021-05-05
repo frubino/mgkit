@@ -4,14 +4,13 @@ files.
 """
 from __future__ import print_function, division
 from builtins import object, zip, bytes, range
-import sys
 from io import IOBase
-from future.utils import viewitems
 import random
 import itertools
 import logging
 import uuid
 import json
+from future.utils import viewitems
 from collections import OrderedDict
 try:
     from urllib import unquote, quote
@@ -19,6 +18,7 @@ except ImportError:
     # Python3
     from urllib.parse import unquote, quote
 import mgkit.io
+from ..mappings.eggnog import EGGNOG_CAT
 from ..utils import sequence as seq_utils
 from ..consts import MIN_COV
 from ..utils.common import between, union_range, ranges_length
@@ -289,6 +289,27 @@ class Annotation(GenomicRange):
         ec = ec.split(',')
 
         return set(['.'.join(x.split('.')[:level]) for x in ec])
+    
+    def get_fc(self, description=False):
+        """
+        .. versionadded:: 0.5.7
+
+        Arguments:
+            description (bool): If True, instead of the one letter category,
+                the description is returned
+        
+        Returns:
+            list: list of functional categories
+        """
+        try:
+            fc = self.attr['FC']
+        except KeyError:
+            return set()
+        
+        return set(
+            EGGNOG_CAT[func_cat] if description else func_cat
+            for func_cat in fc
+        )
 
     def get_mapping(self, db):
         """
