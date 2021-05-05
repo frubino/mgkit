@@ -24,6 +24,9 @@ Any key can be added to a GFF annotation, but MGKit expects a few key to be in t
 	* - Key
 	  - Value
 	  - Explanation
+	* - seq_id
+	  - string
+	  - the sequence of the annotation (header in FASTA files)
 	* - gene_id
 	  - any string
 	  - used to identify the gene predicted
@@ -83,3 +86,7 @@ The following keys are added by different scripts and may be used in different s
 	  - float
 	  - Stores the count data for a sample (e.g. fpkms_Sample1)
 	  - used by script `add-gff-info`
+	* - FC
+	  - string (no spaces)
+	  - each character is a Functional Category in eggNOG (e.g. FJO are 3 different categories)
+	  - used by :meth:`mgkit.io.gff.Annotation.get_fc`
