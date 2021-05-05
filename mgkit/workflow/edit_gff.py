@@ -341,12 +341,12 @@ def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
         key_func = lambda x: tuple(x.rsplit('_', 1))
         key = 'ID'
     else:
-        key_func = None
+        key_func = str
     
     if strip_kegg:
         value_func = lambda x: x.replace('ko:', '')
     else:
-        value_func = None
+        value_func = str
 
     fields = dict(
         text_to_dict(open_file(table_file), skip_lines=skip_rows,
