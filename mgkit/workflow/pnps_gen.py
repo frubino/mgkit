@@ -118,7 +118,7 @@ def get_lineage(taxonomy, taxon_id):
     if taxon_id not in taxonomy:
         return taxon_id
     return taxonomy.get_lineage_string(taxon_id, only_ranked=True,
-                                       with_last=True,
+                                       with_last=True, add_rank=True,
                                        sep=';')
 
 
