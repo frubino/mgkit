@@ -455,7 +455,7 @@ def parse_vcf(vcf_handle, snp_data, annotations, seqs, min_qual, min_reads, min_
                 allele_freq = alleles_freq.get(change, 0)
                 if allele_freq < min_freq:
                     continue
-                alleles_sample[change].add(sample_info.sample)
+                alleles_sample[change].add(sample_ids[sample_info.sample])
 
         seq = seqs[vcf_record.CHROM]
         ann_seq = annotations[vcf_record.CHROM]
