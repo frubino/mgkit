@@ -1427,6 +1427,8 @@ def get_lineage(taxonomy, taxon_id, names=False, only_ranked=False,
                 if (taxonomy[taxon_id].rank is not None) and (taxonomy[taxon_id].rank != 'no rank'):
                     if taxonomy[taxon_id].rank == 'superkingdom':
                         prefix = 'k'
+                    elif taxonomy[taxon_id].rank == 'strain':
+                        prefix = 't'
                     else:
                         prefix = taxonomy[taxon_id].rank[0]
                     taxon_name = prefix + '__' + taxon_name
