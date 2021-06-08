@@ -223,6 +223,7 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header
         wrap = None
     
     if header_file is not None:
+        LOG.info('Reading header list from file %r', header_file)
         header_file = set(
             line.strip()
             for line in header_file
@@ -256,7 +257,7 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header
         fasta.write_fasta_sequence(output_file, name, seq, wrap=wrap)
         count += 1
 
-    LOG.info('Kept %d sequences', count)
+    LOG.info('Kept %d sequence(s)', count)
 
 
 @main.command('info', help="""Gets information of FASTA file [file-file]""")
