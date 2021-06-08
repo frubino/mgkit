@@ -204,10 +204,12 @@ def uid_command(verbose, table, fasta_file, output_file):
 @click.option('-f', '--header-file', default=None, type=click.File('r'), 
                 help='Keep only sequences contained in file list')
 @click.option('-w', '--wrap', default=False, is_flag=True, help='Wraps the output sequences to 60 characters')
+@click.option('-s', '--trim-tail', default=False, is_flag=True,
+                help='Removes header information after first space')
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header_file, wrap, 
-                    fasta_file, output_file):
+                    trim_tail, fasta_file, output_file):
     """
     .. versionadded:: 0.5.7
 
@@ -226,6 +228,8 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header
             for line in header_file
         )
 
+    count = 0
+
     for name, seq in fasta.load_fasta(fasta_file):
         seq_len = len(seq)
         if len_gt is not None:
@@ -235,6 +239,9 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header
             if not (seq_len < len_lt):
                 continue
         
+        if trim_tail:
+            name = name.split(' ')[0]
+
         if header_file is not None:
             if name not in header_file:
                 continue
@@ -247,6 +254,9 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header
                 continue
         
         fasta.write_fasta_sequence(output_file, name, seq, wrap=wrap)
+        count += 1
+
+    LOG.info('Kept %d sequences', count)
 
 
 @main.command('info', help="""Gets information of FASTA file [file-file]""")
