@@ -23,7 +23,7 @@ with the changes made can be kept, using the *--table* option.
 filter
 ******
 
-Used to filter a FASTA file by length and also for sequence/header if a pattern is contained.
+Used to filter a FASTA file by length and also for sequence/header if a pattern is contained. A list of headers to keep can be passed using the `-f` option.
 
 info
 ****
@@ -201,10 +201,13 @@ def uid_command(verbose, table, fasta_file, output_file):
 @click.option('--len-lt', default=None, type=click.IntRange(min=1), help='Keeps sequences whose length is less than')
 @click.option('--header-contains', default=None, type=click.STRING, help='Keeps sequences whose header contains the string')
 @click.option('--seq-pattern', default=None, type=click.STRING, help='Keeps sequences that contains the string')
+@click.option('-f', '--header-file', default=None, type=click.File('r'), 
+                help='Keep only sequences contained in file list')
 @click.option('-w', '--wrap', default=False, is_flag=True, help='Wraps the output sequences to 60 characters')
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, wrap, fasta_file, output_file):
+def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header_file, wrap, 
+                    fasta_file, output_file):
     """
     .. versionadded:: 0.5.7
 
@@ -216,6 +219,12 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, wrap, 
         wrap = 60
     else:
         wrap = None
+    
+    if header_file is not None:
+        header_file = set(
+            line.strip()
+            for line in header_file
+        )
 
     for name, seq in fasta.load_fasta(fasta_file):
         seq_len = len(seq)
@@ -225,6 +234,11 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, wrap, 
         if len_lt is not None:
             if not (seq_len < len_lt):
                 continue
+        
+        if header_file is not None:
+            if name not in header_file:
+                continue
+
         if header_contains is not None:
             if header_contains not in name:
                 continue
