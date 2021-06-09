@@ -204,6 +204,7 @@ Changes
 """
 from __future__ import division
 from builtins import range
+from os import name
 from future.utils import viewvalues
 import logging
 import functools
@@ -785,6 +786,10 @@ def output_taxon_line(taxonomy, taxon_id, sep='\t', use_cname=False, taxonomy_se
               help='Only get matched taxon names')
 @click.option('-i', '--only-ids', multiple=True, type=click.INT,
               help='Only get matched taxon IDs')
+@click.option('--name-file', default=None, type=click.File('r'),
+              help='File with names to search')
+@click.option('--id-file', default=None, type=click.File('r'),
+              help='File with IDs to search')
 @click.option('-p', '--partial', is_flag=True,
               help='Use partial matches if any found (implies -o)')
 @click.option('-c', '--include-children', is_flag=True,
@@ -792,12 +797,12 @@ def output_taxon_line(taxonomy, taxon_id, sep='\t', use_cname=False, taxonomy_se
 @click.argument('taxonomy_file', type=click.File('rb'))
 @click.argument('output_file', type=click.File('w'), default='-')
 def get_taxonomy(verbose, header, use_cname, separator, tax_sep, only_names, only_ids,
-                 partial, include_children, taxonomy_file, output_file):
+                 name_file, id_file, partial, include_children, taxonomy_file, output_file):
     """
     .. versionadded:: 0.5.0
 
     .. versionchanged:: 0.5.7
-        added -x and -a options
+        added -x, --name-file, --id-file and -a options
     """
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -806,9 +811,11 @@ def get_taxonomy(verbose, header, use_cname, separator, tax_sep, only_names, onl
     if header:
         output_file.write(separator.join(
             ['Taxon Name', 'taxon_id', 'Rank', 'Lineage']) + '\n')
-
     
     taxon_ids = []
+    
+    if name_file is not None:
+        only_names += tuple(line.strip() for line in name_file)
 
     if only_names:
         for taxon_name in only_names:
@@ -835,6 +842,9 @@ def get_taxonomy(verbose, header, use_cname, separator, tax_sep, only_names, onl
 
     if only_ids:
         taxon_ids = set(taxon_ids) | set(only_ids)
+
+    if id_file is not None:
+        taxon_ids = set(taxon_ids) | set(int(line) for line in id_file)
 
     if (only_names or only_ids) and include_children:
         if include_children:
