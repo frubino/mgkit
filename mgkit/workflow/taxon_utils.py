@@ -792,12 +792,15 @@ def output_taxon_line(taxonomy, taxon_id, sep='\t', use_cname=False, taxonomy_se
               help='File with IDs to search')
 @click.option('-p', '--partial', is_flag=True,
               help='Use partial matches if any found (implies -o)')
+@click.option('-z', '--no-fuzzy', is_flag=True, default=False,
+              help='Avoid fuzzy name search')
 @click.option('-c', '--include-children', is_flag=True,
               help='Include taxa that are children of the requested (implies -o)')
 @click.argument('taxonomy_file', type=click.File('rb'))
 @click.argument('output_file', type=click.File('w'), default='-')
 def get_taxonomy(verbose, header, use_cname, separator, tax_sep, only_names, only_ids,
-                 name_file, id_file, partial, include_children, taxonomy_file, output_file):
+                 name_file, id_file, partial, no_fuzzy, include_children, taxonomy_file,
+                 output_file):
     """
     .. versionadded:: 0.5.0
 
@@ -829,10 +832,11 @@ def get_taxonomy(verbose, header, use_cname, separator, tax_sep, only_names, onl
                     if taxon_name in n_name:
                         alt_names.append(n_name)
                 if not alt_names:
-                    LOG.warning('Still no match, attempting fuzzy search')
-                    alt_names.extend(
-                        difflib.get_close_matches(taxon_name, taxonomy._name_map, n=6)
-                    )
+                    if not no_fuzzy:
+                        LOG.warning('Still no match, attempting fuzzy search')
+                        alt_names.extend(
+                            difflib.get_close_matches(taxon_name, taxonomy._name_map, n=6)
+                        )
                 LOG.info("Similar names to Taxon '%s': %s", taxon_name, ', '.join(alt_names))
                 if partial and alt_names:
                     for alt_name in alt_names:
