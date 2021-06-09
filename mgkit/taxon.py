@@ -972,7 +972,7 @@ class Taxonomy(object):
                   lineage=(None,)):
         """
         .. versionchanged:: 0.5.7
-            added *lineage*
+            added *lineage* and made new taxon_id negatives
 
         .. versionadded:: 0.3.1
 
@@ -1019,10 +1019,7 @@ class Taxonomy(object):
                 )
 
         if (taxon_id is None) or (self[taxon_id].parent_id != parent_id):
-            try:
-                taxon_id = max(self._taxa) + 1
-            except ValueError:
-                taxon_id = 1
+            taxon_id = self.min_id - 1
 
             self[taxon_id] = TaxonTuple(
                 taxon_id,

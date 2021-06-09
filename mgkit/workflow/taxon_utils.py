@@ -805,7 +805,7 @@ def get_taxonomy(verbose, header, use_cname, separator, tax_sep, only_names, onl
     .. versionadded:: 0.5.0
 
     .. versionchanged:: 0.5.7
-        added -x, --name-file, --id-file and -a options
+        added -z, -x, --name-file, --id-file and -a options
     """
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
