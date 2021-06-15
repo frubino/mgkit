@@ -62,7 +62,7 @@ def depth_command(verbose, gff_file, separator, progress, depth_file, output_fil
 
     LOG.info("Finished Dictionary Filter")
 
-    depth_data = align.SamtoolsDepth(depth_file, max_size_dict=max_size_dict)
+    depth_data = align.SamtoolsDepth(depth_file, max_size_dict=max_size_dict, num_seqs=None)
 
     completed_seqs = 0
 
@@ -71,9 +71,14 @@ def depth_command(verbose, gff_file, separator, progress, depth_file, output_fil
     else:
         pbar = None
 
-    while (not depth_data.closed) or (completed_seqs < len(annotations)):
+    while (completed_seqs < len(annotations)):
         seq_id = depth_data.advance_file()
+
+        # reached the end of the depth file, exiting
+        if seq_id is None:
+            break
         
+        # shouldn't be happening since we're using the max_dict_size now
         if seq_id not in annotations:
             depth_data.drop_sequence(seq_id)
             continue
@@ -87,5 +92,7 @@ def depth_command(verbose, gff_file, separator, progress, depth_file, output_fil
         depth_data.drop_sequence(seq_id)
         if pbar is not None:
             pbar.update(1)
+    
+    pbar.close()
 
     LOG.info("Found %d annotations out of %d, with a maximum coverage of %.2f", completed_seqs, len(annotations), max_cov)
