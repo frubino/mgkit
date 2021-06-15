@@ -94,6 +94,7 @@ setup(
             'sampling-utils = mgkit.workflow.sampling_utils:main',
             'edit-gff = mgkit.workflow.edit_gff:main',
             'pnps-gen = mgkit.workflow.pnps_gen:main',
+            'alg-utils = mgkit.workflow.alg_utils:main',
         ],
     },
     author="Francesco Rubino",
