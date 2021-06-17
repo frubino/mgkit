@@ -94,6 +94,7 @@ def depth_command(verbose, gff_file, separator, progress, depth_file, output_fil
         if pbar is not None:
             pbar.update(1)
     
-    pbar.close()
+    if pbar is not None:
+        pbar.close()
 
     LOG.info("Found %d annotations out of %d, with a maximum coverage of %.2f", completed_seqs, len(annotations), max_cov)
