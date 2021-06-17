@@ -315,15 +315,17 @@ def print_fields(verbose, header, keep_empty, attributes, separator,
               help="Which field in the table is the key value")
 @click.option('-ai', '--attr-index', default=1, show_default=True,
               help="Which field in the table is the attribute value")
+@click.option('-d', '--default-value', type=click.STRING, default=None,
+              help="if the key is not found, use this value")
 @click.argument('input_file', type=click.File('rb', lazy=False), default='-')
 @click.argument('output_file', type=click.File('wb', lazy=False), default='-')
 def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
                           separator, comment, table_file, prodigal_gene,
-                          strip_kegg, key_index, attr_index, input_file,
+                          strip_kegg, key_index, attr_index, default_value, input_file,
                           output_file):
     """
     .. versionchanged:: 0.5.7
-        added `-p` and `--strip-kegg`
+        added `-d`, `-p` and `--strip-kegg`
     """
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -331,6 +333,8 @@ def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
         LOG.info("Key expected from prodigal and attribute '%s'", attribute)
     else:
         LOG.info("Key used is '%s' and attribute '%s'", key, attribute)
+    if default_value is not None:
+        LOG.info("Default value of %s will be used for missing informatio", default_value)
     LOG.info("N. rows skipped '%d' Key index is '%d' and attribute index '%d'",
              skip_rows, key_index, attr_index)
 
@@ -364,14 +368,19 @@ def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
         except gff.AttributeNotFound:
             if only_edited:
                 continue
+            key_ann_value = None
+        
         if prodigal_gene:
             key_ann_value = (annotation.seq_id, key_ann_value.split('_')[1])
+
         try:
             annotation.set_attr(attribute, fields[key_ann_value])
             changed += 1
         except KeyError:
             if only_edited:
                 continue
+            if default_value is not None:
+                annotation.set_attr(attribute, default_value)
         annotation.to_file(output_file)
 
     LOG.info('Changed %d annotations', changed)
