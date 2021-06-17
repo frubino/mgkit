@@ -76,6 +76,7 @@ def depth_command(verbose, gff_file, separator, progress, depth_file, output_fil
 
         # reached the end of the depth file, exiting
         if seq_id is None:
+            LOG.info("Reached the end of Depth file %r - exiting", depth_file)
             break
         
         # shouldn't be happening since we're using the max_dict_size now
@@ -86,7 +87,7 @@ def depth_command(verbose, gff_file, separator, progress, depth_file, output_fil
         for start, end, uid in annotations[seq_id]:
             cov = depth_data.region_coverage(seq_id, start, end)
             max_cov = max(max_cov, cov)
-            print(uid, cov, sep=separator, file=output_file)
+            print(uid, "{:.5f}".format(cov), sep=separator, file=output_file)
 
         completed_seqs += 1
         depth_data.drop_sequence(seq_id)
