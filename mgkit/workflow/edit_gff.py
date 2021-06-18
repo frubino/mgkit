@@ -363,15 +363,15 @@ def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
     changed = 0
 
     for annotation in gff.parse_gff(input_file):
-        try:
-            key_ann_value = annotation.get_attr(key)
-        except gff.AttributeNotFound:
-            if only_edited:
-                continue
-            key_ann_value = None
-        
+        key_ann_value = None
         if prodigal_gene:
             key_ann_value = (annotation.seq_id, key_ann_value.split('_')[1])
+        else:
+            try:
+                key_ann_value = annotation.get_attr(key)
+            except gff.AttributeNotFound:
+                if only_edited:
+                    continue
 
         try:
             annotation.set_attr(attribute, fields[key_ann_value])
