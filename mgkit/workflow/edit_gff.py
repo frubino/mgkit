@@ -278,7 +278,7 @@ def print_fields(verbose, header, keep_empty, attributes, separator,
         values = []
         for attribute in attributes:
             try:
-                values.append(annotation.get_attr(attribute))
+                values.append(str(annotation.get_attr(attribute)))
             except gff.AttributeNotFound:
                 if not keep_empty:
                     continue
@@ -334,7 +334,7 @@ def add_fields_from_table(verbose, key, attribute, only_edited, skip_rows,
     else:
         LOG.info("Key used is '%s' and attribute '%s'", key, attribute)
     if default_value is not None:
-        LOG.info("Default value of %s will be used for missing informatio", default_value)
+        LOG.info("Default value of %s will be used for missing information", default_value)
     LOG.info("N. rows skipped '%d' Key index is '%d' and attribute index '%d'",
              skip_rows, key_index, attr_index)
 
