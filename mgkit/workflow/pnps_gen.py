@@ -92,6 +92,8 @@ Changes
 
 
 import logging
+from typing import OrderedDict
+import itertools
 import click
 import pickle
 import functools
@@ -105,6 +107,7 @@ import mgkit.snps.filter as snp_filter
 from ..snps.classes import GeneSNP, SNPType
 from ..io import gff, fasta
 from . import utils
+from ..utils import dictionary
 from .. import logger
 
 LOG = logging.getLogger(__name__)
@@ -371,6 +374,43 @@ def init_count_set(annotations, seqs):
     return snp_data
 
 
+def init_count_set_sample_files(annotations, seqs, cov_files):
+    """
+    .. versionadded:: 0.5.7
+
+    """
+    LOG.info("Init data structures")
+
+    snp_data = dict(
+        (sample, {}) for sample in cov_files
+    )
+
+    annotations = list(itertools.chain(*annotations.values()))
+
+    for annotation in tqdm(annotations, desc="Adding Expected Values"):
+        annotation.add_exp_syn_count(seqs[annotation.seq_id])
+
+    for sample, cov_file in tqdm(cov_files.items(), desc='Adding Coverage'):
+        cov_info = dict(
+            dictionary.text_to_dict(cov_file, value_func=float, skip_empty=True, skip_comment='#')
+        )
+
+        for annotation in annotations:
+
+            taxon_id = annotation.taxon_id
+            uid = annotation.uid
+
+            snp_data[sample][uid] = GeneSNP(
+                uid=uid,
+                gene_id=annotation.gene_id,
+                taxon_id=taxon_id,
+                exp_syn=annotation.exp_syn,
+                exp_nonsyn=annotation.exp_nonsyn,
+                coverage=cov_info.get(uid, 0.),
+            )
+
+    return snp_data
+
 def check_snp_in_set(samples, snp_data, pos, change, annotations, seq):
     """
     Used by :func:`parse_vcf` to check if a SNP
@@ -568,6 +608,76 @@ def parse_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq,
         annotations,
         key_func=lambda x: x.seq_id
     )
+
+    parse_vcf(vcf_handle, snp_data, annotations, seqs,
+              min_qual, min_reads, min_freq, sample_ids, num_lines)
+
+    save_data(output_file, snp_data)
+
+
+@main.command('vcf_alt', help="""parse a VCF file and a GFF file to produce the
+                data used for `pnps-gen`, uses file a list for sample coverage
+                instead of taking information from the GFF file
+                """)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-ft', '--feature', default='CDS', type=click.STRING,
+              show_default=True, help="Feature to use in the GFF file")
+@click.option('-g', '--gff-file', type=click.File('rb'), required=True,
+              help="GFF file to use")
+@click.option('-a', '--fasta-file', type=click.File('rb'), required=True,
+              help="Reference file (FASTA) for the GFF")
+@click.option('-q', '--min-qual', default=30, type=click.INT, show_default=True,
+              help="Minimum quality for SNPs (Phred score)")
+@click.option('-f', '--min-freq', default=.01, type=click.FLOAT, show_default=True,
+              help="Minimum allele frequency")
+@click.option('-r', '--min-reads', default=4, type=click.INT, show_default=True,
+              help="Minimum number of reads to accept the SNP")
+@click.option('-n', '--num-lines', default=10**5, type=click.INT, show_default=True,
+              help="Number of VCF lines after which printing status")
+@click.option('-l', '--sample-file', type=click.File('r'), required=True,
+              help="File with list of coverage files and sample names (TAB separated)")
+@click.argument('vcf-file', type=click.File('r'), default='-')
+@click.argument('output-file', type=click.File('wb'))
+def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq,
+                  min_reads, num_lines, sample_file, vcf_file, output_file):
+
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    vcf_handle = vcf.Reader(fsock=vcf_file)
+
+    cov_files = OrderedDict()
+    for line in sample_file:
+        sample_id, cov_file = line.strip().split('\t')
+        cov_files[sample_id] = open(cov_file, 'r')
+
+    if len(vcf_handle.samples) != len(cov_files):
+        utils.exit_script("The number of sample names is wrong: VCF ({}) -> Passed ({})".format(
+            ','.join(vcf_handle.samples), ','.join(cov_files)), 1
+        )
+    
+    LOG.info("VCF sample ID -> Sample ID")
+    sample_ids = dict(zip(vcf_handle.samples, cov_files))
+    for vcf_sample, sample_id in sample_ids.items():
+        LOG.info("%s -> %s", vcf_sample, sample_id)
+
+    # Loads them as list because it's easier to init the data structure
+    LOG.info("Reading annotations from GFF File, using feat_type: %s", feature)
+    annotations = gff.group_annotations(
+        (
+            annotation
+            for annotation in gff.parse_gff(gff_file)
+            if annotation.feat_type == feature
+        ),
+        key_func=lambda x: x.seq_id
+    )
+
+    seqs = {
+        seq_id: seq
+        for seq_id, seq in fasta.load_fasta(fasta_file)
+        if seq_id in annotations
+    }
+
+    snp_data = init_count_set_sample_files(annotations, seqs, cov_files)
 
     parse_vcf(vcf_handle, snp_data, annotations, seqs,
               min_qual, min_reads, min_freq, sample_ids, num_lines)
