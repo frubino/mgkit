@@ -1,5 +1,21 @@
 """
-Count utils
+Count Table Utilities
+
+Map Count Table to Genes
+************************
+
+The `map` command can map information from map files to create count tables
+from featureCounts where `uid` was used as attribute for the counts.
+
+A taxonomy map can be passed if the taxonomy needs to be included in the
+index of the output table. The format used for the table is `Parquet`, which
+retains the Index/MultiIndex when read back with Pandas
+
+Changes
+*******
+
+.. versionadded:: 0.5.7
+
 """
 
 import logging

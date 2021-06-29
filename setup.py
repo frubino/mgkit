@@ -30,6 +30,7 @@ install_requires = [
     'tqdm>=4.0',
     'semidbm>=0.5.1',
     'pymongo>=3.1.1',
+    'pyarrow>=2.0.0',
     'scipy>=0.15.1',
     'matplotlib>=2',
     'msgpack-python>=0.4.6',
