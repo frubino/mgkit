@@ -69,7 +69,11 @@ def stream_feature_counts(count_file, sample_func=None):
 @click.argument('count_file', type=click.File('r', lazy=False), default='-')
 @click.argument('output_file', type=click.File('wb'), default='-')
 def map_counts(verbose, map_file, taxa_map, separator, split_value, count_file, output_file):
+    """
+    .. versionadded: 0.5.7
 
+    Map counts from a key specified in the featureCounts file (first column) to another
+    """
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     if taxa_map is not None:
@@ -104,7 +108,9 @@ def map_counts(verbose, map_file, taxa_map, separator, split_value, count_file, 
                 count_data[map_id] = count_data[map_id] + count
             except KeyError:
                 count_data[map_id] = count
-            pbar.update(1)
+        
+        # needs to keep it out of the loop
+        pbar.update(1)
         
         if pbar.n == len(map_data):
             pbar.close()
