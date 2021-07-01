@@ -38,7 +38,7 @@ def main():
     "Main function"
 
 
-def stream_feature_counts(count_file, sample_func=None):
+def stream_feature_counts(count_file, sample_func=None, gene_ids=None):
     LOG.info("Reading featureCounts file %s", count_file)
     # comment at the start
     _ = count_file.readline()
@@ -51,8 +51,11 @@ def stream_feature_counts(count_file, sample_func=None):
         if line.startswith('#'):
             continue
         gene_id, seq_id, start, end, strand, length, *counts = line.strip().split('\t')
+        # skip rows not in the map
+        if (gene_ids is not None) and (gene_id not in gene_ids):
+            continue
         length = int(length)
-        counts = pandas.Series([int(count) for count in counts], index=sample_ids, dtype=pandas.SparseDtype('int', 0))
+        counts = pandas.Series((int(count) for count in counts), index=sample_ids, dtype=pandas.SparseDtype('int', 0))
         yield gene_id, length, counts
 
 
@@ -93,14 +96,15 @@ def map_counts(verbose, map_file, taxa_map, separator, split_value, count_file, 
         map_data[key] = set(values)
     LOG.info("Finished reading Map file")
     
-    iterator = stream_feature_counts(count_file)
+    iterator = stream_feature_counts(count_file, gene_ids=map_data)
 
     count_data = {}
     pbar = tqdm(desc="Mappings", total=len(map_data))
 
     for key, length, count in iterator:
-        if key not in map_data:
-            continue
+        # keys was found, so needs to update
+        pbar.update(1)
+
         for map_id in map_data[key]:
             if taxa_map is not None:
                 map_id = (map_id, taxa_data.get(key, None))
@@ -109,13 +113,44 @@ def map_counts(verbose, map_file, taxa_map, separator, split_value, count_file, 
             except KeyError:
                 count_data[map_id] = count
         
-        # needs to keep it out of the loop
-        pbar.update(1)
-        
+        # If all keys were found, break the loop
         if pbar.n == len(map_data):
             pbar.close()
             LOG.info("Used all the data from the Map File")
             break
-    
-    dataframe = pandas.DataFrame.from_dict(count_data, orient='index')
-    dataframe.to_parquet(output_file, engine='pyarrow')
+
+    LOG.info("Building DataFrame")
+    count_data = pandas.DataFrame.from_dict(count_data, orient='index').sort_index()
+    count_data.to_parquet(output_file, engine='pyarrow')
+
+
+@main.command('cat', help="""Combine multiple count tables files""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-o', '--output', required=True, help="Output file",
+                type=click.Path(file_okay=True, writable=True))
+@click.argument('count_files', type=click.Path(file_okay=True, readable=True), nargs = -1)
+def cat_count_files(verbose, output, count_files):
+    """
+    .. versionadded: 0.5.7
+
+    Concatenate multiple count tables - use when there are memory constrains in bigger count
+    tables
+    """
+
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    dataframes = [
+        pandas.read_parquet(count_file)
+        for count_file in count_files
+    ]
+
+    n_levels = dataframes[0].index.nlevels
+    keys = list(range(len(dataframes)))
+
+    dataframe = pandas.concat(
+        dataframes,
+        keys=keys,
+    ).groupby(level=list(range(1, n_levels + 1))).sum()
+
+    dataframe.to_parquet(output)
+
