@@ -139,10 +139,10 @@ def cat_count_files(verbose, output, count_files):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-    dataframes = [
-        pandas.read_parquet(count_file)
-        for count_file in count_files
-    ]
+    dataframes = []
+    for count_file in count_files:
+        LOG.info("Reading file %s", count_file)
+        dataframes.append(pandas.read_parquet(count_file))
 
     n_levels = dataframes[0].index.nlevels
     keys = list(range(len(dataframes)))
