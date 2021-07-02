@@ -11,6 +11,15 @@ A taxonomy map can be passed if the taxonomy needs to be included in the
 index of the output table. The format used for the table is `Parquet`, which
 retains the Index/MultiIndex when read back with Pandas
 
+Concatenate Parquet Files
+*************************
+
+Allows to concatenate several pandas dataframe with same indices. It's used
+when the mapping file produce too big files and won't fit in memory.
+
+So a solution is to split the map files, making multiple parquet files and
+after that, concatenate them with this script.
+
 Changes
 *******
 
