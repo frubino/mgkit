@@ -23,12 +23,14 @@ with the changes made can be kept, using the *--table* option.
 filter
 ******
 
-Used to filter a FASTA file by length and also for sequence/header if a pattern is contained. A list of headers to keep can be passed using the `-f` option.
+Used to filter a FASTA file by length and also for sequence/header if a pattern is contained.
+A list of headers to keep can be passed using the `-f` option.
 
 info
 ****
 
-Gets information about a FASTA file, prints seq_id (trimmed at first space), length and hash (default sha1) and optionally the sequence.
+Gets information about a FASTA file, prints seq_id (trimmed at first space), length
+and hash (default sha1) and optionally the sequence, GC content and in GFF format if wanted.
 
 rename
 ******
@@ -50,7 +52,7 @@ Changes
     added option `-1` to output only the forward/frame0 and `-w` to avoid wrap at 60 chars to the *translate* command
 
 .. versionchanged:: 0.5.7
-    added `filter` command for simple fasta file filtering
+    added `filter` and `info` commands for simple fasta file filtering and info
 
 """
 
@@ -68,7 +70,7 @@ import mgkit
 from . import utils
 from mgkit.io import fasta, gff
 from ..utils import trans_tables
-from ..utils.sequence import translate_sequence
+from ..utils.sequence import translate_sequence, sequence_gc_content
 
 LOG = logging.getLogger(__name__)
 
@@ -272,9 +274,11 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header
     default='sha1', show_default=True)
 @click.option('-g', '--out-gff', is_flag=True, default=False, show_default=True,
     help='Outputs a GFF file')
+@click.option('-gc', '--gc-content', is_flag=True, default=False, show_default=True,
+    help='Includes the GC Content')
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('w'), default='-')
-def info_command(verbose, header, include_seq, no_rename, hash_type, out_gff, fasta_file, output_file):
+def info_command(verbose, header, include_seq, no_rename, hash_type, out_gff, gc_content, fasta_file, output_file):
     """
     .. versionadded:: 0.5.7
 
@@ -290,24 +294,32 @@ def info_command(verbose, header, include_seq, no_rename, hash_type, out_gff, fa
     else:
         load_func = fasta.load_fasta_rename
 
-    if out_gff:
-        for name, seq in load_func(fasta_file):
-            seq_hash = hash_func(seq.encode('ascii')).hexdigest()
+    if header and (not out_gff):
+        columns = ["seq_id", "length", "hash"]
+        if include_seq:
+            columns.append('sequence')
+        if gc_content:
+            columns.append('gc_content')
+        print(*columns, sep='\t', file=output_file)
+    
+    for name, seq in load_func(fasta_file):
+        seq_hash = hash_func(seq.encode('ascii')).hexdigest()
+        if gc_content:
+            gc_value = sequence_gc_content(seq)
+
+        if out_gff:
             annotation = gff.from_sequence(name, seq, seq_hash=seq_hash)
+            if gc_content:
+                annotation.set_attr("gc_content", gc_value)
             output_file.write(annotation.to_gff())
-    else:
-        if header:
-            columns = ["seq_id", "length", "hash"]
-            if include_seq:
-                columns.append('sequence')
-            print(*columns, sep='\t', file=output_file)
-        
-        for name, seq in load_func(fasta_file):
+        else:
             values = [name, len(seq), hash_func(seq.encode('ascii')).hexdigest()]
             if include_seq:
                 values.append(seq)
+            if gc_content:
+                values.append(gc_value)
             print(*values, sep='\t', file=output_file)
-        
+
 
 @main.command('rename', help="""Rename Sequence headers of FASTA file [file-file]
                 Adds 2 possible elements to the sequence header, separated by a
