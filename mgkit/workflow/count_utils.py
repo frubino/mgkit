@@ -20,6 +20,11 @@ when the mapping file produce too big files and won't fit in memory.
 So a solution is to split the map files, making multiple parquet files and
 after that, concatenate them with this script.
 
+Convert Parquet into CSV
+************************
+
+The command `to_csv` outputs a CSV file from a Parquet table.
+
 Changes
 *******
 
@@ -163,3 +168,17 @@ def cat_count_files(verbose, output, count_files):
 
     dataframe.to_parquet(output)
 
+@main.command('to_csv', help="Convert Parquet tables into CSV")
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('parquet_file', type=click.Path(file_okay=True, readable=True))
+@click.argument('csv_file', type=click.File('w'), default='-')
+def to_csv_command(verbose, parquet_file, csv_file):
+    """
+    .. versionadded: 0.5.7
+
+    Converts a Parquet table to CSV
+    """
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    dataframe = pandas.read_parquet(parquet_file)
+    dataframe.to_csv(csv_file)
