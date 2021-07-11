@@ -261,14 +261,16 @@ def read_gene_map_two_columns(file_handle, separator):
               help='column separator for gene-map file')
 @click.option('-l', '--lineage', is_flag=True, show_default=True,
               help='Use lineage string instead of taxon_id')
+@click.option('-r', '--parquet', is_flag=True, show_default=True, default=False,
+              help='Output a Parquet file instead of CSV')
 @click.option('-ps', '--only-ps', is_flag=True, show_default=True,
               help='Only calculate pS values')
 @click.option('-pn', '--only-pn', is_flag=True, show_default=True,
               help='Only calculate pN values')
-@click.argument('txt_file', type=click.File('w', lazy=False), default='-')
+@click.argument('output_file', type=click.File('w', lazy=False), default='-')
 def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
              taxon_ids, use_uid, gene_map, two_columns, separator, lineage,
-             only_ps, only_pn, txt_file):
+             parquet, only_ps, only_pn, output_file):
 
     logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -340,7 +342,10 @@ def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
 
     pnps.index.names = ['gene', 'taxon']
 
-    pnps.to_csv(txt_file)
+    if parquet:
+        pnps.to_parquet(output_file)
+    else:
+        pnps.to_csv(output_file)
 
 
 def init_count_set(annotations, seqs):
