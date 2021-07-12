@@ -641,10 +641,12 @@ def parse_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq,
               help="Number of VCF lines after which printing status")
 @click.option('-l', '--sample-file', type=click.File('r'), required=True,
               help="File with list of coverage files and sample names (TAB separated)")
-@click.argument('vcf-file', type=click.File('r'), default='-')
+@click.option('-u', '--uid-map', type=click.File('r'), default=None,
+              help="Only load annotations from a specific map file")
+@click.argument('vcf-file', type=click.Path(file_okay=True, readable=True), default='-')
 @click.argument('output-file', type=click.File('wb'))
 def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq,
-                  min_reads, num_lines, sample_file, vcf_file, output_file):
+                  min_reads, num_lines, sample_file, uid_map, vcf_file, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
@@ -665,12 +667,19 @@ def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq
     for vcf_sample, sample_id in sample_ids.items():
         LOG.info("%s -> %s", vcf_sample, sample_id)
 
+    if uid_map is not None:
+        LOG.info("Loading uid from file %s", uid_map)
+        uid_map = set(
+            line.strip().split('\t')[0]
+            for line in open(uid_map, 'r')
+        )
+
     # Loads them as list because it's easier to init the data structure
     LOG.info("Reading annotations from GFF File, using feat_type: %s", feature)
     annotations = gff.group_annotations(
         (
             annotation
-            for annotation in gff.parse_gff(gff_file)
+            for annotation in gff.parse_gff(gff_file, filter_func=lambda x: x.uid in uid_map)
             if annotation.feat_type == feature
         ),
         key_func=lambda x: x.seq_id
