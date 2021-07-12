@@ -676,10 +676,13 @@ def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq
 
     # Loads them as list because it's easier to init the data structure
     LOG.info("Reading annotations from GFF File, using feat_type: %s", feature)
+    ann_iterator = gff.parse_gff(gff_file)
+    if uid_map is not None:
+        ann_iterator = filter(lambda x: x.uid in uid_map, ann_iterator)
     annotations = gff.group_annotations(
         (
             annotation
-            for annotation in gff.parse_gff(gff_file, filter_func=lambda x: x.uid in uid_map)
+            for annotation in ann_iterator
             if annotation.feat_type == feature
         ),
         key_func=lambda x: x.seq_id
