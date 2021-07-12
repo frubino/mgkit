@@ -650,7 +650,7 @@ def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-    vcf_handle = vcf.Reader(fsock=vcf_file)
+    vcf_handle = vcf.Reader(fsock=open(vcf_file, 'r'))
 
     cov_files = OrderedDict()
     for line in sample_file:
@@ -671,7 +671,7 @@ def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq
         LOG.info("Loading uid from file %s", uid_map)
         uid_map = set(
             line.strip().split('\t')[0]
-            for line in open(uid_map, 'r')
+            for line in uid_map
         )
 
     # Loads them as list because it's easier to init the data structure
