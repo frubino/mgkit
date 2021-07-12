@@ -1618,8 +1618,11 @@ def from_hmmer(line, aa_seqs, feat_type='gene', source='HMMER',
     return annotation
 
 
-def parse_gff(file_handle, gff_type=from_gff, strict=False, encoding='ascii'):
+def parse_gff(file_handle, gff_type=from_gff, strict=False, encoding='ascii', filter_func=None):
     """
+    .. versionchanged:: 0.5.7
+        added *filter_func*
+
     .. versionchanged:: 0.4.0
         In some cases ASCII decoding is not enough, so it is parametrised now
 
@@ -1644,6 +1647,8 @@ def parse_gff(file_handle, gff_type=from_gff, strict=False, encoding='ascii'):
         gff_type (class): class/function used to parse a GFF annotation
         strict (bool): if True duplicate keys raise an exception
         encoding (str): encoding of the file, if ascii fails, use utf8
+        file_func (func): a function used to filter, accepts an annotation as
+            argument and returns True if the annotation is to be kept
 
     Yields:
         Annotation: an iterator of :class:`Annotation` instances
@@ -1671,6 +1676,9 @@ def parse_gff(file_handle, gff_type=from_gff, strict=False, encoding='ascii'):
             break
 
         annotation = gff_type(line, strict=strict)
+        if filter_func is not None:
+            if not filter_func(annotation):
+                continue
         yield annotation
 
     LOG.info(
