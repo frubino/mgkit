@@ -267,7 +267,7 @@ def read_gene_map_two_columns(file_handle, separator):
               help='Only calculate pS values')
 @click.option('-pn', '--only-pn', is_flag=True, show_default=True,
               help='Only calculate pN values')
-@click.argument('output_file', type=click.File('w', lazy=False), default='-')
+@click.argument('output_file', type=click.Path(writable=True), required=True)
 def gen_full(verbose, taxonomy, snp_data, rank, min_num, min_cov,
              taxon_ids, use_uid, gene_map, two_columns, separator, lineage,
              parquet, only_ps, only_pn, output_file):
