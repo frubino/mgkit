@@ -97,6 +97,7 @@ setup(
             'pnps-gen = mgkit.workflow.pnps_gen:main',
             'alg-utils = mgkit.workflow.alg_utils:main',
             'count-utils = mgkit.workflow.count_utils:main',
+            'dict-utils = mgkit.workflow.dict_utils:main',
         ],
     },
     author="Francesco Rubino",
