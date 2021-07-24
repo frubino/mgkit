@@ -442,7 +442,7 @@ def check_snp_in_set(samples, snp_data, pos, change, annotations, seq):
 
 
 def parse_vcf(vcf_handle, snp_data, annotations, seqs, min_qual, min_reads, min_freq, 
-                sample_ids, num_lines):
+                sample_ids, num_lines, verbose=True):
 
     # total number of SNPs accepted
     accepted_snps = 0
@@ -512,17 +512,18 @@ def parse_vcf(vcf_handle, snp_data, annotations, seqs, min_qual, min_reads, min_
                              change, ann_seq, seq)
             accepted_snps += 1
 
-        if line_no % (num_lines) == 0:
+        if verbose and (line_no % (num_lines) == 0):
             LOG.info(
                 "Line %d, SNPs passed %d; skipped for: qual %d, " +
                 "depth %d, freq %d, indels %d",
                 line_no, accepted_snps, skip_qual, skip_dp, skip_af, skip_indels
             )
-    LOG.info(
-        "Finished parsing, SNPs passed %d; skipped for: qual %d, " +
-        "depth %d, freq %d, indels %d",
-        accepted_snps, skip_qual, skip_dp, skip_af, skip_indels
-    )
+    if verbose:
+        LOG.info(
+            "Finished parsing, SNPs passed %d; skipped for: qual %d, " +
+            "depth %d, freq %d, indels %d",
+            accepted_snps, skip_qual, skip_dp, skip_af, skip_indels
+        )
 
 
 def save_data(output_file, snp_data):
@@ -641,29 +642,37 @@ def parse_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq,
               help="Number of VCF lines after which printing status")
 @click.option('-l', '--sample-file', type=click.File('r'), required=True,
               help="File with list of coverage files and sample names (TAB separated)")
+@click.option('-s', '--file-list', type=click.File('r'), default=None,
+              help="File with list of VCF files (one per line)")
 @click.option('-u', '--uid-map', type=click.File('r'), default=None,
               help="Only load annotations from a specific map file")
 @click.argument('vcf-file', type=click.Path(file_okay=True, readable=True), default='-')
 @click.argument('output-file', type=click.File('wb'))
 def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq,
-                  min_reads, num_lines, sample_file, uid_map, vcf_file, output_file):
+                  min_reads, num_lines, sample_file, file_list, uid_map, vcf_file, output_file):
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
-    vcf_handle = vcf.Reader(fsock=open(vcf_file, 'r'))
+    if file_list is None:
+        vcf_handles = [vcf.Reader(fsock=open(vcf_file, 'r'))]
+    else:
+        vcf_handles = [
+            vcf.Reader(fsock=open(line.strip(), 'r'))
+            for line in file_list
+        ]
 
     cov_files = OrderedDict()
     for line in sample_file:
         sample_id, cov_file = line.strip().split('\t')
         cov_files[sample_id] = open(cov_file, 'r')
 
-    if len(vcf_handle.samples) != len(cov_files):
+    if len(vcf_handles[0].samples) != len(cov_files):
         utils.exit_script("The number of sample names is wrong: VCF ({}) -> Passed ({})".format(
-            ','.join(vcf_handle.samples), ','.join(cov_files)), 1
+            ','.join(vcf_handles[0].samples), ','.join(cov_files)), 1
         )
     
     LOG.info("VCF sample ID -> Sample ID")
-    sample_ids = dict(zip(vcf_handle.samples, cov_files))
+    sample_ids = dict(zip(vcf_handles[0].samples, cov_files))
     for vcf_sample, sample_id in sample_ids.items():
         LOG.info("%s -> %s", vcf_sample, sample_id)
 
@@ -696,7 +705,11 @@ def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq
 
     snp_data = init_count_set_sample_files(annotations, seqs, cov_files)
 
-    parse_vcf(vcf_handle, snp_data, annotations, seqs,
-              min_qual, min_reads, min_freq, sample_ids, num_lines)
+    if len(vcf_handles) > 1:
+        vcf_handles = tqdm(vcf_handles, desc="Parsing VCF Files")
+    for vcf_handle in vcf_handles:
+        parse_vcf(vcf_handle, snp_data, annotations, seqs,
+                  min_qual, min_reads, min_freq, sample_ids, num_lines,
+                  verbose=True if len(vcf_handles) == 1 else False)
 
     save_data(output_file, snp_data)
