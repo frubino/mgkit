@@ -524,6 +524,7 @@ def parse_vcf(vcf_handle, snp_data, annotations, seqs, min_qual, min_reads, min_
             "depth %d, freq %d, indels %d",
             accepted_snps, skip_qual, skip_dp, skip_af, skip_indels
         )
+    return accepted_snps, skip_qual, skip_dp, skip_af, skip_indels
 
 
 def save_data(output_file, snp_data):
@@ -707,9 +708,24 @@ def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq
 
     if len(vcf_handles) > 1:
         vcf_handles = tqdm(vcf_handles, desc="Parsing VCF Files")
+    
+    accepted_snps, skip_qual, skip_dp, skip_af, skip_indels = 0
     for vcf_handle in vcf_handles:
-        parse_vcf(vcf_handle, snp_data, annotations, seqs,
+        accepted_snps, skip_qual, skip_dp, skip_af, skip_indels = parse_vcf(
+                  vcf_handle, snp_data, annotations, seqs,
                   min_qual, min_reads, min_freq, sample_ids, num_lines,
                   verbose=True if len(vcf_handles) == 1 else False)
+        accepted_snps += accepted_snps
+        skip_qual += skip_qual
+        skip_dp += skip_dp
+        skip_af += skip_af
+        skip_indels += skip_indels
+
+    if not verbose:
+        LOG.info(
+            "Finished parsing, SNPs passed %d; skipped for: qual %d, " +
+            "depth %d, freq %d, indels %d",
+            accepted_snps, skip_qual, skip_dp, skip_af, skip_indels
+        )
 
     save_data(output_file, snp_data)
