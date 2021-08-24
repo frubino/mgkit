@@ -43,8 +43,10 @@ dictionary and the original keys become the values.
 """
 import logging
 import click
-from . import utils
+import random
 from tqdm import tqdm
+from . import utils
+from .. import logger
 from mgkit.utils.dictionary import text_to_dict
 
 
@@ -73,6 +75,8 @@ def main():
 def group_dict(verbose, separator, value_separator, no_separator, output_separator, 
                input_file, output_file):
     
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
     if no_separator:
         value_func = list
     else:
@@ -91,9 +95,12 @@ def group_dict(verbose, separator, value_separator, no_separator, output_separat
                 help="Field separator for map file Key/Value")
 @click.option('-os', '--output-separator', default="\t", show_default=True, type=click.STRING,
                 help="Field separator for Output map file Key/Value")
+@click.option('-r', '--randomise', is_flag=True)
 @click.argument('input_file', type=click.File('r', lazy=False), default='-')
 @click.argument('output_file', type=click.File('w'), default='-')
-def reverse_dict(verbose, separator, output_separator, input_file, output_file):
+def reverse_dict(verbose, separator, output_separator, randomise, input_file, output_file):
+
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     reverse_map = {}
 
@@ -105,7 +112,13 @@ def reverse_dict(verbose, separator, output_separator, input_file, output_file):
             except KeyError:
                 reverse_map[value] = set([key])
     
-    for key, values in tqdm(reverse_map.items(), desc='Writing File'):
+    key_list = list(reverse_map.keys())
+    if randomise:
+        LOG.info('Randomising Keys')
+        random.shuffle(key_list)
+
+    for key in tqdm(key_list, desc='Writing File'):
+        values = reverse_map[key]
         print(key, *values, sep=output_separator, file=output_file)
 
 
