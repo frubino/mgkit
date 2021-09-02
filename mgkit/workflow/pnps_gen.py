@@ -261,7 +261,7 @@ def read_gene_map_two_columns(file_handle, separator):
               help='column separator for gene-map file')
 @click.option('-l', '--lineage', is_flag=True, show_default=True,
               help='Use lineage string instead of taxon_id')
-@click.option('-r', '--parquet', is_flag=True, show_default=True, default=False,
+@click.option('-e', '--parquet', is_flag=True, show_default=True, default=False,
               help='Output a Parquet file instead of CSV')
 @click.option('-ps', '--only-ps', is_flag=True, show_default=True,
               help='Only calculate pS values')
@@ -709,7 +709,7 @@ def parse_alt_command(verbose, feature, gff_file, fasta_file, min_qual, min_freq
     if len(vcf_handles) > 1:
         vcf_handles = tqdm(vcf_handles, desc="Parsing VCF Files")
     
-    accepted_snps, skip_qual, skip_dp, skip_af, skip_indels = 0
+    accepted_snps, skip_qual, skip_dp, skip_af, skip_indels = 0, 0, 0, 0, 0
     for vcf_handle in vcf_handles:
         accepted_snps, skip_qual, skip_dp, skip_af, skip_indels = parse_vcf(
                   vcf_handle, snp_data, annotations, seqs,
