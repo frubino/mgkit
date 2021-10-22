@@ -649,8 +649,7 @@ def exp_syn_command(verbose, reference, split, progress, input_file,
         annotation.to_file(output_file)
 
 
-@main.command('unipfile', help="""Adds expected synonymous and non-synonymous
-              changes information""")
+@main.command('unipfile', help="""Adds Uniprot gene information from a file""")
 @click.option('-v', '--verbose', is_flag=True)
 @click.option('-i', '--mapping-file', default='idmapping.dat.gz', required=True,
               help="Uniprot mapping file")
