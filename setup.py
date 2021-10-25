@@ -25,16 +25,16 @@ __VERSION__ = "0.5.7"
 from setuptools import setup, find_packages
 
 install_requires = [
-    'numpy>=1.9.2',
-    'pandas>=0.24',
+    'numpy>=1.19.2',
+    'pandas>=1.1.3',
     'tqdm>=4.0',
     'semidbm>=0.5.1',
     'pymongo>=3.1.1',
     'pyarrow>=2.0.0',
-    'scipy>=0.15.1',
+    'scipy>=1.5.2',
     'matplotlib>=2',
-    'msgpack-python>=0.4.6',
-    'statsmodels>=0.8',
+    'msgpack-python>=0.5.6',
+    'statsmodels>=0.12',
     'networkx',
     'future',
     'requests',
