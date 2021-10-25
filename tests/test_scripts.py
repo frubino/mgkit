@@ -21,10 +21,6 @@ def test_blast2gff_version(script_runner):
     assert script_runner.run('blast2gff', '--version').success
 
 
-def test_snp_parser_version(script_runner):
-    assert script_runner.run('snp_parser', '--version').success
-
-
 def test_fastq_utils_version(script_runner):
     assert script_runner.run('fastq-utils', '--version').success
 
@@ -39,6 +35,26 @@ def test_json2gff_version(script_runner):
 
 def test_fasta_utils_version(script_runner):
     assert script_runner.run('fasta-utils', '--version').success
+
+
+def test_alg_utils_version(script_runner):
+    assert script_runner.run('alg-utils', '--version').success
+
+
+def test_count_utils_version(script_runner):
+    assert script_runner.run('count-utils', '--version').success
+
+
+def test_dict_utils_version(script_runner):
+    assert script_runner.run('dict-utils', '--version').success
+
+
+def test_edit_gff_version(script_runner):
+    assert script_runner.run('edit-gff', '--version').success
+
+
+def test_pnps_gen_version(script_runner):
+    assert script_runner.run('pnps-gen', '--version').success
 
 
 def test_sampling_utils_version(script_runner):

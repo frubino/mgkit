@@ -39,7 +39,7 @@ def test_cache_io(keggclient, tmpdir):
 
 def test_cache_link_ids1(keggclient):
     query = keggclient.link_ids('rn', 'K00201')['K00201']
-    assert query == keggclient.cache['link_ids']['rn']['K00201']
+    assert set(query) == set(keggclient.cache['link_ids']['rn']['K00201'])
 
 
 def test_find(keggclient):

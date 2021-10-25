@@ -38,22 +38,22 @@ def test_taxonomy_add_lineage3():
 
 
 def test_taxonomy_get_lineage_string1(taxonomy):
-    taxonomy.get_lineage_string(27) == 'superkingdom2;kingdom2;phylum2;class2;subclass2;order2;family2;genus2;species2'
+    taxonomy.get_lineage_string(-27) == 'superkingdom2;kingdom2;phylum2;class2;subclass2;order2;family2;genus2;species2'
 
 
 def test_taxonomy_get_lineage_string2(taxonomy):
-    taxonomy.get_lineage_string(27, rank='order') == 'superkingdom2;kingdom2;phylum2;class2;subclass2;order2'
+    taxonomy.get_lineage_string(-27, rank='order') == 'superkingdom2;kingdom2;phylum2;class2;subclass2;order2'
 
 
 # These  zill generate the name map
 def test_taxonomy_find_by_name_base(taxonomy):
     name = 'species3'
-    assert taxonomy.find_by_name(name) == [36]
+    assert taxonomy.find_by_name(name) == [-36]
 
 
 def test_taxonomy_find_by_name_rank1(taxonomy):
     name = 'species3'
-    assert taxonomy.find_by_name(name, rank='species') == 36
+    assert taxonomy.find_by_name(name, rank='species') == -36
 
 
 def test_taxonomy_find_by_name_rank2(taxonomy):
@@ -94,53 +94,53 @@ def test_taxonomy_add_taxon2():
 
 
 def test_taxonomy_isancestor1(taxonomy):
-    assert taxonomy.is_ancestor(9, 1)
+    assert taxonomy.is_ancestor(-9, -1)
 
 
 def test_taxonomy_isancestor2(taxonomy):
-    assert not taxonomy.is_ancestor(10, 1)
+    assert not taxonomy.is_ancestor(-10, -1)
 
 
 def test_taxonomy_isancestor3(taxonomy):
-    assert not taxonomy.is_ancestor(10**4, 1)
+    assert not taxonomy.is_ancestor(-10**4, -1)
 
 
 def test_taxonomy_drop_taxon(taxonomy):
-    taxonomy.drop_taxon(6)
-    assert not (8 in taxonomy)
+    taxonomy.drop_taxon(-6)
+    assert not (-6 in taxonomy)
 
 
 def test_taxonomy_drop_taxon_fail(taxonomy):
-    taxonomy.drop_taxon(6)
+    taxonomy.drop_taxon(-6)
     with pytest.raises(KeyError):
-        taxonomy.get_lineage_string(9)
+        taxonomy.get_lineage_string(-6)
 
 
 def test_taxonomy_get_ranked_taxon1(taxonomy):
-    assert taxonomy.get_ranked_taxon(9, rank='family').taxon_id == 7
+    assert taxonomy.get_ranked_taxon(-9, rank='family').taxon_id == -7
 
 
-def test_taxonomy_get_ranked_taxon2(taxonomy):
-    with pytest.raises(ValueError):
-        taxonomy.get_ranked_taxon(9., rank='family')
+def test_taxonomy_get_ranked_taxon_fail(taxonomy):
+    with pytest.raises(KeyError):
+        taxonomy.get_ranked_taxon(10, rank='family')
 
 
 def test_last_common_ancestor(taxonomy):
-    lca = 5
+    lca = -5
     other = taxonomy.add_taxon('test-lca', parent_id=lca)
-    assert last_common_ancestor(taxonomy, 9, other) == lca
+    assert last_common_ancestor(taxonomy, -9, other) == lca
 
 
 def test_last_common_ancestor_fail(taxonomy):
     with pytest.raises(NoLcaFound):
-        last_common_ancestor(taxonomy, 9, 10)
+        last_common_ancestor(taxonomy, -9, -10)
 
 
 def test_last_common_ancestor_multiple(taxonomy):
-    lca = 5
+    lca = -5
     other1 = taxonomy.add_taxon('test-lca', parent_id=lca)
-    other2 = taxonomy.add_taxon('test-lca', parent_id=7)
-    assert last_common_ancestor_multiple(taxonomy, [9, other1, other2]) == lca
+    other2 = taxonomy.add_taxon('test-lca', parent_id=-7)
+    assert last_common_ancestor_multiple(taxonomy, [-9, other1, other2]) == lca
 
 
 def test_last_common_ancestor_multiple_fail1(taxonomy):
@@ -150,7 +150,7 @@ def test_last_common_ancestor_multiple_fail1(taxonomy):
 
 def test_last_common_ancestor_multiple_fail2(taxonomy):
     with pytest.raises(NoLcaFound):
-        last_common_ancestor_multiple(taxonomy, [5, 8, 10])
+        last_common_ancestor_multiple(taxonomy, [-5, -8, -10])
 
 
 def test_taxonomy_serialise_pickle(taxonomy, tmpdir):
@@ -205,24 +205,24 @@ def test_taxonomy_parse_gtdb_lineage():
 
 
 def test_taxonomy_get_ranked_id1(taxonomy):
-    assert taxonomy.get_ranked_id(9, rank='family') == 7
+    assert taxonomy.get_ranked_id(-9, rank='family') == -7
 
 
 def test_taxonomy_get_ranked_id2(taxonomy):
-    assert taxonomy.get_ranked_id(2, rank='family', include_higher=True) == 2
+    assert taxonomy.get_ranked_id(-2, rank='family', include_higher=True) == -2
 
 
 def test_taxonomy_get_ranked_id3(taxonomy):
-    assert taxonomy.get_ranked_id(2, rank='family', include_higher=False) is None
+    assert taxonomy.get_ranked_id(-2, rank='family', include_higher=False) is None
 
 
 def test_taxonomy_get_ranked_id4(taxonomy):
-    assert taxonomy.get_ranked_id(9, rank='family', it=True) == [7]
+    assert taxonomy.get_ranked_id(-9, rank='family', it=True) == [-7]
 
 
 def test_taxonomy_delitem(taxonomy):
-    del taxonomy[9]
-    assert 9 not in taxonomy
+    del taxonomy[-9]
+    assert -9 not in taxonomy
 
 
 def test_taxonomy_len(taxonomy):
