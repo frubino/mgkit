@@ -38,7 +38,7 @@ install_requires = [
     'networkx',
     'future',
     'requests',
-    'PyVCF>=0.6',
+    'PyVCF>=0.6.0',
     'click>=6',
     #support for enum backported from Python 3.4
     'enum34;python_version<"3.4"',
