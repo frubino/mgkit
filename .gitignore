@@ -41,3 +41,4 @@ docs/tutorial-data/
 htmlcov/
 .eggs/
 .vscode/
+**/.DS_Store
