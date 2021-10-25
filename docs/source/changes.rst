@@ -1,6 +1,43 @@
 Changes
 =======
 
+0.5.7
+-----
+
+This release includes some changes to the script to handle MAGs and alternative taxonomies (right now from PhyloPhlan). Also a few more scripts and commands were introduced, for handling bigger dataset or streamline some work. Additionally, I'll try to update a Docker image (currently only for version 0.5.6) so an alternative to Conda is possible. The last time I tried to install `pysam` via `pip` I wasn't able to, so a Docker image is a good compromise for performance, portability and ease of installation.
+
+Also several bugfixes were made, so I want this version out first, while the next version (0.6.0) will be used to clean the documentation, code and introduce more tests. I also want to clean and update the tutorials.
+
+Added
+*****
+
+* :meth:`mgkit.io.gff.Annotation.get_fc` to access the functional categories
+* :meth:`mgkit.taxon.Taxonomy.get_by_lineage` to interrogate by full lineage
+* :meth:`mgkit.taxon.Taxonomy.max_id` and :meth:`mgkit.taxon.Taxonomy.min_id` to find the last added taxon IDs
+* :meth:`mgkit.taxon.Taxonomy.parse_phylophlan_lineage` parses a line from the taxonomy file
+* :meth:`mgkit.taxon.Taxonomy.read_from_phylophlan_taxonomy` reads the PhyloPhlan taxonomy file
+* added `bins` command to `add-gff-info`
+* added script `count-utils` for manipulation of count data
+* added a `rename` command to `edit-gff` to rename attributes 
+* added options in `edit-gff table` for using prodigal genes, strip Kegg tags and using a default value
+* added `filter` and `info` commands to `fasta-utils`
+* added `vcf` command to `pnps-gen` to parse the VCF file for pN/pS generation. `snp_parser` is deprecated now.
+* added more options to `taxon-utils get` to extract information from the taxonomy
+* added `dict-utils` for manipulate dictionary files
+
+Changed
+*******
+
+* :func:`mgkit.io.gff.parse_gff` now accept a `filter_func` to filter annotations
+* :meth:`mgkit.taxon.Taxonomy.add_taxon` now adds the `lineage` property of a taxon, and when a taxon is new, the ID will be negative
+* :func:`mgkit.taxon.get_lineage` now accepts a `rank` and `use_cname` parameter
+* `blast2gff blastdb`  will add the query coverage if the query fasta file is passed
+
+Deprecated
+**********
+
+* `snp_parser` shouldn't be used anymore, instead use `pnps-gen vcf`
+
 0.5.6
 -----
 
@@ -305,16 +342,16 @@ Changed
 *******
 
 * changed *domain* to *superkingdom* as for NCBI taxonomy in :meth:`mgkit.taxon.UniprotTaxonomy.read_from_gtdb_taxonomy`
-* updated scripts documentation to include installed but non advertised scripts (like :ref:`translate_seq`)
+* updated scripts documentation to include installed but non advertised scripts (like `translate_seq`)
 * :class:`mgkit.kegg.KeggReaction` was reworked to only store the equation information
 * some commands in :ref:`fastq-utils` did not support standard in/out, also added the script usage to the script details
-* :ref:`translate_seq` now supports standard in/out
+* `translate_seq` now supports standard in/out
 * added *haplotypes* parameter to :func:`mgkit.snps.funcs.combine_sample_snps`
 * an annotation from :class:`mgkit.db.mongo.GFFDB` now doesn't include the lineage, because it conflicts with the string used in a GFF file
 * an :meth:`mgkit.io.gff.Annotation.coverage` now returns a `float` instead od a `int`
 * moved code from package :mod:`mgkit.io` to :mod:`mgkit.io.utils`
 * changed behaviour of :func:`mgkit.utils.common.union_range`
-* removed :func:`mgkit.utills.common.range_substract_`
+* removed :func:`mgkit.utils.common.range_substract_`
 * added *progressbar2* as installation requirement
 * changed how :meth:`mgkit.taxon.UniprotTaxonomy.find_by_name`
 
@@ -330,7 +367,7 @@ Besides smaller fixes:
 Deprecated
 **********
 
-* :ref:`translate_seq` will be removed in version 0.4.0, instead use the similar command in :ref:`fasta-utils`
+* `translate_seq` will be removed in version 0.4.0, instead use the similar command in :ref:`fasta-utils`
 
 0.3.0
 -----

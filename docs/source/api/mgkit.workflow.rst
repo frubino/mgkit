@@ -8,7 +8,10 @@ Submodules
    :maxdepth: 3
 
    mgkit.workflow.add_gff_info
+   mgkit.workflow.alg_utils
    mgkit.workflow.blast2gff
+   mgkit.workflow.count_utils
+   mgkit.workflow.dict_utils
    mgkit.workflow.edit_gff
    mgkit.workflow.extract_gff_info
    mgkit.workflow.fasta_utils

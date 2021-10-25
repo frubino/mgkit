@@ -40,6 +40,11 @@ Reverse Dictionary
 Used to reverse a dictionary Key/Values. Values are used as keys in the new
 dictionary and the original keys become the values.
 
+Changes
+*******
+
+.. versionadded:: 0.5.7
+
 """
 import logging
 import click
