@@ -1,7 +1,6 @@
 """
 GFF filtering
 """
-from __future__ import division
 import itertools
 
 

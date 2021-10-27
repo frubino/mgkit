@@ -3,7 +3,6 @@
 
 Module to plot relative abundances in a 1D or 3D projection
 """
-from __future__ import division
 from builtins import zip
 import math
 

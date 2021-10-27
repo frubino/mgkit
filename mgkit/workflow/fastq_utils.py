@@ -19,7 +19,6 @@ Changes
     added *convert* command to FASTA
 
 """
-from __future__ import division
 from builtins import zip
 import logging
 import click

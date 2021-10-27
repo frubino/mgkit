@@ -35,7 +35,6 @@ Changes
 
 """
 
-from __future__ import division
 from builtins import zip
 import logging
 import argparse

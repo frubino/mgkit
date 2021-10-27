@@ -4,8 +4,6 @@
 Code deprecated or untested
 """
 
-from __future__ import division
-
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from ..utils.common import deprecated
