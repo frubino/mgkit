@@ -69,7 +69,6 @@ Changes
     added *sync*, *sample_stream* and *rand_seq* commnads
 
 """
-from __future__ import division
 from builtins import range, zip
 import logging
 import itertools

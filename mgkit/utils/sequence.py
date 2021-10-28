@@ -7,7 +7,6 @@ Module containing functions related to sequence data
     underscore ('_') prepended.
 
 """
-from __future__ import division  # add check to use only on python 2.x
 from builtins import range, zip
 from future.utils import viewitems, viewvalues
 import itertools

@@ -291,7 +291,6 @@ Changes
 
 .. versionadded:: 0.1.12
 """
-from __future__ import annotations, division
 from builtins import zip
 from future.utils import viewitems
 import logging

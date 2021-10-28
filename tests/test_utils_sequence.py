@@ -1,4 +1,3 @@
-from __future__ import division
 from builtins import zip
 import pytest
 import numpy

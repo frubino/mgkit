@@ -142,7 +142,6 @@ Changes
     added an option to make multiple passes of overlap for each sequence
 
 """
-from __future__ import division
 from future.utils import viewvalues
 import logging
 import functools

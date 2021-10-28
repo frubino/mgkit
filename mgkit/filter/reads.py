@@ -1,7 +1,6 @@
 """
 Some test functions to filter sequences
 """
-from __future__ import division
 from builtins import range
 
 import numpy

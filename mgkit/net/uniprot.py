@@ -1,7 +1,6 @@
 """
 Contains function and constants for Uniprot access
 """
-from __future__ import division
 from builtins import range, zip
 import mgkit
 import logging

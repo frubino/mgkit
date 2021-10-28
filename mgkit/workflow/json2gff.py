@@ -24,7 +24,6 @@ the standard out.
 
 """
 
-from __future__ import division
 import click
 import logging
 import json

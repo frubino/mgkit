@@ -4,7 +4,6 @@
 GLM models with metagenomes and metatranscriptomes. Experimental
 """
 
-from __future__ import division
 from builtins import range
 import statsmodels.api as sm
 from scipy import interpolate, optimize
