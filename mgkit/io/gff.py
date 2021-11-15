@@ -1665,12 +1665,12 @@ def parse_gff(file_handle, gff_type=from_gff, strict=False, encoding='ascii', fi
 
     for index, line in enumerate(file_handle):
         try:
-            line = line.decode(encoding)
+            line = line.decode(encoding).strip()
         except UnicodeError:
             raise UnicodeError("Impossible to decode line to {}: {}".format(encoding, line))
         # the first is for GFF with comments and the second for
         # GFF with the fasta file attached
-        if line.startswith('#'):
+        if line.startswith('#') or (not line):
             continue
         if line.startswith('>'):
             break
