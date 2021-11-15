@@ -1,13 +1,12 @@
 """
 Metagenomics Framework
 """
-from __future__ import print_function
 import sys
 import logging
 
 from . import logger
 
-__VERSION__ = "0.5.7"
+__VERSION__ = "0.5.8"
 
 __version__ = __VERSION__
 

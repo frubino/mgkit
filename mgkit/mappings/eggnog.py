@@ -6,7 +6,6 @@ Module containing classes and functions to deal with eggNOG data
     * unify download of data from web
 
 """
-from __future__ import print_function
 from future.utils import viewitems
 import logging
 import itertools

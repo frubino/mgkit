@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.5.8
+-----
+
+This release is here to fix a problem with __future__ imports, which were needed for Python 2.x conversion, when adding to the bioconda channel.
+
 0.5.7
 -----
 

@@ -20,7 +20,7 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
-__VERSION__ = "0.5.7"
+__VERSION__ = "0.5.8"
 
 from setuptools import setup, find_packages
 

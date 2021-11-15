@@ -87,7 +87,6 @@ Changes
 
 """
 
-from __future__ import division
 import logging
 import functools
 import json

@@ -2,7 +2,6 @@
 Scaling functions for counts
 """
 
-from __future__ import division
 from scipy import stats
 import numpy
 import pandas

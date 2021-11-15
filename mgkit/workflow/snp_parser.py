@@ -35,12 +35,10 @@ Changes
 
 """
 
-from __future__ import division
 from builtins import zip
 import logging
 import argparse
 import pickle
-import HTSeq
 from . import utils
 from ..io import gff, compressed_handle, fasta
 from .. import logger
@@ -48,6 +46,14 @@ from ..snps.classes import GeneSNP, SNPType
 
 
 LOG = logging.getLogger(__name__)
+
+
+try:
+    import HTSeq
+except ModuleNotFoundError:
+    LOG.critical("snp_parser is Deprecated and uses HTSeq which is not part of the requirements anymore")
+    import sys
+    sys.exit(1)
 
 
 def set_parser():

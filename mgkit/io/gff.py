@@ -2,7 +2,6 @@
 This modules define classes and function related to manipulation of GFF/GTF
 files.
 """
-from __future__ import print_function, division
 from builtins import object, zip, bytes, range
 from io import IOBase
 import random

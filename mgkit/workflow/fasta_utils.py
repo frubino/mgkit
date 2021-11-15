@@ -56,7 +56,6 @@ Changes
 
 """
 
-from __future__ import division
 from builtins import range
 import logging
 from uuid import uuid4

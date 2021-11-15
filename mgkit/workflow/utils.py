@@ -1,7 +1,6 @@
 """
 Utility functions for workflows
 """
-from __future__ import print_function
 import logging
 import argparse
 import sys

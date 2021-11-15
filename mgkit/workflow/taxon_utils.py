@@ -202,7 +202,6 @@ Changes
 .. versionadded:: 0.2.5
 
 """
-from __future__ import division
 from builtins import range
 from os import name
 from future.utils import viewvalues
