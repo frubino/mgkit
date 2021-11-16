@@ -1011,6 +1011,27 @@ class Annotation(GenomicRange):
             reverse=False
         )
 
+    def get_aa_pos(self, nuc_pos):
+        """
+        .. versionadded:: 0.6.0
+
+        From a nucleotidic position, relative to the genome/sequence, returns the AA
+        position.
+        """
+        rel_pos = self.get_relative_pos(nuc_pos)
+        return rel_pos // 3 + 1
+    
+    def get_codon(self, nuc_pos, seq):
+        codon_idx = (nuc_pos - self.start) // 3
+        codon_res = (nuc_pos - self.start) % 3
+        start = self.start + (codon_idx * 3) - 1
+        end = start + 3
+        print(start + 1, end, codon_res, codon_idx)
+        return seq[start:end]
+    
+    def get_aa_change(self, nuc_pos, seq, tbl=UNIVERSAL):
+        pass
+
     def add_gc_content(self, seq):
         """
         Adds GC content information for an annotation. The formula is:
