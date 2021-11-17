@@ -1047,7 +1047,6 @@ class Annotation(GenomicRange):
         codon_res = (nuc_pos - self.start) % 3
         start = self.start + (codon_idx * 3) - 1
         end = start + 3
-        print(start + 1, end, codon_res, codon_idx)
         codon = seq[start:end]
         if change is not None:
             change = change.upper()
