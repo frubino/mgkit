@@ -1021,16 +1021,43 @@ class Annotation(GenomicRange):
         rel_pos = self.get_relative_pos(nuc_pos)
         return rel_pos // 3 + 1
     
-    def get_codon(self, nuc_pos, seq):
+    def get_codon(self, nuc_pos, seq, change=None, aa=False, tbl=UNIVERSAL):
+        """
+        .. versionadded:: 0.6.0
+
+        Given a position relative to the sequence, not the annotation, returns
+        the codon. If a *change* is supplied, the codon will be modified to
+        reflect that. A translation can be performed by changing *aa* to True.
+
+        Arguments:
+            nuc_pos (int): the nucleotidic position relative to the sequence,
+                1-based
+            seq (seq): the nucleotidic sequence for the annotation
+            change (char): One of the nucleotides, A, C, T G. Can be lower case
+            aa (bool): if True, returns the aminoacid, using the translation
+                table in *tbl*
+            tbl (dict): a dictionary that represents the translation table
+        
+        Returns:
+            str: the codon, as 3 nucleotides or a aminoacid, if *aa* is True.
+        """
         codon_idx = (nuc_pos - self.start) // 3
         codon_res = (nuc_pos - self.start) % 3
         start = self.start + (codon_idx * 3) - 1
         end = start + 3
         print(start + 1, end, codon_res, codon_idx)
-        return seq[start:end]
-    
-    def get_aa_change(self, nuc_pos, seq, tbl=UNIVERSAL):
-        pass
+        codon = seq[start:end]
+        if change is not None:
+            change = change.upper()
+            if change not in ('A', 'C', 'T', 'G'):
+                raise ValueError(f'Nucleotide passed is not correct: {change}')
+            codon = list(codon)
+            codon[codon_res] = change
+            codon = ''.join(codon)
+        if aa:
+            return tbl[codon]
+        else:
+            return codon
 
     def add_gc_content(self, seq):
         """
