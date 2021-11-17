@@ -1041,6 +1041,8 @@ class Annotation(GenomicRange):
         Returns:
             str: the codon, as 3 nucleotides or a aminoacid, if *aa* is True.
         """
+        if nuc_pos not in self:
+            raise ValueError(f'{nuc_pos} is not part of this annotation')
         codon_idx = (nuc_pos - self.start) // 3
         codon_res = (nuc_pos - self.start) % 3
         start = self.start + (codon_idx * 3) - 1
