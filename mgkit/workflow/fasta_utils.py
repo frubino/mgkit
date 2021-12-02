@@ -69,7 +69,7 @@ import mgkit
 from . import utils
 from mgkit.io import fasta, gff
 from ..utils import trans_tables
-from ..utils.sequence import translate_sequence, sequence_gc_content
+from ..utils.sequence import translate_sequence, sequence_gc_content, reverse_complement
 
 LOG = logging.getLogger(__name__)
 
@@ -371,3 +371,29 @@ def rename_command(verbose, prefix, file_name, separator, suffix_len, fasta_file
                 ''.join(random.sample(random_pop, k=suffix_len))
             )
         fasta.write_fasta_sequence(output_file, separator.join(elements), seq)
+
+
+@main.command('reverse', help="""Reverse and complement sequences of FASTA file [file-file]""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-p', '--prefix', default=None, type=click.STRING,
+              help="Adds a prefix to the header")
+@click.option('-k', '--keep-header', is_flag=True, default=False,
+              help="Keep header intact")
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def rename_command(verbose, prefix, keep_header, fasta_file, output_file):
+    """
+    .. versionadded:: 0.6.0
+
+    Reverse and complement sequences in a FASTA file
+    """
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+
+    if keep_header:
+        load_fasta = fasta.load_fasta
+    else:
+        load_fasta = fasta.load_fasta_rename
+
+    for seq_id, seq in load_fasta(fasta_file):
+        seq = reverse_complement(seq)
+        fasta.write_fasta_sequence(output_file, seq_id, seq)
