@@ -61,6 +61,10 @@ annotations.
 Changes
 *******
 
+.. versionchanged:: 0.6.0
+    added `-a` option to specify the attribute to use for the header of the extracted
+    sequences
+
 .. versionchanged:: 0.3.4
     using *click* instead of *argparse*, renamed *split* command *--json* to
     *--json-out*
@@ -121,17 +125,24 @@ annotations from [gff-file] to [fasta-file]''')
               help='''Split the sequence header of the reference at the first space, to emulate BLAST behaviour''')
 @click.option('-f', '--reference', type=click.File('rb', lazy=False), default=None,
               help='Fasta file containing the reference sequences of the GFF file')
+@click.option('-a', '--attribute', type=click.STRING, default='uid', show_default=True,
+              help='Attribute to use for output FASTA header')
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
 @click.argument('gff-file', type=click.File('rb', lazy=False), default='-')
 @click.argument('fasta-file', type=click.File('wb', lazy=False), default='-')
-def sequence_command(verbose, reverse, no_wrap, split, reference, progress,
+def sequence_command(verbose, reverse, no_wrap, split, reference, attribute, progress,
                      gff_file, fasta_file):
+    """
+    .. versionchanged:: 0.6.0
+
+    Added `-a` option and clarified error message
+    """
 
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     if reference is None:
-        utils.exit_script('A fasta reference file is required', 1)
+        utils.exit_script('A fasta reference file is required - use option `-f`', 1)
 
     wrap = 60
 
@@ -148,7 +159,7 @@ def sequence_command(verbose, reverse, no_wrap, split, reference, progress,
 
     ann_iter = gff.parse_gff(gff_file, gff_type=gff.from_gff)
 
-    seq_iter = gff.extract_nuc_seqs(ann_iter, seqs, reverse=reverse)
+    seq_iter = gff.extract_nuc_seqs(ann_iter, seqs, reverse=reverse, name_func=lambda x: x.get_attr(attribute))
 
     if progress:
         seq_iter = tqdm(seq_iter)
