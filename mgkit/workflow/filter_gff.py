@@ -10,6 +10,10 @@ converted into float) and strings, a string contained in the value of an attribu
 less or greater than are included as well. The length of annotation has the
 attribute *length* and can be tested.
 
+The filter works by finding if an annotation matches ALL filters requested by
+default. It's possible however, to use the `--user-or` option to output
+matches to ANY of the conditions passed.
+
 Overlap Filtering
 *****************
 
@@ -140,6 +144,9 @@ Changes
 .. versionchanged:: 0.4.4
     *overlap* command: added option to not use the strand information and
     added an option to make multiple passes of overlap for each sequence
+
+.. versionchanged:: 0.6.0
+    added `--use-or` option to `values` command
 
 """
 from future.utils import viewvalues
@@ -448,12 +455,18 @@ def validate_params(ctx, param, values, convert=str):
 @click.option('--num-lt', multiple=True,
               callback=functools.partial(validate_params, convert=float),
               help="Same as '--num-ge' but 'value' is a number which is less than")
+@click.option('-o', '--use-or', is_flag=True, default=False, show_default=True,
+              help="If used the filter will match any of the conditions instead of ALL")
 @click.option('--progress', default=False, is_flag=True,
               help="Shows Progress Bar")
 @click.argument('input-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
 def filter_values(verbose, str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_lt,
-                  progress, input_file, output_file):
+                  use_or, progress, input_file, output_file):
+    """
+    .. versionchanged: 0.6.0
+        Added option to match any of the supplied conditions instead of all
+    """
     mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
 
     LOG.info(
@@ -464,11 +477,15 @@ def filter_values(verbose, str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_l
     filters = setup_filters(str_eq, str_in, num_eq, num_ge, num_le, num_gt, num_lt)
 
     iterator = gff.parse_gff(input_file, gff_type=gff.from_gff)
+    if use_or:
+        check_func = any
+    else:
+        check_func = all
     if progress:
         iterator = tqdm(iterator)
 
     for annotation in iterator:
-        if all(filter_func(annotation) for filter_func in filters):
+        if check_func(filter_func(annotation) for filter_func in filters):
             annotation.to_file(output_file)
 
 
