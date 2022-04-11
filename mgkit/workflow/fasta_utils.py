@@ -37,6 +37,17 @@ rename
 
 Renames the headers of a FASTA file, appending a random suffix and an optional prefix
 
+extract
+*******
+
+Extract coordinates (1-based) from each sequence in the file. The positions are inclusive,
+so for example to cut the first 10 characters of the sequence:
+
+`fasta-utils extract -s 11 test.fa`
+
+The requested coordinates can be added to the sequence header, with the `-h` option. For
+example if start and end positions are 1 and 10, '>seq1' will become '>seq1@1-10'
+
 Changes
 *******
 
@@ -53,6 +64,9 @@ Changes
 
 .. versionchanged:: 0.5.7
     added `filter` and `info` commands for simple fasta file filtering and info
+    
+.. versionchanged:: 0.6.0
+    added `extract` and `rename` commands
 
 """
 
@@ -397,3 +411,60 @@ def rename_command(verbose, prefix, keep_header, fasta_file, output_file):
     for seq_id, seq in load_fasta(fasta_file):
         seq = reverse_complement(seq)
         fasta.write_fasta_sequence(output_file, seq_id, seq)
+
+def extract_sequence(seq_id, seq, start, end, strict, header, output_file):
+    seq_len = len(seq)
+    if end is None:
+        end = seq_len
+    
+    if strict and ((end > seq_len) or (start > seq_len)):
+        LOG.warning("Sequence %s is outside requested coordinates, skipping", seq_id)
+        return
+    seq = seq[start-1:end]
+    if not seq:
+        LOG.warning("Sequence %s becomes empty, skipping", seq_id)
+        return
+    
+    if header:
+        seq_id = seq_id + f'@{start}-{end}'
+    fasta.write_fasta_sequence(output_file, seq_id, seq)
+
+
+@main.command('extract', help="""Extract specific coordinates from the FASTA file""")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-s', '--start', type=click.IntRange(min=1), default=1,
+    help="""Start position 1-based to include""", show_default=True)
+@click.option('-e', '--end', type=click.IntRange(min=1), default=None,
+    help="""End position 1-based to include, default to max length""", show_default=True)
+@click.option('-n', '--name', default=None, type=click.STRING, show_default=True,
+    help="""Only extract the sequence with this header, for more flexible filtering use *fasta-utils filter*""")
+@click.option('-t', '--strict', is_flag=True, default=False, show_default=True,
+    help="If set, sequences that do not have the start/end positions are discarded")
+@click.option('-h', '--header', is_flag=True, default=False, show_default=True,
+    help="""Appends the coordinate requested to the sequence header""")
+@click.argument('fasta-file', type=click.File('rb'), default='-')
+@click.argument('output-file', type=click.File('wb'), default='-')
+def extract_command(verbose, start, end, name, strict, header, fasta_file, output_file):
+    """
+    .. versionadded:: 0.6.0
+
+    Cut/extract portions of sequences from a FASTA file
+    """
+    mgkit.logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+    if strict:
+        LOG.info("Only sequences containing the coordinates will be included")
+    if name is not None:
+        LOG.info("Only sequence whose name is '%s' will be included", name)
+    if header:
+        LOG.info("Coordinates will be added to the sequence header")
+    
+    for seq_id, seq in fasta.load_fasta(fasta_file):
+        if name is None:
+            extract_sequence(seq_id, seq, start, end, strict, header, output_file)
+        else:
+            if seq_id == name:
+                extract_sequence(seq_id, seq, start, end, strict, header, output_file)
+                break
+            else:
+                continue
+    
