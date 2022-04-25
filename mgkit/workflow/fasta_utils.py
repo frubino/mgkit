@@ -24,7 +24,8 @@ filter
 ******
 
 Used to filter a FASTA file by length and also for sequence/header if a pattern is contained.
-A list of headers to keep can be passed using the `-f` option.
+A list of headers to keep can be passed using the `-f` option, but the match can be inverted
+with `-n` to keep sequences that are NOT in the list.
 
 info
 ****
@@ -218,12 +219,14 @@ def uid_command(verbose, table, fasta_file, output_file):
 @click.option('--seq-pattern', default=None, type=click.STRING, help='Keeps sequences that contains the string')
 @click.option('-f', '--header-file', default=None, type=click.File('r'), 
                 help='Keep only sequences contained in file list')
+@click.option('-n', '--invert-match', default=False, is_flag=True, show_default=True,
+                help="ONLY applies to `-f`. If set, only keeps sequences that are not in the list")
 @click.option('-w', '--wrap', default=False, is_flag=True, help='Wraps the output sequences to 60 characters')
 @click.option('-s', '--trim-tail', default=False, is_flag=True,
                 help='Removes header information after first space')
 @click.argument('fasta-file', type=click.File('rb'), default='-')
 @click.argument('output-file', type=click.File('wb'), default='-')
-def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header_file, wrap, 
+def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header_file, invert_match, wrap, 
                     trim_tail, fasta_file, output_file):
     """
     .. versionadded:: 0.5.7
@@ -259,8 +262,12 @@ def filter_command(verbose, len_gt, len_lt, header_contains, seq_pattern, header
             name = name.split(' ')[0]
 
         if header_file is not None:
-            if name not in header_file:
-                continue
+            if invert_match:
+                if name in header_file:
+                    continue
+            else:
+                if name not in header_file:
+                    continue
 
         if header_contains is not None:
             if header_contains not in name:
