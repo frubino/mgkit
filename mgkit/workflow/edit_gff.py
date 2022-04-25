@@ -457,7 +457,6 @@ def subsample_gff(verbose, attributes, sort_attribute, comparison, max_items,
     group_func = partial(group_function, attributes=attributes)
     
     for annotations in gff.group_annotations(gff.parse_gff(input_file), group_func).values():
-        print(list(annotations))
         annotations = sorted(
             annotations,
             key=lambda x: getattr(x, sort_attribute),
