@@ -117,6 +117,13 @@ By default, the command won't stop execution if an attribute is not found, it wi
 just silently continue. Using `-s` will force the script to stop if one of the
 attributes passed is not found.
 
+Sample
+******
+
+Command use to subsample annotations that are grouped by a series of attributes.
+For example if a maximum number of annotations needs to be used for other scripts,
+or to help sort and reduce a group of sequences.
+
 Changes
 *******
 
@@ -136,6 +143,7 @@ from . import utils
 from .. import logger
 from mgkit.io import gff, open_file
 from mgkit.utils.dictionary import text_to_dict
+from functools import partial
 
 LOG = logging.getLogger(__name__)
 
@@ -412,4 +420,48 @@ def rename_fields(verbose, strict, attributes, input_file, output_file):
             except gff.AttributeNotFound:
                 if strict:
                     utils.exit_script("Attribute %s not found" % old_attr, 2)
+            annotation.to_file(output_file)
+
+
+def group_function(annotation, attributes=None):
+    
+    if attributes is None:
+        attributes = ('seq_id',)
+    
+    return tuple(
+        getattr(annotation, attribute)
+        for attribute in attributes
+    )
+
+@main.command('sample', help="Subsample a GFF file")
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('-a', '--attributes', required=True, default=('seq_id',), show_default=True,
+                multiple=True, help="""Attribute used to group annotations""")
+@click.option('-s', '--sort-attribute', default='length', show_default=True,
+                help='Attribute used to sort the sample')
+@click.option('-c', '--comparison', type=click.Choice(['max', 'min']), default='max',
+                show_default=True, help='Comparison for sort')
+@click.option('-x', '--max-items', default=1, type=click.IntRange(min=1), show_default=True,
+                help="Number of annotations to keep")
+@click.argument('input_file', type=click.File('rb', lazy=False), default='-')
+@click.argument('output_file', type=click.File('wb', lazy=False), default='-')
+def subsample_gff(verbose, attributes, sort_attribute, comparison, max_items,
+                input_file, output_file):
+    """
+    .. versionadded: 0.6.0
+    
+    """
+    
+    logger.config_log(level=logging.DEBUG if verbose else logging.INFO)
+    
+    group_func = partial(group_function, attributes=attributes)
+    
+    for annotations in gff.group_annotations(gff.parse_gff(input_file), group_func).values():
+        print(list(annotations))
+        annotations = sorted(
+            annotations,
+            key=lambda x: getattr(x, sort_attribute),
+            reverse=True if comparison == 'max' else False
+        )
+        for annotation in annotations[:max_items]:
             annotation.to_file(output_file)
