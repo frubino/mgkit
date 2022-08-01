@@ -148,6 +148,9 @@ class GenomicRange(object):
 
     def intersect(self, other, strand=True):
         """
+        .. versionchanged:: 0.6.0
+            Added *strand* to allow ignoring it
+        
         Return an instance of :class:`GenomicRange` that represent the
         intersection of the current instance and another.
         """

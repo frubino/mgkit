@@ -7,6 +7,8 @@ import itertools
 def choose_annotation(ann1, ann2, overlap=100, choose_func=None, strand=True):
     """
     .. versionadded:: 0.1.12
+    .. versionchanged:: 0.6.0
+        added *strand* parameter
 
     Given two :class:`mgkit.io.gff.Annotation`, if one of of the two
     annotations either is contained in the other or they overlap for at least a
@@ -25,6 +27,8 @@ def choose_annotation(ann1, ann2, overlap=100, choose_func=None, strand=True):
             filtering
         choose_func (None, func): function that accepts *ann1* and *ann2* and
             return the one to be discarded or None if both are accepted
+        strand: (bool): allows to ignore the strand of the 2 annotations
+            when comparing how much they intersect
 
     Returns:
         (None, Annotation): returns either the :class:`mgkit.io.gff.Annotation`
