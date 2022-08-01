@@ -4,7 +4,7 @@ GFF filtering
 import itertools
 
 
-def choose_annotation(ann1, ann2, overlap=100, choose_func=None):
+def choose_annotation(ann1, ann2, overlap=100, choose_func=None, strand=True):
     """
     .. versionadded:: 0.1.12
 
@@ -46,7 +46,7 @@ def choose_annotation(ann1, ann2, overlap=100, choose_func=None):
         def choose_func(a1, a2):
             return min(a1, a2, key=lambda el: (el.dbq, el.bitscore, len(el)))
 
-    intersect = ann1.intersect(ann2)
+    intersect = ann1.intersect(ann2, strand=strand)
 
     if intersect is not None:
         # if the intersection is the same size of one of the annotations size,

@@ -570,7 +570,8 @@ def filter_overlaps(verbose, size, sorted, choose_func, sort_attr, no_strand,
     choose_func = functools.partial(
         filter_gff.choose_annotation,
         overlap=size,
-        choose_func=choose_func
+        choose_func=choose_func,
+        strand=False if no_strand else True
     )
 
     if progress:

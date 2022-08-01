@@ -146,12 +146,14 @@ class GenomicRange(object):
         self.start = new_range.start
         self.end = new_range.end
 
-    def intersect(self, other):
+    def intersect(self, other, strand=True):
         """
         Return an instance of :class:`GenomicRange` that represent the
         intersection of the current instance and another.
         """
-        if (self.seq_id == other.seq_id) and (self.strand == other.strand):
+        if (self.seq_id == other.seq_id):
+            if strand and (self.strand != other.strand):
+                return None
 
             if between(other.start, self.start, self.end) or \
                between(other.end, self.start, self.end) or \
