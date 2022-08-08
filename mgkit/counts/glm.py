@@ -170,7 +170,8 @@ def optimise_alpha_scipy(formula, data, mean_func, q1_func, q2_func):
 
     Used to find an optimal *alpha* parameter for the Negative Binomial
     distribution used in `statsmodels`, using the lowess functions from
-    :func:`lowess_ci_bootstrap`.
+    :func:`lowess_ci_bootstrap`: so first you need to get the mean, q1
+    and q2, from all data  and pass them to this function.
 
     Arguments:
         formula (str): the formula used for the regression
