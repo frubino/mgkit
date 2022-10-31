@@ -22,10 +22,14 @@ import statsmodels.api as sm
 from ..utils.common import between
 from .trans_tables import UNIVERSAL
 from ..io import fasta
-from ._sequence import get_kmers, sliding_window, sequence_signature, \
-    signatures_matrix
 
 LOG = logging.getLogger(__name__)
+
+try:
+    from ._sequence import get_kmers, sliding_window, sequence_signature, \
+        signatures_matrix
+except ImportError:
+    LOG.info("No cython module found, using python equivalents")
 
 TRANS_TABLE = UNIVERSAL
 """Translation table - Universal genetic code"""

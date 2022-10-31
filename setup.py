@@ -13,7 +13,7 @@ except KeyError:
 
 ext = '.pyx' if USE_CYTHON else '.c'
 extensions = [
-    Extension("mgkit.utils._sequence", ["mgkit/utils/_sequence" + ext])
+     #Extension("mgkit.utils._sequence", ["mgkit/utils/_sequence" + ext])
 ]
 
 if USE_CYTHON:

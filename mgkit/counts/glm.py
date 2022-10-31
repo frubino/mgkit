@@ -183,7 +183,7 @@ def optimise_alpha_scipy(formula, data, mean_func, q1_func, q2_func):
     Returns:
         float: *alpha* value for the Negative Binomial
     """
-    data_mean = data.mean()[0]
+    data_mean = data.mean(numeric_only=True)[0]
     return optimize.minimize(
         optimise_alpha_scipy_function,
         [variance_to_alpha(data_mean, mean_func)],
